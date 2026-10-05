@@ -9,7 +9,7 @@ android {
  buildFeatures{compose=true;buildConfig=true}
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17;targetCompatibility=JavaVersion.VERSION_17 };kotlinOptions{jvmTarget="17"}
  signingConfigs{if(!System.getenv("MONWALLET_STORE_FILE").isNullOrBlank())create("release"){storeFile=file(System.getenv("MONWALLET_STORE_FILE"));storePassword=System.getenv("MONWALLET_STORE_PASSWORD");keyAlias=System.getenv("MONWALLET_KEY_ALIAS");keyPassword=System.getenv("MONWALLET_KEY_PASSWORD")}}
- buildTypes{debug{applicationIdSuffix=".preview";versionNameSuffix="-preview";manifestPlaceholders["appLabel"]="Mon Wallet • Aperçu";buildConfigField("String","AUTH_CALLBACK_PATH","\"/callback-preview\"");manifestPlaceholders["authCallbackPath"]="/callback-preview"};release{isMinifyEnabled=false;signingConfig=signingConfigs.findByName("release")}}
+ buildTypes{debug{applicationIdSuffix=".preview2";versionNameSuffix="-preview";manifestPlaceholders["appLabel"]="Mon Wallet • Aperçu";buildConfigField("String","AUTH_CALLBACK_PATH","\"/callback-preview\"");manifestPlaceholders["authCallbackPath"]="/callback-preview"};release{isMinifyEnabled=false;signingConfig=signingConfigs.findByName("release")}}
  packaging{resources.excludes+="/META-INF/{AL2.0,LGPL2.1}"}
  testOptions{unitTests.isIncludeAndroidResources=true;unitTests.all{it.systemProperty("robolectric.dependency.repo.url","https://repo.maven.apache.org/maven2");System.getenv("MONWALLET_TEST_SDK_DIR")?.let{path->it.systemProperty("robolectric.offline","true");it.systemProperty("robolectric.dependency.dir",path)}}}
 }
