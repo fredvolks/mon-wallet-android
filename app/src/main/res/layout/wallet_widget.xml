@@ -1,13 +1,18 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="12dp" android:background="@drawable/widget_background">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="10dp" android:background="@drawable/widget_background">
  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
   <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Mon portefeuille" android:textColor="#9CCDFF" android:textSize="12sp" android:textStyle="bold" android:maxLines="1"/>
   <TextView android:id="@+id/widget_configure" android:layout_width="28dp" android:layout_height="28dp" android:gravity="center" android:text="⚙" android:textColor="#FFFFFF" android:contentDescription="Configurer"/>
   <TextView android:id="@+id/widget_refresh" android:layout_width="28dp" android:layout_height="28dp" android:gravity="center" android:text="↻" android:textColor="#FFFFFF" android:textSize="20sp" android:contentDescription="Actualiser"/>
  </LinearLayout>
+ <LinearLayout android:id="@+id/widget_total_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+  <TextView android:id="@+id/widget_total_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#93A7B7" android:textSize="9sp"/>
+  <TextView android:id="@+id/widget_total" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#56F85D" android:textSize="22sp" android:textStyle="bold"/>
+ </LinearLayout>
  <TextView android:id="@+id/widget_day" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Jour" android:textColor="#93A7B7" android:textSize="10sp"/>
  <TextView android:id="@+id/widget_amount" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="—" android:textColor="#56F85D" android:textSize="23sp" android:textStyle="bold"/>
  <TextView android:id="@+id/widget_percent" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="—" android:textColor="#56F85D" android:textSize="14sp"/>
- <ImageView android:id="@+id/widget_chart" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="25dp" android:scaleType="fitXY" android:contentDescription="Évolution du P et L quotidien"/>
- <TextView android:id="@+id/widget_rows" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#E6F1F7" android:textSize="11sp" android:lineSpacingExtra="5dp"/>
+ <TextView android:id="@+id/widget_extras" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#E6F1F7" android:textSize="9sp" android:maxLines="1"/>
+ <ImageView android:id="@+id/widget_chart" android:layout_width="match_parent" android:layout_height="35dp" android:scaleType="fitXY" android:visibility="gone" android:contentDescription="@string/widget_chart_description"/>
+ <LinearLayout android:id="@+id/widget_rows" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
  <TextView android:id="@+id/widget_footer" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#718898" android:textSize="8sp" android:maxLines="1"/>
 </LinearLayout>

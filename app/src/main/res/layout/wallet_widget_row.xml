@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ android:id="@+id/widget_row" android:layout_width="match_parent"
+ android:layout_height="21dp" android:gravity="center_vertical">
+ <ImageView android:id="@+id/widget_row_logo" android:layout_width="16dp"
+  android:layout_height="16dp" android:layout_marginEnd="4dp"
+  android:scaleType="fitCenter" android:contentDescription="@string/widget_logo"/>
+ <TextView android:id="@+id/widget_row_ticker" android:layout_width="0dp"
+  android:layout_weight="1" android:layout_height="wrap_content"
+  android:textColor="#E6F1F7" android:textSize="10sp" android:maxLines="1"/>
+ <TextView android:id="@+id/widget_row_values" android:layout_width="wrap_content"
+  android:layout_height="wrap_content" android:textColor="#E6F1F7"
+  android:textSize="9sp" android:maxLines="1"/>
+</LinearLayout>
