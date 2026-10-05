@@ -22,6 +22,20 @@ import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.*
 import java.math.BigDecimal
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+
+private data class WatchFacts(val fundamentals: Fundamentals? = null, val analyst: Analyst? = null) {
+    fun metric(label: String) = fundamentals?.metrics?.get(label)?.toBigDecimalOrNull()
+    fun cap() = metric("Capitalisation (M)")?.multiply(BigDecimal("1000000"))
+    fun pe(price: BigDecimal?) = metric("BPA")?.takeIf { it.signum() > 0 && price != null }
+        ?.let { price!!.divide(it, MC) }
+    fun dividend() = metric("Rendement dividende %")
+}
 
 @Composable
 fun QuoteRow(w: Wallet, s: Security, onClick: () -> Unit, menu: (@Composable () -> Unit)? = null) {
@@ -118,6 +132,33 @@ fun WatchlistScreen(
     val horizontal = rememberScrollState()
     val items = w.items.filter { it.watchlistId == list?.id }.sortedBy { it.order }
     val securities = items.mapNotNull { w.security(it.securityId) }
+    var facts by remember(list?.id) { mutableStateOf<Map<String, WatchFacts>>(emptyMap()) }
+    LaunchedEffect(list?.id, securities, columns) {
+        val financialKeys = setOf("cap", "pe", "forwardPe", "dividend")
+        val analystKeys = setOf("upside", "target", "consensus")
+        val needFinance = columns.any { it in financialKeys }
+        val needAnalyst = columns.any { it in analystKeys }
+        if (needFinance || needAnalyst) {
+            val gate = Semaphore(2)
+            val fresh = supervisorScope {
+                securities.take(20).map { security -> async {
+                    gate.withPermit {
+                        val old = facts[security.id] ?: WatchFacts()
+                        suspend fun <T> available(load: suspend () -> T): T? = try { load() }
+                        catch (e: CancellationException) { throw e }
+                        catch (_: Exception) { null }
+                        security.id to WatchFacts(
+                            if (needFinance) available { vm.services.market.fundamentals(security) }
+                                ?: old.fundamentals else old.fundamentals,
+                            if (needAnalyst) available { vm.services.market.analyst(security) }
+                                ?: old.analyst else old.analyst,
+                        )
+                    }
+                } }.awaitAll().toMap()
+            }
+            facts = facts + fresh
+        }
+    }
     DisposableEffect(list?.id, securities) {
         vm.services.foregroundSecurities.value = securities.take(20)
         onDispose { vm.services.foregroundSecurities.value = emptyList() }
@@ -132,11 +173,29 @@ fun WatchlistScreen(
             }
         }
     }
-    val orderedItems = remember(items, w.quotes, w.prices, period, sortKey, descending) {
+    val orderedItems = remember(items, w.quotes, w.prices, facts, period, sortKey, descending) {
         val sorted = when (sortKey) {
             "ticker" -> items.sortedBy { w.security(it.securityId)?.ticker }
             "price" -> items.sortedBy { w.quotes[it.securityId]?.price }
             "dayPercent" -> items.sortedBy { w.quotes[it.securityId]?.percent }
+            "cap" -> items.sortedBy { facts[it.securityId]?.cap() }
+            "pe" -> items.sortedBy { facts[it.securityId]?.pe(w.quotes[it.securityId]?.price) }
+            "dividend" -> items.sortedBy { facts[it.securityId]?.dividend() }
+            "upside" -> items.sortedBy { i ->
+                facts[i.securityId]?.analyst?.target?.let { target ->
+                    w.quotes[i.securityId]?.price?.takeIf { it.signum() > 0 }
+                        ?.let { (target - it).divide(it, MC) }
+                }
+            }
+            "pre", "after" -> items.sortedBy { i ->
+                w.quotes[i.securityId]?.let { q ->
+                    val extra = if (sortKey == "pre") q.preMarketPrice else q.afterHoursPrice
+                    extra?.minus(q.price)?.takeIf { q.price.signum() > 0 }?.divide(q.price, MC)
+                }
+            }
+            "momentum" -> items.sortedBy { i -> MomentumEngine.analyze(
+                w.prices.filter { it.securityId == i.securityId }, period,
+                w.quotes[i.securityId]?.let { q -> q.averageVolume?.multiply(q.price)?.toDouble() })?.score }
             "period", "1S", "1M", "3M", "6M", "1A", "5A" -> {
                 val selectedPeriod = PerformancePeriod.entries.firstOrNull { it.label == sortKey } ?: period
                 items.sortedBy { item -> MomentumEngine.performance(
@@ -259,12 +318,14 @@ fun WatchlistScreen(
                 Text("TRI", color = Muted, fontSize = 10.sp)
                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
                     listOf("manual", "ticker", "price", "dayPercent", "period", "1S", "1M",
-                        "3M", "6M", "1A", "5A").forEach { key ->
+                        "3M", "6M", "1A", "5A", "cap", "pe", "dividend", "momentum",
+                        "upside", "pre", "after").forEach { key ->
                         TextButton(onClick = {
                             if (sortKey == key) descending = !descending
                             else { sortKey = key; descending = true }
                             prefs.edit().putString("sort:" + list?.id, sortKey).apply()
-                        }) { Text(if (key == "manual") "Manuel" else MarketColumns.label(key, period),
+                        }) { Text(when (key) { "manual" -> "Manuel"; "pre" -> "Pre %";
+                            "after" -> "After %"; else -> MarketColumns.label(key, period) },
                             fontSize = 10.sp, color = if (sortKey == key) Green else Muted) }
                     }
                 }
@@ -288,7 +349,7 @@ fun WatchlistScreen(
         items(orderedItems, key = { it.id }) { item ->
             w.security(item.securityId)?.let { s ->
                 var open by remember { mutableStateOf(false) }
-                WatchLine(w, s, item, period, columns, horizontal, followSpark, showName,
+                WatchLine(w, s, item, facts[s.id], period, columns, horizontal, followSpark, showName,
                     showExtended, { onDetail(s) }, { move(item, it) }) {
                     Box {
                         IconButton(onClick = { open = true }, modifier = Modifier.size(26.dp)) {
@@ -437,7 +498,7 @@ private fun WatchHeader(columns: List<String>, period: PerformancePeriod,
 }
 
 @Composable
-private fun WatchLine(w: Wallet, s: Security, item: WatchItem, period: PerformancePeriod,
+private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts?, period: PerformancePeriod,
     columns: List<String>, scroll: androidx.compose.foundation.ScrollState,
     followSpark: Boolean, showName: Boolean, showExtended: Boolean,
     click: () -> Unit, move: (Int) -> Unit, menu: @Composable () -> Unit) {
@@ -476,11 +537,10 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, period: Performan
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (showName) Text(s.name, fontSize = 9.sp, color = Muted,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    else if (w.alerts.any { it.securityId == s.id && it.enabled } ||
-                        w.transactions.any { it.securityId == s.id })
-                        Text((if (w.alerts.any { it.securityId == s.id && it.enabled }) "♧ " else "") +
-                            (if (w.transactions.any { it.securityId == s.id }) "•" else ""),
-                            fontSize = 8.sp, color = Muted)
+                    else Text(s.exchange.take(5) +
+                        (if (w.alerts.any { it.securityId == s.id && it.enabled }) " ◦" else "") +
+                        (if (w.transactions.any { it.securityId == s.id }) " •" else ""),
+                        fontSize = 8.sp, color = Muted, maxLines = 1)
                 }
             }
         }
@@ -500,6 +560,12 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, period: Performan
                         if (extra != null) Text(
                             (if (extended?.marketSession == MarketSession.PRE_MARKET) "☀ " else "☾ ") +
                                 number(extra), fontSize = 9.sp, color = Muted, maxLines = 1)
+                        else if (q != null) Text(when (NormalizedQuote.from(q).freshness) {
+                            QuoteFreshness.REALTIME -> "Temps réel"
+                            QuoteFreshness.DELAYED -> "Diff. ${q.delay} min"
+                            QuoteFreshness.CACHED -> "Cache"
+                            QuoteFreshness.STALE -> "Cache ancien"
+                        }, fontSize = 8.sp, color = Muted, maxLines = 1)
                     }
                     "dayPercent" -> Column(Modifier.width(size)) {
                         Text(percent(q?.percent), fontSize = 10.sp, color = tint(q?.change),
@@ -508,10 +574,14 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, period: Performan
                             color = tint(extraDelta), maxLines = 1)
                     }
                     else -> {
-                        val value = watchCell(w, s, q, points, key, period, extended)
+                        val value = watchCell(w, s, q, points, key, period, extended, facts)
                         Text(value, Modifier.width(size), fontSize = 10.sp,
                             color = if (key == "period" || PerformancePeriod.entries.any {
-                                    it.label == key }) tint(value.toBigDecimalOrNull())
+                                    it.label == key }) tint(when {
+                                value.startsWith("+") -> BigDecimal.ONE
+                                value.startsWith("-") -> BigDecimal.ONE.negate()
+                                else -> null
+                            })
                                 else MaterialTheme.colorScheme.onSurface,
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -524,7 +594,7 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, period: Performan
 }
 
 private fun watchCell(w: Wallet, s: Security, q: Quote?, points: List<Point>, key: String,
-    period: PerformancePeriod, extended: NormalizedQuote?): String = when (key) {
+    period: PerformancePeriod, extended: NormalizedQuote?, facts: WatchFacts?): String = when (key) {
     "name" -> s.name
     "exchange" -> s.exchange
     "currency" -> s.currency
@@ -536,6 +606,20 @@ private fun watchCell(w: Wallet, s: Security, q: Quote?, points: List<Point>, ke
         q?.averageVolume?.multiply(q.price)?.toDouble())?.cagr5y)
     "momentum" -> MomentumEngine.analyze(points, period,
         q?.averageVolume?.multiply(q.price)?.toDouble())?.score?.toString() ?: "—"
+    "cap" -> facts?.cap()?.let { number(it.divide(BigDecimal("1000000000"), MC), 1) + " G" } ?: "—"
+    "pe" -> number(facts?.pe(q?.price))
+    "dividend" -> percent(facts?.dividend())
+    "target" -> money(facts?.analyst?.target, s.currency)
+    "upside" -> facts?.analyst?.target?.let { target ->
+        q?.price?.takeIf { it.signum() > 0 }?.let { price ->
+            percent((target - price).multiply(BigDecimal(100)).divide(price, MC)) }
+    } ?: "—"
+    "consensus" -> facts?.analyst?.let { analyst ->
+        val buy = analyst.buy ?: 0
+        val hold = analyst.hold ?: 0
+        val sell = analyst.sell ?: 0
+        if (buy > hold + sell) "Buy" else if (sell > buy + hold) "Sell" else "Hold"
+    } ?: "—"
     "volume" -> number(q?.volume, 0)
     "avgVolume" -> number(q?.averageVolume, 0)
     "high52" -> money(q?.high52, s.currency)

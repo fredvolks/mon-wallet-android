@@ -19,6 +19,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.*
 import ca.monwallet.app.BuildConfig
 import ca.monwallet.app.R
@@ -504,8 +505,33 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
 
 @Composable
 fun SourceSettings(s: Services, vm: WalletViewModel, onClose: () -> Unit) {
+    var fmp by remember { mutableStateOf(s.secure.get("fmp_key").orEmpty()) }
+    var twelve by remember { mutableStateOf(s.secure.get("twelve_key").orEmpty()) }
+    var provider by remember { mutableStateOf(s.secure.get("provider") ?: "yahoo") }
     FullDialog(stringResource(R.string.ui_source_des_donnees_e07e6), onClose) {
         Caption(stringResource(R.string.market_source_status))
+        Text("Découvrir · FMP", fontWeight = FontWeight.SemiBold)
+        Caption("Une clé FMP avec accès au screener Canada/USA est nécessaire pour charger le classement.")
+        OutlinedTextField(fmp, { fmp = it }, label = { Text("Clé API FMP") },
+            visualTransformation = PasswordVisualTransformation(), singleLine = true,
+            modifier = Modifier.fillMaxWidth())
+        Text("Cours", fontWeight = FontWeight.SemiBold)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FilterChip(provider == "yahoo", onClick = { provider = "yahoo" },
+                label = { Text("Yahoo") })
+            FilterChip(provider == "twelve", onClick = { provider = "twelve" },
+                label = { Text("Twelve Data") })
+        }
+        OutlinedTextField(twelve, { twelve = it }, label = { Text("Clé API Twelve Data") },
+            visualTransformation = PasswordVisualTransformation(), singleLine = true,
+            modifier = Modifier.fillMaxWidth())
+        Caption("La fraîcheur dépend du fournisseur et de votre accès. Aucun flux temps réel n’est supposé.")
+        Button(onClick = {
+            s.secure.put("fmp_key", fmp.trim().ifEmpty { null })
+            s.secure.put("twelve_key", twelve.trim().ifEmpty { null })
+            s.secure.put("provider", provider)
+            onClose()
+        }, modifier = Modifier.fillMaxWidth()) { Text("Enregistrer les sources") }
         Button(onClick = { vm.refresh(); onClose() }, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.action_refresh))
         }

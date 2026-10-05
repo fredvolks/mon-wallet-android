@@ -76,7 +76,7 @@ fun quoteFreshnessLabel(q: Quote, now: Long = System.currentTimeMillis()): Strin
     return when (normalized.freshness) {
         QuoteFreshness.REALTIME -> "Temps réel"
         QuoteFreshness.DELAYED -> "Différé " + q.delay + " min"
-        QuoteFreshness.CACHED -> "Mis à jour il y a " + minutes + " min"
+        QuoteFreshness.CACHED -> "Cache · mis à jour il y a " + minutes + " min"
         QuoteFreshness.STALE -> "Cache · " + minutes + " min"
     }
 }

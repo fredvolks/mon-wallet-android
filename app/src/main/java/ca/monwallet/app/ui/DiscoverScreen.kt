@@ -59,7 +59,7 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                 vm.services.discovery.analysts(found, filters,
                     onProgress = { status = it }, applyFilters = mode == "analyst")
             else found
-            status = rows.size.toString() + " titres · univers FMP limité à 80 candidats · délai des cours non garanti"
+            status = rows.size.toString() + " titres · échantillon FMP de 50 par bourse · cours non garantis temps réel"
             vm.services.foregroundSecurities.value = rows.take(16).map { it.security }
         } catch (e: Exception) {
             rows = emptyList()
@@ -71,13 +71,23 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     DisposableEffect(Unit) {
         onDispose { vm.services.foregroundSecurities.value = emptyList() }
     }
-    val sorted = remember(rows, sort, descending, period) {
+    val sorted = remember(rows, wallet.quotes, sort, descending, period) {
         val ordered = when (sort) {
             "ticker" -> rows.sortedBy { it.security.ticker }
-            "price" -> rows.sortedBy { it.price }
+            "name" -> rows.sortedBy { it.security.name }
+            "exchange" -> rows.sortedBy { it.security.exchange }
+            "price" -> rows.sortedBy { wallet.quotes[it.security.id]?.price ?: it.price }
+            "dayAmount" -> rows.sortedBy { wallet.quotes[it.security.id]?.change }
+            "dayPercent" -> rows.sortedBy { wallet.quotes[it.security.id]?.percent }
             "period" -> rows.sortedBy { it.performance(period) }
+            "1S", "1M", "3M", "6M", "1A", "5A" -> rows.sortedBy { r ->
+                r.performance(PerformancePeriod.entries.first { it.label == sort }) }
+            "cagr5" -> rows.sortedBy { r -> MomentumEngine.analyze(r.points,
+                PerformancePeriod.Y5, r.averageVolume?.multiply(r.price)?.toDouble())?.cagr5y }
             "cap" -> rows.sortedBy { it.cap }
             "pe" -> rows.sortedBy { it.pe }
+            "dividend" -> rows.sortedBy { it.dividendYield }
+            "momentum" -> rows.sortedBy { it.metrics?.score }
             "upside" -> rows.sortedBy { it.analyst?.target?.let { target ->
                 (target - it.price).divide(it.price, java.math.MathContext.DECIMAL128) } }
             "opportunity" -> rows.sortedBy { it.opportunityScore }
@@ -102,10 +112,11 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
             2 -> item {
                 Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Idea("Momentum soutenu", "Régularité et liquidité; anti-pump actif") {
-                        filters = Filters(); mode = "momentum"; period = PerformancePeriod.M3; tab = 0
+                        filters = Filters(minMomentum = 75); mode = "momentum"; period = PerformancePeriod.M3; tab = 0
                     }
-                    Idea("Large Caps en forme", "Cap. ≥ 10 G$ · 3M ≥ 10 %") {
-                        filters = Filters(cap = BigDecimal("10000000000"), minPerformance = 10.0)
+                    Idea("Large Caps en forme", "Cap. ≥ 10 G$ · 3M ≥ 10 % · 6M ≥ 15 %") {
+                        filters = Filters(cap = BigDecimal("10000000000"), minPerformance = 10.0,
+                            minPerformance6M = 15.0)
                         mode = "momentum"; period = PerformancePeriod.M3; tab = 0
                     }
                     Idea("Dividendes + momentum", "Rendement ≥ 2 % et tendance positive") {
@@ -241,7 +252,8 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
     "period" -> percent(r.performance(period))
     "1S", "1M", "3M", "6M", "1A", "5A" ->
         percent(r.performance(PerformancePeriod.entries.first { it.label == key }))
-    "cagr5" -> percent(r.metrics?.cagr5y)
+    "cagr5" -> percent(MomentumEngine.analyze(r.points, PerformancePeriod.Y5,
+        r.averageVolume?.multiply(r.price)?.toDouble())?.cagr5y)
     "momentum" -> r.metrics?.score?.toString() ?: "—"
     "opportunity" -> r.opportunityScore?.toString() ?: "—"
     "cap" -> r.cap?.let { number(it.divide(BigDecimal("1000000000"),
@@ -339,6 +351,10 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
         Text("MOMENTUM", color = Green)
         FilterNumber("Performance min. (%)", initial.minPerformance?.let(BigDecimal::valueOf)) {
             update(initial.copy(minPerformance = it?.toDouble())) }
+        FilterNumber("Performance 6M min. (%)", initial.minPerformance6M?.let(BigDecimal::valueOf)) {
+            update(initial.copy(minPerformance6M = it?.toDouble())) }
+        FilterNumber("Momentum minimum", initial.minMomentum?.let { BigDecimal(it) }) {
+            update(initial.copy(minMomentum = it?.toInt())) }
         Row(Modifier.horizontalScroll(rememberScrollState())) {
             listOf(null, 10.0, 15.0, 20.0, 25.0, 30.0).forEach { n ->
                 FilterChip(initial.maxSingleDay == n, onClick = { update(initial.copy(maxSingleDay = n)) },

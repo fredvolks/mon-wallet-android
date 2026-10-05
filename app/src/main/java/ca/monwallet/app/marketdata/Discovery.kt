@@ -32,6 +32,8 @@ data class Filters(
     val maxDrawdown: Double? = null,
     val minPositiveWeeks: Double? = null,
     val minPerformance: Double? = null,
+    val minPerformance6M: Double? = null,
+    val minMomentum: Int? = null,
     val antiPump: Boolean = true,
     val requireHistory: Boolean = true,
     val analystMin: Int = 5,
@@ -79,16 +81,20 @@ class Discovery(private val s: Services) {
             "apikey" to key, "marketCapMoreThan" to f.cap.toPlainString(),
             "avgVolumeMoreThan" to f.volume.toPlainString(),
             "priceMoreThan" to f.price.toPlainString(),
-            "isActivelyTrading" to "true", "limit" to "80",
+            "isActivelyTrading" to "true", "limit" to "50",
         )
         if (f.excludeEtf) params["isEtf"] = "false"
         if (f.country.isNotBlank()) params["country"] = f.country
         if (f.sector.isNotBlank() && !f.sector.contains(',')) params["sector"] = f.sector
-        if (f.exchange.isNotBlank()) params["exchange"] = f.exchange
         f.priceMax?.let { params["priceLowerThan"] = it.toPlainString() }
-        val candidates = Http.array(Request.Builder()
-            .url(Http.url("https://financialmodelingprep.com/stable/company-screener", params))
-            .build()).objects()
+        val exchanges = f.exchange.split(',').map(String::trim).filter { it.isNotBlank() }.distinct()
+        val candidates = supervisorScope {
+            exchanges.map { exchange -> async {
+                Http.array(Request.Builder().url(Http.url(
+                    "https://financialmodelingprep.com/stable/company-screener",
+                    params + ("exchange" to exchange))).build()).objects()
+            } }.awaitAll().flatten().distinctBy { it.text("symbol") }
+        }
         val gate = Semaphore(3)
         val complete = java.util.concurrent.atomic.AtomicInteger()
         val failures = java.util.concurrent.atomic.AtomicInteger()
@@ -156,7 +162,13 @@ class Discovery(private val s: Services) {
                         }
                         val metrics = MomentumEngine.analyze(history, period, dollar.toDouble())
                         if (f.requireHistory && metrics == null) return@withPermit null
+                        if (f.minPerformance6M != null &&
+                            (MomentumEngine.performance(history, PerformancePeriod.M6)?.toDouble()
+                                ?: Double.NEGATIVE_INFINITY) < f.minPerformance6M)
+                            return@withPermit null
                         if (metrics != null) {
+                            if (f.minMomentum != null && metrics.score < f.minMomentum)
+                                return@withPermit null
                             if (f.maxSingleDay != null && metrics.bestDay > f.maxSingleDay)
                                 return@withPermit null
                             if (f.maxDrawdown != null && -metrics.maxDrawdown > f.maxDrawdown)

@@ -1,17 +1,13 @@
 # Versions
 
-## Mon Wallet v0.2.8 — 2026-10-05 (nombre de titres du widget configurable)
+## Mon Wallet v0.2.8 — 2026-10-05 (Découvrir, Watchlist, cours et widget)
 
-- Nombre de titres indépendant pour chaque widget : Auto ou 1 à 6, avec cinq titres par défaut en 4x2 et adaptation après redimensionnement.
-- Liste 4x2 compacte à cinq titres (six en densité maximale), ordre manuel fidèle à la sélection, remplacement automatique des positions vendues et aperçu immédiat.
-- Rendement total et variation du jour toujours visibles; le graphique et l'heure de mise à jour cèdent la place aux titres lorsque la hauteur manque.
-
-## Mon Wallet v0.2.7 — 2026-10-05 (mise à jour du widget sur l'application d'origine)
-
-- APK de mise à jour `ca.monwallet.app` préparé avec le certificat de signature original, pour installer le widget 4x2 sur la version existante sans désinstaller l'app.
-- Rendement total dominant, P&L du jour, titres configurés, mini graphique lorsque l'historique existe, boutons réglages et actualisation propres à chaque widget.
-- Aucun changement de schéma Room dans cette version. Les comptes Google et les données financières canadiennes nécessitent encore une vérification fonctionnelle sur appareil.
-
+- Widget 4x2 : nombre de titres configurable par instance (Auto ou 1 à 6), cinq par défaut, ordre manuel, densité et aperçu adaptés à la taille réelle.
+- Découvrir : six périodes, tableau compact, colonnes sélectionnables et réordonnables, filtres et presets, idées, métriques de régularité, drawdown, concentration et score momentum. Le mode analystes croise objectifs, couverture, consensus, dispersion et momentum.
+- Watchlist : lignes compactes, période mémorisée par liste ou partagée, presets de colonnes, ordre et tri, sparkline liée à la période, cours hors séance discrets quand fournis.
+- Cours au premier plan : actualisation ciblée avec cache partagé, arrêt au second plan, provenance et fraîcheur explicites; aucun cours inconnu n'est déclaré temps réel. Valorisation hors séance en option.
+- Sources de données : clés FMP et Twelve Data configurables dans Profil → Source des données. Découvrir requiert un accès FMP autorisé; le classement est limité aux candidats renvoyés par bourse et à la disponibilité des historiques et données analystes. Le polling reste prudent faute de droit streaming démontré.
+- Tests du classement anti-pump, de l'historique cinq ans, du PRE/AFTER, de la fraîcheur et de la valorisation. Validation Android et production d'un APK dans la CI.
 
 ## Mon Wallet v0.2.6 — 2026-10-05 (widget premium 4x2)
 
