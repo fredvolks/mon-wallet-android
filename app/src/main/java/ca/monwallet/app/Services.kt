@@ -53,6 +53,8 @@ class Services(val context: Context) {
     val auth = AuthManager(secure, repo)
     val sync = SyncManager(repo, auth)
     val market = Router(secure)
+    val discovery by lazy { Discovery(this) }
+    val foregroundSecurities = MutableStateFlow<List<Security>>(emptyList())
     val updater = Updater(context, secure)
     val initialized = MutableStateFlow(false)
     val busy = MutableStateFlow(false)
