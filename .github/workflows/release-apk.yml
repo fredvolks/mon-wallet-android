@@ -8,7 +8,7 @@ jobs:
     permissions: {contents: write}
     env:
       TAG: ${{ github.ref_name }}
-      MONWALLET_STORE_FILE: ${{ runner.temp }}/monwallet-release.jks
+      MONWALLET_STORE_FILE: ${{ github.workspace }}/monwallet-release.jks
       MONWALLET_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       MONWALLET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       MONWALLET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -21,8 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '17'}
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      # ubuntu-latest includes Android SDK Platform 35 and Build Tools 35.0.0.
       - uses: gradle/actions/setup-gradle@v4
       - name: Check tag and restore key
         id: version
