@@ -99,7 +99,7 @@ class AuthManager(val secure: SecureSettings, private val repo: Repository) {
         return Uri.parse(secure.url + "/auth/v1/authorize")
             .buildUpon()
             .appendQueryParameter("provider", provider)
-            .appendQueryParameter("redirect_to", "monwallet://auth/callback?state=$state")
+            .appendQueryParameter("redirect_to", "monwallet://auth${BuildConfig.AUTH_CALLBACK_PATH}?state=$state")
             .appendQueryParameter("code_challenge", challenge)
             .appendQueryParameter("code_challenge_method", "s256")
             .apply { if (provider == "azure") appendQueryParameter("scopes", "email") }
@@ -130,7 +130,7 @@ class AuthManager(val secure: SecureSettings, private val repo: Repository) {
 
     suspend fun callback(uri: Uri) {
         log("OAuth callback received")
-        require(uri.scheme == "monwallet" && uri.host == "auth" && uri.path == "/callback")
+        require(uri.scheme == "monwallet" && uri.host == "auth" && uri.path == BuildConfig.AUTH_CALLBACK_PATH)
         require(uri.getQueryParameter("state") == secure.get("oauth_state")) {
             "Retour de connexion non reconnu."
         }
