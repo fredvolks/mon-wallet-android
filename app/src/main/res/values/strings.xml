@@ -47,6 +47,8 @@
     <string name="analyst_current">Cours actuel</string>
     <string name="date_unavailable">Date indisponible</string>
     <string name="action_retry">Réessayer</string>
+    <string name="research_seeking_alpha">Consulter sur Seeking Alpha</string>
+    <string name="research_external_note">Page externe dans le navigateur. Ses données ne sont pas importées dans Mon Wallet.</string>
     <string name="email_label">Courriel</string>
     <string name="email_code_label">Code reçu par courriel</string>
     <string name="email_send_code">Envoyer un code</string>

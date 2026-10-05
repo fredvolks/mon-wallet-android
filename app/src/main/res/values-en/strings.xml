@@ -47,6 +47,8 @@
     <string name="analyst_current">Current price</string>
     <string name="date_unavailable">Date unavailable</string>
     <string name="action_retry">Retry</string>
+    <string name="research_seeking_alpha">View on Seeking Alpha</string>
+    <string name="research_external_note">External page in your browser. Its data is not imported into Mon Wallet.</string>
     <string name="email_label">Email</string>
     <string name="email_code_label">Code received by email</string>
     <string name="email_send_code">Send a code</string>

@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.4 — 2026-10-05 (recherche des titres canadiens)
+
+- Liens directs vers les fiches Seeking Alpha vérifiées pour DOL, GURU, BLDP et XEQT (cotation canadienne), depuis Finances et Analystes. Les pages s’ouvrent dans le navigateur; aucune donnée Seeking Alpha n’est importée dans l’app.
+- Résolution stricte du symbole, de la place, de la devise et du type; PHOS/CSE et les homonymes non vérifiés n’ouvrent pas une mauvaise fiche.
+- Workflow GitHub de validation corrigé pour le SDK Android préinstallé. La connexion Google sur Samsung reste à vérifier.
+
 ## Mon Wallet v0.2.3 — 2026-10-04 (Google OAuth)
 
 - ID public du client OAuth Google Web intégré à l'APK. Clients Web et Android créés pour `ca.monwallet.app` et le certificat release; fournisseur Google activé dans Supabase par le propriétaire.

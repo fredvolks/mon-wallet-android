@@ -18,6 +18,8 @@
 
 ## Couverture et limites
 
+La recherche externe Seeking Alpha est un lien de navigation vers des fiches canadiennes vérifiées : DOL:CA, GURU:CA, BLDP:CA et XEQT:CA. Elle ne lit, ne copie, ne met en cache et ne présente aucune donnée Seeking Alpha dans Mon Wallet. PHOS/CSE n’a pas de fiche canadienne vérifiée dans ce mapping. Les conditions de Seeking Alpha interdisent l’extraction automatisée du site; une intégration des chiffres demanderait une licence de données/API distincte.
+
 - AAPL, MSFT, NVDA et MCD : dépôts US GAAP; TSM peut avoir des dépôts IFRS libellés en USD par l'émetteur. Les dates et unités exactes restent visibles.
 - GURU.TO, DOL.TO, PHOS.CN, BLDP.TO et XEQT.TO : logos d'émetteurs connus; les données SEC/Nasdaq américaines ne sont pas attribuées à leurs instruments canadiens. Les ETF n'affichent jamais une fiche financière d'entreprise.
 - L'accès SEC respecte une fréquence faible et le cache; sa politique de déclaration d'agent utilisateur doit être adaptée à un contact de production. Les données analystes publiques peuvent être modifiées, retardées ou indisponibles.

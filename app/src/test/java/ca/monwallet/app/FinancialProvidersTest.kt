@@ -5,6 +5,8 @@ import ca.monwallet.app.domain.OfficialDomains
 import ca.monwallet.app.marketdata.NasdaqAnalystProvider
 import ca.monwallet.app.marketdata.ProviderSymbolResolver
 import ca.monwallet.app.marketdata.SecFacts
+import ca.monwallet.app.marketdata.ResearchSection
+import ca.monwallet.app.marketdata.SeekingAlphaResearch
 import java.math.BigDecimal
 import org.json.JSONArray
 import org.json.JSONObject
@@ -17,6 +19,20 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = TestMonWallet::class)
 class FinancialProvidersTest {
+    @Test fun seekingAlphaLinksOnlyVerifiedCanadianListings() {
+        assertEquals("https://seekingalpha.com/symbol/DOL%3ACA/income-statement",
+            SeekingAlphaResearch.url(Security.of("DOL.TO", "Dollarama", "TSX", "CAD"), ResearchSection.FINANCIALS))
+        assertEquals("https://seekingalpha.com/symbol/GURU%3ACA/ratings/sell-side-ratings",
+            SeekingAlphaResearch.url(Security.of("GURU.TO", "GURU Organic", "Toronto", "CAD"), ResearchSection.ANALYSTS))
+        assertEquals("https://seekingalpha.com/symbol/BLDP%3ACA/income-statement",
+            SeekingAlphaResearch.url(Security.of("BLDP.TO", "Ballard", "TOR", "CAD"), ResearchSection.FINANCIALS))
+        assertEquals("https://seekingalpha.com/symbol/XEQT%3ACA",
+            SeekingAlphaResearch.url(Security.of("XEQT.TO", "iShares", "TSX", "CAD", "ETF"), ResearchSection.FINANCIALS))
+        assertNull(SeekingAlphaResearch.url(Security.of("PHOS.CN", "First Phosphate", "CSE", "CAD"), ResearchSection.FINANCIALS))
+        assertNull(SeekingAlphaResearch.url(Security.of("BLDP", "Ballard", "NASDAQ", "USD"), ResearchSection.FINANCIALS))
+        assertNull(SeekingAlphaResearch.url(Security.of("DOL", "Unrelated", "NYSE", "USD"), ResearchSection.FINANCIALS))
+    }
+
     @Test fun resolverNeverConfusesCanadianListingsWithAmericanNamesakes() {
         assertEquals("AAPL", ProviderSymbolResolver.usEquity(Security.of("AAPL", "Apple", "NASDAQ", "USD")))
         assertNull(ProviderSymbolResolver.usEquity(Security.of("GURU.TO", "GURU Organic Energy", "TSX", "CAD")))

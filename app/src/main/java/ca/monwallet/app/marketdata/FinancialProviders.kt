@@ -44,6 +44,34 @@ object ProviderSymbolResolver {
     }
 }
 
+enum class ResearchSection { FINANCIALS, ANALYSTS }
+
+/** Direct browser links for listings whose Seeking Alpha identity has been verified.
+ * These links never fetch, cache or represent Seeking Alpha content as app data.
+ */
+object SeekingAlphaResearch {
+    private val canadianListings = mapOf(
+        "DOL|STOCK" to "DOL",
+        "GURU|STOCK" to "GURU",
+        "BLDP|STOCK" to "BLDP",
+        "XEQT|ETF" to "XEQT",
+    )
+
+    fun url(security: Security, section: ResearchSection): String? {
+        if (security.currency.uppercase() != "CAD") return null
+        if (security.exchange.uppercase().replace(" ", "") !in setOf("TSX", "TOR", "TORONTO")) return null
+        val symbol = security.symbol.uppercase().removeSuffix(".TO")
+        if (!symbol.matches(Regex("[A-Z]{1,6}"))) return null
+        val listing = canadianListings["$symbol|${security.type.uppercase()}"] ?: return null
+        val path = when {
+            security.type.uppercase() == "ETF" -> ""
+            section == ResearchSection.FINANCIALS -> "/income-statement"
+            else -> "/ratings/sell-side-ratings"
+        }
+        return "https://seekingalpha.com/symbol/$listing%3ACA$path"
+    }
+}
+
 private fun diagnostics(message: String) { if (BuildConfig.DEBUG) Log.d("MonWalletMarket", message) }
 
 /** SEC XBRL facts are issuer filings. Only exact exchange/ticker matches resolve to a CIK. */

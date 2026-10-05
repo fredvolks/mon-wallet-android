@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.*
 import ca.monwallet.app.database.Cache
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.Finnhub
+import ca.monwallet.app.marketdata.ResearchSection
+import ca.monwallet.app.marketdata.SeekingAlphaResearch
 import kotlinx.coroutines.*
 
 @Composable
@@ -323,6 +325,12 @@ fun DetailScreen(
                     else if (!financeLoading && fundamentals == null && financeError == null)
                         Caption(stringResource(R.string.finance_no_coverage))
                     fundamentals?.asOf?.let { Caption(stringResource(R.string.finance_as_of, it)) }
+                    SeekingAlphaResearch.url(security, ResearchSection.FINANCIALS)?.let { url ->
+                        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
+                            Text(stringResource(R.string.research_seeking_alpha))
+                        }
+                        Caption(stringResource(R.string.research_external_note))
+                    }
                 }
                 val metrics =
                     if (security.type == "ETF")
@@ -442,6 +450,12 @@ fun DetailScreen(
                     Caption(
                         stringResource(R.string.ui_ces_opinions_appartiennent_aux_analystes_cite_0affe)
                     )
+                    SeekingAlphaResearch.url(security, ResearchSection.ANALYSTS)?.let { url ->
+                        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
+                            Text(stringResource(R.string.research_seeking_alpha))
+                        }
+                        Caption(stringResource(R.string.research_external_note))
+                    }
                 }
             }
             3 -> {
