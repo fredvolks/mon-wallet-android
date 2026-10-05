@@ -1,0 +1,34 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"></head>
+<body style="margin:0;background:#08111e;color:#9daab8;font:11px sans-serif">
+<div id="chart" style="width:100%;height:222px"></div><div style="text-align:right;padding:2px 8px">TradingView Lightweight Charts™</div>
+<script src="lightweight-charts.js"></script><script>
+'use strict';
+let chart;
+function renderWalletChart(payload) {
+  if (chart) chart.remove();
+  const host = document.getElementById('chart');
+  chart = LightweightCharts.createChart(host, {
+    width: host.clientWidth, height: 222,
+    layout: {background:{type:'solid',color:'#08111e'},textColor:'#9daab8',attributionLogo:false},
+    grid: {vertLines:{color:'#182536'},horzLines:{color:'#182536'}},
+    rightPriceScale: {borderColor:'#263649'}, timeScale:{borderColor:'#263649',timeVisible:true},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+  });
+  const color=payload.positive?'#66ed9e':'#f47780';
+  let series;
+  if (payload.kind==='candles') {
+    series=chart.addSeries(LightweightCharts.CandlestickSeries,{upColor:'#66ed9e',downColor:'#f47780',wickUpColor:'#66ed9e',wickDownColor:'#f47780',borderVisible:false});
+    series.setData(payload.points.filter(p=>p.open!=null&&p.high!=null&&p.low!=null).map(p=>({time:p.time,open:p.open,high:p.high,low:p.low,close:p.close})));
+  } else if (payload.kind==='volume') {
+    series=chart.addSeries(LightweightCharts.HistogramSeries,{color,priceFormat:{type:'volume'}});
+    series.setData(payload.points.filter(p=>p.volume!=null).map(p=>({time:p.time,value:p.volume})));
+  } else {
+    series=chart.addSeries(payload.kind==='area'?LightweightCharts.AreaSeries:LightweightCharts.LineSeries,
+      payload.kind==='area'?{lineColor:color,topColor:color+'66',bottomColor:color+'08',lineWidth:2}:{color,lineWidth:2});
+    series.setData(payload.points.map(p=>({time:p.time,value:p.close})));
+  }
+  chart.timeScale().fitContent();
+}
+function resetWalletChart(){ if(chart) chart.timeScale().fitContent(); }
+window.addEventListener('resize',()=>{if(chart)chart.resize(document.getElementById('chart').clientWidth,222)});
+</script></body></html>

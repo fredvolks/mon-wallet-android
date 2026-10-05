@@ -1,0 +1,16 @@
+.gradle/
+.kotlin/
+**/build/
+local.properties
+*.jks
+*.keystore
+.env*
+secrets/
+signing/
+*.p12
+*.pem
+*.key
+.idea/
+node_modules/
+*.log
+dist/

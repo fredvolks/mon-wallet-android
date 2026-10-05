@@ -1,0 +1,66 @@
+name: Signed release
+on:
+  push:
+    tags: ['v*.*.*']
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions: {contents: write}
+    env:
+      TAG: ${{ github.ref_name }}
+      MONWALLET_STORE_FILE: ${{ runner.temp }}/monwallet-release.jks
+      MONWALLET_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      MONWALLET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      MONWALLET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      KEYSTORE_B64: ${{ secrets.KEYSTORE }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+      UPDATE_MANIFEST_URL: ${{ vars.UPDATE_MANIFEST_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check tag and restore key
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || exit 1
+          major=${BASH_REMATCH[1]}; minor=${BASH_REMATCH[2]}; patch=${BASH_REMATCH[3]}
+          (( minor < 1000 && patch < 1000 )) || exit 1
+          code=$((10#$major * 1000000 + 10#$minor * 1000 + 10#$patch))
+          (( code > 0 && code < 2100000000 )) || exit 1
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+          test -n "$KEYSTORE_B64" && test -n "$MONWALLET_STORE_PASSWORD" && test -n "$MONWALLET_KEY_ALIAS" && test -n "$MONWALLET_KEY_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$MONWALLET_STORE_FILE"
+          chmod 600 "$MONWALLET_STORE_FILE"
+      - name: Test and build signed APK and AAB
+        run: ./gradlew :app:testDebugUnitTest :app:assembleRelease :app:bundleRelease -PversionCode=${{ steps.version.outputs.code }} -PversionName=${{ steps.version.outputs.name }} --no-build-cache --no-daemon
+      - name: Verify and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          apk="dist/MonWallet-$TAG.apk"
+          aab="dist/MonWallet-$TAG.aab"
+          cp app/build/outputs/apk/release/app-release.apk "$apk"
+          cp app/build/outputs/bundle/release/app-release.aab "$aab"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          jarsigner -verify "$aab"
+          sha=$(sha256sum "$apk" | cut -d' ' -f1)
+          python3 - "$TAG" "${{ steps.version.outputs.code }}" "$sha" "$GITHUB_REPOSITORY" <<'PY'
+          import json,sys
+          tag,code,sha,repo=sys.argv[1:]
+          release={'versionCode':int(code),'versionName':tag[1:],'apkUrl':f'https://github.com/{repo}/releases/download/{tag}/MonWallet-{tag}.apk','sha256':sha,'releaseNotes':f'Mon Wallet {tag} — voir la release GitHub.','mandatory':False,'minimumSupportedVersion':1}
+          with open('dist/version.json','w') as f: json.dump(release,f,ensure_ascii=False,indent=2)
+          PY
+      - name: Publish APK, AAB and manifest
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: gh release create "$TAG" "dist/MonWallet-$TAG.apk" "dist/MonWallet-$TAG.aab" dist/version.json --title "Mon Wallet $TAG" --notes-file CHANGELOG.md --verify-tag
+      - if: always()
+        run: rm -f "$MONWALLET_STORE_FILE"

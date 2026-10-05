@@ -1,0 +1,7 @@
+# Vérification v0.2.0
+
+- `:app:testDebugUnitTest :app:assembleDebug` : 42 tests, 0 échec. Le nouveau lot vérifie le calcul du produit, du coût et du gain sur vente rétroactive, le rejet d'une vente avant acquisition, le poids selon la valeur courante, le calcul sectoriel conditionné aux pondérations ETF et la propagation des cours manquants.
+- Les ressources Android FR/EN sont analysées en XML sans doublon de clé. Le bundle JS Lightweight Charts™ 5.2.1 provient du paquet officiel npm, vérifié contre son empreinte SHA-512 de publication et empaqueté localement avec licence/NOTICE.
+- L'APK et l'AAB release signés ont le code de version 2000. `apksigner` donne le même SHA-256 de certificat que l'APK v0.1.1 (`9fa4232613c4cccf611e8114fd121da630bbe0f8f2e6886814fde6225b10750d`); `bundletool validate` accepte l'AAB final.
+- La recompilation incrémentale après une petite retouche de l'interface et des ressources, en conservant SDK, JDK et dépendances, a généré et vérifié l'APK et l'AAB en **73 secondes** dans cet environnement. Une correction de textes seule a pris **51 secondes**. Le premier build sur environnement vide a pris davantage de temps pour les téléchargements et la compilation complète.
+- Parcours non validés sur Samsung physique : installation de la mise à jour, vente avec clavier du téléphone, graphique dans WebView Samsung, interactions widget, biométrie, authentification et synchronisation serveur. Les données de marché dépendent des réponses du fournisseur.

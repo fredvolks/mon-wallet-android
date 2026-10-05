@@ -1,0 +1,9 @@
+{
+  "versionCode": 2000,
+  "versionName": "0.2.0",
+  "apkUrl": "https://example.org/MonWallet-v0.2.0.apk",
+  "sha256": "REMPLACER_PAR_SHA256_HEXADECIMAL_DE_64_CARACTERES",
+  "releaseNotes": "Améliorations et corrections",
+  "mandatory": false,
+  "minimumSupportedVersion": 1000
+}
