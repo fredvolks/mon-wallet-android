@@ -21,6 +21,8 @@ import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.Finnhub
 import ca.monwallet.app.marketdata.ResearchSection
 import ca.monwallet.app.marketdata.SeekingAlphaResearch
+import ca.monwallet.app.marketdata.FinancialSymbolResolver
+import ca.monwallet.app.marketdata.NoFinancialCoverage
 import kotlinx.coroutines.*
 
 @Composable
@@ -49,6 +51,8 @@ fun DetailScreen(
     var analystLoading by remember { mutableStateOf(false) }
     var analystLoaded by remember { mutableStateOf(false) }
     var financeError by remember { mutableStateOf<String?>(null) }
+    var financeNoData by remember { mutableStateOf(false) }
+    var financeFetchedAt by remember { mutableStateOf<Long?>(null) }
     var analystError by remember { mutableStateOf<String?>(null) }
     var financeRetry by remember { mutableIntStateOf(0) }
     var analystRetry by remember { mutableIntStateOf(0) }
@@ -89,16 +93,20 @@ fun DetailScreen(
                 if (tab == 1 && (fundamentals == null || financeRetry > 0)) {
                     financeLoading = true
                     financeError = null
+                    financeNoData = false
                     val cached = s.repo.dao.cache().find { it.id == "financials:v2:${security.id}" }
                     if (cached != null && financeRetry == 0) {
                         fundamentals = s.repo.gson.fromJson(cached.payload, Fundamentals::class.java)
+                        financeFetchedAt = cached.fetchedAt
                     }
                     if (cached == null || financeRetry > 0 || System.currentTimeMillis() - cached.fetchedAt > 6 * 3600_000L) {
                         try {
                             val fresh = s.market.fundamentals(security)
                             fundamentals = fresh
-                            s.repo.dao.cache(Cache("financials:v2:${security.id}", "fundamentals", s.repo.gson.toJson(fresh), System.currentTimeMillis()))
+                            financeFetchedAt = System.currentTimeMillis()
+                            s.repo.dao.cache(Cache("financials:v2:${security.id}", "fundamentals", s.repo.gson.toJson(fresh), financeFetchedAt!!))
                         } catch (e: CancellationException) { throw e }
+                        catch (e: NoFinancialCoverage) { financeNoData = true }
                         catch (e: Exception) { financeError = e.message ?: "Service indisponible." }
                     }
                     financeLoading = false
@@ -313,18 +321,19 @@ fun DetailScreen(
                         if (security.type == "ETF") "Données du fonds" else "Données financières"
                     )
                     if (financeLoading && fundamentals == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    if (financeError != null) {
+                    if (financeError != null && fundamentals == null) {
                         Caption(stringResource(R.string.finance_load_failed))
                         Caption(financeError.orEmpty())
                         TextButton(onClick = { financeRetry++ }) { Text(stringResource(R.string.action_retry)) }
                     }
-                    if (!financeLoading && fundamentals == null && financeError == null && security.type == "ETF")
-                        Caption(
-                            stringResource(R.string.ui_emetteur_aum_mer_nav_et_composition_donnees_d_d1bf0)
-                        )
-                    else if (!financeLoading && fundamentals == null && financeError == null)
+                    if (!financeLoading && fundamentals == null && (financeNoData || financeError == null))
                         Caption(stringResource(R.string.finance_no_coverage))
                     fundamentals?.asOf?.let { Caption(stringResource(R.string.finance_as_of, it)) }
+                    FinancialSymbolResolver.external(security)?.let { (provider, url) ->
+                        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
+                            Text(stringResource(R.string.finance_open_external, provider))
+                        }
+                    }
                     SeekingAlphaResearch.url(security, ResearchSection.FINANCIALS)?.let { url ->
                         TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
                             Text(stringResource(R.string.research_seeking_alpha))
@@ -403,7 +412,12 @@ fun DetailScreen(
                     Caption(sorted.joinToString(" · ") { it.first })
                 }
                 item {
-                    fundamentals?.let { Caption(stringResource(R.string.finance_source, it.source)) }
+                    fundamentals?.let {
+                        Caption(stringResource(R.string.finance_source, it.source))
+                        financeFetchedAt?.let { fetched ->
+                            Caption(stringResource(R.string.finance_updated_at, time(fetched)))
+                        }
+                    }
                 }
             }
             2 -> {

@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.5 — 2026-10-05 (widgets et routage Finances)
+
+- Réglages indépendants par widget, aperçu, rendement total du moteur comptable, titres détenus sélectionnables et réordonnables, confidentialité et rafraîchissement.
+- Graphique masqué quand les points manquent et lignes de titres ouvrant leur fiche.
+- Route Canada/USA par symbole, place, devise et type; SEC/Nasdaq restent les sources américaines actives.
+- Une source canadienne ou FINVIZ Elite doit disposer d’un accès autorisé côté backend. Aucun accès n’est configuré pour DOL.TO : ses chiffres Finances restent indisponibles dans cette version.
+
 ## Mon Wallet v0.2.4 — 2026-10-05 (recherche des titres canadiens)
 
 - Liens directs vers les fiches Seeking Alpha vérifiées pour DOL, GURU, BLDP et XEQT (cotation canadienne), depuis Finances et Analystes. Les pages s’ouvrent dans le navigateur; aucune donnée Seeking Alpha n’est importée dans l’app.

@@ -25,5 +25,5 @@ mkdir -p dist
 cp app/build/outputs/apk/release/app-release.apk "dist/MonWallet-v$version.apk"
 cp app/build/outputs/bundle/release/app-release.aab "dist/MonWallet-v$version.aab"
 "${ANDROID_HOME:?}/build-tools/35.0.0/apksigner" verify --verbose "dist/MonWallet-v$version.apk"
-jarsigner -verify "dist/MonWallet-v$version.aab"
+"${JAVA_HOME:?}/bin/jarsigner" -verify "dist/MonWallet-v$version.aab" >/dev/null
 sha256sum "dist/MonWallet-v$version.apk" "dist/MonWallet-v$version.aab"

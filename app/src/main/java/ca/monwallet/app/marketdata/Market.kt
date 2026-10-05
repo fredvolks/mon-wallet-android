@@ -320,6 +320,13 @@ class Router(private val settings: SecureSettings) : MarketDataProvider {
     private val sec = SecFilingsProvider()
     private val nasdaqSummary = NasdaqSummaryProvider()
     private val nasdaqAnalyst = NasdaqAnalystProvider()
+    private val financialRouter = FinancialSourceRouter(
+        canada = BuildConfig.CANADA_FINANCIALS_URL.takeIf { it.isNotBlank() }
+            ?.let { LicensedFundamentalsProvider(it, "Canada") },
+        finviz = BuildConfig.FINVIZ_FINANCIALS_URL.takeIf { it.isNotBlank() }
+            ?.let { LicensedFundamentalsProvider(it, "Finviz Elite") },
+        sec = sec, nasdaq = nasdaqSummary,
+    )
 
     private fun provider(): MarketDataProvider =
         settings.get("twelve_key")?.takeIf { it.isNotBlank() && settings.get("provider") == "twelve" }
@@ -337,29 +344,7 @@ class Router(private val settings: SecureSettings) : MarketDataProvider {
 
     override suspend fun news(s: Security) = provider().news(s)
 
-    suspend fun fundamentals(s: Security): Fundamentals {
-        if (s.type != "STOCK") error("Données financières de ce fonds indisponibles.")
-        val symbol = ProviderSymbolResolver.usEquity(s)
-            ?: error("Aucune source financière vérifiée pour ${s.symbol} · ${s.exchange}.")
-        val primary = runCatching { sec.load(s) }
-        val summary = runCatching { nasdaqSummary.load(s) }
-        val filed = primary.getOrNull()
-        val market = summary.getOrNull()
-        if (filed != null || market != null) {
-            return Fundamentals(
-                metrics = (market?.metrics ?: emptyMap()) + (filed?.metrics ?: emptyMap()),
-                annual = filed?.annual ?: emptyMap(),
-                source = listOfNotNull(filed?.source, market?.source).joinToString(" · "),
-                quarterly = filed?.quarterly ?: emptyMap(),
-                asOf = filed?.asOf,
-            )
-        }
-        val key = settings.get("finnhub_key")?.takeIf { it.isNotBlank() }
-        if (key != null) return Finnhub(key).fundamentals(s.copy(symbol = symbol))
-        primary.exceptionOrNull()?.let { throw it }
-        summary.exceptionOrNull()?.let { throw it }
-        error("Aucune donnée financière disponible pour ${s.symbol} · ${s.exchange}.")
-    }
+    suspend fun fundamentals(s: Security): Fundamentals = financialRouter.load(s)
 
     suspend fun analyst(s: Security): Analyst? {
         if (ProviderSymbolResolver.usEquity(s) == null) return null

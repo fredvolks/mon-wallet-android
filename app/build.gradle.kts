@@ -1,10 +1,10 @@
 plugins { id("com.android.application");id("org.jetbrains.kotlin.android");id("org.jetbrains.kotlin.plugin.compose");id("com.google.devtools.ksp") }
 android {
  namespace="ca.monwallet.app";compileSdk=35
- defaultConfig { applicationId="ca.monwallet.app";minSdk=26;targetSdk=35;versionCode=providers.gradleProperty("versionCode").orNull?.toInt()?:2004;versionName=providers.gradleProperty("versionName").orNull?:"0.2.4"
+ defaultConfig { applicationId="ca.monwallet.app";minSdk=26;targetSdk=35;versionCode=providers.gradleProperty("versionCode").orNull?.toInt()?:2005;versionName=providers.gradleProperty("versionName").orNull?:"0.2.5"
   fun config(n:String, fallback:String="")="\""+(System.getenv(n)?.takeIf { it.isNotBlank() }?:fallback).replace("\\","\\\\").replace("\"","\\\"")+"\""
   // These are public client configuration values; RLS protects all user records.
-  buildConfigField("String","SUPABASE_URL",config("SUPABASE_URL","https://prwlnxbqttxfjxpehmok.supabase.co"));buildConfigField("String","SUPABASE_ANON_KEY",config("SUPABASE_ANON_KEY","sb_publishable_mFW_ScYpHPAeScXk0SZxbg_QEGoCx8J"));buildConfigField("String","GOOGLE_WEB_CLIENT_ID",config("GOOGLE_WEB_CLIENT_ID","158439565502-oa8ksq1phh6mcrq60ftbqhm0diotcdv0.apps.googleusercontent.com"));buildConfigField("String","UPDATE_MANIFEST_URL",config("UPDATE_MANIFEST_URL"))
+  buildConfigField("String","SUPABASE_URL",config("SUPABASE_URL","https://prwlnxbqttxfjxpehmok.supabase.co"));buildConfigField("String","SUPABASE_ANON_KEY",config("SUPABASE_ANON_KEY","sb_publishable_mFW_ScYpHPAeScXk0SZxbg_QEGoCx8J"));buildConfigField("String","GOOGLE_WEB_CLIENT_ID",config("GOOGLE_WEB_CLIENT_ID","158439565502-oa8ksq1phh6mcrq60ftbqhm0diotcdv0.apps.googleusercontent.com"));buildConfigField("String","UPDATE_MANIFEST_URL",config("UPDATE_MANIFEST_URL"));buildConfigField("String","CANADA_FINANCIALS_URL",config("CANADA_FINANCIALS_URL"));buildConfigField("String","FINVIZ_FINANCIALS_URL",config("FINVIZ_FINANCIALS_URL"))
  }
  buildFeatures{compose=true;buildConfig=true}
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17;targetCompatibility=JavaVersion.VERSION_17 };kotlinOptions{jvmTarget="17"}

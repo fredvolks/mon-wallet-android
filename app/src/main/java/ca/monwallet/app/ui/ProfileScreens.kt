@@ -288,6 +288,19 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
                 Caption(
                     stringResource(R.string.ui_maintiens_un_espace_vide_de_lecran_daccueil_s_93dbb)
                 )
+                WalletWidget.ids(context).forEachIndexed { index, id ->
+                    val config = WidgetSettings.load(context, id)
+                    Section(stringResource(R.string.profile_widget_number, index + 1))
+                    Text(w.portfolios.find { it.id == config.portfolio }?.name
+                        ?: stringResource(R.string.all_portfolios))
+                    Caption(config.style + " · " + if (config.custom)
+                        config.titleIds.mapNotNull { w.security(it)?.ticker }.joinToString(" · ")
+                        else stringResource(R.string.widget_automatic))
+                    OutlinedButton(onClick = {
+                        context.startActivity(Intent(context, WidgetConfiguration::class.java)
+                            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+                    }) { Text(stringResource(R.string.widget_edit)) }
+                }
                 listOf(
                         "2 × 2" to Widget2x2::class.java,
                         "2 × 3" to Widget2x3::class.java,

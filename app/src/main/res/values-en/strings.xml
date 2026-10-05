@@ -36,7 +36,9 @@
     <string name="google_migration_sync">Sync</string>
     <string name="google_migration_skip">Later</string>
     <string name="finance_load_failed">Could not load financial data.</string>
-    <string name="finance_no_coverage">No verified financial data for this security.</string>
+    <string name="finance_no_coverage">No financial data available for this instrument from currently authorized sources.</string>
+    <string name="finance_open_external">View on %1$s</string>
+    <string name="finance_updated_at">Last updated: %1$s</string>
     <string name="finance_annual">Annual</string>
     <string name="finance_quarterly">Quarterly</string>
     <string name="finance_as_of">Latest observed reporting period: %1$s</string>
