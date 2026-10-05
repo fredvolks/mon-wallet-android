@@ -7,6 +7,7 @@
 - Historique réel 1S puis 1M utilisé si les points intrajournaliers manquent; sans série valide, le graphique disparaît et la place revient au contenu.
 - Style « Mixte premium », aperçu du portefeuille réel, paramètres et ordre conservés par widget, confidentialité et heure de mise à jour.
 - Actualisation et réglages ciblent l'instance touchée; toucher le fond ouvre son portefeuille.
+- Le build de validation s'installe séparément (`ca.monwallet.app.preview`) pour tester le 4x2 sans toucher aux données de la version installée. Il ne remplace pas un APK release signé avec la clé d'origine.
 
 ## Mon Wallet v0.2.5 — 2026-10-05 (widgets et routage Finances)
 

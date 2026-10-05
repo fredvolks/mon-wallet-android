@@ -15,6 +15,10 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = TestMonWallet::class)
 class Widget4x2LayoutTest {
+    @Test fun previewCanInstallBesideTheExistingRelease() {
+        assertEquals("ca.monwallet.app.preview", BuildConfig.APPLICATION_ID)
+    }
+
     @Test fun chartFallbackUsesOnlyRealHistoryAndNeverFabricatesPoints() {
         val week = listOf(102f, 103f)
         val month = listOf(98f, 99f, 104f)
