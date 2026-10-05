@@ -1,0 +1,82 @@
+package ca.monwallet.app.marketdata
+
+import ca.monwallet.app.domain.Quote
+import ca.monwallet.app.domain.Security
+import java.math.BigDecimal
+
+enum class QuoteFreshness { REALTIME, DELAYED, CACHED, STALE }
+enum class MarketSession { PRE_MARKET, REGULAR, AFTER_HOURS, CLOSED }
+
+data class NormalizedQuote(
+    val securityId: String,
+    val price: BigDecimal,
+    val change: BigDecimal?,
+    val changePercent: BigDecimal?,
+    val timestamp: Long,
+    val source: String,
+    val freshness: QuoteFreshness,
+    val marketSession: MarketSession,
+    val regularPrice: BigDecimal,
+    val regularChange: BigDecimal?,
+    val regularChangePercent: BigDecimal?,
+    val preMarketPrice: BigDecimal?,
+    val preMarketChange: BigDecimal?,
+    val preMarketChangePercent: BigDecimal?,
+    val preMarketTimestamp: Long?,
+    val afterHoursPrice: BigDecimal?,
+    val afterHoursChange: BigDecimal?,
+    val afterHoursChangePercent: BigDecimal?,
+    val afterHoursTimestamp: Long?,
+) {
+    companion object {
+        fun from(q: Quote, now: Long = System.currentTimeMillis()): NormalizedQuote {
+            val session = runCatching { MarketSession.valueOf(q.marketSession) }
+                .getOrDefault(MarketSession.CLOSED)
+            val age = (now - q.fetchedAt).coerceAtLeast(0)
+            val freshness = when {
+                age > 30 * 60_000 -> QuoteFreshness.STALE
+                q.delay != null && q.delay > 0 -> QuoteFreshness.DELAYED
+                // Neither the unofficial Yahoo endpoint nor a generic Twelve quote proves
+                // a real-time exchange entitlement. Do not label either as REALTIME.
+                else -> QuoteFreshness.CACHED
+            }
+            val pre = q.preMarketPrice?.takeIf { session == MarketSession.PRE_MARKET }
+            val post = q.afterHoursPrice?.takeIf { session == MarketSession.AFTER_HOURS }
+            val extra = pre ?: post
+            val delta = extra?.minus(q.price)
+            val extraPercent = delta?.takeIf { q.price.signum() != 0 }
+                ?.multiply(BigDecimal(100))?.divide(q.price, java.math.MathContext.DECIMAL128)
+            return NormalizedQuote(q.securityId, q.price, q.change, q.percent, q.timestamp,
+                q.source, freshness, session, q.price, q.change, q.percent,
+                pre, if (pre != null) delta else null, if (pre != null) extraPercent else null,
+                q.preMarketTimestamp?.takeIf { pre != null },
+                post, if (post != null) delta else null, if (post != null) extraPercent else null,
+                q.afterHoursTimestamp?.takeIf { post != null })
+        }
+    }
+}
+
+interface LiveQuoteProvider {
+    /** Returns provider data only; the caller owns foreground lifecycle and polling cadence. */
+    suspend fun quote(security: Security): LiveQuoteUpdate
+}
+
+data class LiveQuoteUpdate(val cached: Quote, val normalized: NormalizedQuote)
+
+class ForegroundQuoteProvider(private val market: MarketDataProvider) : LiveQuoteProvider {
+    override suspend fun quote(security: Security): LiveQuoteUpdate {
+        val raw = market.quote(security)
+        return LiveQuoteUpdate(raw, NormalizedQuote.from(raw))
+    }
+}
+
+fun quoteFreshnessLabel(q: Quote, now: Long = System.currentTimeMillis()): String {
+    val normalized = NormalizedQuote.from(q, now)
+    val minutes = ((now - q.fetchedAt).coerceAtLeast(0) / 60_000).toInt()
+    return when (normalized.freshness) {
+        QuoteFreshness.REALTIME -> "Temps réel"
+        QuoteFreshness.DELAYED -> "Différé " + q.delay + " min"
+        QuoteFreshness.CACHED -> "Mis à jour il y a " + minutes + " min"
+        QuoteFreshness.STALE -> "Cache · " + minutes + " min"
+    }
+}

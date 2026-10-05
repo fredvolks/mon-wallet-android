@@ -395,6 +395,17 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
                 Caption(stringResource(R.string.settings_fx_caption))
                 Metric(stringResource(R.string.settings_background_refresh), stringResource(R.string.settings_refresh_interval))
                 Caption(stringResource(R.string.settings_refresh_caption))
+                Text("Valorisation hors séance", fontWeight = FontWeight.SemiBold)
+                val extendedValuation = w.settings["portfolio_extended"] == "LAST"
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip(!extendedValuation, onClick = {
+                        vm.run { s.repo.setting("portfolio_extended", "REGULAR") }
+                    }, label = { Text("Cours régulier") })
+                    FilterChip(extendedValuation, onClick = {
+                        vm.run { s.repo.setting("portfolio_extended", "LAST") }
+                    }, label = { Text("Dernier disponible") })
+                }
+                Caption("Les estimations hors séance utilisent seulement les cours PRE/AFTER effectivement fournis.")
                 Button(onClick = { vm.refresh() }) { Text(stringResource(R.string.settings_refresh_now)) }
                 var hidden by remember { mutableStateOf(s.secure.get("hide_widgets") != "false") }
                 Row(verticalAlignment = Alignment.CenterVertically) {

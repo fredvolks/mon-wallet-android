@@ -5,6 +5,7 @@ import ca.monwallet.app.R
 import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
@@ -12,11 +13,15 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.*
+import ca.monwallet.app.marketdata.*
+import java.math.BigDecimal
 
 @Composable
 fun QuoteRow(w: Wallet, s: Security, onClick: () -> Unit, menu: (@Composable () -> Unit)? = null) {
@@ -94,6 +99,62 @@ fun WatchlistScreen(
     var choose by remember { mutableStateOf<Pair<Security, WatchItem?>?>(null) }
     var deleting by remember { mutableStateOf(false) }
     var options by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("watchlist_options", 0) }
+    var samePeriod by remember { mutableStateOf(prefs.getBoolean("same_period", false)) }
+    var period by remember(list?.id, samePeriod) {
+        mutableStateOf(runCatching { PerformancePeriod.valueOf(prefs.getString(
+            if (samePeriod) "global_period" else "period:" + list?.id, "M3") ?: "M3") }
+            .getOrDefault(PerformancePeriod.M3))
+    }
+    var columns by remember { mutableStateOf(MarketColumns.restore(
+        prefs.getString("columns", null), MarketColumns.watchlistDefault)) }
+    var showColumns by remember { mutableStateOf(false) }
+    var followSpark by remember { mutableStateOf(prefs.getBoolean("follow_spark", true)) }
+    var showName by remember { mutableStateOf(prefs.getBoolean("show_name", false)) }
+    var showExtended by remember { mutableStateOf(prefs.getBoolean("show_extended", true)) }
+    var sortKey by remember(list?.id) { mutableStateOf(prefs.getString("sort:" + list?.id, "manual") ?: "manual") }
+    var descending by remember { mutableStateOf(true) }
+    val horizontal = rememberScrollState()
+    val items = w.items.filter { it.watchlistId == list?.id }.sortedBy { it.order }
+    val securities = items.mapNotNull { w.security(it.securityId) }
+    DisposableEffect(list?.id, securities) {
+        vm.services.foregroundSecurities.value = securities.take(20)
+        onDispose { vm.services.foregroundSecurities.value = emptyList() }
+    }
+    LaunchedEffect(list?.id, period, columns) {
+        if (period == PerformancePeriod.Y5 || columns.any { it == "5A" || it == "cagr5" }) {
+            securities.forEach { security ->
+                val history = w.prices.filter { it.securityId == security.id }
+                if (MomentumEngine.performance(history, PerformancePeriod.Y5) == null)
+                    runCatching { vm.services.repo.points(security.id,
+                        vm.services.market.history(security, "10y")) }
+            }
+        }
+    }
+    val orderedItems = remember(items, w.quotes, w.prices, period, sortKey, descending) {
+        val sorted = when (sortKey) {
+            "ticker" -> items.sortedBy { w.security(it.securityId)?.ticker }
+            "price" -> items.sortedBy { w.quotes[it.securityId]?.price }
+            "dayPercent" -> items.sortedBy { w.quotes[it.securityId]?.percent }
+            "period", "1S", "1M", "3M", "6M", "1A", "5A" -> {
+                val selectedPeriod = PerformancePeriod.entries.firstOrNull { it.label == sortKey } ?: period
+                items.sortedBy { item -> MomentumEngine.performance(
+                    w.prices.filter { it.securityId == item.securityId }, selectedPeriod) }
+            }
+            else -> items
+        }
+        if (sortKey != "manual" && descending) sorted.reversed() else sorted
+    }
+    fun move(item: WatchItem, delta: Int) {
+        if (sortKey != "manual") return
+        val index = items.indexOf(item)
+        val other = items.getOrNull(index + delta) ?: return
+        vm.run {
+            vm.services.repo.put("watch_item", item.id, item.copy(order = other.order))
+            vm.services.repo.put("watch_item", other.id, other.copy(order = item.order))
+        }
+    }
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 18.dp),
         contentPadding = PaddingValues(bottom = 80.dp),
@@ -119,6 +180,32 @@ fun WatchlistScreen(
                         Icon(Icons.Outlined.MoreVert, stringResource(R.string.watchlist_options))
                     }
                     DropdownMenu(options, { options = false }) {
+                        DropdownMenuItem(text = { Text("⚙ Colonnes") }, onClick = {
+                            options = false; showColumns = true })
+                        DropdownMenuItem(text = { Text("Même période pour toutes : " +
+                            if (samePeriod) "Oui" else "Non") }, onClick = {
+                            samePeriod = !samePeriod
+                            prefs.edit().putBoolean("same_period", samePeriod).apply()
+                            options = false
+                        })
+                        DropdownMenuItem(text = { Text("Sparkline suit la période : " +
+                            if (followSpark) "Oui" else "Non") }, onClick = {
+                            followSpark = !followSpark
+                            prefs.edit().putBoolean("follow_spark", followSpark).apply(); options = false
+                        })
+                        DropdownMenuItem(text = { Text("Nom complet : " + if (showName) "Oui" else "Non") },
+                            onClick = { showName = !showName
+                                prefs.edit().putBoolean("show_name", showName).apply(); options = false })
+                        DropdownMenuItem(text = { Text("Pre/After : " + if (showExtended) "Oui" else "Non") },
+                            onClick = { showExtended = !showExtended
+                                prefs.edit().putBoolean("show_extended", showExtended).apply(); options = false })
+                        MarketColumns.presets.forEach { (name, preset) ->
+                            DropdownMenuItem(text = { Text("Preset : " + name) }, onClick = {
+                                columns = preset
+                                prefs.edit().putString("columns", preset.joinToString("|")).apply()
+                                options = false
+                            })
+                        }
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.ui_renommer_8e8a8)) },
                             enabled = list != null,
@@ -163,15 +250,27 @@ fun WatchlistScreen(
                     }
                 }
             }
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Caption(stringResource(R.string.ui_titre_marche_71340))
-                Caption(stringResource(R.string.ui_prix_var_du_jour_0d4a6))
+            PeriodPills(period) { selectedPeriod ->
+                period = selectedPeriod
+                prefs.edit().putString(if (samePeriod) "global_period" else "period:" + list?.id,
+                    selectedPeriod.name).apply()
             }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("TRI", color = Muted, fontSize = 10.sp)
+                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
+                    listOf("manual", "ticker", "price", "dayPercent", "period", "1S", "1M",
+                        "3M", "6M", "1A", "5A").forEach { key ->
+                        TextButton(onClick = {
+                            if (sortKey == key) descending = !descending
+                            else { sortKey = key; descending = true }
+                            prefs.edit().putString("sort:" + list?.id, sortKey).apply()
+                        }) { Text(if (key == "manual") "Manuel" else MarketColumns.label(key, period),
+                            fontSize = 10.sp, color = if (sortKey == key) Green else Muted) }
+                    }
+                }
+            }
+            WatchHeader(columns, period, horizontal)
         }
-        val items = w.items.filter { it.watchlistId == list?.id }.sortedBy { it.order }
         if (items.isEmpty())
             item {
                 Empty(
@@ -186,10 +285,11 @@ fun WatchlistScreen(
                     } else onAdd(list.id)
                 }
             }
-        items(items, key = { it.id }) { item ->
+        items(orderedItems, key = { it.id }) { item ->
             w.security(item.securityId)?.let { s ->
                 var open by remember { mutableStateOf(false) }
-                QuoteRow(w, s, { onDetail(s) }) {
+                WatchLine(w, s, item, period, columns, horizontal, followSpark, showName,
+                    showExtended, { onDetail(s) }, { move(item, it) }) {
                     Box {
                         IconButton(onClick = { open = true }, modifier = Modifier.size(26.dp)) {
                             Icon(Icons.Outlined.MoreVert, stringResource(R.string.watchlist_actions), Modifier.size(18.dp))
@@ -228,20 +328,7 @@ fun WatchlistScreen(
                                 onClick = {
                                     open = false
                                     vm.run {
-                                        val index = items.indexOf(item)
-                                        if (index > 0) {
-                                            val before = items[index - 1]
-                                            vm.services.repo.put(
-                                                "watch_item",
-                                                before.id,
-                                                before.copy(order = item.order),
-                                            )
-                                            vm.services.repo.put(
-                                                "watch_item",
-                                                item.id,
-                                                item.copy(order = before.order),
-                                            )
-                                        }
+                                        move(item, -1)
                                     }
                                 },
                             )
@@ -272,11 +359,13 @@ fun WatchlistScreen(
                 }
             }
         item {
-            Caption(
-                stringResource(R.string.ui_sparklines_dernieres_clotures_disponibles_app_d1034)
-            )
+            Caption("Cours actualisés au premier plan si la source répond · période et fraîcheur affichées sans données simulées.")
         }
     }
+    if (showColumns) ColumnPicker(columns, MarketColumns.all.keys.filter { it != "opportunity" }, {
+        columns = it
+        prefs.edit().putString("columns", it.joinToString("|")).apply()
+    }, { showColumns = false })
     if (naming)
         AlertDialog(
             onDismissRequest = { naming = false },
@@ -319,6 +408,148 @@ fun WatchlistScreen(
             choose = null
         }
     }
+}
+
+private fun watchWidth(key: String): Dp = when (key) {
+    "ticker" -> 70.dp
+    "price" -> 68.dp
+    "sparkline" -> 58.dp
+    "dayPercent" -> 64.dp
+    "period", "1S", "1M", "3M", "6M", "1A", "5A" -> 70.dp
+    else -> (MarketColumns.all[key]?.width ?: 86).dp
+}
+
+@Composable
+private fun WatchHeader(columns: List<String>, period: PerformancePeriod,
+    scroll: androidx.compose.foundation.ScrollState) {
+    Row(Modifier.fillMaxWidth().height(25.dp), verticalAlignment = Alignment.CenterVertically) {
+        if ("ticker" in columns) Text("TICKER", Modifier.width(watchWidth("ticker")),
+            fontSize = 9.sp, color = Muted)
+        Row(Modifier.weight(1f).horizontalScroll(scroll)) {
+            columns.filter { it != "ticker" }.forEach { key ->
+                Text(MarketColumns.label(key, period).uppercase(), Modifier.width(watchWidth(key)),
+                    fontSize = 9.sp, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        Spacer(Modifier.width(26.dp))
+    }
+    HorizontalDivider(color = Border)
+}
+
+@Composable
+private fun WatchLine(w: Wallet, s: Security, item: WatchItem, period: PerformancePeriod,
+    columns: List<String>, scroll: androidx.compose.foundation.ScrollState,
+    followSpark: Boolean, showName: Boolean, showExtended: Boolean,
+    click: () -> Unit, move: (Int) -> Unit, menu: @Composable () -> Unit) {
+    val q = w.quotes[s.id]
+    val points = remember(w.prices, s.id) { w.prices.filter { it.securityId == s.id } }
+    val selected = if (followSpark) period else PerformancePeriod.M1
+    val spark = remember(points, selected) { MomentumEngine.series(points, selected)
+        ?.map { it.close } ?: emptyList() }
+    val extended = q?.takeIf { showExtended && s.currency == "USD" }
+        ?.let { NormalizedQuote.from(it) }
+    val extra = when (extended?.marketSession) {
+        MarketSession.PRE_MARKET -> extended.preMarketPrice
+        MarketSession.AFTER_HOURS -> extended.afterHoursPrice
+        else -> null
+    }
+    val extraDelta = extra?.minus(q!!.price)
+    val extraPercent = extraDelta?.takeIf { q!!.price.signum() != 0 }
+        ?.multiply(BigDecimal(100))?.divide(q!!.price, MC)
+    var drag by remember(item.id) { mutableFloatStateOf(0f) }
+    Row(Modifier.fillMaxWidth().height(if (extra != null || showName) 51.dp else 42.dp)
+        .clickable(onClick = click), verticalAlignment = Alignment.CenterVertically) {
+        if ("ticker" in columns) {
+            Row(Modifier.width(watchWidth("ticker")).pointerInput(item.id) {
+                detectDragGesturesAfterLongPress(onDragEnd = { drag = 0f },
+                    onDragCancel = { drag = 0f }) { change, amount ->
+                    change.consume()
+                    drag += amount.y
+                    if (drag > 22.dp.toPx()) { move(1); drag = 0f }
+                    if (drag < -22.dp.toPx()) { move(-1); drag = 0f }
+                }
+            }, verticalAlignment = Alignment.CenterVertically) {
+                Logo(s, 24.dp)
+                Spacer(Modifier.width(4.dp))
+                Column {
+                    Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (showName) Text(s.name, fontSize = 9.sp, color = Muted,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    else if (w.alerts.any { it.securityId == s.id && it.enabled } ||
+                        w.transactions.any { it.securityId == s.id })
+                        Text((if (w.alerts.any { it.securityId == s.id && it.enabled }) "♧ " else "") +
+                            (if (w.transactions.any { it.securityId == s.id }) "•" else ""),
+                            fontSize = 8.sp, color = Muted)
+                }
+            }
+        }
+        Row(Modifier.weight(1f).horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
+            columns.filter { it != "ticker" }.forEach { key ->
+                val size = watchWidth(key)
+                when (key) {
+                    "sparkline" -> Box(Modifier.width(size).height(23.dp)) {
+                        if (spark.size > 1) Chart(spark, modifier = Modifier.fillMaxSize(),
+                            color = tint(q?.change))
+                        else Text("—", fontSize = 10.sp, color = Muted)
+                    }
+                    "price" -> Column(Modifier.width(size)) {
+                        Text(number(q?.price), fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold, maxLines = 1,
+                            overflow = TextOverflow.Ellipsis)
+                        if (extra != null) Text(
+                            (if (extended?.marketSession == MarketSession.PRE_MARKET) "☀ " else "☾ ") +
+                                number(extra), fontSize = 9.sp, color = Muted, maxLines = 1)
+                    }
+                    "dayPercent" -> Column(Modifier.width(size)) {
+                        Text(percent(q?.percent), fontSize = 10.sp, color = tint(q?.change),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (extra != null) Text(percent(extraPercent), fontSize = 9.sp,
+                            color = tint(extraDelta), maxLines = 1)
+                    }
+                    else -> {
+                        val value = watchCell(w, s, q, points, key, period, extended)
+                        Text(value, Modifier.width(size), fontSize = 10.sp,
+                            color = if (key == "period" || PerformancePeriod.entries.any {
+                                    it.label == key }) tint(value.toBigDecimalOrNull())
+                                else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
+        Box(Modifier.width(26.dp)) { menu() }
+    }
+    HorizontalDivider(color = Border.copy(alpha = .45f))
+}
+
+private fun watchCell(w: Wallet, s: Security, q: Quote?, points: List<Point>, key: String,
+    period: PerformancePeriod, extended: NormalizedQuote?): String = when (key) {
+    "name" -> s.name
+    "exchange" -> s.exchange
+    "currency" -> s.currency
+    "dayAmount" -> signed(q?.change, s.currency)
+    "period" -> percent(MomentumEngine.performance(points, period))
+    "1S", "1M", "3M", "6M", "1A", "5A" -> percent(MomentumEngine.performance(
+        points, PerformancePeriod.entries.first { it.label == key }))
+    "cagr5" -> percent(MomentumEngine.analyze(points, PerformancePeriod.Y5,
+        q?.averageVolume?.multiply(q.price)?.toDouble())?.cagr5y)
+    "momentum" -> MomentumEngine.analyze(points, period,
+        q?.averageVolume?.multiply(q.price)?.toDouble())?.score?.toString() ?: "—"
+    "volume" -> number(q?.volume, 0)
+    "avgVolume" -> number(q?.averageVolume, 0)
+    "high52" -> money(q?.high52, s.currency)
+    "extended" -> when (extended?.marketSession) {
+        MarketSession.PRE_MARKET -> extended.preMarketPrice?.let { "PRE " + number(it) }
+        MarketSession.AFTER_HOURS -> extended.afterHoursPrice?.let { "AFTER " + number(it) }
+        else -> null
+    } ?: "—"
+    "portfolioWeight" -> w.result().holdings.find { it.securityId == s.id }?.let {
+        if (w.result().value?.signum() == 1 && it.value != null)
+            percent(it.value.multiply(BigDecimal(100)).divide(w.result().value!!, MC)) else "—"
+    } ?: "—"
+    // The provider does not supply these values for every watchlist symbol. Never invent them.
+    else -> "—"
 }
 
 @Composable

@@ -59,6 +59,32 @@ class Services(val context: Context) {
     val initialized = MutableStateFlow(false)
     val busy = MutableStateFlow(false)
     val marketStatus = MutableStateFlow("Derniers cours en cache")
+    val liveQuotes: LiveQuoteProvider = ForegroundQuoteProvider(market)
+
+    suspend fun refreshForeground(securities: List<Security>) {
+        if (busy.value || securities.isEmpty()) return
+        val gate = Semaphore(2)
+        supervisorScope {
+            securities.distinctBy { it.id }.take(20).map { security ->
+                async {
+                    gate.withPermit {
+                        try {
+                            val live = liveQuotes.quote(security)
+                            // The existing quote cache remains the single source observed by
+                            // portfolio, watchlist, detail and widgets.
+                            repo.quote(live.cached)
+                            live
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                }
+            }.awaitAll()
+        }
+        marketStatus.value = "Cours actualisés · délai du fournisseur non garanti"
+    }
 
     suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false,
         notifyWidgets: Boolean = true) {

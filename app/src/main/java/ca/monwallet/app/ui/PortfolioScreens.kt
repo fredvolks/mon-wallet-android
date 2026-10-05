@@ -95,7 +95,16 @@ fun PortfolioScreen(
                     else w.portfolios.find { it.id == selected }?.name.orEmpty()
                 )
                 Spacer(Modifier.height(7.dp))
-                Caption(stringResource(R.string.ui_valeur_actuelle_e0c0f))
+                val estimatedSession = if (w.settings["portfolio_extended"] == "LAST")
+                    result?.holdings?.mapNotNull { h -> w.quotes[h.securityId]?.let { q ->
+                        when {
+                            q.marketSession == "PRE_MARKET" && q.preMarketPrice != null -> "Pre-market"
+                            q.marketSession == "AFTER_HOURS" && q.afterHoursPrice != null -> "After-hours"
+                            else -> null
+                        }
+                    } }?.distinct()?.singleOrNull() else null
+                Caption(estimatedSession?.let { "Valeur estimée · $it" }
+                    ?: stringResource(R.string.ui_valeur_actuelle_e0c0f))
                 Text(money(result?.value), fontSize = 34.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth()) {

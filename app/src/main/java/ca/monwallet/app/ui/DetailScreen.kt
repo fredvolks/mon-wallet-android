@@ -23,6 +23,9 @@ import ca.monwallet.app.marketdata.ResearchSection
 import ca.monwallet.app.marketdata.SeekingAlphaResearch
 import ca.monwallet.app.marketdata.FinancialSymbolResolver
 import ca.monwallet.app.marketdata.NoFinancialCoverage
+import ca.monwallet.app.marketdata.NormalizedQuote
+import ca.monwallet.app.marketdata.MarketSession
+import ca.monwallet.app.marketdata.quoteFreshnessLabel
 import kotlinx.coroutines.*
 
 @Composable
@@ -190,16 +193,35 @@ fun DetailScreen(
                 color = tint(q?.change),
                 fontSize = 17.sp,
             )
+            val normalized = q?.takeIf { security.currency == "USD" }?.let { NormalizedQuote.from(it) }
+            val extendedPrice = when (normalized?.marketSession) {
+                MarketSession.PRE_MARKET -> normalized.preMarketPrice
+                MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
+                else -> null
+            }
+            if (extendedPrice != null && normalized != null) {
+                val delta = extendedPrice - normalized.regularPrice
+                val changePercent = if (normalized.regularPrice.signum() > 0)
+                    delta.multiply(java.math.BigDecimal(100)).divide(normalized.regularPrice, MC)
+                else null
+                val timestamp = if (normalized.marketSession == MarketSession.PRE_MARKET)
+                    normalized.preMarketTimestamp else normalized.afterHoursTimestamp
+                Caption((if (normalized.marketSession == MarketSession.PRE_MARKET) "☀ Pre-market" else "☾ After-hours") +
+                    " · ${money(extendedPrice,security.currency)} · ${signed(delta,security.currency)} (${percent(changePercent)})" +
+                    (timestamp?.let { " · ${time(it)}" } ?: ""))
+            }
             Caption(
-                when (q?.marketOpen) {
-                    true -> "Marché ouvert"
-                    false -> "Marché fermé"
-                    null -> "État du marché indisponible"
+                when (normalized?.marketSession) {
+                    MarketSession.PRE_MARKET -> "PRE"
+                    MarketSession.REGULAR -> "OUVERT"
+                    MarketSession.AFTER_HOURS -> "AFTER"
+                    MarketSession.CLOSED -> "FERMÉ"
+                    null -> if (q?.marketOpen == true) "Marché ouvert" else "État du marché indisponible"
                 }
             )
             Caption(
                 q?.let {
-                    "${it.source} · ${if(it.delay==0)"Temps réel"else if(it.delay!=null)"Délai ${it.delay} min"else"Délai non garanti"}\nDernier cours : ${time(it.timestamp)}"
+                    "${it.source} · ${quoteFreshnessLabel(it)}\nDernier cours : ${time(it.timestamp)}"
                 } ?: "Donnée indisponible"
             )
             Chips(ranges, range) { range = it }

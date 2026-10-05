@@ -116,8 +116,17 @@ class Yahoo : MarketDataProvider {
                         else closes.get(it).toString().toBigDecimalOrNull()
                     }
             else null
-        val period = m.optJSONObject("currentTradingPeriod")?.optJSONObject("regular")
+        val periods = m.optJSONObject("currentTradingPeriod")
+        val period = periods?.optJSONObject("regular")
         val now = Instant.now().epochSecond
+        val session = when {
+            periods?.optJSONObject("pre")?.let { now >= it.optLong("start") && now < it.optLong("end") } == true -> "PRE_MARKET"
+            period?.let { now >= it.optLong("start") && now < it.optLong("end") } == true -> "REGULAR"
+            periods?.optJSONObject("post")?.let { now >= it.optLong("start") && now < it.optLong("end") } == true -> "AFTER_HOURS"
+            else -> "CLOSED"
+        }
+        val preTime = m.number("preMarketTime")?.toLong()
+        val postTime = m.number("postMarketTime")?.toLong()
         return Quote(
             s.id,
             m.number("regularMarketPrice") ?: error("Prix absent."),
@@ -130,6 +139,16 @@ class Yahoo : MarketDataProvider {
             volume = m.number("regularMarketVolume"),
             high52 = m.number("fiftyTwoWeekHigh"),
             low52 = m.number("fiftyTwoWeekLow"),
+            delay = m.number("exchangeDataDelayedBy")?.toInt()?.takeIf { it > 0 },
+            preMarketPrice = m.number("preMarketPrice")?.takeIf { session == "PRE_MARKET" &&
+                preTime != null && periods?.optJSONObject("pre")?.let {
+                    preTime >= it.optLong("start") && preTime < it.optLong("end") } == true },
+            preMarketTimestamp = preTime?.times(1000),
+            afterHoursPrice = m.number("postMarketPrice")?.takeIf { session == "AFTER_HOURS" &&
+                postTime != null && periods?.optJSONObject("post")?.let {
+                    postTime >= it.optLong("start") && postTime < it.optLong("end") } == true },
+            afterHoursTimestamp = postTime?.times(1000),
+            marketSession = session,
         )
     }
 

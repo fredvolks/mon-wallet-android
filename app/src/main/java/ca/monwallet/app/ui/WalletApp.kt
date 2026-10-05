@@ -15,9 +15,16 @@ import androidx.compose.ui.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.*
 import ca.monwallet.app.R
+import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LockScreen(unlock: () -> Unit) {
@@ -48,6 +55,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
     val nav = rememberNavController()
     val backstack by nav.currentBackStackEntryAsState()
     val route = backstack?.destination?.route ?: "portfolio"
+    val lifecycleOwner = LocalLifecycleOwner.current
     val snack = remember { SnackbarHostState() }
     var portfolio by remember { mutableStateOf<String?>(null) }
     var txOpen by remember { mutableStateOf(false) }
@@ -84,6 +92,31 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
         txOpen = true
     }
     LaunchedEffect(Unit) { vm.messages.collect { snack.showSnackbar(it) } }
+    LaunchedEffect(s, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            s.foregroundSecurities.collectLatest { visible ->
+                while (isActive && visible.isNotEmpty()) {
+                    s.refreshForeground(visible)
+                    val quotes = s.repo.state.value.quotes
+                    delay(if (visible.all { quotes[it.id]?.marketOpen == false }) 180_000L else 60_000L)
+                }
+            }
+        }
+    }
+    LaunchedEffect(route, w.transactions, portfolio, selectedSecurity) {
+        when (route) {
+            "portfolio" -> {
+                val ids = w.transactions.filter { portfolio == null || it.portfolioId == portfolio }
+                    .mapNotNull { it.securityId }.toSet()
+                s.foregroundSecurities.value = w.securities.filter { it.id in ids }.take(20)
+            }
+            "detail/{id}" -> s.foregroundSecurities.value = listOfNotNull(
+                w.security(backstack?.arguments?.getString("id")) ?: selectedSecurity)
+            "markets" -> s.foregroundSecurities.value = Catalog.markets.take(12)
+            "discover", "watchlist" -> Unit // Each screen chooses its own visible symbols.
+            else -> s.foregroundSecurities.value = emptyList()
+        }
+    }
     LaunchedEffect(initialized, prefs["onboarded"], user) {
         if (initialized && (prefs["onboarded"] == "true" || user != null)) vm.refresh()
     }

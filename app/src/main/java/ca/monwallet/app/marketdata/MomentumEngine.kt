@@ -37,6 +37,9 @@ data class MomentumMetrics(
 
 /** Scores historical closing prices only. Quotes from pre/after-hours never enter this ranking. */
 object MomentumEngine {
+    fun series(points: List<Point>, period: PerformancePeriod): List<Point>? =
+        windowSlice(points, period)
+
     fun performance(points: List<Point>, period: PerformancePeriod): BigDecimal? =
         window(points, period)?.let { (start, end) ->
             if (start.close.signum() <= 0) null

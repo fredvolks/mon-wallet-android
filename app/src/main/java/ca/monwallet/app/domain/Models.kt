@@ -172,6 +172,11 @@ data class Quote(
     val low52: BigDecimal? = null,
     val averageVolume: BigDecimal? = null,
     val fetchedAt: Long = System.currentTimeMillis(),
+    val preMarketPrice: BigDecimal? = null,
+    val preMarketTimestamp: Long? = null,
+    val afterHoursPrice: BigDecimal? = null,
+    val afterHoursTimestamp: Long? = null,
+    val marketSession: String = "CLOSED",
 ) {
     val change
         get() = previous?.let { price - it }
@@ -294,10 +299,29 @@ data class Wallet(
 ) {
     fun security(id: String?) = securities.find { it.id == id }
 
-    fun result(portfolio: String? = null) =
-        Engine.calculate(
-            transactions.filter { portfolio == null || it.portfolioId == portfolio },
-            quotes,
-            securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] },
-        )
+    fun result(portfolio: String? = null): Result {
+        val entries = transactions.filter { portfolio == null || it.portfolioId == portfolio }
+        val usd = securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] }
+        val regular = Engine.calculate(entries, quotes, usd)
+        if (settings["portfolio_extended"] != "LAST") return regular
+        val adjusted = quotes.mapValues { (_, quote) ->
+            val extended = when (quote.marketSession) {
+                "PRE_MARKET" -> quote.preMarketPrice
+                "AFTER_HOURS" -> quote.afterHoursPrice
+                else -> null
+            }
+            if (extended != null && quote.currency == "USD") quote.copy(price = extended)
+            else quote
+        }
+        if (adjusted == quotes) return regular
+        val estimated = Engine.calculate(entries, adjusted, usd)
+        val byId = regular.holdings.associateBy { it.securityId }
+        // Today's P&L retains the regular-session reference; only valuation uses
+        // extended hours, and only when the provider supplied a current quote.
+        return estimated.copy(day = regular.day, dayBase = regular.dayBase,
+            holdings = estimated.holdings.map { holding ->
+                holding.copy(day = byId[holding.securityId]?.day,
+                    dayBase = byId[holding.securityId]?.dayBase)
+            })
+    }
 }
