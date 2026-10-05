@@ -18,6 +18,7 @@ import ca.monwallet.app.domain.ZERO
 import ca.monwallet.app.domain.pct
 import ca.monwallet.app.marketdata.OfficialLogoProvider
 import ca.monwallet.app.ui.money
+import ca.monwallet.app.ui.number
 import ca.monwallet.app.ui.percent
 import ca.monwallet.app.ui.signed
 import java.util.concurrent.TimeUnit
@@ -36,13 +37,12 @@ internal object WidgetWideRenderer {
         views.setTextViewText(R.id.widget_total_label, c.getString(R.string.widget_return_total))
         views.setTextViewText(R.id.widget_total, if (hidden) "—" else percent(result?.percent))
         views.setTextColor(R.id.widget_total, tone(result?.percent?.signum()))
-        views.setViewVisibility(R.id.widget_total_group,
-            if (config.totalPercent) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_total_group, View.VISIBLE)
 
         views.setTextViewText(R.id.widget_day,
             if (hidden) c.getString(R.string.widget_locked) else c.getString(R.string.widget_today))
         val showAmount = !hidden && !config.hideAmounts && config.dayAmount
-        val showPercent = !hidden && config.dayPercent
+        val showPercent = !hidden // The daily change is essential in the 4x2 layout.
         views.setTextViewText(R.id.widget_amount, if (showAmount) signed(result?.day) else "")
         views.setTextViewText(R.id.widget_percent, if (showPercent) percent(result?.dayPercent) else "")
         views.setViewVisibility(R.id.widget_amount, if (showAmount) View.VISIBLE else View.GONE)
@@ -69,7 +69,12 @@ internal object WidgetWideRenderer {
 
         val held = result?.holdings?.filter { it.quantity > ZERO }
             ?.map { it.securityId }?.toSet().orEmpty()
-        val chartSeries = if (hidden || !config.chart || result == null) emptyList()
+        val options = AppWidgetManager.getInstance(c).getAppWidgetOptions(id)
+        val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 150)
+        val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250)
+        val ordered = if (hidden || result == null) emptyList() else config.titles(result)
+        val plan = WidgetTitleLayout.plan(config, "4x2", minHeight, ordered.size)
+        val chartSeries = if (hidden || !plan.chart || result == null) emptyList()
             else WidgetChartData.values(wallet, portfolio, config.period, cached)
         val chartVisible = chartSeries.size >= 2 &&
             config.style in setOf("Mixte", "Mixte premium", "Graphique")
@@ -82,13 +87,15 @@ internal object WidgetWideRenderer {
         views.removeAllViews(R.id.widget_rows)
         val showTitles = !hidden && config.showTitles &&
             config.style !in setOf("Résumé", "Ultra compact", "Graphique")
-        val titles = if (showTitles && result != null) config.titles(result).take(3)
-            else emptyList()
-        val minWidth = AppWidgetManager.getInstance(c).getAppWidgetOptions(id)
-            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250)
+        val titles = if (showTitles) ordered.take(plan.limit) else emptyList()
+        val rowLayout = when (plan.density) {
+            WidgetTitleLayout.Density.SPACIOUS -> R.layout.wallet_widget_wide_row_spacious
+            WidgetTitleLayout.Density.COMPACT -> R.layout.wallet_widget_wide_row
+            WidgetTitleLayout.Density.ULTRA -> R.layout.wallet_widget_wide_row_ultra
+        }
         for (holding in titles) {
             val security = wallet.security(holding.securityId) ?: continue
-            val row = RemoteViews(c.packageName, R.layout.wallet_widget_wide_row)
+            val row = RemoteViews(c.packageName, rowLayout)
             row.setTextViewText(R.id.widget_row_ticker,
                 if (config.ticker) security.ticker else security.name)
             val logo = if (config.logo) OfficialLogoProvider.load(c, security) else null
@@ -97,9 +104,12 @@ internal object WidgetWideRenderer {
                 if (logo == null) View.VISIBLE else View.GONE)
             row.setTextViewText(R.id.widget_row_fallback, security.ticker.take(2))
             if (logo != null) row.setImageViewBitmap(R.id.widget_row_logo, logo)
-            val showPrice = config.price && !config.hideAmounts && minWidth >= 300
+            val showPrice = config.price && !config.hideAmounts
+            val quotePrice = wallet.quotes[security.id]?.price
             row.setTextViewText(R.id.widget_row_price,
-                if (showPrice) money(wallet.quotes[security.id]?.price, security.currency) else "")
+                if (!showPrice) "" else if (minWidth < 290 && quotePrice != null)
+                    number(quotePrice) + if (security.currency == "USD") " U$" else " $"
+                else money(quotePrice, security.currency))
             row.setViewVisibility(R.id.widget_row_price,
                 if (showPrice) View.VISIBLE else View.GONE)
             val details = buildList {
@@ -122,7 +132,7 @@ internal object WidgetWideRenderer {
             views.addView(R.id.widget_rows, row)
         }
         if (titles.isEmpty() && showTitles) {
-            val row = RemoteViews(c.packageName, R.layout.wallet_widget_wide_row)
+            val row = RemoteViews(c.packageName, rowLayout)
             row.setViewVisibility(R.id.widget_row_logo, View.GONE)
             row.setViewVisibility(R.id.widget_row_fallback, View.GONE)
             row.setViewVisibility(R.id.widget_row_price, View.GONE)
@@ -148,7 +158,7 @@ internal object WidgetWideRenderer {
             if (hidden) "" else age?.let { c.getString(R.string.widget_updated_short, it) }
                 ?: c.getString(R.string.widget_no_quote))
         views.setViewVisibility(R.id.widget_footer,
-            if (config.showUpdated && !hidden) View.VISIBLE else View.GONE)
+            if (plan.footer && !hidden) View.VISIBLE else View.GONE)
         views.setOnClickPendingIntent(R.id.widget_root,
             PendingIntent.getActivity(c, id + 20000,
                 Intent(c, MainActivity::class.java).putExtra("portfolio", portfolio),

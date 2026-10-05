@@ -18,7 +18,9 @@ data class WidgetSettings(
     val titleValue: Boolean = false, val weight: Boolean = false,
     val chart: Boolean = false, val period: String = "Jour",
     val hideAmounts: Boolean = false, val refresh: Int = 0,
-    val showUpdated: Boolean = true, val wideVersion: Int = 2,
+    val showUpdated: Boolean = true, val wideVersion: Int = 3,
+    // 0 = Auto. Stored for each appWidgetId with the rest of this configuration.
+    val titleCount: Int = 0,
 ) {
     fun titles(result: Result): List<Holding> {
         val held = result.holdings.filter { it.quantity > ZERO }
@@ -45,16 +47,17 @@ data class WidgetSettings(
                 portfolio = p.getString("portfolio:$id", "all") ?: "all",
                 style = if (wide) "Mixte premium" else "Mixte",
                 price = wide, chart = wide, titleTotalPercent = !wide,
+                titleCount = if (wide) 5 else 0,
             )
             // Upgrade the old mixed 4x2 layout once without changing portfolio,
             // chosen holdings, their order, or privacy settings.
-            return if (wide && saved.wideVersion < 2) {
+            return if (wide && saved.wideVersion < 3) {
                 val mixed = saved.style == "Mixte"
                 saved.copy(style = if (mixed) "Mixte premium" else saved.style,
                     price = if (mixed) true else saved.price,
                     chart = if (mixed) true else saved.chart,
                     titleTotalPercent = if (mixed) false else saved.titleTotalPercent,
-                    showUpdated = true, wideVersion = 2)
+                    showUpdated = true, wideVersion = 3, titleCount = 5)
             } else saved
         }
         fun save(c: Context, id: Int, settings: WidgetSettings, owner: String) {

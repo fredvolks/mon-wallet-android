@@ -121,6 +121,11 @@ open class WalletWidget : AppWidgetProvider() {
                     (s.secure.get("biometric") == "true" &&
                         s.secure.get("hide_widgets") != "false") || owner != s.repo.owner.value || !valid
                 val result = if (hidden) null else runCatching { wallet.result(portfolio) }.getOrNull()
+                val widgetHeight = manager.getAppWidgetOptions(id)
+                    .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
+                        if (kind.endsWith("4x3")) 240 else if (kind.endsWith("2x3")) 180 else 150)
+                val titlePlan = WidgetTitleLayout.plan(config, kind, widgetHeight,
+                    result?.let { config.titles(it).size } ?: 0)
                 if (kind.endsWith("4x2")) {
                     val points = cache.filter { it.kind == "intraday" }.flatMap {
                         runCatching {
@@ -179,14 +184,9 @@ open class WalletWidget : AppWidgetProvider() {
                 views.setTextColor(R.id.widget_amount, color)
                 views.setTextColor(R.id.widget_percent, color)
                 views.removeAllViews(R.id.widget_rows)
-                if (!hidden && big && config.showTitles && config.style !in setOf("Résumé", "Ultra compact")) {
-                    val limit = when {
-                        kind.endsWith("4x3") -> if (manager.getAppWidgetOptions(id)
-                            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180) >= 230) 6 else 3
-                        kind.endsWith("2x3") -> 2
-                        else -> 3
-                    }
-                    result?.let { config.titles(it) }?.take(limit)?.forEach { h ->
+                val canShowRows = (big || kind.endsWith("2x2")) && titlePlan.visible > 0
+                if (!hidden && canShowRows) {
+                    result?.let { config.titles(it) }?.take(titlePlan.visible)?.forEach { h ->
                         val security = wallet.security(h.securityId) ?: return@forEach
                         val row = RemoteViews(c.packageName, R.layout.wallet_widget_row)
                         row.setTextViewText(R.id.widget_row_ticker,
@@ -215,7 +215,7 @@ open class WalletWidget : AppWidgetProvider() {
                 }
                 views.setViewVisibility(
                     R.id.widget_rows,
-                    if (big && !hidden && config.showTitles &&
+                    if (canShowRows && !hidden && config.showTitles &&
                         config.style !in setOf("Résumé", "Ultra compact")) View.VISIBLE else View.GONE,
                 )
                 val points: List<Point> =

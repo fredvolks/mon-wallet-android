@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.8 — 2026-10-05 (nombre de titres du widget configurable)
+
+- Nombre de titres indépendant pour chaque widget : Auto ou 1 à 6, avec cinq titres par défaut en 4x2 et adaptation après redimensionnement.
+- Liste 4x2 compacte à cinq titres (six en densité maximale), ordre manuel fidèle à la sélection, remplacement automatique des positions vendues et aperçu immédiat.
+- Rendement total et variation du jour toujours visibles; le graphique et l'heure de mise à jour cèdent la place aux titres lorsque la hauteur manque.
+
 ## Mon Wallet v0.2.7 — 2026-10-05 (mise à jour du widget sur l'application d'origine)
 
 - APK de mise à jour `ca.monwallet.app` préparé avec le certificat de signature original, pour installer le widget 4x2 sur la version existante sans désinstaller l'app.

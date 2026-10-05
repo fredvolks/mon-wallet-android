@@ -432,6 +432,11 @@
     <string name="widget_section_appearance">APPEARANCE</string>
     <string name="widget_section_returns">RETURNS</string>
     <string name="widget_section_titles">HOLDINGS</string>
+    <string name="widget_title_count">Number of holdings shown</string>
+    <string name="widget_title_count_auto">Auto</string>
+    <string name="widget_title_count_hint">%1$d holdings will appear in this widget. The others remain selected.</string>
+    <string name="widget_drag_hint">Long-press a selected holding, then drag it to reorder.</string>
+    <string name="widget_core_metrics">Total return and today’s change always remain visible in 4×2.</string>
     <string name="widget_section_chart">CHART</string>
     <string name="widget_section_privacy">PRIVACY</string>
     <string name="widget_section_refresh">REFRESH</string>
