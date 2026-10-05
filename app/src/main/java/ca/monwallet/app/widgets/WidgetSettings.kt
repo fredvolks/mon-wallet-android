@@ -1,5 +1,6 @@
 package ca.monwallet.app.widgets
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import ca.monwallet.app.domain.*
 import com.google.gson.Gson
@@ -17,6 +18,7 @@ data class WidgetSettings(
     val titleValue: Boolean = false, val weight: Boolean = false,
     val chart: Boolean = false, val period: String = "Jour",
     val hideAmounts: Boolean = false, val refresh: Int = 0,
+    val showUpdated: Boolean = true, val wideVersion: Int = 2,
 ) {
     fun titles(result: Result): List<Holding> {
         val held = result.holdings.filter { it.quantity > ZERO }
@@ -34,9 +36,26 @@ data class WidgetSettings(
     companion object {
         fun load(c: Context, id: Int): WidgetSettings {
             val p = c.getSharedPreferences("widget_config", 0)
-            return p.getString("config:$id", null)?.let {
+            val wide = AppWidgetManager.getInstance(c).getAppWidgetInfo(id)
+                ?.provider?.className?.endsWith("Widget4x2") == true
+            val saved = p.getString("config:$id", null)?.let {
                 runCatching { Gson().fromJson(it, WidgetSettings::class.java) }.getOrNull()
-            } ?: WidgetSettings(portfolio = p.getString("portfolio:$id", "all") ?: "all")
+            }
+            if (saved == null) return WidgetSettings(
+                portfolio = p.getString("portfolio:$id", "all") ?: "all",
+                style = if (wide) "Mixte premium" else "Mixte",
+                price = wide, chart = wide, titleTotalPercent = !wide,
+            )
+            // Upgrade the old mixed 4x2 layout once without changing portfolio,
+            // chosen holdings, their order, or privacy settings.
+            return if (wide && saved.wideVersion < 2) {
+                val mixed = saved.style == "Mixte"
+                saved.copy(style = if (mixed) "Mixte premium" else saved.style,
+                    price = if (mixed) true else saved.price,
+                    chart = if (mixed) true else saved.chart,
+                    titleTotalPercent = if (mixed) false else saved.titleTotalPercent,
+                    showUpdated = true, wideVersion = 2)
+            } else saved
         }
         fun save(c: Context, id: Int, settings: WidgetSettings, owner: String) {
             c.getSharedPreferences("widget_config", 0).edit()

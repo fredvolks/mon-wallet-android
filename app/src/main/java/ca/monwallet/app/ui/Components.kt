@@ -209,7 +209,7 @@ fun Badge(text: String) {
 }
 
 @Composable
-fun Logo(s: Security) {
+fun Logo(s: Security, size: Dp = 34.dp) {
     val context = LocalContext.current
     var bitmap by remember(s.id, s.symbol, s.exchange, s.currency, s.type) { mutableStateOf<android.graphics.Bitmap?>(null) }
     LaunchedEffect(s.id, s.symbol, s.exchange, s.currency, s.type) {
@@ -217,15 +217,16 @@ fun Logo(s: Security) {
     }
     val colors = listOf(Color(0xFF00A8D4), Color(0xFFCF2746), Color(0xFF16845D), Color(0xFF4575DF))
     Box(
-        Modifier.size(34.dp)
+        Modifier.size(size)
             .clip(CircleShape)
             .background(if (bitmap != null) Color.White else colors[(s.symbol.hashCode() and Int.MAX_VALUE) % colors.size]),
         contentAlignment = Alignment.Center,
     ) {
         bitmap?.let {
             Image(it.asImageBitmap(), contentDescription = s.name,
-                modifier = Modifier.fillMaxSize().padding(3.dp), contentScale = ContentScale.Fit)
-        } ?: Text(s.ticker.take(2), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                modifier = Modifier.fillMaxSize().padding(if (size < 28.dp) 1.dp else 3.dp), contentScale = ContentScale.Fit)
+        } ?: Text(s.ticker.take(2), fontSize = if (size < 28.dp) 8.sp else 12.sp,
+            fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 

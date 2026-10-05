@@ -67,6 +67,7 @@ open class WalletWidget : AppWidgetProvider() {
                     androidx.work.ExistingWorkPolicy.REPLACE,
                     androidx.work
                         .OneTimeWorkRequestBuilder<ca.monwallet.app.RefreshWorker>()
+                        .setInputData(androidx.work.workDataOf("widgetId" to id))
                         .build(),
                 )
         }
@@ -120,6 +121,16 @@ open class WalletWidget : AppWidgetProvider() {
                     (s.secure.get("biometric") == "true" &&
                         s.secure.get("hide_widgets") != "false") || owner != s.repo.owner.value || !valid
                 val result = if (hidden) null else runCatching { wallet.result(portfolio) }.getOrNull()
+                if (kind.endsWith("4x2")) {
+                    val points = cache.filter { it.kind == "intraday" }.flatMap {
+                        runCatching {
+                            s.repo.gson.fromJson(it.payload, Array<Point>::class.java).toList()
+                        }.getOrDefault(emptyList())
+                    }.sortedBy { it.timestamp }
+                    manager.updateAppWidget(id, WidgetWideRenderer.render(c, id, info, config,
+                        wallet, portfolio, result, hidden, points))
+                    continue
+                }
                 val views = RemoteViews(c.packageName, R.layout.wallet_widget)
                 views.setTextViewText(
                     R.id.widget_title,

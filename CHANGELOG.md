@@ -1,5 +1,13 @@
 # Versions
 
+## Mon Wallet v0.2.6 — 2026-10-05 (widget premium 4x2)
+
+- Nouveau layout 4x2 à deux colonnes avec rendement total dominant, P&L du jour en capsule, trois titres sélectionnés et mini graphique lorsque des points réels existent.
+- Prix, variation, vrais logos vérifiés et repli ticker; les titres restent visibles avec le graphique et un cours absent reste indiqué comme indisponible.
+- Historique réel 1S puis 1M utilisé si les points intrajournaliers manquent; sans série valide, le graphique disparaît et la place revient au contenu.
+- Style « Mixte premium », aperçu du portefeuille réel, paramètres et ordre conservés par widget, confidentialité et heure de mise à jour.
+- Actualisation et réglages ciblent l'instance touchée; toucher le fond ouvre son portefeuille.
+
 ## Mon Wallet v0.2.5 — 2026-10-05 (widgets et routage Finances)
 
 - Réglages indépendants par widget, aperçu, rendement total du moteur comptable, titres détenus sélectionnables et réordonnables, confidentialité et rafraîchissement.

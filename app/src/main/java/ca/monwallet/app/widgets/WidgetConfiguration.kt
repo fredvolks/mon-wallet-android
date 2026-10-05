@@ -3,25 +3,33 @@ package ca.monwallet.app.widgets
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.work.*
 import ca.monwallet.app.MonWallet
 import ca.monwallet.app.R
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.ui.*
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.launch
 
 class WidgetConfiguration : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +37,8 @@ class WidgetConfiguration : ComponentActivity() {
         setResult(RESULT_CANCELED)
         val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
         if (id < 0) { finish(); return }
+        val wide = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)
+            ?.provider?.className?.endsWith("Widget4x2") == true
         val services = (application as MonWallet).services
         setContent {
             WalletTheme {
@@ -41,12 +51,21 @@ class WidgetConfiguration : ComponentActivity() {
                 }
                 val held = result?.holdings?.filter { it.quantity > ZERO }.orEmpty()
                 val current by rememberUpdatedState(config)
+                var cached by remember { mutableStateOf(emptyList<Point>()) }
+                LaunchedEffect(wallet.quotes, wallet.prices) {
+                    cached = services.repo.dao.cache().filter { it.kind == "intraday" }.flatMap {
+                        runCatching {
+                            services.repo.gson.fromJson(it.payload, Array<Point>::class.java).toList()
+                        }.getOrDefault(emptyList())
+                    }.sortedBy { it.timestamp }
+                }
                 Surface {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                         .padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         Text(stringResource(R.string.widget_configure),
                             style = MaterialTheme.typography.headlineSmall)
-                        Card(Modifier.fillMaxWidth()) {
+                        if (wide) WidgetWidePreview(wallet, key, result, config, cached)
+                        else Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(12.dp)) {
                                 Text(stringResource(R.string.widget_preview), color = Muted)
                                 Text(wallet.portfolios.find { it.id == key }?.name
@@ -75,11 +94,17 @@ class WidgetConfiguration : ComponentActivity() {
                             }
                         }
                         WidgetSection(stringResource(R.string.widget_section_appearance))
-                        listOf("Résumé" to R.string.widget_style_summary, "Titres" to R.string.widget_style_titles,
+                        ((if (wide) listOf("Mixte premium" to R.string.widget_style_mixed_premium)
+                            else emptyList()) +
+                            listOf("Résumé" to R.string.widget_style_summary, "Titres" to R.string.widget_style_titles,
                             "Graphique" to R.string.widget_style_chart, "Mixte" to R.string.widget_style_mixed,
-                            "Ultra compact" to R.string.widget_style_compact).forEach { (style, label) ->
+                            "Ultra compact" to R.string.widget_style_compact)).forEach { (style, label) ->
                             WidgetChoice(stringResource(label), config.style == style) {
-                                config = config.copy(style = style)
+                                config = if (style == "Mixte premium") config.copy(
+                                    style = style, chart = true, showTitles = true, totalPercent = true,
+                                    titleDayPercent = true, titleTotalPercent = false, price = true,
+                                    showUpdated = true)
+                                else config.copy(style = style)
                             }
                         }
                         WidgetSection(stringResource(R.string.widget_section_returns))
@@ -156,6 +181,9 @@ class WidgetConfiguration : ComponentActivity() {
                         if (config.chart) listOf("Jour", "1S", "1M", "3M", "6M", "1A").forEach { period ->
                             WidgetChoice(period, config.period == period) { config = config.copy(period = period) }
                         }
+                        if (wide) WidgetSwitch(stringResource(R.string.widget_show_updated), config.showUpdated) {
+                            config = config.copy(showUpdated = it)
+                        }
                         WidgetSection(stringResource(R.string.widget_section_privacy))
                         WidgetSwitch(stringResource(R.string.widget_hide_amounts), config.hideAmounts) { config = config.copy(hideAmounts = it) }
                         WidgetSection(stringResource(R.string.widget_section_refresh))
@@ -172,8 +200,11 @@ class WidgetConfiguration : ComponentActivity() {
                             if (config.refresh in listOf(15, 30, 60))
                                 work.enqueueUniquePeriodicWork("widget-refresh:$id", ExistingPeriodicWorkPolicy.UPDATE,
                                     PeriodicWorkRequestBuilder<ca.monwallet.app.RefreshWorker>(
-                                        config.refresh.toLong(), TimeUnit.MINUTES).build())
-                            WalletWidget.updateAll(this@WidgetConfiguration)
+                                        config.refresh.toLong(), TimeUnit.MINUTES)
+                                        .setInputData(workDataOf("widgetId" to id)).build())
+                            services.scope.launch {
+                                WalletWidget.render(applicationContext, intArrayOf(id))
+                            }
                             setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
                             finish()
                         }, enabled = wallet.portfolios.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
@@ -182,6 +213,105 @@ class WidgetConfiguration : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
+    config: WidgetSettings, cached: List<Point>) {
+    val portfolio = key.takeUnless { it == "all" }
+    val title = wallet.portfolios.find { it.id == key }?.name
+        ?: stringResource(R.string.all_portfolios)
+    val holdings = if (config.showTitles && config.style !in setOf("Résumé", "Graphique", "Ultra compact"))
+        result?.let { config.titles(it).take(3) }.orEmpty() else emptyList()
+    val series = remember(wallet, key, config.chart, config.period, cached) {
+        if (config.chart) WidgetChartData.values(wallet, portfolio, config.period, cached)
+        else emptyList()
+    }
+    val totalTint = when (result?.percent?.signum()) {
+        -1 -> Red
+        null, 0 -> Muted
+        else -> Green
+    }
+    val dayTint = when (result?.day?.signum()) {
+        -1 -> Red
+        null, 0 -> Muted
+        else -> Green
+    }
+    Column(Modifier.fillMaxWidth()
+        .background(Color(0xFF061722), RoundedCornerShape(22.dp))
+        .border(1.dp, Color(0xFF19747B), RoundedCornerShape(22.dp))
+        .padding(horizontal = 12.dp, vertical = 9.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, Modifier.weight(1f), color = Color.White, fontSize = 16.sp)
+            Text("⚙  ↻", color = Color.White, fontSize = 17.sp)
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(0.45f)) {
+                if (config.totalPercent) {
+                    Text(percent(result?.percent), color = totalTint, fontSize = 28.sp,
+                        lineHeight = 29.sp, maxLines = 1)
+                    Text(stringResource(R.string.widget_return_total), color = Muted, fontSize = 8.sp)
+                }
+                Text(stringResource(R.string.widget_today),
+                    Modifier.padding(top = 6.dp), color = Muted, fontSize = 8.sp)
+                val daily = listOfNotNull(
+                    signed(result?.day).takeIf { config.dayAmount && !config.hideAmounts },
+                    percent(result?.dayPercent).takeIf { config.dayPercent }
+                ).joinToString("  ")
+                if (daily.isNotEmpty()) Text(daily, Modifier.padding(top = 3.dp)
+                    .background(Color(0xFF123927), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                    color = dayTint, fontSize = 11.sp, maxLines = 1)
+            }
+            Spacer(Modifier.width(5.dp))
+            Spacer(Modifier.width(1.dp).height(74.dp).background(Color(0xFF25424E)))
+            Column(Modifier.weight(0.55f).padding(start = 6.dp)) {
+                holdings.forEach { h ->
+                    val security = wallet.security(h.securityId) ?: return@forEach
+                    Row(Modifier.fillMaxWidth().height(24.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        if (config.logo) Logo(security, 20.dp)
+                        Text(security.ticker, Modifier.weight(1f).padding(start = 3.dp),
+                            fontSize = 9.sp, maxLines = 1)
+                        if (config.price && !config.hideAmounts)
+                            Text(money(wallet.quotes[security.id]?.price, security.currency),
+                                fontSize = 8.sp, maxLines = 1)
+                        if (config.titleDayPercent)
+                            Text(percent(h.dayPercent), Modifier.padding(start = 4.dp),
+                                color = if (h.dayPercent?.signum() == -1) Red else Green,
+                                fontSize = 8.sp, maxLines = 1)
+                    }
+                }
+                if (holdings.isEmpty() && config.showTitles)
+                    Text(stringResource(R.string.widget_no_holdings), color = Muted, fontSize = 9.sp)
+            }
+        }
+        if (series.size >= 2 && config.style in setOf("Mixte", "Mixte premium", "Graphique")) {
+            val lineColor = if (series.last() < series.first()) Red else Green
+            Canvas(Modifier.fillMaxWidth().height(22.dp)) {
+                val low = series.minOrNull() ?: 0f
+                val span = ((series.maxOrNull() ?: low) - low).takeIf { it > 0 } ?: 1f
+                series.zipWithNext().forEachIndexed { i, pair ->
+                    fun point(index: Int, value: Float) =
+                        Offset(index * size.width / (series.size - 1),
+                            size.height - 2f - (value - low) / span * (size.height - 4f))
+                    drawLine(lineColor, point(i, pair.first), point(i + 1, pair.second),
+                        strokeWidth = 2.dp.toPx())
+                }
+            }
+        }
+        if (config.showUpdated) {
+            val heldIds = result?.holdings?.filter { it.quantity > ZERO }
+                ?.map { it.securityId }?.toSet().orEmpty()
+            val fetched = wallet.quotes.values.filter { it.securityId in heldIds }
+                .minOfOrNull { it.fetchedAt }
+            val minutes = fetched?.let {
+                TimeUnit.MILLISECONDS.toMinutes((System.currentTimeMillis() - it).coerceAtLeast(0L))
+            }
+            Text(minutes?.let { stringResource(R.string.widget_updated_short, "${it} min") }
+                ?: stringResource(R.string.widget_no_quote), color = Muted, fontSize = 8.sp)
         }
     }
 }

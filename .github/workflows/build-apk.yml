@@ -8,6 +8,12 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     permissions: {contents: read}
+    env:
+      KEYSTORE_B64: ${{ secrets.KEYSTORE }}
+      MONWALLET_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      MONWALLET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      MONWALLET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      MONWALLET_STORE_FILE: ${{ github.workspace }}/monwallet-release.jks
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -19,3 +25,26 @@ jobs:
         with:
           name: MonWallet-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Restore signing key
+        if: github.event_name == 'push' && env.KEYSTORE_B64 != '' && env.MONWALLET_STORE_PASSWORD != '' && env.MONWALLET_KEY_ALIAS != '' && env.MONWALLET_KEY_PASSWORD != ''
+        run: |
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$MONWALLET_STORE_FILE"
+          chmod 600 "$MONWALLET_STORE_FILE"
+      - name: Build and verify update APK
+        if: github.event_name == 'push' && env.KEYSTORE_B64 != '' && env.MONWALLET_STORE_PASSWORD != '' && env.MONWALLET_KEY_ALIAS != '' && env.MONWALLET_KEY_PASSWORD != ''
+        run: |
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-build-cache --no-daemon
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
+          cert=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk | sed -n 's/.*Signer #1 certificate SHA-256 digest: //p')
+          test "$cert" = "9fa4232613c4cccf611e8114fd121da630bbe0f8f2e6886814fde6225b10750d"
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+      - name: Upload verified update
+        if: github.event_name == 'push' && env.KEYSTORE_B64 != '' && env.MONWALLET_STORE_PASSWORD != '' && env.MONWALLET_KEY_ALIAS != '' && env.MONWALLET_KEY_PASSWORD != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: MonWallet-v0.2.6-signed
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/bundle/release/app-release.aab
+      - if: always()
+        run: rm -f "$MONWALLET_STORE_FILE"

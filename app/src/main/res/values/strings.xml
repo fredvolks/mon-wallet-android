@@ -439,9 +439,11 @@
     <string name="widget_style_titles">Titres</string>
     <string name="widget_style_chart">Graphique</string>
     <string name="widget_style_mixed">Mixte</string>
+    <string name="widget_style_mixed_premium">Mixte premium (4x2)</string>
     <string name="widget_style_compact">Ultra compact</string>
     <string name="widget_preview">APERÇU LIVE</string>
     <string name="widget_total">TOTAL</string>
+    <string name="widget_return_total">RENDEMENT TOTAL</string>
     <string name="widget_today">Aujourd’hui</string>
     <string name="widget_total_short">Total</string>
     <string name="widget_gain">Gain total</string>
@@ -474,6 +476,7 @@
     <string name="widget_title_value">Valeur de la position</string>
     <string name="widget_title_weight">Poids du portefeuille</string>
     <string name="widget_show_chart">Afficher le graphique</string>
+    <string name="widget_show_updated">Afficher la dernière mise à jour</string>
     <string name="widget_hide_amounts">Masquer tous les montants $</string>
     <string name="widget_refresh_15">15 min</string>
     <string name="widget_refresh_30">30 min</string>
@@ -482,6 +485,10 @@
     <string name="widget_save">Enregistrer ce widget</string>
     <string name="widget_no_quote">cours indisponible</string>
     <string name="widget_updated">Mis à jour : %1$s</string>
+    <string name="widget_updated_short">MAJ %1$s</string>
+    <string name="widget_refresh">Actualiser ce widget</string>
+    <string name="widget_no_holdings">Aucun titre détenu</string>
+    <string name="widget_locked">Données masquées</string>
     <string name="widget_chart_description">Évolution du portefeuille</string>
     <string name="widget_logo">Logo du titre</string>
     <string name="widget_edit">Modifier</string>

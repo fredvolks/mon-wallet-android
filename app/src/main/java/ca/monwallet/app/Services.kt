@@ -58,7 +58,8 @@ class Services(val context: Context) {
     val busy = MutableStateFlow(false)
     val marketStatus = MutableStateFlow("Derniers cours en cache")
 
-    suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false) {
+    suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false,
+        notifyWidgets: Boolean = true) {
         if (busy.value) return
         busy.value = true
         try {
@@ -99,7 +100,7 @@ class Services(val context: Context) {
                 if (errors.get() == 0) "Cours actualisés · délai non garanti"
                 else "${errors.get()} cours indisponible(s) · cache conservé"
             runCatching { Notifications.evaluate(this) }
-            WalletWidget.updateAll(context)
+            if (notifyWidgets) WalletWidget.updateAll(context)
             if (auth.user.value != null) runCatching { sync.sync() }
         } finally {
             busy.value = false
@@ -112,7 +113,10 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val s = (applicationContext as MonWallet).services
         while (!s.initialized.value) delay(50)
         return try {
-            s.refresh()
+            val widgetId = inputData.getInt("widgetId", -1)
+            s.refresh(notifyWidgets = widgetId < 0)
+            if (widgetId >= 0)
+                WalletWidget.render(applicationContext, intArrayOf(widgetId))
             Result.success()
         } catch (e: Exception) {
             Result.retry()
