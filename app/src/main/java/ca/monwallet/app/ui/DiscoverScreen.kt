@@ -59,7 +59,8 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                 vm.services.discovery.analysts(found, filters,
                     onProgress = { status = it }, applyFilters = mode == "analyst")
             else found
-            status = rows.size.toString() + " titres · échantillon FMP de 50 par bourse · cours non garantis temps réel"
+            status = rows.size.toString() + " titres · échantillon FMP de 50 par bourse · " +
+                if (mode == "analyst") "couverture analystes US selon disponibilité" else "cours non garantis temps réel"
             vm.services.foregroundSecurities.value = rows.take(16).map { it.security }
         } catch (e: Exception) {
             rows = emptyList()
@@ -231,7 +232,16 @@ fun PeriodPills(selected: PerformancePeriod, choose: (PerformancePeriod) -> Unit
         Row(Modifier.horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
             columns.filter { it != "ticker" }.forEach { key ->
                 val value = discoveryCell(row, quote, key, period)
-                Text(value, Modifier.width((MarketColumns.all[key]?.width ?: 86).dp),
+                val width = (MarketColumns.all[key]?.width ?: 86).dp
+                if (key == "price") Column(Modifier.width(width)) {
+                    Text(value, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(quote?.let { when (NormalizedQuote.from(it).freshness) {
+                        QuoteFreshness.REALTIME -> "Temps réel"
+                        QuoteFreshness.DELAYED -> "Diff. ${it.delay} min"
+                        QuoteFreshness.CACHED -> "Cache"
+                        QuoteFreshness.STALE -> "Cache ancien"
+                    } } ?: "FMP · délai ?", color = Muted, fontSize = 8.sp, maxLines = 1)
+                } else Text(value, Modifier.width(width),
                     fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     color = if (key in listOf("period", "momentum", "opportunity") &&
                         !value.startsWith("-") && value != "—") Green else MaterialTheme.colorScheme.onSurface)
@@ -325,16 +335,40 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
         FilterNumber("Prix minimum", initial.price, false) { update(initial.copy(price = it ?: BigDecimal.ZERO)) }
         FilterNumber("Prix maximum", initial.priceMax) { update(initial.copy(priceMax = it)) }
         FilterNumber("Volume moyen min.", initial.volume, false) { update(initial.copy(volume = it ?: BigDecimal.ZERO)) }
+        Row(Modifier.horizontalScroll(rememberScrollState())) {
+            listOf("100000", "250000", "500000", "1000000", "5000000").forEach { n ->
+                FilterChip(initial.volume == BigDecimal(n), onClick = {
+                    update(initial.copy(volume = BigDecimal(n))) },
+                    label = { Text(if (n.length < 7) n.dropLast(3) + "k" else n.dropLast(6) + "M") })
+            }
+        }
         FilterNumber("Dollar volume min.", initial.dollarVolumeMin) { update(initial.copy(dollarVolumeMin = it)) }
+        Row(Modifier.horizontalScroll(rememberScrollState())) {
+            listOf("5000000", "10000000", "25000000").forEach { n ->
+                FilterChip(initial.dollarVolumeMin == BigDecimal(n), onClick = {
+                    update(initial.copy(dollarVolumeMin = BigDecimal(n))) },
+                    label = { Text(n.dropLast(6) + " M$") })
+            }
+        }
         Text("VALEUR ET CROISSANCE", color = Green)
         FilterNumber("P/E minimum", initial.peMin) { update(initial.copy(peMin = it)) }
         FilterNumber("P/E maximum", initial.peMax) { update(initial.copy(peMax = it)) }
         FilterToggle("P/E positif seulement", initial.pePositive) { update(initial.copy(pePositive = it)) }
         FilterNumber("Dividend Yield min. (%)", initial.dividendMin) { update(initial.copy(dividendMin = it)) }
+        Row(Modifier.horizontalScroll(rememberScrollState())) {
+            listOf(null, 0, 1, 2, 3, 4, 5).forEach { n ->
+                FilterChip(initial.dividendMin == n?.let { BigDecimal(it) }, onClick = {
+                    update(initial.copy(dividendMin = n?.let { BigDecimal(it) })) },
+                    label = { Text(n?.let { "> $it %" } ?: "Tous") })
+            }
+        }
         FilterNumber("Revenue Growth min.", initial.revenueGrowthMin) { update(initial.copy(revenueGrowthMin = it)) }
         FilterNumber("EPS Growth min.", initial.epsGrowthMin) { update(initial.copy(epsGrowthMin = it)) }
+        FilterNumber("FCF Growth min.", initial.fcfGrowthMin) { update(initial.copy(fcfGrowthMin = it)) }
         FilterNumber("ROE min.", initial.roeMin) { update(initial.copy(roeMin = it)) }
         FilterNumber("ROA min.", initial.roaMin) { update(initial.copy(roaMin = it)) }
+        FilterNumber("ROIC min.", initial.roicMin) { update(initial.copy(roicMin = it)) }
+        FilterNumber("Marge nette min.", initial.netMarginMin) { update(initial.copy(netMarginMin = it)) }
         FilterNumber("Debt/Equity max.", initial.debtEquityMax) { update(initial.copy(debtEquityMax = it)) }
         Text("SECTEURS", color = Green)
         Row(Modifier.horizontalScroll(rememberScrollState())) {
@@ -373,8 +407,21 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
         Text("ANALYSTES", color = Green)
         FilterNumber("Analystes minimum", BigDecimal(initial.analystMin), false) {
             update(initial.copy(analystMin = it?.toInt() ?: 0)) }
+        Row(Modifier.horizontalScroll(rememberScrollState())) {
+            listOf(1, 3, 5, 10, 20).forEach { n ->
+                FilterChip(initial.analystMin == n, onClick = {
+                    update(initial.copy(analystMin = n)) }, label = { Text(n.toString()) })
+            }
+        }
         FilterNumber("Upside moyen min. (%)", BigDecimal.valueOf(initial.upsideMin), false) {
             update(initial.copy(upsideMin = it?.toDouble() ?: 0.0)) }
+        Row(Modifier.horizontalScroll(rememberScrollState())) {
+            listOf(0, 5, 10, 15, 20, 25).forEach { n ->
+                FilterChip(initial.upsideMin == n.toDouble(), onClick = {
+                    update(initial.copy(upsideMin = n.toDouble())) },
+                    label = { Text("$n %") })
+            }
+        }
         Row(Modifier.horizontalScroll(rememberScrollState())) {
             listOf("Tous", "Hold+", "Buy+", "Strong Buy").forEach { c ->
                 FilterChip(initial.consensusMin == c, onClick = { update(initial.copy(consensusMin = c)) },

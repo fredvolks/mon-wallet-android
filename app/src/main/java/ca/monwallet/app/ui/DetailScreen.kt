@@ -72,7 +72,7 @@ fun DetailScreen(
         status = null
         prices = emptyList()
         try {
-            runCatching { s.repo.quote(s.market.quote(security)) }
+            runCatching { s.refreshQuote(security) }
             prices = s.market.history(security, codes[range], if (range == 0) "5m" else "1d")
             if (range >= 6) s.repo.points(security.id, prices)
         } catch (e: CancellationException) {

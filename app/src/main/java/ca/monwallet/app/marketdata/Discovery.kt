@@ -21,8 +21,11 @@ data class Filters(
     val dollarVolumeMin: BigDecimal? = null,
     val revenueGrowthMin: BigDecimal? = null,
     val epsGrowthMin: BigDecimal? = null,
+    val fcfGrowthMin: BigDecimal? = null,
     val roeMin: BigDecimal? = null,
     val roaMin: BigDecimal? = null,
+    val roicMin: BigDecimal? = null,
+    val netMarginMin: BigDecimal? = null,
     val debtEquityMax: BigDecimal? = null,
     val country: String = "",
     val sector: String = "",
@@ -68,6 +71,7 @@ data class DiscoveryRow(
 class Discovery(private val s: Services) {
     private val historyCache = mutableMapOf<String, Pair<Long, List<Point>>>()
     private val ratioCache = mutableMapOf<String, Pair<Long, Map<String, BigDecimal?>>>()
+    private val growthCache = mutableMapOf<String, Pair<Long, Map<String, BigDecimal?>>>()
     private val resultCache = mutableMapOf<String, Pair<Long, List<DiscoveryRow>>>()
     private val now get() = System.currentTimeMillis()
 
@@ -100,9 +104,11 @@ class Discovery(private val s: Services) {
         val failures = java.util.concurrent.atomic.AtomicInteger()
         val known = s.repo.current().securities
         val needsRatios = f.columns.any { it in setOf("pe", "forwardPe", "ps", "pb", "evEbitda",
-            "roe", "roa", "revenueGrowth", "epsGrowth", "debtEquity") } ||
+            "roe", "roa", "roic", "netMargin", "revenueGrowth", "epsGrowth",
+            "fcfGrowth", "debtEquity") } ||
             listOf(f.peMin, f.peMax, f.revenueGrowthMin, f.epsGrowthMin, f.roeMin,
-                f.roaMin, f.debtEquityMax).any { it != null } || f.pePositive
+                f.roaMin, f.roicMin, f.netMarginMin, f.fcfGrowthMin,
+                f.debtEquityMax).any { it != null } || f.pePositive
         val rows = supervisorScope {
             candidates.map { o -> async {
                 gate.withPermit {
@@ -137,15 +143,24 @@ class Discovery(private val s: Services) {
                             it.symbol == symbol && it.currency == currency
                         } ?: Security.of(symbol, o.optString("companyName", symbol),
                             exchange, currency, if (o.optBoolean("isEtf")) "ETF" else "STOCK")
-                        val ratios = if (needsRatios) runCatching { ratios(sec.symbol, key) }
+                        val rawRatios = if (needsRatios) runCatching { ratios(sec.symbol, key) }
                             .getOrDefault(emptyMap()) else emptyMap()
+                        val needsGrowth = listOf(f.revenueGrowthMin, f.epsGrowthMin,
+                            f.fcfGrowthMin).any { it != null } ||
+                            f.columns.any { it in setOf("revenueGrowth", "epsGrowth", "fcfGrowth") }
+                        val growth = if (needsGrowth && (rawRatios["revenueGrowth"] == null ||
+                            rawRatios["epsGrowth"] == null || f.fcfGrowthMin != null))
+                            runCatching { growth(sec) }.getOrDefault(emptyMap()) else emptyMap()
+                        val ratios = rawRatios + growth.filterValues { it != null }
                         val pe = ratios["pe"]
                         if (f.pePositive && (pe == null || pe <= ZERO)) return@withPermit null
                         if (f.peMin != null && (pe == null || pe < f.peMin)) return@withPermit null
                         if (f.peMax != null && (pe == null || pe > f.peMax)) return@withPermit null
                         for ((minimum, name) in listOf(
                             f.revenueGrowthMin to "revenueGrowth", f.epsGrowthMin to "epsGrowth",
-                            f.roeMin to "roe", f.roaMin to "roa")) {
+                            f.fcfGrowthMin to "fcfGrowth", f.roeMin to "roe",
+                            f.roaMin to "roa", f.roicMin to "roic",
+                            f.netMarginMin to "netMargin")) {
                             if (minimum != null && (ratios[name] == null || ratios[name]!! < minimum))
                                 return@withPermit null
                         }
@@ -210,15 +225,14 @@ class Discovery(private val s: Services) {
                 gate.withPermit {
                     try {
                         val analyst = s.market.analyst(row.security) ?: return@withPermit null
-                        val count = listOfNotNull(analyst.buy, analyst.hold, analyst.sell).sum()
-                        val target = analyst.target ?: return@withPermit null
-                        val upside = (target - row.price).toDouble() / row.price.toDouble() * 100
-                        if (applyFilters && (count < f.analystMin || upside < f.upsideMin))
+                        val assessment = AnalystOpportunity.assess(analyst, row.price, row.metrics)
+                            ?: return@withPermit null
+                        if (applyFilters && (assessment.analystCount < f.analystMin ||
+                            assessment.upside < f.upsideMin))
                             return@withPermit null
-                        val buyRatio = (analyst.buy ?: 0).toDouble() / count.coerceAtLeast(1)
-                        if (applyFilters && f.consensusMin == "Buy+" && buyRatio <= .5)
+                        if (applyFilters && f.consensusMin == "Buy+" && assessment.buyRatio <= .5)
                             return@withPermit null
-                        if (applyFilters && f.consensusMin == "Strong Buy" && buyRatio < .75)
+                        if (applyFilters && f.consensusMin == "Strong Buy" && assessment.buyRatio < .75)
                             return@withPermit null
                         val age = analyst.date?.let { runCatching {
                             java.time.temporal.ChronoUnit.DAYS.between(LocalDate.parse(it), LocalDate.now())
@@ -226,17 +240,10 @@ class Discovery(private val s: Services) {
                         if (applyFilters && f.targetAgeDays != null &&
                             (age == null || age > f.targetAgeDays))
                             return@withPermit null
-                        val dispersion = if (analyst.high != null && analyst.low != null &&
-                            target.signum() > 0) (analyst.high - analyst.low).toDouble() /
-                            target.toDouble() * 100 else null
-                        if (applyFilters && f.excludeDispersion && (dispersion == null || dispersion > 50))
+                        if (applyFilters && f.excludeDispersion &&
+                            (assessment.dispersion == null || assessment.dispersion > 50))
                             return@withPermit null
-                        val score = (upside.coerceIn(0.0, 60.0) / 60 * 30 +
-                            buyRatio * 20 + (count.toDouble() / 30).coerceIn(0.0, 1.0) * 15 +
-                            (row.metrics?.score ?: 0) * .25 +
-                            (1 - (dispersion ?: 50.0) / 100).coerceIn(0.0, 1.0) * 10)
-                            .toInt().coerceIn(0, 100)
-                        row.copy(analyst = analyst, opportunityScore = score)
+                        row.copy(analyst = analyst, opportunityScore = assessment.score)
                     } catch (_: Exception) {
                         null
                     } finally {
@@ -271,11 +278,30 @@ class Discovery(private val s: Services) {
             "evEbitda" to o?.number("enterpriseValueMultipleTTM"),
             "roe" to o?.number("returnOnEquityTTM"),
             "roa" to o?.number("returnOnAssetsTTM"),
+            "roic" to o?.number("returnOnInvestedCapitalTTM"),
+            "netMargin" to o?.number("netProfitMarginTTM"),
             "revenueGrowth" to o?.number("revenueGrowthTTM"),
             "epsGrowth" to o?.number("epsGrowthTTM"),
             "debtEquity" to o?.number("debtEquityRatioTTM"),
         )
         ratioCache[symbol] = now to ratios
         return ratios
+    }
+
+    private suspend fun growth(security: Security): Map<String, BigDecimal?> {
+        growthCache[security.id]?.takeIf { now - it.first < 6 * 60 * 60_000 }
+            ?.let { return it.second }
+        val data = s.market.fundamentals(security)
+        fun annual(label: String): BigDecimal? {
+            val series = data.annual[label]?.takeLast(2) ?: return null
+            if (series.size != 2 || series.first().second.signum() <= 0) return null
+            return (series.last().second - series.first().second)
+                .multiply(BigDecimal(100)).divide(series.first().second, MC)
+        }
+        val values = mapOf("revenueGrowth" to
+            (data.metrics["Croissance revenus %"]?.toBigDecimalOrNull() ?: annual("Revenus")),
+            "epsGrowth" to annual("BPA"), "fcfGrowth" to annual("Free cash flow"))
+        growthCache[security.id] = now to values
+        return values
     }
 }

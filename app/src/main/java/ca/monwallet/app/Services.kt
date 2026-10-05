@@ -13,10 +13,13 @@ import ca.monwallet.app.sync.SyncManager
 import ca.monwallet.app.updates.Updater
 import ca.monwallet.app.widgets.WalletWidget
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 open class MonWallet : Application() {
     override fun attachBaseContext(base: Context) {
@@ -60,6 +63,18 @@ class Services(val context: Context) {
     val busy = MutableStateFlow(false)
     val marketStatus = MutableStateFlow("Derniers cours en cache")
     val liveQuotes: LiveQuoteProvider = ForegroundQuoteProvider(market)
+    private val quoteLocks = ConcurrentHashMap<String, Mutex>()
+    private val recentQuotes = ConcurrentHashMap<String, Quote>()
+
+    suspend fun refreshQuote(security: Security): Quote =
+        quoteLocks.getOrPut(security.id) { Mutex() }.withLock {
+            recentQuotes[security.id]?.takeIf {
+                System.currentTimeMillis() - it.fetchedAt < 5_000
+            } ?: liveQuotes.quote(security).cached.also { fresh ->
+                repo.quote(fresh)
+                recentQuotes[security.id] = fresh
+            }
+        }
 
     suspend fun refreshForeground(securities: List<Security>) {
         if (busy.value || securities.isEmpty()) return
@@ -69,10 +84,9 @@ class Services(val context: Context) {
                 async {
                     gate.withPermit {
                         try {
-                            val live = liveQuotes.quote(security)
+                            val live = refreshQuote(security)
                             // The existing quote cache remains the single source observed by
                             // portfolio, watchlist, detail and widgets.
-                            repo.quote(live.cached)
                             live
                         } catch (e: CancellationException) {
                             throw e
@@ -109,7 +123,7 @@ class Services(val context: Context) {
                         async {
                             semaphore.withPermit {
                                 try {
-                                    repo.quote(market.quote(s))
+                                    refreshQuote(s)
                                     if (history || w.prices.none { it.securityId == s.id })
                                         repo.points(s.id, market.history(s))
                                     if (s.id in ids || s.symbol == "CAD=X")
