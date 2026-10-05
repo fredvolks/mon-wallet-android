@@ -86,15 +86,38 @@ fun Authentication(s: Services, vm: WalletViewModel, onGuest: () -> Unit, onSett
     var retryGoogleMigration by remember { mutableStateOf<Boolean?>(null) }
     var googleMigrationPrompt by remember { mutableStateOf(false) }
     val wallet by vm.wallet.collectAsState()
+    fun browserGoogleSignIn(migrateGuest: Boolean) {
+        try {
+            CustomTabsIntent.Builder().build().launchUrl(
+                context, s.auth.oauth("google", migrateGuest)
+            )
+        } catch (e: Exception) {
+            if (ca.monwallet.app.BuildConfig.DEBUG)
+                android.util.Log.w("MonWalletAuth", "Google browser launch failed: ${e.javaClass.simpleName}")
+            signInError = true
+        }
+    }
     fun googleSignIn(migrateGuest: Boolean) {
         retryGoogleMigration = migrateGuest
+        // The preview package has its own signing certificate and no Android Google client.
+        // Browser OAuth uses the configured Web client and returns via the preview callback.
+        if (ca.monwallet.app.BuildConfig.DEBUG) {
+            browserGoogleSignIn(migrateGuest)
+            return
+        }
         vm.run {
             try {
                 s.auth.google(context, migrateGuest)
                 onGuest()
-                s.sync.sync()
+                runCatching { s.sync.sync() }
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: Exception) { signInError = true }
+            catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                // Dismissing Google's account picker is not a sign-in failure.
+            } catch (e: Exception) {
+                if (ca.monwallet.app.BuildConfig.DEBUG)
+                    android.util.Log.w("MonWalletAuth", "Google native failure: ${e.javaClass.simpleName}")
+                browserGoogleSignIn(migrateGuest)
+            }
         }
     }
 
