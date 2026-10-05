@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28], application = TestMonWallet::class)
 class Widget4x2LayoutTest {
     @Test fun previewCanInstallBesideTheExistingRelease() {
-        assertEquals("ca.monwallet.app.preview", BuildConfig.APPLICATION_ID)
+        assertEquals("ca.monwallet.app.preview2", BuildConfig.APPLICATION_ID)
     }
 
     @Test fun chartFallbackUsesOnlyRealHistoryAndNeverFabricatesPoints() {
