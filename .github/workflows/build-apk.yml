@@ -25,6 +25,21 @@ jobs:
         with:
           name: MonWallet-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Build unsigned release for local signing
+        env:
+          MONWALLET_STORE_FILE: ''
+        run: ./gradlew :app:assembleRelease :app:bundleRelease --no-build-cache --no-daemon
+      - name: Align release and package signing tools
+        run: |
+          mkdir -p unsigned-dist
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -P 16 -f 4 app/build/outputs/apk/release/app-release-unsigned.apk unsigned-dist/MonWallet-v0.2.7-aligned-unsigned.apk
+          cp app/build/outputs/bundle/release/app-release.aab unsigned-dist/MonWallet-v0.2.7-unsigned.aab
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" unsigned-dist/apksigner.jar
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 unsigned-dist/MonWallet-v0.2.7-aligned-unsigned.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MonWallet-v0.2.7-sign-locally
+          path: unsigned-dist/*
       - name: Restore signing key
         if: github.event_name == 'push' && env.KEYSTORE_B64 != '' && env.MONWALLET_STORE_PASSWORD != '' && env.MONWALLET_KEY_ALIAS != '' && env.MONWALLET_KEY_PASSWORD != ''
         run: |
@@ -42,7 +57,7 @@ jobs:
         if: github.event_name == 'push' && env.KEYSTORE_B64 != '' && env.MONWALLET_STORE_PASSWORD != '' && env.MONWALLET_KEY_ALIAS != '' && env.MONWALLET_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
-          name: MonWallet-v0.2.6-signed
+          name: MonWallet-v0.2.7-signed
           path: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/bundle/release/app-release.aab

@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.7 — 2026-10-05 (mise à jour du widget sur l'application d'origine)
+
+- APK de mise à jour `ca.monwallet.app` préparé avec le certificat de signature original, pour installer le widget 4x2 sur la version existante sans désinstaller l'app.
+- Rendement total dominant, P&L du jour, titres configurés, mini graphique lorsque l'historique existe, boutons réglages et actualisation propres à chaque widget.
+- Aucun changement de schéma Room dans cette version. Les comptes Google et les données financières canadiennes nécessitent encore une vérification fonctionnelle sur appareil.
+
+
 ## Mon Wallet v0.2.6 — 2026-10-05 (widget premium 4x2)
 
 - Nouveau layout 4x2 à deux colonnes avec rendement total dominant, P&L du jour en capsule, trois titres sélectionnés et mini graphique lorsque des points réels existent.
