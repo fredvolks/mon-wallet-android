@@ -82,6 +82,7 @@ object OfficialDomains {
         "BLDP|NASDAQ|USD|STOCK" to "ballard.com",
         "PHOS.CN|CSE|CAD|STOCK" to "firstphosphate.com",
         "XEQT.TO|TSX|CAD|ETF" to "ishares.com",
+        "VFV.TO|TSX|CAD|ETF" to "vanguard.ca",
     )
     fun forIdentity(symbol: String, exchange: String, currency: String, type: String): String? {
         val market = when (exchange.uppercase().replace(" ", "")) {

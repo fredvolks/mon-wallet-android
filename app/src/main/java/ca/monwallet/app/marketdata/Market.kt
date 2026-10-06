@@ -137,6 +137,8 @@ class Yahoo : MarketDataProvider {
             name,
             marketOpen = period?.let { now >= it.optLong("start") && now < it.optLong("end") },
             volume = m.number("regularMarketVolume"),
+            averageVolume = m.number("averageDailyVolume3Month")
+                ?: m.number("averageDailyVolume10Day"),
             high52 = m.number("fiftyTwoWeekHigh"),
             low52 = m.number("fiftyTwoWeekLow"),
             delay = m.number("exchangeDataDelayedBy")?.toInt()?.takeIf { it > 0 },

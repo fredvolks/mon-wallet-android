@@ -510,8 +510,8 @@ fun SourceSettings(s: Services, vm: WalletViewModel, onClose: () -> Unit) {
     var provider by remember { mutableStateOf(s.secure.get("provider") ?: "yahoo") }
     FullDialog(stringResource(R.string.ui_source_des_donnees_e07e6), onClose) {
         Caption(stringResource(R.string.market_source_status))
-        Text("Découvrir · FMP", fontWeight = FontWeight.SemiBold)
-        Caption("Une clé FMP avec accès au screener Canada/USA est nécessaire pour charger le classement.")
+        Text("Découvrir", fontWeight = FontWeight.SemiBold)
+        Caption("Sans clé FMP : sélection limitée du catalogue et de tes titres, classée sur les historiques disponibles. Avec clé FMP : échantillon de plusieurs bourses.")
         OutlinedTextField(fmp, { fmp = it }, label = { Text("Clé API FMP") },
             visualTransformation = PasswordVisualTransformation(), singleLine = true,
             modifier = Modifier.fillMaxWidth())

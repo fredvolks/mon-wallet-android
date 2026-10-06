@@ -59,8 +59,15 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                 vm.services.discovery.analysts(found, filters,
                     onProgress = { status = it }, applyFilters = mode == "analyst")
             else found
-            status = rows.size.toString() + " titres · échantillon FMP de 50 par bourse · " +
+            status = rows.size.toString() + " titres · " +
+                (if (vm.services.secure.get("fmp_key").isNullOrBlank())
+                    "sélection limitée (catalogue et titres suivis) · "
+                else "échantillon FMP de 50 par bourse · ") +
                 if (mode == "analyst") "couverture analystes US selon disponibilité" else "cours non garantis temps réel"
+            if (rows.isEmpty() && vm.services.secure.get("fmp_key").isNullOrBlank() &&
+                filters.cap > BigDecimal.ZERO && filters.exchange.split(',').all {
+                    it.trim() in setOf("TSX", "TSXV") })
+                status = "Capitalisation canadienne indisponible avec les sources configurées. Une source autorisée est nécessaire pour filtrer par capitalisation; choisir « Toutes » affiche les titres dont les historiques et volumes sont disponibles."
             vm.services.foregroundSecurities.value = rows.take(16).map { it.security }
         } catch (e: Exception) {
             rows = emptyList()
@@ -166,7 +173,7 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                     }
                 }
                 if (sorted.isEmpty() && !busy) item {
-                    Text(if (status.contains("Clé FMP")) status
+                    Text(if (status.contains("indisponibles", true)) status
                         else "Aucun titre ne satisfait ces filtres avec les données disponibles.",
                         Modifier.padding(18.dp), color = Muted)
                 }
@@ -240,7 +247,7 @@ fun PeriodPills(selected: PerformancePeriod, choose: (PerformancePeriod) -> Unit
                         QuoteFreshness.DELAYED -> "Diff. ${it.delay} min"
                         QuoteFreshness.CACHED -> "Cache"
                         QuoteFreshness.STALE -> "Cache ancien"
-                    } } ?: "FMP · délai ?", color = Muted, fontSize = 8.sp, maxLines = 1)
+                    } } ?: "Dernier cours · délai ?", color = Muted, fontSize = 8.sp, maxLines = 1)
                 } else Text(value, Modifier.width(width),
                     fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     color = if (key in listOf("period", "momentum", "opportunity") &&

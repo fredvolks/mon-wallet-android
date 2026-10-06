@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.9 — 2026-10-06 (Mes titres Compact et sources intégrées)
+
+- « Mes titres » Compact : synthèse raccourcie, lignes de 64 dp sans cartes, logo vérifié, ticker, quantité sans devise, valeur et P&L du jour en dollars et en pourcentage. Les graphiques intrajournaliers sont affichés seulement si leurs données existent; options 1S/1M/3M, tri et poids mémorisés. L’ordre manuel peut être déplacé par appui long.
+- Finances : tableaux annuels et trimestriels chiffrés dans la fiche titre en plus des courbes, avec source et date. Les valeurs analystes restent dans l’onglet interne. Aucun lien externe n’est requis pour lire les données disponibles.
+- Découvrir fonctionne sans clé FMP sur une sélection limitée du catalogue et des titres suivis : cours et historiques du fournisseur choisi, capitalisation/dividende/volume Nasdaq pour les titres US couverts, puis score anti-pump. Une clé FMP reste facultative pour élargir l’échantillon. Les filtres n’inventent aucune donnée manquante; la couverture canadienne des fondamentaux reste tributaire d’une source autorisée.
+- Les données détaillées Yahoo Finance visibles sur son site ne sont pas importées automatiquement : l’application n’a pas d’accès documenté et autorisé pour ce contenu. Les cours Yahoo déjà présents restent identifiés comme source non officielle avec leur fraîcheur réelle.
+
 ## Mon Wallet v0.2.8 — 2026-10-06 (Découvrir, Watchlist, cours et widget)
 
 - Widget 4x2 : nombre de titres configurable par instance (Auto ou 1 à 6), cinq par défaut, ordre manuel, densité et aperçu adaptés à la taille réelle.

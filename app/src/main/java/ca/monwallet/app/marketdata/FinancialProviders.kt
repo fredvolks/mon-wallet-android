@@ -261,13 +261,19 @@ class NasdaqSummaryProvider : FundamentalsProvider {
         val data = root.optJSONObject("data") ?: return null
         val entries = data.optJSONObject("summaryData") ?: return null
         fun value(name: String): String? = entries.optJSONObject(name)?.text("value")?.takeIf { it != "N/A" }
-        fun number(name: String): BigDecimal? = value(name)?.replace(Regex("[,$% ]"), "")?.toBigDecimalOrNull()
+        fun number(name: String): BigDecimal? = value(name)?.let(::nasdaqNumber)
         val metrics = linkedMapOf<String, String>()
         number("MarketCap")?.let { metrics["Capitalisation (M)"] = it.divide(BigDecimal(1_000_000)).stripTrailingZeros().toPlainString() }
         number("ShareVolume")?.let { metrics["Volume"] = it.toPlainString() }
         number("AverageVolume")?.let { metrics["Volume moyen"] = it.toPlainString() }
         number("AnnualizedDividend")?.let { metrics["Dividende annuel"] = it.toPlainString() }
         number("Yield")?.let { metrics["Rendement dividende %"] = it.toPlainString() }
+        (number("PERatio") ?: number("PriceEarningsRatio"))?.let {
+            metrics["P/E"] = it.toPlainString()
+        }
+        (number("EarningsPerShare") ?: number("EPS"))?.let {
+            metrics["BPA"] = it.toPlainString()
+        }
         value("ExDividendDate")?.let { metrics["Ex-dividend date"] = it }
         value("DividendPaymentDate")?.let { metrics["Payment date"] = it }
         value("FiftTwoWeekHighLow")?.split('/')?.takeIf { it.size == 2 }?.let { parts ->
@@ -276,4 +282,18 @@ class NasdaqSummaryProvider : FundamentalsProvider {
         }
         return metrics.takeIf { it.isNotEmpty() }?.let { Fundamentals(metrics = it, source = name) }
     }
+}
+
+/** Nasdaq's display fields can carry a magnitude suffix instead of raw dollars or shares. */
+internal fun nasdaqNumber(raw: String): BigDecimal? {
+    val cleaned = raw.trim().replace(Regex("[,$%\\s]"), "")
+    val multiplier = when (cleaned.lastOrNull()?.uppercaseChar()) {
+        'K' -> BigDecimal(1_000)
+        'M' -> BigDecimal(1_000_000)
+        'B' -> BigDecimal(1_000_000_000)
+        'T' -> BigDecimal("1000000000000")
+        else -> BigDecimal.ONE
+    }
+    val numeric = if (multiplier == BigDecimal.ONE) cleaned else cleaned.dropLast(1)
+    return numeric.toBigDecimalOrNull()?.multiply(multiplier)
 }
