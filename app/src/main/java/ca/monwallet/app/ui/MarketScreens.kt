@@ -514,9 +514,16 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
         MarketSession.AFTER_HOURS -> extended.afterHoursPrice
         else -> null
     }
-    val extraDelta = extra?.minus(q!!.price)
-    val extraPercent = extraDelta?.takeIf { q!!.price.signum() != 0 }
-        ?.multiply(BigDecimal(100))?.divide(q!!.price, MC)
+    val extraDelta = when (extended?.marketSession) {
+        MarketSession.PRE_MARKET -> extended.preMarketChange
+        MarketSession.AFTER_HOURS -> extended.afterHoursChange
+        else -> null
+    }
+    val extraPercent = when (extended?.marketSession) {
+        MarketSession.PRE_MARKET -> extended.preMarketChangePercent
+        MarketSession.AFTER_HOURS -> extended.afterHoursChangePercent
+        else -> null
+    }
     var drag by remember(item.id) { mutableFloatStateOf(0f) }
     Row(Modifier.fillMaxWidth().height(if (extra != null || showName) 51.dp else 42.dp)
         .clickable(onClick = click), verticalAlignment = Alignment.CenterVertically) {

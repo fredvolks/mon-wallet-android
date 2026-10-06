@@ -200,10 +200,10 @@ fun DetailScreen(
                 else -> null
             }
             if (extendedPrice != null && normalized != null) {
-                val delta = extendedPrice - normalized.regularPrice
-                val changePercent = if (normalized.regularPrice.signum() > 0)
-                    delta.multiply(java.math.BigDecimal(100)).divide(normalized.regularPrice, MC)
-                else null
+                val delta = if (normalized.marketSession == MarketSession.PRE_MARKET)
+                    normalized.preMarketChange else normalized.afterHoursChange
+                val changePercent = if (normalized.marketSession == MarketSession.PRE_MARKET)
+                    normalized.preMarketChangePercent else normalized.afterHoursChangePercent
                 val timestamp = if (normalized.marketSession == MarketSession.PRE_MARKET)
                     normalized.preMarketTimestamp else normalized.afterHoursTimestamp
                 Caption((if (normalized.marketSession == MarketSession.PRE_MARKET) "☀ Pre-market" else "☾ After-hours") +

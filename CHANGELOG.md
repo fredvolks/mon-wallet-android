@@ -1,6 +1,6 @@
 # Versions
 
-## Mon Wallet v0.2.8 — 2026-10-05 (Découvrir, Watchlist, cours et widget)
+## Mon Wallet v0.2.8 — 2026-10-06 (Découvrir, Watchlist, cours et widget)
 
 - Widget 4x2 : nombre de titres configurable par instance (Auto ou 1 à 6), cinq par défaut, ordre manuel, densité et aperçu adaptés à la taille réelle.
 - Découvrir : six périodes, tableau compact, colonnes sélectionnables et réordonnables, filtres et presets, idées, métriques de régularité, drawdown, concentration et score momentum. Le mode analystes croise objectifs, couverture, consensus, dispersion et momentum.

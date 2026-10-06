@@ -22,6 +22,12 @@ class Repository(val db: Database, val scope: CoroutineScope) {
             }
             .stateIn(scope, SharingStarted.Eagerly, Wallet())
 
+    fun observeQuote(securityId: String): Flow<Quote?> = state
+        .map { it.quotes[securityId] }.distinctUntilChanged()
+
+    fun observeQuotes(securityIds: Set<String>): Flow<Map<String, Quote>> = state
+        .map { wallet -> wallet.quotes.filterKeys { it in securityIds } }.distinctUntilChanged()
+
     fun decode(records: List<Record>, cache: List<Cache>): Wallet {
         val alive = records.filter { it.deletedAt == null }
         fun <T> rows(kind: String, c: Class<T>) =

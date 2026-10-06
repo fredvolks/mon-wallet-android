@@ -48,9 +48,11 @@ data class NormalizedQuote(
                 ?.multiply(BigDecimal(100))?.divide(q.price, java.math.MathContext.DECIMAL128)
             return NormalizedQuote(q.securityId, q.price, q.change, q.percent, q.timestamp,
                 q.source, freshness, session, q.price, q.change, q.percent,
-                pre, if (pre != null) delta else null, if (pre != null) extraPercent else null,
+                pre, if (pre != null) q.preMarketChange ?: delta else null,
+                if (pre != null) q.preMarketChangePercent ?: extraPercent else null,
                 q.preMarketTimestamp?.takeIf { pre != null },
-                post, if (post != null) delta else null, if (post != null) extraPercent else null,
+                post, if (post != null) q.afterHoursChange ?: delta else null,
+                if (post != null) q.afterHoursChangePercent ?: extraPercent else null,
                 q.afterHoursTimestamp?.takeIf { post != null })
         }
     }

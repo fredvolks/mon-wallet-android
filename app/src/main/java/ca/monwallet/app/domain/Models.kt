@@ -177,6 +177,10 @@ data class Quote(
     val afterHoursPrice: BigDecimal? = null,
     val afterHoursTimestamp: Long? = null,
     val marketSession: String = "CLOSED",
+    val preMarketChange: BigDecimal? = null,
+    val preMarketChangePercent: BigDecimal? = null,
+    val afterHoursChange: BigDecimal? = null,
+    val afterHoursChangePercent: BigDecimal? = null,
 ) {
     val change
         get() = previous?.let { price - it }

@@ -79,7 +79,7 @@ class Services(val context: Context) {
     suspend fun refreshForeground(securities: List<Security>) {
         if (busy.value || securities.isEmpty()) return
         val gate = Semaphore(2)
-        supervisorScope {
+        val updates = supervisorScope {
             securities.distinctBy { it.id }.take(20).map { security ->
                 async {
                     gate.withPermit {
@@ -95,9 +95,13 @@ class Services(val context: Context) {
                         }
                     }
                 }
-            }.awaitAll()
+            }.awaitAll().filterNotNull()
         }
-        marketStatus.value = "Cours actualisés · délai du fournisseur non garanti"
+        marketStatus.value = if (updates.isEmpty())
+            "Derniers cours en cache · fournisseur indisponible"
+        else if (updates.any { (it.delay ?: 0) > 0 })
+            "Cours actualisés · certains différés par le fournisseur"
+        else "Cours actualisés · délai du fournisseur non garanti"
     }
 
     suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false,

@@ -28,6 +28,11 @@ class LiveQuotesTest {
         assertEquals(0, after.afterHoursChange!!.compareTo(BigDecimal("3")))
         assertNull(after.preMarketPrice)
         assertNull(NormalizedQuote.from(quote("CLOSED"), now).afterHoursPrice)
+        val direct = NormalizedQuote.from(quote("AFTER_HOURS").copy(
+            afterHoursChange = BigDecimal("2.5"),
+            afterHoursChangePercent = BigDecimal("2.08")), now)
+        assertEquals(0, direct.afterHoursChange!!.compareTo(BigDecimal("2.5")))
+        assertEquals(0, direct.afterHoursChangePercent!!.compareTo(BigDecimal("2.08")))
     }
 
     @Test fun uncertainProviderIsNeverCalledRealtime() {

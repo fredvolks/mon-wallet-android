@@ -144,10 +144,14 @@ class Yahoo : MarketDataProvider {
                 preTime != null && periods?.optJSONObject("pre")?.let {
                     preTime >= it.optLong("start") && preTime < it.optLong("end") } == true },
             preMarketTimestamp = preTime?.times(1000),
+            preMarketChange = m.number("preMarketChange"),
+            preMarketChangePercent = m.number("preMarketChangePercent"),
             afterHoursPrice = m.number("postMarketPrice")?.takeIf { session == "AFTER_HOURS" &&
                 postTime != null && periods?.optJSONObject("post")?.let {
                     postTime >= it.optLong("start") && postTime < it.optLong("end") } == true },
             afterHoursTimestamp = postTime?.times(1000),
+            afterHoursChange = m.number("postMarketChange"),
+            afterHoursChangePercent = m.number("postMarketChangePercent"),
             marketSession = session,
         )
     }
