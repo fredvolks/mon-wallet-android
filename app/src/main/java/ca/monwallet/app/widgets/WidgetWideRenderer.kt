@@ -65,7 +65,7 @@ internal object WidgetWideRenderer {
         })
         views.setTextViewText(R.id.widget_percent, if (showPercent) percent(result?.dayPercent) else "")
         views.setTextViewTextSize(R.id.widget_amount, android.util.TypedValue.COMPLEX_UNIT_SP,
-            if (unavailable) 15f else if (config.dailyHero) 35f else 22f)
+            if (unavailable) 15f else if (config.dailyHero) 26f else 22f)
         views.setTextViewTextSize(R.id.widget_percent, android.util.TypedValue.COMPLEX_UNIT_SP,
             if (config.dailyHero) 24f else 17f)
         views.setViewVisibility(R.id.widget_amount, if (showAmount) View.VISIBLE else View.GONE)

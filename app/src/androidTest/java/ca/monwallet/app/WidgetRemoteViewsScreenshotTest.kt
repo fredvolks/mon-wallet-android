@@ -62,9 +62,23 @@ class WidgetRemoteViewsScreenshotTest {
             view.layout(0, 0, width, height)
             val rows = view.findViewById<LinearLayout>(R.id.widget_rows)
             assertEquals(5, rows.childCount)
-            assertTrue(view.findViewById<TextView>(R.id.widget_amount).textSize >
+            val amount = view.findViewById<TextView>(R.id.widget_amount)
+            assertTrue(amount.textSize >
                 view.findViewById<TextView>(R.id.widget_total).textSize)
+            assertTrue("Daily amount clipped: ${amount.text}",
+                amount.paint.measureText(amount.text.toString()) <= amount.width)
             assertTrue(rows.getChildAt(4).bottom <= rows.height)
+            for (index in 0 until 5) {
+                val row = rows.getChildAt(index)
+                assertTrue("Fallback logo text absent", row.findViewById<TextView>(
+                    R.id.widget_row_fallback).text.isNotBlank())
+                for (cell in listOf(R.id.widget_row_price, R.id.widget_row_values)) {
+                    val text = row.findViewById<TextView>(cell)
+                    assertTrue("Row $index cell $cell: ${text.text}, width ${text.width}",
+                        text.visibility == View.VISIBLE && text.text.isNotBlank() &&
+                            text.width > 0 && text.paint.measureText(text.text.toString()) <= text.width)
+                }
+            }
             screenshot = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
                 view.draw(Canvas(it))
             }

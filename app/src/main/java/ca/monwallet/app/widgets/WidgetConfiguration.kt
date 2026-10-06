@@ -315,8 +315,8 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
                     if (config.dayAmount && !config.hideAmounts)
                         Text(if (result?.day == null) "Marché fermé" else signed(result.day),
                             color = dayTint, fontSize = if (result?.day == null) 15.sp
-                                else if (config.dailyHero) 30.sp else 21.sp,
-                            lineHeight = if (config.dailyHero) 32.sp else 23.sp,
+                                else if (config.dailyHero) 26.sp else 21.sp,
+                            lineHeight = if (config.dailyHero) 28.sp else 23.sp,
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (config.dayPercent && result?.dayPercent != null)
                         Text(percent(result.dayPercent), color = dayTint,
