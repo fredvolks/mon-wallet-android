@@ -7,6 +7,13 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.view.View
 import android.widget.RemoteViews
 import ca.monwallet.app.MainActivity
@@ -123,13 +130,12 @@ internal object WidgetWideRenderer {
         for (holding in titles) {
             val security = wallet.security(holding.securityId) ?: continue
             val row = RemoteViews(c.packageName, rowLayout)
-            row.setTextViewText(R.id.widget_row_ticker,
-                if (config.ticker) security.ticker else security.name)
-            val logo = if (config.logo) OfficialLogoProvider.load(c, security) else null
-            row.setViewVisibility(R.id.widget_row_logo, if (logo == null) View.GONE else View.VISIBLE)
-            row.setViewVisibility(R.id.widget_row_fallback,
-                if (logo == null) View.VISIBLE else View.GONE)
-            row.setTextViewText(R.id.widget_row_fallback, security.ticker.take(2))
+            val label = if (config.ticker) security.ticker else security.name
+            val logo = if (config.logo) OfficialLogoProvider.load(c, security)
+                ?: fallbackLogo(c, security.ticker, plan.density) else null
+            row.setViewVisibility(R.id.widget_row_logo,
+                if (logo == null) View.GONE else View.VISIBLE)
+            row.setViewVisibility(R.id.widget_row_fallback, View.GONE)
             if (logo != null) row.setImageViewBitmap(R.id.widget_row_logo, logo)
             val q = wallet.quotes[security.id]
             val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) }
@@ -146,8 +152,7 @@ internal object WidgetWideRenderer {
                 else -> null
             }
             if (extraPrice != null && session != null) extendedSessions.add(session)
-            row.setViewVisibility(R.id.widget_row_session,
-                if (extraPrice != null) View.VISIBLE else View.GONE)
+            row.setViewVisibility(R.id.widget_row_session, View.GONE)
             row.setTextViewText(R.id.widget_row_session,
                 if (session == MarketSession.PRE_MARKET) "☀" else "☾")
             row.setTextColor(R.id.widget_row_session,
@@ -155,12 +160,10 @@ internal object WidgetWideRenderer {
                 else Color.rgb(181, 150, 241))
             val showPrice = config.price && !config.hideAmounts
             val quotePrice = extraPrice ?: q?.price
-            row.setTextViewText(R.id.widget_row_price,
-                if (!showPrice) "" else if (minWidth < 290 && quotePrice != null)
+            val priceText = if (!showPrice) "" else if (minWidth < 290 && quotePrice != null)
                     number(quotePrice) + if (security.currency == "USD") " U$" else " $"
-                else money(quotePrice, security.currency))
-            row.setViewVisibility(R.id.widget_row_price,
-                if (showPrice) View.VISIBLE else View.GONE)
+                else money(quotePrice, security.currency)
+            row.setViewVisibility(R.id.widget_row_price, View.GONE)
             val dayPercent = if (extraPrice != null) extraPercent else holding.dayPercent
             val details = buildList {
                 if (config.titleDayPercent) add(percent(dayPercent))
@@ -173,9 +176,33 @@ internal object WidgetWideRenderer {
                     result?.value?.takeIf { it.signum() != 0 }?.let { value.pct(it) }
                 }))
             }
-            row.setTextViewText(R.id.widget_row_values, details.joinToString(" · "))
-            row.setTextColor(R.id.widget_row_values,
-                tone((if (config.titleDayPercent) dayPercent else holding.percent)?.signum()))
+            row.setViewVisibility(R.id.widget_row_values, View.GONE)
+            // A single text cell keeps all quote figures in the actual RemoteViews
+            // draw pass. Separate nested numeric TextViews can measure normally yet
+            // paint nothing on some Android widget hosts.
+            val summary = SpannableStringBuilder()
+            summary.append(label.take(5).padEnd(5))
+            if (extraPrice != null) {
+                val start = summary.length
+                summary.append(if (session == MarketSession.PRE_MARKET) "☀" else "☾")
+                summary.setSpan(ForegroundColorSpan(if (session == MarketSession.PRE_MARKET)
+                    Color.rgb(90, 183, 255) else Color.rgb(181, 150, 241)),
+                    start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            if (showPrice) {
+                val start = summary.length
+                summary.append(" ").append(priceText.padStart(11))
+                summary.setSpan(ForegroundColorSpan(Color.rgb(218, 230, 235)),
+                    start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            if (details.isNotEmpty()) {
+                val start = summary.length
+                summary.append(" ").append(details.joinToString(" · "))
+                summary.setSpan(ForegroundColorSpan(tone((if (config.titleDayPercent)
+                    dayPercent else holding.percent)?.signum())), start, summary.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            row.setTextViewText(R.id.widget_row_ticker, summary)
             row.setOnClickPendingIntent(R.id.widget_row,
                 PendingIntent.getActivity(c, id xor security.id.hashCode(),
                     Intent(c, MainActivity::class.java).putExtra("security", security.id),
@@ -236,5 +263,26 @@ internal object WidgetWideRenderer {
         sign == null || sign == 0 -> Color.rgb(204, 221, 227)
         sign < 0 -> Color.rgb(255, 92, 113)
         else -> Color.rgb(83, 244, 141)
+    }
+
+    private fun fallbackLogo(c: Context, ticker: String,
+        density: WidgetTitleLayout.Density): Bitmap {
+        val dp = when (density) {
+            WidgetTitleLayout.Density.SPACIOUS -> 22
+            WidgetTitleLayout.Density.COMPACT -> 18
+            WidgetTitleLayout.Density.ULTRA -> 16
+        }
+        val size = (dp * c.resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(28, 64, 77) }
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+        paint.color = Color.rgb(189, 230, 239)
+        paint.typeface = Typeface.DEFAULT_BOLD
+        paint.textAlign = Paint.Align.CENTER
+        paint.textSize = size * 0.38f
+        val baseline = size / 2f - (paint.ascent() + paint.descent()) / 2f
+        canvas.drawText(ticker.take(2), size / 2f, baseline, paint)
+        return bitmap
     }
 }

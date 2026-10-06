@@ -9,10 +9,11 @@
         android:gravity="center" android:singleLine="true" android:visibility="gone"
         android:background="@drawable/widget_logo_fallback"
         android:textColor="#BDE6EF" android:textStyle="bold" android:textSize="8sp"/>
-    <TextView android:id="@+id/widget_row_ticker" android:layout_width="39dp"
-        android:layout_height="wrap_content"
+    <TextView android:id="@+id/widget_row_ticker" android:layout_width="0dp"
+        android:layout_weight="1" android:layout_height="wrap_content"
         android:singleLine="true" android:ellipsize="end"
-        android:textColor="#F0F5F7" android:textStyle="bold" android:textSize="12sp"/>
+        android:textColor="#F0F5F7" android:fontFamily="monospace"
+        android:textStyle="bold" android:textSize="11sp"/>
     <TextView android:id="@+id/widget_row_session" android:layout_width="13dp"
         android:layout_height="wrap_content" android:gravity="center" android:singleLine="true"
         android:textSize="11sp" android:visibility="gone"/>

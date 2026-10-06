@@ -7,6 +7,7 @@ import android.provider.MediaStore
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.ImageView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import ca.monwallet.app.domain.*
@@ -48,7 +49,7 @@ class WidgetRemoteViewsScreenshotTest {
             ZERO, ZERO, BigDecimal("48.36"), BigDecimal("6535.135"))
         val settings = WidgetSettings(style = "Daily + Titres", titleCount = 5,
             custom = true, titleIds = securities.map { it.id }, price = true, chart = false,
-            logo = false, titleTotalPercent = false)
+            logo = true, titleTotalPercent = false)
         val remote = WidgetWideRenderer.render(context, 101, null, settings, wallet,
             portfolio.id, result, false, emptyList(), 360 to 160)
         var screenshot: Bitmap? = null
@@ -70,48 +71,35 @@ class WidgetRemoteViewsScreenshotTest {
             assertTrue(rows.getChildAt(4).bottom <= rows.height)
             for (index in 0 until 5) {
                 val row = rows.getChildAt(index)
-                assertTrue("Fallback logo text absent", row.findViewById<TextView>(
-                    R.id.widget_row_fallback).text.isNotBlank())
-                for (cell in listOf(R.id.widget_row_price, R.id.widget_row_values)) {
-                    val text = row.findViewById<TextView>(cell)
-                    assertTrue("Row $index cell $cell: ${text.text}, width ${text.width}",
-                        text.visibility == View.VISIBLE && text.text.isNotBlank() &&
-                            text.width > 0 && text.paint.measureText(text.text.toString()) <= text.width)
-                    assertTrue("Row $index cell $cell extends past widget: ${text.right}",
-                        rows.left + row.left + text.right <= width)
-                    assertTrue("Row $index cell $cell clipped: rows ${rows.width}, row ${row.width}, " +
-                        "cell ${text.left}..${text.right}",
-                        text.right <= row.width && row.right <= rows.width)
-                }
+                assertNotNull(row.findViewById<ImageView>(R.id.widget_row_logo).drawable)
+                val text = row.findViewById<TextView>(R.id.widget_row_ticker)
+                assertTrue("Missing title ${tickers[index]} in ${text.text}",
+                    text.text.contains(tickers[index]))
+                assertTrue("Missing price in ${text.text}",
+                    text.text.contains(amounts[index].replace('.', ',')))
+                assertTrue("Row $index clipped: ${text.text}, width ${text.width}",
+                    text.right <= row.width && text.paint.measureText(text.text.toString()) <= text.width)
             }
             screenshot = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
                 view.draw(Canvas(it))
             }
             val body = view.findViewById<View>(R.id.widget_body)
             val first = rows.getChildAt(0)
-            val price = first.findViewById<TextView>(R.id.widget_row_price)
-            val x = body.left + rows.left + first.left + price.left
-            val y = body.top + rows.top + first.top + price.top
-            val bounds = (x.coerceAtLeast(0) until (x + price.width).coerceAtMost(width))
-            val lines = (y.coerceAtLeast(0) until (y + price.height).coerceAtMost(height))
+            val title = first.findViewById<TextView>(R.id.widget_row_ticker)
+            val x = body.left + rows.left + first.left + title.left +
+                title.paint.measureText("XEQT ").toInt()
+            val y = body.top + rows.top + first.top + title.top
+            val bounds = (x.coerceAtLeast(0) until (body.left + rows.left + first.left +
+                title.right).coerceAtMost(width))
+            val lines = (y.coerceAtLeast(0) until (y + title.height).coerceAtMost(height))
             val painted = lines.any { py -> bounds.any { px ->
                 val color = requireNotNull(screenshot).getPixel(px, py)
                 android.graphics.Color.red(color) > 100 &&
                     android.graphics.Color.green(color) > 100
             } }
-            val isolated = Bitmap.createBitmap(price.width, price.height,
-                Bitmap.Config.ARGB_8888).also { price.draw(Canvas(it)) }
-            val isolatedPainted = (0 until isolated.height).any { py ->
-                (0 until isolated.width).any { px ->
-                    android.graphics.Color.alpha(isolated.getPixel(px, py)) > 0
-                }
-            }
             assertTrue("Price not painted: body ${body.width} at ${body.left}, " +
                 "rows ${rows.width} at ${rows.left}, row ${first.width} at ${first.left}, " +
-                "price ${price.width}x${price.height} at ${price.left},${price.top}, " +
-                "bitmap rect $x,$y, text=${price.text}, color=${price.currentTextColor}, " +
-                "alpha=${price.alpha}, layout=${price.layout?.lineCount}, " +
-                "isolatedPainted=$isolatedPainted", painted)
+                "bitmap rect $x,$y, text=${title.text}", painted)
         }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "widget-4x2-daily-fixture.png")
