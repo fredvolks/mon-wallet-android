@@ -122,7 +122,8 @@ fun WatchlistScreen(
             .getOrDefault(PerformancePeriod.M3))
     }
     var columns by remember { mutableStateOf(MarketColumns.restore(
-        prefs.getString("columns", null), MarketColumns.watchlistDefault).filter { it != "extended" }) }
+        prefs.getString("columns", null), MarketColumns.watchlistDefault)
+        .filter { it != "extended" }.ifEmpty { MarketColumns.watchlistDefault }) }
     var showColumns by remember { mutableStateOf(false) }
     var followSpark by remember { mutableStateOf(prefs.getBoolean("follow_spark", true)) }
     var showName by remember { mutableStateOf(prefs.getBoolean("show_name", false)) }
