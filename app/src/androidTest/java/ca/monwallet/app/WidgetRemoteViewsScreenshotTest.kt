@@ -87,6 +87,22 @@ class WidgetRemoteViewsScreenshotTest {
             screenshot = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
                 view.draw(Canvas(it))
             }
+            val body = view.findViewById<View>(R.id.widget_body)
+            val first = rows.getChildAt(0)
+            val price = first.findViewById<TextView>(R.id.widget_row_price)
+            val x = body.left + rows.left + first.left + price.left
+            val y = body.top + rows.top + first.top + price.top
+            val bounds = (x.coerceAtLeast(0) until (x + price.width).coerceAtMost(width))
+            val lines = (y.coerceAtLeast(0) until (y + price.height).coerceAtMost(height))
+            val painted = lines.any { py -> bounds.any { px ->
+                val color = requireNotNull(screenshot).getPixel(px, py)
+                android.graphics.Color.red(color) > 100 &&
+                    android.graphics.Color.green(color) > 100
+            } }
+            assertTrue("Price not painted: body ${body.width} at ${body.left}, " +
+                "rows ${rows.width} at ${rows.left}, row ${first.width} at ${first.left}, " +
+                "price ${price.width}x${price.height} at ${price.left},${price.top}, " +
+                "bitmap rect $x,$y", painted)
         }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "widget-4x2-daily-fixture.png")
