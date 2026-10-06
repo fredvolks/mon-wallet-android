@@ -33,6 +33,7 @@ internal object WidgetWideRenderer {
         c: Context, id: Int, info: AppWidgetProviderInfo?,
         config: WidgetSettings, wallet: Wallet, portfolio: String?,
         result: Result?, hidden: Boolean, cached: List<Point>,
+        sizeOverrideDp: Pair<Int, Int>? = null,
     ): RemoteViews {
         val views = RemoteViews(c.packageName, R.layout.wallet_widget_wide)
         val title = if (portfolio == null) c.getString(R.string.all_portfolios)
@@ -91,9 +92,12 @@ internal object WidgetWideRenderer {
         views.setTextViewText(R.id.widget_extras, extras.joinToString(" · "))
         views.setViewVisibility(R.id.widget_extras, if (extras.isEmpty()) View.GONE else View.VISIBLE)
 
-        val options = AppWidgetManager.getInstance(c).getAppWidgetOptions(id)
-        val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 150)
-        val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250)
+        val options = if (sizeOverrideDp == null) AppWidgetManager.getInstance(c)
+            .getAppWidgetOptions(id) else null
+        val minHeight = sizeOverrideDp?.second
+            ?: options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 150) ?: 150
+        val minWidth = sizeOverrideDp?.first
+            ?: options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250) ?: 250
         val ordered = if (hidden || result == null) emptyList() else config.titles(result)
         val plan = WidgetTitleLayout.plan(config, "4x2", minHeight, ordered.size)
         val chartSeries = if (hidden || !plan.chart || result == null) emptyList()

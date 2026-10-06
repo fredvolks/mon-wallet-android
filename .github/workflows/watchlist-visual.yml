@@ -29,6 +29,7 @@ jobs:
           name: Watchlist-real-provider
           path: |
             watchlist-real.png
+            widget-4x2-daily-fixture.png
             watchlist-diagnostic.png
             watchlist-provider-log.txt
             app/build/outputs/androidTest-results/**

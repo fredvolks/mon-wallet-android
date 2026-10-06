@@ -37,7 +37,8 @@ class WidgetTitleCountTest {
         assertEquals(WidgetTitleLayout.Density.COMPACT, five.density)
         assertFalse(five.chart)
         assertTrue(five.footer)
-        assertTrue(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 160, 6).chart)
+        assertFalse(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 160, 6).chart)
+        assertTrue(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 180, 6).chart)
     }
 
     @Test fun selectedOrderSkipsSoldHoldingAndFillsWithNextSelection() {

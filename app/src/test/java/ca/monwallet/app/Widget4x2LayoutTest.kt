@@ -44,7 +44,7 @@ class Widget4x2LayoutTest {
         chart.visibility = View.VISIBLE
         val px = context.resources.displayMetrics.density
         val width = (360 * px).toInt()
-        val height = (160 * px).toInt()
+        val height = (180 * px).toInt()
         widget.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
         widget.layout(0, 0, width, height)
