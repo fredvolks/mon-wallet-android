@@ -2,7 +2,7 @@ package ca.monwallet.app.widgets
 
 /** The same height budget drives the launcher and the live configuration preview. */
 internal object WidgetTitleLayout {
-    enum class Density(val rowHeight: Int) { SPACIOUS(30), COMPACT(22), ULTRA(19) }
+    enum class Density(val rowHeight: Int) { SPACIOUS(27), COMPACT(20), ULTRA(18) }
 
     data class Plan(
         val limit: Int,
@@ -17,8 +17,8 @@ internal object WidgetTitleLayout {
         val isWide = kind.endsWith("4x2")
         val automatic = when {
             isWide -> when {
-                height < 125 -> 3
-                height < 143 -> 4
+                height < 132 -> 3
+                height < 147 -> 4
                 else -> 5
             }
             kind.endsWith("4x3") -> if (height >= 200) 6 else 5
@@ -27,8 +27,9 @@ internal object WidgetTitleLayout {
         }
         val capacity = when {
             isWide -> when {
-                height < 125 -> 3
-                height < 143 -> 4
+                height < 132 -> 3
+                height < 147 -> 4
+                height < 167 -> 5
                 else -> 6
             }
             kind.endsWith("4x3") -> 6
@@ -44,13 +45,13 @@ internal object WidgetTitleLayout {
             visible >= 4 -> Density.COMPACT
             else -> Density.SPACIOUS
         }
-        // The wide layout uses a 25dp header, 10dp padding, an 11dp footer
-        // and a 23dp chart. Rows take priority over the chart and footer.
-        val chart = config.chart && config.style in setOf("Mixte", "Mixte premium", "Graphique") &&
-            (!isWide || height >= 35 + visible * density.rowHeight + 23)
+        // Wide chart now lives inside the Daily card. Hide it when the Daily
+        // amount and percentage need that vertical space.
+        val chart = config.chart && config.style in
+            setOf("Mixte", "Mixte premium", "Daily + Titres", "Graphique") &&
+            (!isWide || height >= 163 || (visible <= 3 && height >= 145))
         val footer = config.showUpdated &&
-            (!isWide || height >= 35 + visible * density.rowHeight +
-                (if (chart) 23 else 0) + 11)
+            (!isWide || height >= 139)
         return Plan(limit, visible, density, chart, footer)
     }
 }

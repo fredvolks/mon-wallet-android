@@ -21,6 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import ca.monwallet.app.domain.*
+import ca.monwallet.app.marketdata.MarketSession
+import ca.monwallet.app.marketdata.NormalizedQuote
+import ca.monwallet.app.marketdata.supportsUsExtendedHours
+import java.math.BigDecimal
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
@@ -98,6 +102,14 @@ fun PortfolioScreen(
         }.toString()
     val visible = snapshots.filter { it.date >= cutoff }
     val owned = result?.holdings?.filter { it.quantity > ZERO }.orEmpty()
+    val extendedSession = if (w.settings["portfolio_extended"] != "REGULAR")
+        owned.mapNotNull { h -> w.security(h.securityId)?.let { activeExtended(w, it)?.session } }
+            .distinct().singleOrNull() else null
+    val valuationLabel = when (extendedSession) {
+        MarketSession.PRE_MARKET -> "Valeur estimée · Pre-market"
+        MarketSession.AFTER_HOURS -> "Valeur estimée · After-hours"
+        else -> stringResource(R.string.ui_valeur_actuelle_e0c0f)
+    }
     val manualKey = "compact_order:${selected ?: "all"}"
     val manualOrder = w.settings[manualKey].orEmpty().split('|').filter { it.isNotBlank() }
     val holdings = remember(owned, compactSort, manualOrder) {
@@ -165,6 +177,7 @@ fun PortfolioScreen(
                     Column {
                         Caption(if (selected == null) stringResource(R.string.all_portfolios_heading)
                             else w.portfolios.find { it.id == selected }?.name.orEmpty())
+                        if (extendedSession != null) Caption(valuationLabel)
                         Text(money(result?.value), fontSize = 23.sp, fontWeight = FontWeight.Bold)
                     }
                     Column(horizontalAlignment = Alignment.End) {
@@ -180,16 +193,7 @@ fun PortfolioScreen(
                     else w.portfolios.find { it.id == selected }?.name.orEmpty()
                 )
                 Spacer(Modifier.height(7.dp))
-                val estimatedSession = if (w.settings["portfolio_extended"] == "LAST")
-                    result?.holdings?.mapNotNull { h -> w.quotes[h.securityId]?.let { q ->
-                        when {
-                            q.marketSession == "PRE_MARKET" && q.preMarketPrice != null -> "Pre-market"
-                            q.marketSession == "AFTER_HOURS" && q.afterHoursPrice != null -> "After-hours"
-                            else -> null
-                        }
-                    } }?.distinct()?.singleOrNull() else null
-                Caption(estimatedSession?.let { "Valeur estimée · $it" }
-                    ?: stringResource(R.string.ui_valeur_actuelle_e0c0f))
+                Caption(valuationLabel)
                 Text(money(result?.value), fontSize = 34.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth()) {
@@ -372,6 +376,12 @@ fun HoldingRow(w: Wallet, s: Security, h: Holding, compact: Boolean,
                 Caption(s.name)
                 Text(stringResource(R.string.day_value, signed(h.day)), fontSize = 11.sp, color = tint(h.day))
             }
+            activeExtended(w, s)?.let { extra ->
+                Text(extra.label + "  " + money(extra.price, s.currency) +
+                    "  " + percent(extra.changePercent),
+                    Modifier.padding(start = 44.dp, top = 2.dp),
+                    color = Muted, fontSize = 11.sp)
+            }
     }
     HorizontalDivider(color = Border)
 }
@@ -381,17 +391,39 @@ fun compactQuantity(s: Security, quantity: java.math.BigDecimal): String =
         "${number(quantity, 8)} ${s.symbol.substringBefore('-')}"
     else "${number(quantity, 6)} ${if (quantity <= ONE) "part" else "parts"}"
 
+private data class ExtendedHoldingQuote(
+    val session: MarketSession, val price: BigDecimal, val changePercent: BigDecimal?,
+) {
+    val label: String get() = if (session == MarketSession.PRE_MARKET) "☀ PRE" else "☾ AFTER"
+}
+
+private fun activeExtended(w: Wallet, s: Security): ExtendedHoldingQuote? {
+    if (!supportsUsExtendedHours(s)) return null
+    val quote = w.quotes[s.id]?.let { NormalizedQuote.from(it) } ?: return null
+    return when (quote.marketSession) {
+        MarketSession.PRE_MARKET -> quote.preMarketPrice?.let {
+            ExtendedHoldingQuote(MarketSession.PRE_MARKET, it, quote.preMarketChangePercent)
+        }
+        MarketSession.AFTER_HOURS -> quote.afterHoursPrice?.let {
+            ExtendedHoldingQuote(MarketSession.AFTER_HOURS, it, quote.afterHoursChangePercent)
+        }
+        else -> null
+    }
+}
+
 @Composable
 private fun CompactHoldingRow(w: Wallet, s: Security, h: Holding,
     portfolioValue: java.math.BigDecimal?, sparkPoints: List<Point>, sparkPeriod: String,
     showWeight: Boolean, manual: Boolean, onMove: (Int) -> Unit, onClick: () -> Unit) {
     val q = w.quotes[s.id]
+    val extended = activeExtended(w, s)
     val points = sparkPoints.map { it.close }.toMutableList()
     if (sparkPeriod == "Jour" && q != null && sparkPoints.lastOrNull()?.date == q.sessionDate &&
         q.price != points.lastOrNull()) points.add(q.price)
     var drag by remember(s.id) { mutableFloatStateOf(0f) }
     val currentMove by rememberUpdatedState(onMove)
-    Row(Modifier.fillMaxWidth().height(64.dp).clickable(onClick = onClick),
+    Row(Modifier.fillMaxWidth().height(if (extended == null) 64.dp else 72.dp)
+        .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f).then(if (manual) Modifier.pointerInput(s.id) {
             detectDragGesturesAfterLongPress(onDragEnd = { drag = 0f },
@@ -423,6 +455,10 @@ private fun CompactHoldingRow(w: Wallet, s: Security, h: Holding,
                 maxLines = 1)
             Text("${signed(h.day)}  ${percent(h.dayPercent)}", fontSize = 10.sp,
                 color = tint(h.day), maxLines = 1)
+            if (extended != null)
+                Text("${extended.label}  ${number(extended.price)}  ${percent(extended.changePercent)}",
+                    color = Muted, fontSize = 9.sp, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis)
         }
         Icon(Icons.Outlined.ChevronRight, null, Modifier.size(15.dp), tint = Muted)
     }

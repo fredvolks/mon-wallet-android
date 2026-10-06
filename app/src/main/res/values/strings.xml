@@ -1,4 +1,5 @@
 <resources>
+    <string name="widget_style_daily_titles">Daily + Titres</string>
     <string name="app_name">Mon Wallet</string>
     <string name="portfolio_tracker">PORTFOLIO TRACKER</string>
     <string name="brand_first">Mon</string>

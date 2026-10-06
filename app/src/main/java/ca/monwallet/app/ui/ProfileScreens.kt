@@ -397,7 +397,7 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
                 Metric(stringResource(R.string.settings_background_refresh), stringResource(R.string.settings_refresh_interval))
                 Caption(stringResource(R.string.settings_refresh_caption))
                 Text("Valorisation hors séance", fontWeight = FontWeight.SemiBold)
-                val extendedValuation = w.settings["portfolio_extended"] == "LAST"
+                val extendedValuation = w.settings["portfolio_extended"] != "REGULAR"
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip(!extendedValuation, onClick = {
                         vm.run { s.repo.setting("portfolio_extended", "REGULAR") }

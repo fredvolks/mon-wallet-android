@@ -18,7 +18,9 @@ data class WidgetSettings(
     val titleValue: Boolean = false, val weight: Boolean = false,
     val chart: Boolean = false, val period: String = "Jour",
     val hideAmounts: Boolean = false, val refresh: Int = 0,
-    val showUpdated: Boolean = true, val wideVersion: Int = 3,
+    val showUpdated: Boolean = true, val wideVersion: Int = 4,
+    val showDailyLabel: Boolean = true, val dailyHero: Boolean = true,
+    val showExtended: Boolean = true,
     // 0 = Auto. Stored for each appWidgetId with the rest of this configuration.
     val titleCount: Int = 0,
 ) {
@@ -45,19 +47,23 @@ data class WidgetSettings(
             }
             if (saved == null) return WidgetSettings(
                 portfolio = p.getString("portfolio:$id", "all") ?: "all",
-                style = if (wide) "Mixte premium" else "Mixte",
+                style = if (wide) "Daily + Titres" else "Mixte",
                 price = wide, chart = wide, titleTotalPercent = !wide,
                 titleCount = if (wide) 5 else 0,
             )
-            // Upgrade the old mixed 4x2 layout once without changing portfolio,
-            // chosen holdings, their order, or privacy settings.
-            return if (wide && saved.wideVersion < 3) {
-                val mixed = saved.style == "Mixte"
-                saved.copy(style = if (mixed) "Mixte premium" else saved.style,
+            // Preserve every per-instance selection while upgrading the old mixed visual.
+            return if (wide && saved.wideVersion < 4) {
+                val mixed = saved.style in setOf("Mixte", "Mixte premium")
+                saved.copy(style = if (mixed) "Daily + Titres" else saved.style,
                     price = if (mixed) true else saved.price,
-                    chart = if (mixed) true else saved.chart,
+                    titleDayPercent = if (mixed) true else saved.titleDayPercent,
                     titleTotalPercent = if (mixed) false else saved.titleTotalPercent,
-                    showUpdated = true, wideVersion = 3, titleCount = 5)
+                    dayAmount = if (mixed) true else saved.dayAmount,
+                    dayPercent = if (mixed) true else saved.dayPercent,
+                    totalPercent = if (mixed) true else saved.totalPercent,
+                    showDailyLabel = true, dailyHero = true, showExtended = true,
+                    wideVersion = 4, titleCount = if (saved.titleCount == 0 && mixed) 5
+                        else saved.titleCount)
             } else saved
         }
         fun save(c: Context, id: Int, settings: WidgetSettings, owner: String) {

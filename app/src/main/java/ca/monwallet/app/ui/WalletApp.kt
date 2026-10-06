@@ -249,7 +249,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             else
                 Column {
                     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    if (route in listOf("portfolio", "markets", "watchlist"))
+                    if (route in listOf("portfolio", "markets"))
                         Caption(marketStatus, Modifier.padding(horizontal = 18.dp, vertical = 3.dp))
                     NavHost(
                         navController = nav,

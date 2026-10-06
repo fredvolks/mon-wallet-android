@@ -73,6 +73,10 @@ class WatchlistNetworkScreenshotTest {
         assertNotNull("Watchlist tab missing", tab)
         tab!!.click()
         assertTrue("TSLA row missing", device.wait(Until.hasObject(By.text("TSLA")), 20_000))
+        assertFalse("Exchange must be hidden on the minimalist Watchlist",
+            device.hasObject(By.text("NASDAQ")) || device.hasObject(By.text("TSX")))
+        assertFalse("Cached quotes must not repeat Cache on every Watchlist row",
+            device.hasObject(By.text("Cache")))
         if (visible > 0) {
             assertTrue("Provider returned PRE/AFTER but no UI line is visible",
                 device.wait(Until.hasObject(By.textContains("PRE")), 5_000) ||

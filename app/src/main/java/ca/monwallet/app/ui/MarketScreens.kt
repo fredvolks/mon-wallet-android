@@ -115,6 +115,7 @@ fun WatchlistScreen(
     var choose by remember { mutableStateOf<Pair<Security, WatchItem?>?>(null) }
     var deleting by remember { mutableStateOf(false) }
     var options by remember { mutableStateOf(false) }
+    var sortDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("watchlist_options", 0) }
     var samePeriod by remember { mutableStateOf(prefs.getBoolean("same_period", false)) }
@@ -127,7 +128,7 @@ fun WatchlistScreen(
         prefs.getString("columns", null)?.takeUnless {
             it == "ticker|price|sparkline|dayPercent|period"
         }, MarketColumns.watchlistDefault)
-        .filter { it != "extended" }.ifEmpty { MarketColumns.watchlistDefault }) }
+        .filter { it != "extended" && it != "exchange" }.ifEmpty { MarketColumns.watchlistDefault }) }
     var showColumns by remember { mutableStateOf(false) }
     var followSpark by remember { mutableStateOf(prefs.getBoolean("follow_spark", true)) }
     var showName by remember { mutableStateOf(prefs.getBoolean("show_name", false)) }
@@ -183,6 +184,7 @@ fun WatchlistScreen(
             "ticker" -> items.sortedBy { w.security(it.securityId)?.ticker }
             "price" -> items.sortedBy { w.quotes[it.securityId]?.price }
             "dayPercent" -> items.sortedBy { w.quotes[it.securityId]?.percent }
+            "dayAmount" -> items.sortedBy { w.quotes[it.securityId]?.change }
             "cap" -> items.sortedBy { facts[it.securityId]?.cap() }
             "pe" -> items.sortedBy { facts[it.securityId]?.pe(w.quotes[it.securityId]?.price) }
             "dividend" -> items.sortedBy { facts[it.securityId]?.dividend() }
@@ -251,6 +253,9 @@ fun WatchlistScreen(
                     DropdownMenu(options, { options = false }) {
                         DropdownMenuItem(text = { Text("⚙ Colonnes") }, onClick = {
                             options = false; showColumns = true })
+                        DropdownMenuItem(text = { Text("Tri : " +
+                            if (sortKey == "manual") "Manuel" else MarketColumns.label(sortKey, period)) },
+                            onClick = { options = false; sortDialog = true })
                         DropdownMenuItem(text = { Text("Même période pour toutes : " +
                             if (samePeriod) "Oui" else "Non") }, onClick = {
                             samePeriod = !samePeriod
@@ -320,22 +325,6 @@ fun WatchlistScreen(
                 period = selectedPeriod
                 prefs.edit().putString(if (samePeriod) "global_period" else "period:" + list?.id,
                     selectedPeriod.name).apply()
-            }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("TRI", color = Muted, fontSize = 10.sp)
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
-                    listOf("manual", "ticker", "price", "dayPercent", "period", "1S", "1M",
-                        "3M", "6M", "1A", "5A", "cap", "pe", "dividend", "momentum",
-                        "upside", "pre", "after").forEach { key ->
-                        TextButton(onClick = {
-                            if (sortKey == key) descending = !descending
-                            else { sortKey = key; descending = true }
-                            prefs.edit().putString("sort:" + list?.id, sortKey).apply()
-                        }) { Text(when (key) { "manual" -> "Manuel"; "pre" -> "Pre %";
-                            "after" -> "After %"; else -> MarketColumns.label(key, period) },
-                            fontSize = 10.sp, color = if (sortKey == key) Green else Muted) }
-                    }
-                }
             }
             WatchHeader(columns, period, horizontal, grid)
         }
@@ -426,13 +415,28 @@ fun WatchlistScreen(
                     Text(stringResource(R.string.ui_ajouter_un_titre_bf42c))
                 }
             }
-        item {
-            Caption("Cours actualisés au premier plan si la source répond · période et fraîcheur affichées sans données simulées.")
-        }
     }
     }
+    if (sortDialog) AlertDialog(onDismissRequest = { sortDialog = false },
+        title = { Text("Trier la Watchlist") }, text = {
+            Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                listOf("manual", "ticker", "price", "dayPercent", "dayAmount", "period",
+                    "1S", "1M", "3M", "6M", "1A", "5A", "cap", "pe", "dividend",
+                    "momentum", "upside", "pre", "after").forEach { key ->
+                    TextButton(onClick = {
+                        if (sortKey == key) descending = !descending
+                        else { sortKey = key; descending = true }
+                        prefs.edit().putString("sort:" + list?.id, sortKey).apply()
+                        sortDialog = false
+                    }) { Text((if (sortKey == key) "✓ " else "") + when (key) {
+                        "manual" -> "Manuel"; "pre" -> "Pre %"; "after" -> "After %"
+                        else -> MarketColumns.label(key, period)
+                    }) }
+                }
+            }
+        }, confirmButton = { TextButton(onClick = { sortDialog = false }) { Text("Fermer") } })
     if (showColumns) ColumnPicker(columns, MarketColumns.all.keys.filter {
-        it != "opportunity" && it != "extended" }, {
+        it != "opportunity" && it != "extended" && it != "exchange" }, {
         columns = it
         prefs.edit().putString("columns", it.joinToString("|")).apply()
     }, { showColumns = false }, extendedSetting = showExtended to { value ->
@@ -574,7 +578,7 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
     var drag by remember(item.id) { mutableFloatStateOf(0f) }
     Column(Modifier.fillMaxWidth().clickable(onClick = click)) {
         WatchlistRowGrid(columns, grid, scroll,
-            modifier = Modifier.height(if (showName) 44.dp else 39.dp),
+            modifier = Modifier.height(if (showName) 37.dp else 29.dp),
             tickerCell = {
             Row(Modifier.fillMaxWidth().pointerInput(item.id) {
                 detectDragGesturesAfterLongPress(onDragEnd = { drag = 0f },
@@ -592,11 +596,6 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (showName) Text(s.name, fontSize = 9.sp, color = Muted,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    else Text(s.exchange +
-                        (if (w.alerts.any { it.securityId == s.id && it.enabled }) " ◦" else "") +
-                        (if (w.transactions.any { it.securityId == s.id }) " •" else ""),
-                        fontSize = 8.sp, color = Muted, maxLines = 1,
-                        overflow = TextOverflow.Ellipsis)
                 }
             }
         }, valueCell = { key ->
@@ -609,12 +608,6 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
                     "price" -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
                         WatchValue(number(q?.price), MaterialTheme.colorScheme.onSurface,
                             11.sp, emphasized = true)
-                        if (q != null) WatchValue(when (NormalizedQuote.from(q).freshness) {
-                            QuoteFreshness.REALTIME -> "Temps réel"
-                            QuoteFreshness.DELAYED -> "Diff. ${q.delay} min"
-                            QuoteFreshness.CACHED -> "Cache"
-                            QuoteFreshness.STALE -> "Cache ancien"
-                        }, Muted, 8.sp)
                     }
                     "dayPercent" -> WatchValue(percent(q?.percent), tint(q?.change))
                     else -> {
@@ -632,7 +625,7 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
         }, menuCell = menu)
         if (extra != null && "ticker" in columns) {
             val pre = extended?.marketSession == MarketSession.PRE_MARKET
-            WatchlistRowGrid(columns, grid, scroll, Modifier.height(20.dp),
+            WatchlistRowGrid(columns, grid, scroll, Modifier.height(16.dp),
                 tickerCell = {
                     Text(if (pre) "☀ PRE" else "☾ AFTER", fontSize = 10.sp,
                         color = if (pre) Blue else Color(0xFFAC9CDA),

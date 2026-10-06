@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.12 — 2026-10-06 (Daily, Watchlist et hors séance)
+
+- Watchlist : ticker seul, sans place ni état « Cache » répété; ligne PRE/AFTER de 16 dp immédiatement sous le cours régulier avec les mêmes colonnes. Le tri reste accessible dans le menu.
+- Widget 4x2 : P&L du jour en valeur et en pourcentage au premier plan, rendement total en capsule secondaire, cinq titres compacts par défaut. Le graphique réel est intégré dans la zone Daily si la hauteur le permet. Aperçu et configuration propres à chaque instance.
+- Cours US hors séance : lorsqu’une quote de la séance courante contient une impression PRE/AFTER réelle, le widget indique ☀/☾ et affiche ce prix et sa variation distincte; le portefeuille peut valoriser les positions au dernier cours disponible et garde le P&L du jour régulier. Aucun cours hors séance n’est créé pour un titre canadien.
+- Le widget continue de s’appuyer sur le cache, WorkManager et le rafraîchissement manuel, sans streaming en arrière-plan. La fraîcheur et la source des quotes restent traçables dans les vues détaillées.
+
 ## Mon Wallet v0.2.11 — 2026-10-06 (grille Watchlist)
 
 - L'en-tête, la ligne régulière et la ligne PRE/AFTER utilisent désormais la même grille de colonnes et la même position de défilement. Prix, variation jour en % et en devise sont alignés à droite avec des chiffres tabulaires; aucun horaire ne surcharge la ligne secondaire.

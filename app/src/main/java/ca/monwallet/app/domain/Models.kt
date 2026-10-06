@@ -1,5 +1,8 @@
 package ca.monwallet.app.domain
 
+import ca.monwallet.app.marketdata.MarketSession
+import ca.monwallet.app.marketdata.NormalizedQuote
+import ca.monwallet.app.marketdata.supportsUsExtendedHours
 import java.math.BigDecimal
 import java.math.MathContext
 import java.time.LocalDate
@@ -304,15 +307,18 @@ data class Wallet(
 ) {
     fun security(id: String?) = securities.find { it.id == id }
 
-    fun result(portfolio: String? = null): Result {
+    fun result(portfolio: String? = null, now: Long = System.currentTimeMillis()): Result {
         val entries = transactions.filter { portfolio == null || it.portfolioId == portfolio }
         val usd = securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] }
         val regular = Engine.calculate(entries, quotes, usd)
-        if (settings["portfolio_extended"] != "LAST") return regular
-        val adjusted = quotes.mapValues { (_, quote) ->
-            val extended = when (quote.marketSession) {
-                "PRE_MARKET" -> quote.preMarketPrice
-                "AFTER_HOURS" -> quote.afterHoursPrice
+        if (settings["portfolio_extended"] == "REGULAR") return regular
+        val adjusted = quotes.mapValues { (securityId, quote) ->
+            val normalized = securities.find { it.id == securityId }
+                ?.takeIf { supportsUsExtendedHours(it) }
+                ?.let { NormalizedQuote.from(quote, now) }
+            val extended = when (normalized?.marketSession) {
+                MarketSession.PRE_MARKET -> normalized.preMarketPrice
+                MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
                 else -> null
             }
             if (extended != null && quote.currency == "USD") quote.copy(price = extended)

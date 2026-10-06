@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28], application = TestMonWallet::class)
 class Widget4x2LayoutTest {
     @Test fun previewCanInstallBesideTheExistingRelease() {
-        assertEquals("ca.monwallet.app.preview2", BuildConfig.APPLICATION_ID)
+        assertEquals("ca.monwallet.app.preview", BuildConfig.APPLICATION_ID)
     }
 
     @Test fun chartFallbackUsesOnlyRealHistoryAndNeverFabricatesPoints() {
@@ -29,7 +29,7 @@ class Widget4x2LayoutTest {
         assertTrue(WidgetChartData.choose(emptyList(), emptyList(), emptyList()).isEmpty())
     }
 
-    @Test fun fourByTwoKeepsBothColumnsAndThreeRowsAboveTheChart() {
+    @Test fun fourByTwoKeepsBothColumnsAndChartInsideTheDailyHero() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val inflater = LayoutInflater.from(context)
         val widget = inflater.inflate(R.layout.wallet_widget_wide, null)
@@ -49,8 +49,10 @@ class Widget4x2LayoutTest {
         assertTrue(total.width > 0)
         assertTrue(titleRows.width > 0)
         assertTrue(total.right < titleRows.left)
-        assertTrue(titleRows.bottom <= chart.top)
-        assertTrue(chart.bottom <= footer.top)
+        val hero = widget.findViewById<View>(R.id.widget_day_pill)
+        assertTrue(chart.top >= hero.top)
+        assertTrue(chart.bottom <= hero.bottom)
+        assertTrue(titleRows.bottom <= footer.top)
         assertTrue(footer.bottom <= height)
     }
 }

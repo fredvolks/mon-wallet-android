@@ -61,10 +61,14 @@ class LiveQuotesTest {
         val fx = Quote(usd.id, BigDecimal("1.3"), BigDecimal("1.3"), "CAD", now, today, "test")
         val base = Wallet(portfolios = listOf(portfolio), securities = listOf(security, usd),
             transactions = listOf(holding), quotes = mapOf(security.id to usQuote, usd.id to fx))
-        val regular = base.result()
-        val estimated = base.copy(settings = mapOf("portfolio_extended" to "LAST")).result()
+        val regular = base.copy(settings = mapOf("portfolio_extended" to "REGULAR"))
+            .result(now = now)
+        val estimated = base.copy(settings = mapOf("portfolio_extended" to "LAST"))
+            .result(now = now)
         assertEquals(0, regular.value!!.compareTo(BigDecimal("1560")))
         assertEquals(0, estimated.value!!.compareTo(BigDecimal("1625")))
         assertEquals(regular.day, estimated.day)
+        assertEquals(regular.value, base.copy(settings = mapOf("portfolio_extended" to "LAST"))
+            .result(now = now + 24 * 60 * 60_000L).value)
     }
 }
