@@ -62,7 +62,12 @@ class WatchlistNetworkScreenshotTest {
         context.startActivity(Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         val device = UiDevice.getInstance(instrumentation)
-        val tab = device.wait(Until.findObject(By.text(context.getString(R.string.nav_watchlist))), 20_000)
+        var tab = device.wait(Until.findObject(By.text(context.getString(R.string.nav_watchlist))), 20_000)
+        if (tab == null && device.hasObject(By.textContains("isn't responding"))) {
+            // The emulator launcher can show its own ANR dialog over a healthy app.
+            device.findObject(By.text("Close app"))?.click()
+            tab = device.wait(Until.findObject(By.text(context.getString(R.string.nav_watchlist))), 10_000)
+        }
         if (tab == null) {
             val hierarchy = ByteArrayOutputStream()
             device.dumpWindowHierarchy(hierarchy)
