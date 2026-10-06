@@ -42,7 +42,7 @@ object MarketColumns {
         MarketColumn("opportunity", "Score analystes", 90),
     ).associateBy { it.id }
     val discoverDefault = listOf("ticker", "price", "period", "cap", "momentum")
-    val watchlistDefault = listOf("ticker", "price", "sparkline", "dayPercent", "period")
+    val watchlistDefault = listOf("ticker", "price", "dayPercent", "dayAmount", "period")
     val presets = mapOf(
         "Minimal" to watchlistDefault,
         "Ultra minimal" to listOf("ticker", "price", "dayPercent"),

@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.11 — 2026-10-06 (grille Watchlist)
+
+- L'en-tête, la ligne régulière et la ligne PRE/AFTER utilisent désormais la même grille de colonnes et la même position de défilement. Prix, variation jour en % et en devise sont alignés à droite avec des chiffres tabulaires; aucun horaire ne surcharge la ligne secondaire.
+- Le preset minimal affiche Ticker, Prix, Jour %, Jour $ et performance de la période active. La sparkline et les autres colonnes restent configurables. Les préférences de l'ancien preset minimal migrent vers ce nouveau tableau, sans remplacer les dispositions personnalisées.
+- Ligne hors séance de 20 dp, badge bleu PRE ou violet AFTER; aucune seconde ligne sans véritable cours hors séance US. Le cours principal conserve son indication de fraîcheur.
+- Capture instrumentée sur émulateur avec titres américains et canadiens, et comparaison des bords droits des valeurs affichées lorsque le fournisseur renvoie un cours hors séance.
+
 ## Mon Wallet v0.2.10 — 2026-10-06 (Watchlist hors séance)
 
 - Cours US Yahoo : le chargement des quotes utilise le graphique 5 minutes avec `includePrePost=true`; une impression PRE/AFTER est retenue uniquement dans les bornes de la séance courante, depuis les champs du fournisseur ou une bougie réelle. Les titres canadiens et les séances sans impression n'affichent rien.

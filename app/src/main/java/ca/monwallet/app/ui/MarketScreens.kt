@@ -13,9 +13,11 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import ca.monwallet.app.data.Catalog
@@ -122,7 +124,9 @@ fun WatchlistScreen(
             .getOrDefault(PerformancePeriod.M3))
     }
     var columns by remember { mutableStateOf(MarketColumns.restore(
-        prefs.getString("columns", null), MarketColumns.watchlistDefault)
+        prefs.getString("columns", null)?.takeUnless {
+            it == "ticker|price|sparkline|dayPercent|period"
+        }, MarketColumns.watchlistDefault)
         .filter { it != "extended" }.ifEmpty { MarketColumns.watchlistDefault }) }
     var showColumns by remember { mutableStateOf(false) }
     var followSpark by remember { mutableStateOf(prefs.getBoolean("follow_spark", true)) }
@@ -218,8 +222,10 @@ fun WatchlistScreen(
             vm.services.repo.put("watch_item", other.id, other.copy(order = item.order))
         }
     }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val grid = remember(columns, maxWidth) { watchGridSpec(columns, maxWidth - 16.dp) }
     LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = 18.dp),
+        Modifier.fillMaxSize().padding(horizontal = 8.dp),
         contentPadding = PaddingValues(bottom = 80.dp),
     ) {
         item {
@@ -331,7 +337,7 @@ fun WatchlistScreen(
                     }
                 }
             }
-            WatchHeader(columns, period, horizontal)
+            WatchHeader(columns, period, horizontal, grid)
         }
         if (items.isEmpty())
             item {
@@ -350,11 +356,11 @@ fun WatchlistScreen(
         items(orderedItems, key = { it.id }) { item ->
             w.security(item.securityId)?.let { s ->
                 var open by remember { mutableStateOf(false) }
-                WatchLine(w, s, item, facts[s.id], period, columns, horizontal, followSpark, showName,
+                WatchLine(w, s, item, facts[s.id], period, columns, horizontal, grid, followSpark, showName,
                     showExtended, { onDetail(s) }, { move(item, it) }) {
                     Box {
-                        IconButton(onClick = { open = true }, modifier = Modifier.size(26.dp)) {
-                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.watchlist_actions), Modifier.size(18.dp))
+                        IconButton(onClick = { open = true }, modifier = Modifier.size(22.dp)) {
+                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.watchlist_actions), Modifier.size(16.dp))
                         }
                         DropdownMenu(open, { open = false }) {
                             DropdownMenuItem(
@@ -424,6 +430,7 @@ fun WatchlistScreen(
             Caption("Cours actualisés au premier plan si la source répond · période et fraîcheur affichées sans données simulées.")
         }
     }
+    }
     if (showColumns) ColumnPicker(columns, MarketColumns.all.keys.filter {
         it != "opportunity" && it != "extended" }, {
         columns = it
@@ -477,34 +484,69 @@ fun WatchlistScreen(
 }
 
 private fun watchWidth(key: String): Dp = when (key) {
-    "ticker" -> 70.dp
-    "price" -> 68.dp
+    "ticker" -> 62.dp
+    "price" -> 60.dp
     "sparkline" -> 58.dp
-    "dayPercent" -> 64.dp
-    "period", "1S", "1M", "3M", "6M", "1A", "5A" -> 70.dp
+    "dayPercent" -> 55.dp
+    "dayAmount" -> 65.dp
+    "period", "1S", "1M", "3M", "6M", "1A", "5A" -> 55.dp
     else -> (MarketColumns.all[key]?.width ?: 86).dp
+}
+
+private data class WatchGridSpec(val widths: Map<String, Dp>, val menuWidth: Dp = 22.dp) {
+    fun width(key: String): Dp = widths.getValue(key)
+}
+
+private fun watchGridSpec(columns: List<String>, available: Dp): WatchGridSpec {
+    val base = columns.fold(22.dp) { total, key -> total + watchWidth(key) }
+    val spare = if (columns.isEmpty()) 0.dp else
+        (available - base).coerceAtLeast(0.dp) / columns.size.toFloat()
+    return WatchGridSpec(columns.associateWith { watchWidth(it) + spare })
+}
+
+/** The header, regular quote and extended quote share this exact grid and scroll position. */
+@Composable
+private fun WatchlistRowGrid(columns: List<String>, grid: WatchGridSpec,
+    scroll: androidx.compose.foundation.ScrollState, modifier: Modifier = Modifier,
+    tickerCell: @Composable () -> Unit, valueCell: @Composable (String) -> Unit,
+    menuCell: @Composable () -> Unit = {}) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        if ("ticker" in columns) Box(Modifier.width(grid.width("ticker")),
+            contentAlignment = Alignment.CenterStart) { tickerCell() }
+        Row(Modifier.weight(1f).horizontalScroll(scroll),
+            verticalAlignment = Alignment.CenterVertically) {
+            columns.filter { it != "ticker" }.forEach { key ->
+                Box(Modifier.width(grid.width(key)), contentAlignment = Alignment.CenterEnd) {
+                    valueCell(key)
+                }
+            }
+        }
+        Box(Modifier.width(grid.menuWidth), contentAlignment = Alignment.Center) { menuCell() }
+    }
+}
+
+@Composable
+private fun WatchValue(value: String, color: Color, fontSize: TextUnit = 10.sp,
+    emphasized: Boolean = false) {
+    Text(value, Modifier.fillMaxWidth(), color = color, fontSize = fontSize,
+        fontWeight = if (emphasized) FontWeight.SemiBold else FontWeight.Normal,
+        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+        textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 @Composable
 private fun WatchHeader(columns: List<String>, period: PerformancePeriod,
-    scroll: androidx.compose.foundation.ScrollState) {
-    Row(Modifier.fillMaxWidth().height(25.dp), verticalAlignment = Alignment.CenterVertically) {
-        if ("ticker" in columns) Text("TICKER", Modifier.width(watchWidth("ticker")),
-            fontSize = 9.sp, color = Muted)
-        Row(Modifier.weight(1f).horizontalScroll(scroll)) {
-            columns.filter { it != "ticker" }.forEach { key ->
-                Text(MarketColumns.label(key, period).uppercase(), Modifier.width(watchWidth(key)),
-                    fontSize = 9.sp, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
-        Spacer(Modifier.width(26.dp))
-    }
+    scroll: androidx.compose.foundation.ScrollState, grid: WatchGridSpec) {
+    WatchlistRowGrid(columns, grid, scroll, Modifier.height(25.dp),
+        tickerCell = { Text("TICKER", fontSize = 9.sp, color = Muted) },
+        valueCell = { key -> WatchValue(MarketColumns.label(key, period).uppercase(),
+            Muted, 9.sp) })
     HorizontalDivider(color = Border)
 }
 
 @Composable
 private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts?, period: PerformancePeriod,
-    columns: List<String>, scroll: androidx.compose.foundation.ScrollState,
+    columns: List<String>, scroll: androidx.compose.foundation.ScrollState, grid: WatchGridSpec,
     followSpark: Boolean, showName: Boolean, showExtended: Boolean,
     click: () -> Unit, move: (Int) -> Unit, menu: @Composable () -> Unit) {
     val q = w.quotes[s.id]
@@ -529,17 +571,12 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
         MarketSession.AFTER_HOURS -> extended.afterHoursChangePercent
         else -> null
     }
-    val extraFreshness = when (extended?.marketSession) {
-        MarketSession.PRE_MARKET -> extended.preMarketFreshness
-        MarketSession.AFTER_HOURS -> extended.afterHoursFreshness
-        else -> null
-    }
     var drag by remember(item.id) { mutableFloatStateOf(0f) }
     Column(Modifier.fillMaxWidth().clickable(onClick = click)) {
-    Row(Modifier.fillMaxWidth().height(if (showName) 44.dp else 39.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        if ("ticker" in columns) {
-            Row(Modifier.width(watchWidth("ticker")).pointerInput(item.id) {
+        WatchlistRowGrid(columns, grid, scroll,
+            modifier = Modifier.height(if (showName) 44.dp else 39.dp),
+            tickerCell = {
+            Row(Modifier.fillMaxWidth().pointerInput(item.id) {
                 detectDragGesturesAfterLongPress(onDragEnd = { drag = 0f },
                     onDragCancel = { drag = 0f }) { change, amount ->
                     change.consume()
@@ -548,9 +585,9 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
                     if (drag < -22.dp.toPx()) { move(-1); drag = 0f }
                 }
             }, verticalAlignment = Alignment.CenterVertically) {
-                Logo(s, 24.dp)
+                Logo(s, 20.dp)
                 Spacer(Modifier.width(4.dp))
-                Column {
+                Column(Modifier.weight(1f)) {
                     Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (showName) Text(s.name, fontSize = 9.sp, color = Muted,
@@ -562,66 +599,54 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
                         overflow = TextOverflow.Ellipsis)
                 }
             }
-        }
-        Row(Modifier.weight(1f).horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
-            columns.filter { it != "ticker" }.forEach { key ->
-                val size = watchWidth(key)
+        }, valueCell = { key ->
                 when (key) {
-                    "sparkline" -> Box(Modifier.width(size).height(23.dp)) {
+                    "sparkline" -> Box(Modifier.fillMaxWidth().height(22.dp)) {
                         if (spark.size > 1) Chart(spark, modifier = Modifier.fillMaxSize(),
                             color = tint(q?.change))
                         else Text("—", fontSize = 10.sp, color = Muted)
                     }
-                    "price" -> Column(Modifier.width(size)) {
-                        Text(number(q?.price), fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis)
-                        if (q != null) Text(when (NormalizedQuote.from(q).freshness) {
+                    "price" -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                        WatchValue(number(q?.price), MaterialTheme.colorScheme.onSurface,
+                            11.sp, emphasized = true)
+                        if (q != null) WatchValue(when (NormalizedQuote.from(q).freshness) {
                             QuoteFreshness.REALTIME -> "Temps réel"
                             QuoteFreshness.DELAYED -> "Diff. ${q.delay} min"
                             QuoteFreshness.CACHED -> "Cache"
                             QuoteFreshness.STALE -> "Cache ancien"
-                        }, fontSize = 8.sp, color = Muted, maxLines = 1)
+                        }, Muted, 8.sp)
                     }
-                    "dayPercent" -> Column(Modifier.width(size)) {
-                        Text(percent(q?.percent), fontSize = 10.sp, color = tint(q?.change),
-                            maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
+                    "dayPercent" -> WatchValue(percent(q?.percent), tint(q?.change))
                     else -> {
                         val value = watchCell(w, s, q, points, key, period, extended, facts)
-                        Text(value, Modifier.width(size), fontSize = 10.sp,
-                            color = if (key == "period" || PerformancePeriod.entries.any {
+                        WatchValue(value, if (key == "dayAmount") tint(q?.change)
+                            else if (key == "period" || PerformancePeriod.entries.any {
                                     it.label == key }) tint(when {
                                 value.startsWith("+") -> BigDecimal.ONE
                                 value.startsWith("-") -> BigDecimal.ONE.negate()
                                 else -> null
                             })
-                                else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            else MaterialTheme.colorScheme.onSurface)
                     }
                 }
-            }
+        }, menuCell = menu)
+        if (extra != null && "ticker" in columns) {
+            val pre = extended?.marketSession == MarketSession.PRE_MARKET
+            WatchlistRowGrid(columns, grid, scroll, Modifier.height(20.dp),
+                tickerCell = {
+                    Text(if (pre) "☀ PRE" else "☾ AFTER", fontSize = 10.sp,
+                        color = if (pre) Blue else Color(0xFFAC9CDA),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }, valueCell = { key ->
+                    when (key) {
+                        "price" -> WatchValue(number(extra),
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = .78f))
+                        "dayPercent" -> WatchValue(percent(extraPercent), tint(extraDelta))
+                        "dayAmount" -> WatchValue(signed(extraDelta, s.currency), tint(extraDelta))
+                        "period" -> WatchValue("—", Muted)
+                    }
+                })
         }
-        Box(Modifier.width(26.dp)) { menu() }
-    }
-    if (extra != null) {
-        Row(Modifier.fillMaxWidth().height(17.dp)
-            .padding(start = if ("ticker" in columns) watchWidth("ticker") else 0.dp,
-                end = 26.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (extended?.marketSession == MarketSession.PRE_MARKET) "☀ PRE" else "☾ AFTER",
-                Modifier.width(56.dp), fontSize = 10.sp, color = Blue, maxLines = 1)
-            Text(number(extra), Modifier.width(70.dp), fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = .75f), maxLines = 1)
-            Text(percent(extraPercent) + when (extraFreshness) {
-                QuoteFreshness.DELAYED -> " · Diff."
-                QuoteFreshness.STALE -> " · Ancien"
-                QuoteFreshness.CACHED -> " · Cache"
-                else -> ""
-            },
-                Modifier.weight(1f), fontSize = 10.sp, color = tint(extraDelta), maxLines = 1,
-                overflow = TextOverflow.Ellipsis)
-        }
-    }
     }
     HorizontalDivider(color = Border.copy(alpha = .45f))
 }
