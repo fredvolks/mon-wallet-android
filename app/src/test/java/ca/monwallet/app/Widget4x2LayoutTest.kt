@@ -30,7 +30,7 @@ class Widget4x2LayoutTest {
         assertTrue(WidgetChartData.choose(emptyList(), emptyList(), emptyList()).isEmpty())
     }
 
-    @Test fun fourByTwoKeepsBothColumnsAndChartInsideTheDailyHero() {
+    @Test fun fourByTwoKeepsDailyHeroAndTotalBesideFiveTitles() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val inflater = LayoutInflater.from(context)
         val widget = inflater.inflate(R.layout.wallet_widget_wide, null)
@@ -39,12 +39,12 @@ class Widget4x2LayoutTest {
         widget.findViewById<TextView>(R.id.widget_amount).text = "+48,36 $"
         widget.findViewById<TextView>(R.id.widget_percent).text = "+0,74 %"
         val rows = widget.findViewById<LinearLayout>(R.id.widget_rows)
-        repeat(3) { rows.addView(inflater.inflate(R.layout.wallet_widget_wide_row, rows, false)) }
+        repeat(5) { rows.addView(inflater.inflate(R.layout.wallet_widget_wide_row, rows, false)) }
         val chart = widget.findViewById<View>(R.id.widget_chart)
-        chart.visibility = View.VISIBLE
+        chart.visibility = View.GONE
         val px = context.resources.displayMetrics.density
         val width = (360 * px).toInt()
-        val height = (180 * px).toInt()
+        val height = (160 * px).toInt()
         widget.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
         widget.layout(0, 0, width, height)
@@ -55,8 +55,8 @@ class Widget4x2LayoutTest {
         assertTrue(titleRows.width > 0)
         assertTrue(total.right < titleRows.left)
         val hero = widget.findViewById<View>(R.id.widget_day_pill)
-        assertTrue(chart.top >= hero.top)
-        assertTrue(chart.bottom <= hero.bottom)
+        assertTrue(hero.height > total.height)
+        assertTrue(rows.getChildAt(4).bottom <= rows.height)
         assertTrue(titleRows.bottom <= footer.top)
         assertTrue(footer.bottom <= height)
     }

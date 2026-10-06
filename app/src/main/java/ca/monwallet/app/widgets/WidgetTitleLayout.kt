@@ -49,7 +49,7 @@ internal object WidgetTitleLayout {
         // amount and percentage need that vertical space.
         val chart = config.chart && config.style in
             setOf("Mixte", "Mixte premium", "Daily + Titres", "Graphique") &&
-            (!isWide || height >= 180)
+            (!isWide || height >= 220)
         val footer = config.showUpdated &&
             (!isWide || height >= 139)
         return Plan(limit, visible, density, chart, footer)
