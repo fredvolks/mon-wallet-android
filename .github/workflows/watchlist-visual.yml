@@ -1,0 +1,41 @@
+name: Watchlist device screenshot
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable emulator acceleration
+        run: sudo chmod 666 /dev/kvm
+      - name: Test live provider on emulator and capture Watchlist
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set +e
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon
+            test_status=$?
+            adb pull /sdcard/Android/data/ca.monwallet.app.preview2/files/watchlist-real.png watchlist-real.png
+            adb logcat -d -s WatchlistNetworkTest:* MonWalletQuote:* > watchlist-provider-log.txt
+            if [ "$test_status" -eq 0 ] && [ ! -s watchlist-real.png ]; then exit 1; fi
+            exit "$test_status"
+      - name: Save screenshot and provider diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Watchlist-real-provider
+          path: |
+            watchlist-real.png
+            watchlist-provider-log.txt
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: warn

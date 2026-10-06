@@ -327,7 +327,8 @@ class Twelve(private val key: String) : MarketDataProvider {
             runCatching { get("quote", params + ("prepost" to "true")) }.getOrNull()
         else null
         val extended = candidate?.takeIf { TwelveQuoteMapper.hasCurrentExtendedPrint(s, it, now) }
-        val j = if (extended != null || candidate == null) get("quote", params) else candidate
+        val j = if (candidate == null || candidate.optBoolean("is_extended_hours"))
+            get("quote", params) else candidate
         return TwelveQuoteMapper.map(s, j, extended, now, name)
     }
 

@@ -6,6 +6,7 @@
 - Twelve Data : `prepost=true` est tenté pendant les séances étendues US si cette source est configurée; la réponse doit déclarer `is_extended_hours` et provenir de la séance du jour. La disponibilité dépend du forfait du fournisseur; le cours normal reste utilisable si cette option échoue.
 - Watchlist : seconde ligne PRE/AFTER de 17 dp avec cours et variation de cette séance, sans grossir la ligne régulière; l'option se trouve dans « ⚙ Colonnes » et reste activée par défaut. La fraîcheur reste distincte, et une quote en cache n'est jamais qualifiée de temps réel.
 - Tests du mapping AAPL/NVDA/TSM/META/MSFT/TSLA, cache, variation distincte, absence de donnée, titre canadien et expiration de la séance. Journal de diagnostic AAPL réservé au build debug, sans secret.
+- Un test instrumenté sur émulateur tente la capture d'une vraie Watchlist AAPL/NVDA/TSM après requête réseau, sans injecter de cours. Son résultat dépend de la réponse du fournisseur pendant la séance.
 
 ## Mon Wallet v0.2.9 — 2026-10-06 (Mes titres Compact et sources intégrées)
 
