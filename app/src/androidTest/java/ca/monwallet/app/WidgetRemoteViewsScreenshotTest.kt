@@ -79,6 +79,9 @@ class WidgetRemoteViewsScreenshotTest {
                             text.width > 0 && text.paint.measureText(text.text.toString()) <= text.width)
                     assertTrue("Row $index cell $cell extends past widget: ${text.right}",
                         rows.left + row.left + text.right <= width)
+                    assertTrue("Row $index cell $cell clipped: rows ${rows.width}, row ${row.width}, " +
+                        "cell ${text.left}..${text.right}",
+                        text.right <= row.width && row.right <= rows.width)
                 }
             }
             screenshot = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
