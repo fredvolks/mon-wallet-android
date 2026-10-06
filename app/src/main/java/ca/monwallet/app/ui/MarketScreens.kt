@@ -555,10 +555,11 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (showName) Text(s.name, fontSize = 9.sp, color = Muted,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    else Text(s.exchange.take(5) +
+                    else Text(s.exchange +
                         (if (w.alerts.any { it.securityId == s.id && it.enabled }) " ◦" else "") +
                         (if (w.transactions.any { it.securityId == s.id }) " •" else ""),
-                        fontSize = 8.sp, color = Muted, maxLines = 1)
+                        fontSize = 8.sp, color = Muted, maxLines = 1,
+                        overflow = TextOverflow.Ellipsis)
                 }
             }
         }
