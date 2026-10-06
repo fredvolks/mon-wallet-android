@@ -264,8 +264,8 @@ class NasdaqSummaryProvider : FundamentalsProvider {
         fun number(name: String): BigDecimal? = value(name)?.let(::nasdaqNumber)
         val metrics = linkedMapOf<String, String>()
         number("MarketCap")?.let { metrics["Capitalisation (M)"] = it.divide(BigDecimal(1_000_000)).stripTrailingZeros().toPlainString() }
-        number("ShareVolume")?.let { metrics["Volume"] = it.toPlainString() }
-        number("AverageVolume")?.let { metrics["Volume moyen"] = it.toPlainString() }
+        number("ShareVolume")?.let { metrics["Volume"] = it.stripTrailingZeros().toPlainString() }
+        number("AverageVolume")?.let { metrics["Volume moyen"] = it.stripTrailingZeros().toPlainString() }
         number("AnnualizedDividend")?.let { metrics["Dividende annuel"] = it.toPlainString() }
         number("Yield")?.let { metrics["Rendement dividende %"] = it.toPlainString() }
         (number("PERatio") ?: number("PriceEarningsRatio"))?.let {
