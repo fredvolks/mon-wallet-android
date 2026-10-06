@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
 /** Captures the actual RemoteViews layout with explicit example holdings. */
 @RunWith(AndroidJUnit4::class)
 class WidgetRemoteViewsScreenshotTest {
-    @Test fun fiveRowsAndDailyHeroRenderWithoutClipping() = runBlocking {
+    @Test fun fiveRowsAndDailyHeroRenderWithoutClipping() { runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val portfolio = Portfolio(name = "Disnat")
@@ -80,5 +80,5 @@ class WidgetRemoteViewsScreenshotTest {
             assertTrue(requireNotNull(screenshot).compress(Bitmap.CompressFormat.PNG, 100, it))
         }
         screenshot?.recycle()
-    }
+    } }
 }
