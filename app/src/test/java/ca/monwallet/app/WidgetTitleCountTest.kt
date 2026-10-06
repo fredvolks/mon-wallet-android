@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import ca.monwallet.app.domain.Holding
 import ca.monwallet.app.domain.Result
@@ -59,8 +60,24 @@ class WidgetTitleCountTest {
             Triple(5, R.layout.wallet_widget_wide_row, 150),
             Triple(6, R.layout.wallet_widget_wide_row_ultra, 172))) {
             val widget = inflater.inflate(R.layout.wallet_widget_wide, null)
+            widget.findViewById<TextView>(R.id.widget_total).text = "+0,52 %"
+            widget.findViewById<TextView>(R.id.widget_total_label).text = "Rendement total"
+            widget.findViewById<TextView>(R.id.widget_amount).text = "+48,36 $"
+            widget.findViewById<TextView>(R.id.widget_percent).text = "+0,74 %"
             val rows = widget.findViewById<LinearLayout>(R.id.widget_rows)
-            repeat(count) { rows.addView(inflater.inflate(layout, rows, false)) }
+            repeat(count) { index ->
+                val row = inflater.inflate(layout, rows, false)
+                row.findViewById<TextView>(R.id.widget_row_ticker).text =
+                    listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "DOL")[index]
+                row.findViewById<TextView>(R.id.widget_row_price).text = "485,80 USD"
+                row.findViewById<TextView>(R.id.widget_row_values).text = "+0,54 %"
+                if (index == 1) {
+                    row.findViewById<TextView>(R.id.widget_row_session).apply {
+                        text = "☀"; visibility = View.VISIBLE
+                    }
+                }
+                rows.addView(row)
+            }
             widget.findViewById<View>(R.id.widget_chart).visibility = View.GONE
             widget.findViewById<View>(R.id.widget_footer).visibility = View.GONE
             val px = context.resources.displayMetrics.density
@@ -76,6 +93,15 @@ class WidgetTitleCountTest {
             val total = widget.findViewById<android.widget.TextView>(R.id.widget_total)
             assertTrue(amount.textSize > total.textSize)
             assertTrue(rows.getChildAt(count - 1).bottom <= rows.height)
+            for (index in 0 until count) {
+                val row = rows.getChildAt(index)
+                for (cell in listOf(R.id.widget_row_ticker, R.id.widget_row_price,
+                    R.id.widget_row_values)) {
+                    val text = row.findViewById<TextView>(cell)
+                    assertTrue("$count rows: ${text.text} clipped", text.paint.measureText(
+                        text.text.toString()) <= text.width - text.paddingLeft - text.paddingRight + 1)
+                }
+            }
             assertTrue(rows.bottom <= height - widget.paddingBottom)
         }
     }

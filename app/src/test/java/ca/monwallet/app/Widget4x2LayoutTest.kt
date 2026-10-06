@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import ca.monwallet.app.widgets.WidgetChartData
 import org.junit.Assert.*
@@ -16,7 +17,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28], application = TestMonWallet::class)
 class Widget4x2LayoutTest {
     @Test fun previewCanInstallBesideTheExistingRelease() {
-        assertEquals("ca.monwallet.app.preview", BuildConfig.APPLICATION_ID)
+        assertEquals("ca.monwallet.app.preview2", BuildConfig.APPLICATION_ID)
     }
 
     @Test fun chartFallbackUsesOnlyRealHistoryAndNeverFabricatesPoints() {
@@ -33,6 +34,10 @@ class Widget4x2LayoutTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val inflater = LayoutInflater.from(context)
         val widget = inflater.inflate(R.layout.wallet_widget_wide, null)
+        widget.findViewById<TextView>(R.id.widget_total).text = "+0,52 %"
+        widget.findViewById<TextView>(R.id.widget_total_label).text = "Rendement total"
+        widget.findViewById<TextView>(R.id.widget_amount).text = "+48,36 $"
+        widget.findViewById<TextView>(R.id.widget_percent).text = "+0,74 %"
         val rows = widget.findViewById<LinearLayout>(R.id.widget_rows)
         repeat(3) { rows.addView(inflater.inflate(R.layout.wallet_widget_wide_row, rows, false)) }
         val chart = widget.findViewById<View>(R.id.widget_chart)
