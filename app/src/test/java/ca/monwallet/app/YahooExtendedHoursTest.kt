@@ -102,4 +102,28 @@ class YahooExtendedHoursTest {
         assertNull(canadian.preMarketPrice)
         assertNull(canadian.afterHoursPrice)
     }
+
+    @Test fun twelveExtendedQuoteKeepsRegularPriceAndRejectsUnsupportedPrints() {
+        val s = Security.of("AAPL", "Apple", "NASDAQ", "USD")
+        val regular = JSONObject().put("currency", "USD").put("close", "100")
+            .put("previous_close", "98").put("timestamp", at(16))
+            .put("datetime", "2026-10-06 16:00:00")
+        val post = JSONObject().put("currency", "USD").put("close", "100.5")
+            .put("previous_close", "98").put("change", "2.5")
+            .put("percent_change", "2.55").put("timestamp", at(16, 10))
+            .put("is_extended_hours", true)
+        val now = at(16, 20) * 1000
+        assertTrue(TwelveQuoteMapper.hasCurrentExtendedPrint(s, post, now))
+        val q = TwelveQuoteMapper.map(s, regular, post, now, "Twelve test")
+        val normalized = NormalizedQuote.from(q, now)
+        assertEquals(0, normalized.regularPrice.compareTo(BigDecimal("100")))
+        assertEquals(0, normalized.afterHoursPrice!!.compareTo(BigDecimal("100.5")))
+        // Provider 2.55% is based on 98, not on the regular 100.
+        assertEquals(0, normalized.afterHoursChangePercent!!.compareTo(BigDecimal("0.5")))
+        assertFalse(TwelveQuoteMapper.hasCurrentExtendedPrint(s,
+            JSONObject(post.toString()).put("timestamp", at(16, 10) - 86_400), now))
+        assertFalse(TwelveQuoteMapper.hasCurrentExtendedPrint(s,
+            JSONObject(post.toString()).put("is_extended_hours", false), now))
+        assertNull(TwelveQuoteMapper.map(s, regular, null, now, "Twelve test").afterHoursPrice)
+    }
 }

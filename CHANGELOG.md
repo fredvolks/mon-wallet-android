@@ -3,6 +3,7 @@
 ## Mon Wallet v0.2.10 — 2026-10-06 (Watchlist hors séance)
 
 - Cours US Yahoo : le chargement des quotes utilise le graphique 5 minutes avec `includePrePost=true`; une impression PRE/AFTER est retenue uniquement dans les bornes de la séance courante, depuis les champs du fournisseur ou une bougie réelle. Les titres canadiens et les séances sans impression n'affichent rien.
+- Twelve Data : `prepost=true` est tenté pendant les séances étendues US si cette source est configurée; la réponse doit déclarer `is_extended_hours` et provenir de la séance du jour. La disponibilité dépend du forfait du fournisseur; le cours normal reste utilisable si cette option échoue.
 - Watchlist : seconde ligne PRE/AFTER de 17 dp avec cours et variation de cette séance, sans grossir la ligne régulière; l'option se trouve dans « ⚙ Colonnes » et reste activée par défaut. La fraîcheur reste distincte, et une quote en cache n'est jamais qualifiée de temps réel.
 - Tests du mapping AAPL/NVDA/TSM/META/MSFT/TSLA, cache, variation distincte, absence de donnée, titre canadien et expiration de la séance. Journal de diagnostic AAPL réservé au build debug, sans secret.
 

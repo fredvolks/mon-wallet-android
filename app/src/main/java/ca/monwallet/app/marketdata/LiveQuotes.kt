@@ -1,5 +1,7 @@
 package ca.monwallet.app.marketdata
 
+import android.util.Log
+import ca.monwallet.app.BuildConfig
 import ca.monwallet.app.domain.Quote
 import ca.monwallet.app.domain.Security
 import java.math.BigDecimal
@@ -110,7 +112,13 @@ data class LiveQuoteUpdate(val cached: Quote, val normalized: NormalizedQuote)
 class ForegroundQuoteProvider(private val market: MarketDataProvider) : LiveQuoteProvider {
     override suspend fun quote(security: Security): LiveQuoteUpdate {
         val raw = market.quote(security)
-        return LiveQuoteUpdate(raw, NormalizedQuote.from(raw))
+        val normalized = NormalizedQuote.from(raw)
+        if (BuildConfig.DEBUG && security.symbol == "AAPL")
+            Log.d("MonWalletQuote", "AAPL regular=${raw.price} pre=${raw.preMarketPrice} " +
+                "after=${raw.afterHoursPrice} session=${raw.marketSession} " +
+                "timestamp=${raw.preMarketTimestamp ?: raw.afterHoursTimestamp ?: raw.timestamp} " +
+                "freshness=${normalized.freshness} provider=${raw.source}")
+        return LiveQuoteUpdate(raw, normalized)
     }
 }
 

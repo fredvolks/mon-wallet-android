@@ -90,13 +90,6 @@ class Yahoo : MarketDataProvider {
         val c = if (us) chart(s, "1d", "5m", includePrePost = true)
             else chart(s, "5d", "1d")
         return YahooQuoteMapper.map(s, c, Instant.now().epochSecond, name, us)
-            .also { q ->
-                if (BuildConfig.DEBUG && s.symbol == "AAPL")
-                    Log.d("MonWalletQuote", "AAPL regular=${q.price} pre=${q.preMarketPrice} " +
-                        "after=${q.afterHoursPrice} session=${q.marketSession} " +
-                        "timestamp=${q.preMarketTimestamp ?: q.afterHoursTimestamp ?: q.timestamp} " +
-                        "freshness=${NormalizedQuote.from(q).freshness} provider=${q.source}")
-            }
     }
 
     private fun zone(m: JSONObject) =
@@ -284,7 +277,7 @@ internal object YahooQuoteMapper {
             currency,
             time,
             date,
-            name,
+            source,
             marketOpen = period?.let { within(now, it) },
             volume = m.number("regularMarketVolume"),
             averageVolume = m.number("averageDailyVolume3Month")
@@ -324,24 +317,18 @@ class Twelve(private val key: String) : MarketDataProvider {
         }
 
     override suspend fun quote(s: Security): Quote {
-        val j = get("quote", mapOf("symbol" to symbol(s), "exchange" to s.exchange))
-        val currency = j.text("currency") ?: error("Devise absente.")
-        require(currency == s.currency)
-        val time = j.number("timestamp")?.toLong()?.times(1000) ?: error("Date absente.")
-        return Quote(
-            s.id,
-            j.number("close") ?: error("Prix absent."),
-            j.number("previous_close"),
-            currency,
-            time,
-            j.optString("datetime").take(10),
-            name,
-            marketOpen = j.optBoolean("is_market_open"),
-            volume = j.number("volume"),
-            high52 = j.optJSONObject("fifty_two_week")?.number("high"),
-            low52 = j.optJSONObject("fifty_two_week")?.number("low"),
-            averageVolume = j.number("average_volume"),
-        )
+        val params = mapOf("symbol" to symbol(s), "exchange" to s.exchange)
+        val now = System.currentTimeMillis()
+        // The user's Twelve Data subscription may not include extended hours.
+        // One optional prepost request is attempted only during a US session;
+        // a rejected request still leaves the regular quote available.
+        val candidate = if (supportsUsExtendedHours(s) &&
+            TwelveQuoteMapper.isExtendedWindow(now))
+            runCatching { get("quote", params + ("prepost" to "true")) }.getOrNull()
+        else null
+        val extended = candidate?.takeIf { TwelveQuoteMapper.hasCurrentExtendedPrint(s, it, now) }
+        val j = if (extended != null || candidate == null) get("quote", params) else candidate
+        return TwelveQuoteMapper.map(s, j, extended, now, name)
     }
 
     override suspend fun history(s: Security, range: String, interval: String): List<Point> {
@@ -406,6 +393,72 @@ class Twelve(private val key: String) : MarketDataProvider {
         } ?: emptyList()
 
     override suspend fun news(s: Security) = Yahoo().news(s)
+}
+
+internal object TwelveQuoteMapper {
+    private val newYork = ZoneId.of("America/New_York")
+
+    private fun session(time: Long): String? {
+        val local = Instant.ofEpochMilli(time).atZone(newYork)
+        if (local.dayOfWeek in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)) return null
+        val clock = local.toLocalTime()
+        return when {
+            clock >= LocalTime.of(7, 0) && clock < LocalTime.of(9, 30) -> "PRE_MARKET"
+            clock >= LocalTime.of(16, 0) && clock < LocalTime.of(20, 0) -> "AFTER_HOURS"
+            else -> null
+        }
+    }
+
+    fun isExtendedWindow(now: Long) = session(now) != null
+
+    fun hasCurrentExtendedPrint(s: Security, j: JSONObject, now: Long): Boolean {
+        val timestamp = j.number("timestamp")?.toLong()?.times(1000) ?: return false
+        return supportsUsExtendedHours(s) && j.optBoolean("is_extended_hours") &&
+            j.text("currency") == s.currency && j.number("close")?.signum() == 1 &&
+            session(timestamp) != null && session(timestamp) == session(now) &&
+            Instant.ofEpochMilli(timestamp).atZone(newYork).toLocalDate() ==
+                Instant.ofEpochMilli(now).atZone(newYork).toLocalDate()
+    }
+
+    fun map(s: Security, j: JSONObject, extended: JSONObject?, now: Long, source: String): Quote {
+        val currency = j.text("currency") ?: error("Devise absente.")
+        require(currency == s.currency)
+        val time = j.number("timestamp")?.toLong()?.times(1000) ?: error("Date absente.")
+        val regular = j.number("close") ?: error("Prix absent.")
+        val extra = extended?.takeIf { hasCurrentExtendedPrint(s, it, now) }
+        val pre = extra?.takeIf { session(now) == "PRE_MARKET" }
+        val post = extra?.takeIf { session(now) == "AFTER_HOURS" }
+        // Twelve's percentage can use a different previous_close than the
+        // regular quote. Only preserve it if the references actually match.
+        val sameReference = extra?.number("previous_close")?.compareTo(regular) == 0
+        val delta = extra?.number("close")?.minus(regular)
+        val change = if (sameReference) extra?.number("change") ?: delta else delta
+        val percent = if (sameReference) extra?.number("percent_change") else null
+        return Quote(
+            s.id,
+            regular,
+            j.number("previous_close"),
+            currency,
+            time,
+            j.optString("datetime").take(10),
+            source,
+            marketOpen = j.optBoolean("is_market_open"),
+            volume = j.number("volume"),
+            high52 = j.optJSONObject("fifty_two_week")?.number("high"),
+            low52 = j.optJSONObject("fifty_two_week")?.number("low"),
+            averageVolume = j.number("average_volume"),
+            preMarketPrice = pre?.number("close"),
+            preMarketTimestamp = pre?.number("timestamp")?.toLong()?.times(1000),
+            preMarketChange = if (pre != null) change else null,
+            preMarketChangePercent = if (pre != null) percent else null,
+            afterHoursPrice = post?.number("close"),
+            afterHoursTimestamp = post?.number("timestamp")?.toLong()?.times(1000),
+            afterHoursChange = if (post != null) change else null,
+            afterHoursChangePercent = if (post != null) percent else null,
+            marketSession = if (pre != null) "PRE_MARKET" else if (post != null)
+                "AFTER_HOURS" else if (j.optBoolean("is_market_open")) "REGULAR" else "CLOSED",
+        )
+    }
 }
 
 class Router(private val settings: SecureSettings) : MarketDataProvider {

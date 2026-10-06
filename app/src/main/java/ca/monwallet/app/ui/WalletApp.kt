@@ -98,7 +98,11 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                 while (isActive && visible.isNotEmpty()) {
                     s.refreshForeground(visible)
                     val quotes = s.repo.state.value.quotes
-                    delay(if (visible.all { quotes[it.id]?.marketOpen == false }) 180_000L else 60_000L)
+                    val active = visible.any { security ->
+                        quotes[security.id]?.let { q -> q.marketOpen == true ||
+                            q.marketSession == "PRE_MARKET" || q.marketSession == "AFTER_HOURS" } == true
+                    }
+                    delay(if (active) 60_000L else 180_000L)
                 }
             }
         }
