@@ -99,10 +99,19 @@ class WidgetRemoteViewsScreenshotTest {
                 android.graphics.Color.red(color) > 100 &&
                     android.graphics.Color.green(color) > 100
             } }
+            val isolated = Bitmap.createBitmap(price.width, price.height,
+                Bitmap.Config.ARGB_8888).also { price.draw(Canvas(it)) }
+            val isolatedPainted = (0 until isolated.height).any { py ->
+                (0 until isolated.width).any { px ->
+                    android.graphics.Color.alpha(isolated.getPixel(px, py)) > 0
+                }
+            }
             assertTrue("Price not painted: body ${body.width} at ${body.left}, " +
                 "rows ${rows.width} at ${rows.left}, row ${first.width} at ${first.left}, " +
                 "price ${price.width}x${price.height} at ${price.left},${price.top}, " +
-                "bitmap rect $x,$y", painted)
+                "bitmap rect $x,$y, text=${price.text}, color=${price.currentTextColor}, " +
+                "alpha=${price.alpha}, layout=${price.layout?.lineCount}, " +
+                "isolatedPainted=$isolatedPainted", painted)
         }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "widget-4x2-daily-fixture.png")
