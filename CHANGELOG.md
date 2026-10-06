@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.10 — 2026-10-06 (Watchlist hors séance)
+
+- Cours US Yahoo : le chargement des quotes utilise le graphique 5 minutes avec `includePrePost=true`; une impression PRE/AFTER est retenue uniquement dans les bornes de la séance courante, depuis les champs du fournisseur ou une bougie réelle. Les titres canadiens et les séances sans impression n'affichent rien.
+- Watchlist : seconde ligne PRE/AFTER de 17 dp avec cours et variation de cette séance, sans grossir la ligne régulière; l'option se trouve dans « ⚙ Colonnes » et reste activée par défaut. La fraîcheur reste distincte, et une quote en cache n'est jamais qualifiée de temps réel.
+- Tests du mapping AAPL/NVDA/TSM/META/MSFT/TSLA, cache, variation distincte, absence de donnée, titre canadien et expiration de la séance. Journal de diagnostic AAPL réservé au build debug, sans secret.
+
 ## Mon Wallet v0.2.9 — 2026-10-06 (Mes titres Compact et sources intégrées)
 
 - « Mes titres » Compact : synthèse raccourcie, lignes de 64 dp sans cartes, logo vérifié, ticker, quantité sans devise, valeur et P&L du jour en dollars et en pourcentage. Les graphiques intrajournaliers sont affichés seulement si leurs données existent; options 1S/1M/3M, tri et poids mémorisés. L’ordre manuel peut être déplacé par appui long.

@@ -19,7 +19,9 @@ class LiveQuotesTest {
     )
 
     @Test fun preAndAfterNeverReplaceRegularChange() {
-        val pre = NormalizedQuote.from(quote("PRE_MARKET"), now)
+        val preNow = now - 10 * 60 * 60_000L
+        val pre = NormalizedQuote.from(quote("PRE_MARKET", fetched = preNow).copy(
+            preMarketTimestamp = preNow), preNow)
         assertEquals(MarketSession.PRE_MARKET, pre.marketSession)
         assertEquals(0, pre.regularChange!!.compareTo(BigDecimal("2")))
         assertEquals(0, pre.preMarketChange!!.compareTo(BigDecimal("1")))
@@ -33,6 +35,8 @@ class LiveQuotesTest {
             afterHoursChangePercent = BigDecimal("2.08")), now)
         assertEquals(0, direct.afterHoursChange!!.compareTo(BigDecimal("2.5")))
         assertEquals(0, direct.afterHoursChangePercent!!.compareTo(BigDecimal("2.08")))
+        assertNull(NormalizedQuote.from(quote("AFTER_HOURS"), now + 24 * 60 * 60_000L)
+            .afterHoursPrice)
     }
 
     @Test fun uncertainProviderIsNeverCalledRealtime() {

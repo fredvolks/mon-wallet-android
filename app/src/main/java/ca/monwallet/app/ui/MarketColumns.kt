@@ -60,10 +60,17 @@ object MarketColumns {
 
 @Composable
 fun ColumnPicker(columns: List<String>, allowed: List<String>, onChange: (List<String>) -> Unit,
-    onClose: () -> Unit) {
+    onClose: () -> Unit, extendedSetting: Pair<Boolean, (Boolean) -> Unit>? = null) {
     val selected by rememberUpdatedState(columns)
     AlertDialog(onDismissRequest = onClose, title = { Text("⚙ Colonnes") }, text = {
         Column(Modifier.fillMaxWidth().heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
+            extendedSetting?.let { (enabled, change) ->
+                Row(Modifier.fillMaxWidth().height(42.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(enabled, onCheckedChange = change)
+                    Text("Pre-market / After-hours")
+                }
+                HorizontalDivider()
+            }
             Text("Maintiens ☰ puis glisse pour réordonner", style = MaterialTheme.typography.bodySmall)
             val ordered = columns + allowed.filter { it !in columns }
             ordered.forEach { id ->

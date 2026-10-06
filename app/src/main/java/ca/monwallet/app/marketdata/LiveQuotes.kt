@@ -3,6 +3,10 @@ package ca.monwallet.app.marketdata
 import ca.monwallet.app.domain.Quote
 import ca.monwallet.app.domain.Security
 import java.math.BigDecimal
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
 
 enum class QuoteFreshness { REALTIME, DELAYED, CACHED, STALE }
 enum class MarketSession { PRE_MARKET, REGULAR, AFTER_HOURS, CLOSED }
@@ -27,11 +31,41 @@ data class NormalizedQuote(
     val afterHoursChange: BigDecimal?,
     val afterHoursChangePercent: BigDecimal?,
     val afterHoursTimestamp: Long?,
+    val preMarketFreshness: QuoteFreshness?,
+    val afterHoursFreshness: QuoteFreshness?,
 ) {
     companion object {
+        private val newYork = ZoneId.of("America/New_York")
+
+        private fun currentExtendedSession(now: Long): MarketSession? {
+            val time = Instant.ofEpochMilli(now).atZone(newYork)
+            if (time.dayOfWeek in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)) return null
+            return when {
+                time.toLocalTime() >= LocalTime.of(4, 0) &&
+                    time.toLocalTime() < LocalTime.of(9, 30) -> MarketSession.PRE_MARKET
+                time.toLocalTime() >= LocalTime.of(16, 0) &&
+                    time.toLocalTime() < LocalTime.of(20, 0) -> MarketSession.AFTER_HOURS
+                else -> null
+            }
+        }
+
         fun from(q: Quote, now: Long = System.currentTimeMillis()): NormalizedQuote {
-            val session = runCatching { MarketSession.valueOf(q.marketSession) }
+            val providerSession = runCatching { MarketSession.valueOf(q.marketSession) }
                 .getOrDefault(MarketSession.CLOSED)
+            val active = currentExtendedSession(now)
+            val extendedTime = when (providerSession) {
+                MarketSession.PRE_MARKET -> q.preMarketTimestamp
+                MarketSession.AFTER_HOURS -> q.afterHoursTimestamp
+                else -> null
+            }
+            // A cached quote must not carry yesterday's PRE/AFTER label into a new session.
+            val sameDay = extendedTime?.let {
+                Instant.ofEpochMilli(it).atZone(newYork).toLocalDate() ==
+                    Instant.ofEpochMilli(now).atZone(newYork).toLocalDate()
+            } == true
+            val session = if (providerSession in setOf(MarketSession.PRE_MARKET,
+                    MarketSession.AFTER_HOURS) && (active != providerSession || !sameDay))
+                MarketSession.CLOSED else providerSession
             val age = (now - q.fetchedAt).coerceAtLeast(0)
             val freshness = when {
                 age > 30 * 60_000 -> QuoteFreshness.STALE
@@ -46,6 +80,12 @@ data class NormalizedQuote(
             val delta = extra?.minus(q.price)
             val extraPercent = delta?.takeIf { q.price.signum() != 0 }
                 ?.multiply(BigDecimal(100))?.divide(q.price, java.math.MathContext.DECIMAL128)
+            fun extendedFreshness(time: Long?): QuoteFreshness? = when {
+                time == null -> null
+                now - time > 30 * 60_000 -> QuoteFreshness.STALE
+                (q.delay ?: 0) > 0 -> QuoteFreshness.DELAYED
+                else -> QuoteFreshness.CACHED
+            }
             return NormalizedQuote(q.securityId, q.price, q.change, q.percent, q.timestamp,
                 q.source, freshness, session, q.price, q.change, q.percent,
                 pre, if (pre != null) q.preMarketChange ?: delta else null,
@@ -53,7 +93,9 @@ data class NormalizedQuote(
                 q.preMarketTimestamp?.takeIf { pre != null },
                 post, if (post != null) q.afterHoursChange ?: delta else null,
                 if (post != null) q.afterHoursChangePercent ?: extraPercent else null,
-                q.afterHoursTimestamp?.takeIf { post != null })
+                q.afterHoursTimestamp?.takeIf { post != null },
+                extendedFreshness(q.preMarketTimestamp?.takeIf { pre != null }),
+                extendedFreshness(q.afterHoursTimestamp?.takeIf { post != null }))
         }
     }
 }
