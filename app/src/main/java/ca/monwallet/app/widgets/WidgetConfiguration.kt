@@ -309,8 +309,7 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
                     .padding(start = 7.dp, end = 4.dp),
                     verticalArrangement = Arrangement.Center) {
                     val today = result?.holdings?.filter { it.quantity > ZERO }
-                        ?.all { wallet.quotes[it.securityId]?.sessionDate == java.time.LocalDate.now().toString() }
-                        == true
+                        ?.all { wallet.quotes[it.securityId]?.sessionDate == java.time.LocalDate.now().toString() } == true
                     if (config.showDailyLabel) Text(if (today || result?.day == null) stringResource(R.string.widget_today)
                         else "Dernière séance", color = Muted, fontSize = 9.sp, maxLines = 1)
                     if (config.dayAmount && !config.hideAmounts)
