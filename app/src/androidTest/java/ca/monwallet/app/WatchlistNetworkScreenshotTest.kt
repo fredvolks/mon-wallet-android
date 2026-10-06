@@ -3,6 +3,7 @@ package ca.monwallet.app
 import android.content.Intent
 import android.content.ContentValues
 import android.graphics.Bitmap
+import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -23,6 +24,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.ByteArrayOutputStream
 
 /** Device screenshot with actual provider requests. No synthetic quotes are written. */
 @RunWith(AndroidJUnit4::class)
@@ -61,6 +63,13 @@ class WatchlistNetworkScreenshotTest {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         val device = UiDevice.getInstance(instrumentation)
         val tab = device.wait(Until.findObject(By.text(context.getString(R.string.nav_watchlist))), 20_000)
+        if (tab == null) {
+            val hierarchy = ByteArrayOutputStream()
+            device.dumpWindowHierarchy(hierarchy)
+            Log.w("WatchlistNetworkTest", "Navigation absent: " +
+                hierarchy.toString(Charsets.UTF_8.name()).take(3500))
+            capture(context, "watchlist-diagnostic.png")
+        }
         assertNotNull("Watchlist tab missing", tab)
         tab!!.click()
         assertTrue("TSLA row missing", device.wait(Until.hasObject(By.text("TSLA")), 20_000))
@@ -97,9 +106,14 @@ class WatchlistNetworkScreenshotTest {
                     mainCell!!.visibleBounds.right, subCell!!.visibleBounds.right)
             }
         }
-        val screenshot = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
+        capture(context, "watchlist-real.png")
+        Unit
+    }
+
+    private fun capture(context: Context, fileName: String) {
+        val screenshot = requireNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
         val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "watchlist-real.png")
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
             put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MonWallet")
         }
@@ -109,7 +123,6 @@ class WatchlistNetworkScreenshotTest {
             assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, it))
         }
         screenshot.recycle()
-        Log.i("WatchlistNetworkTest", "Screenshot: $uri; extended=$visible")
-        Unit
+        Log.i("WatchlistNetworkTest", "Screenshot: $uri")
     }
 }

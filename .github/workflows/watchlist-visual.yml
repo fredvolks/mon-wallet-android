@@ -29,6 +29,7 @@ jobs:
           name: Watchlist-real-provider
           path: |
             watchlist-real.png
+            watchlist-diagnostic.png
             watchlist-provider-log.txt
             app/build/outputs/androidTest-results/**
           if-no-files-found: warn
