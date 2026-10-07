@@ -14,6 +14,7 @@ import ca.monwallet.app.domain.*
 import ca.monwallet.app.widgets.WidgetSettings
 import ca.monwallet.app.widgets.WidgetWideRenderer
 import java.math.BigDecimal
+import java.math.MathContext
 import java.time.LocalDate
 import kotlin.math.roundToInt
 import kotlinx.coroutines.runBlocking
@@ -42,7 +43,9 @@ class WidgetRemoteViewsScreenshotTest {
         val now = System.currentTimeMillis()
         val wallet = Wallet(portfolios = listOf(portfolio), securities = securities,
             quotes = securities.mapIndexed { index, security ->
-                security.id to Quote(security.id, BigDecimal(amounts[index]), null,
+                security.id to Quote(security.id, BigDecimal(amounts[index]),
+                    BigDecimal(amounts[index]).divide(BigDecimal.ONE.add(
+                        BigDecimal(changes[index]).divide(BigDecimal("100"))), MathContext.DECIMAL128),
                     security.currency, now, LocalDate.now().toString(), "exemple visuel")
             }.toMap())
         val result = Result(holdings, BigDecimal("9300"), ZERO, BigDecimal("9348.36"),
@@ -77,6 +80,7 @@ class WidgetRemoteViewsScreenshotTest {
                     text.text.contains(tickers[index]))
                 assertTrue("Missing price in ${text.text}",
                     text.text.contains(amounts[index].replace('.', ',')))
+                assertTrue("Missing day percent in ${text.text}", text.text.contains("%"))
                 assertTrue("Row $index clipped: ${text.text}, width ${text.width}",
                     text.right <= row.width && text.paint.measureText(text.text.toString()) <= text.width)
             }
