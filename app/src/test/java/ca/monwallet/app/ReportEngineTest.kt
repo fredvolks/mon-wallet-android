@@ -105,6 +105,25 @@ class ReportEngineTest {
         approx("1100", ReportEngine.history(revised).last().closingValue)
     }
 
+    @Test fun backdatedPurchaseMovesCalendarStartAndRequiresOlderCloses() {
+        val today = LocalDate.of(2026, 10, 7)
+        assertEquals("1mo", reportHistoryRange(today.minusDays(6), today))
+        assertEquals("5y", reportHistoryRange(today.minusYears(2), today))
+        val original = Wallet(securities = listOf(cad), transactions = listOf(
+            tx(TxType.BUY, "2026-01-06", "100", cad, "1")),
+            prices = listOf(point(cad, "2026-01-05", "100"),
+                point(cad, "2026-01-06", "110"), point(cad, "2026-01-07", "120")))
+        val earlier = original.copy(transactions = original.transactions +
+            tx(TxType.BUY, "2026-01-05", "100", cad, "1"))
+        val before = ReportEngine.history(original)
+        val after = ReportEngine.history(earlier)
+        assertEquals(LocalDate.parse("2026-01-06"), before[1].date)
+        assertEquals(LocalDate.parse("2026-01-05"), after[1].date)
+        approx("0", after.single { it.date.toString() == "2026-01-05" }.dailyPnl)
+        approx("20", after.single { it.date.toString() == "2026-01-06" }.dailyPnl)
+        assertNotSame(before, after)
+    }
+
     @Test fun historicalFxIsUsedInsteadOfCurrentRate() {
         val wallet = Wallet(securities = listOf(usd, fx), transactions = listOf(
             tx(TxType.DEPOSIT, "2026-01-05", "1400"),

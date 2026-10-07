@@ -7,6 +7,7 @@
 - Les tests de widget sont calibrés au rapport 1,85:1 mesuré dans une capture réelle One UI du S25 Ultra (environ 616 × 333 pixels dans l’image reçue), au lieu du précédent 2,25:1 théorique. La vérification finale sur le téléphone reste à faire après installation.
 - Rapports : la période 1S charge un historique court au lieu de demander systématiquement cinq ans. Une réponse vide ou une erreur de source ne bloque plus la prochaine tentative pendant 24 heures; Twelve Data peut céder à une vraie clôture Yahoo lorsqu'une bourse ou un forfait n'est pas couvert. Le cache fusionne les clôtures par date pour conserver les anciennes journées.
 - Si le portefeuille a commencé pendant une période courte, Rapports affiche explicitement une performance **partielle depuis le premier achat** lorsque les clôtures existent. Si les clôtures manquent encore, la page montre le profit total calculé au cours actuel, clairement distinct du rendement de la période. Le calendrier reconstruit les séances disponibles à partir des achats, ventes, liquidités et clôtures réelles.
+- Une transaction rétroactive élargit automatiquement la fenêtre de téléchargement jusqu'à sa date et déclenche la reconstruction des journées suivantes; les clôtures déjà en cache sont réutilisées et les dates manquantes sont redemandées. Les prix d'achat restent le coût de revient et ne sont jamais présentés comme des clôtures.
 
 ## Mon Wallet v0.2.17 — 2026-10-07 (Rapports historiques)
 

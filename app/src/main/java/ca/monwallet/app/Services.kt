@@ -15,6 +15,9 @@ import ca.monwallet.app.updates.Updater
 import ca.monwallet.app.widgets.WalletWidget
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.ConcurrentHashMap
+import java.time.LocalDate
+import java.time.DayOfWeek
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Semaphore
@@ -50,6 +53,19 @@ open class MonWallet : Application() {
     }
 }
 
+/** Fetch far enough back to include an edited or backdated purchase. */
+internal fun reportHistoryRange(first: LocalDate, today: LocalDate): String =
+    when (ChronoUnit.DAYS.between(first, today).coerceAtLeast(0L)) {
+        in 0..25 -> "1mo"
+        in 26..80 -> "3mo"
+        in 81..165 -> "6mo"
+        in 166..350 -> "1y"
+        in 351..700 -> "2y"
+        in 701..1750 -> "5y"
+        in 1751..3500 -> "10y"
+        else -> "max"
+    }
+
 class Services(val context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val secure = SecureSettings(context)
@@ -70,7 +86,7 @@ class Services(val context: Context) {
     private val reportHistoryRefresh = ConcurrentHashMap<String, Long>()
 
     /** Fetch only real daily closes needed by Reports. Retain older cached closes on errors. */
-    suspend fun refreshReportHistory(portfolioId: String?, period: ReportRange, force: Boolean = false) {
+    suspend fun refreshReportHistory(portfolioId: String?, force: Boolean = false) {
         val wallet = repo.current()
         val transactions = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
         val ids = transactions
@@ -79,27 +95,29 @@ class Services(val context: Context) {
             setOf("^GSPC", "^IXIC", "^GSPTSE", "CAD=X") } +
             Catalog.stocks.filter { it.symbol == "XEQT.TO" })
         val securities = (wallet.securities.filter { it.id in ids } + benchmarks).distinctBy { it.id }
-        val range = when (period) {
-            ReportRange.WEEK -> "1mo"
-            ReportRange.MONTH -> "3mo"
-            ReportRange.THREE_MONTHS -> "6mo"
-            ReportRange.SIX_MONTHS, ReportRange.YTD -> "1y"
-            ReportRange.YEAR -> "2y"
-            ReportRange.FIVE_YEARS -> "5y"
-            ReportRange.TEN_YEARS, ReportRange.TOTAL -> "10y"
-        }
+        val today = LocalDate.now()
+        val portfolioStart = transactions.minOfOrNull { LocalDate.parse(it.date) } ?: today
         val gate = Semaphore(3)
         supervisorScope {
             securities.map { security -> async {
                 gate.withPermit {
-                    val key = "${security.id}:$range"
+                    val related = transactions.filter { it.securityId == security.id }
+                    val firstNeeded = related.minOfOrNull { LocalDate.parse(it.date) }
+                        ?: portfolioStart
+                    val range = reportHistoryRange(firstNeeded, today)
+                    val key = "${security.id}:$range:${related.hashCode()}"
                     val existing = wallet.prices.filter { it.securityId == security.id }
-                    val earliestNeeded = period.start(java.time.LocalDate.now())
-                        ?: transactions.minOfOrNull { java.time.LocalDate.parse(it.date) }
-                        ?: java.time.LocalDate.now()
+                    val earliestNeeded = firstNeeded
+                    val missingTransactionClose = related.any { transaction ->
+                        val day = LocalDate.parse(transaction.date)
+                        day < today && day.dayOfWeek !in
+                            setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) &&
+                            existing.none { it.date == transaction.date }
+                    }
                     val covered = existing.size >= 2 &&
                         existing.any { it.date <= earliestNeeded.plusDays(7).toString() } &&
-                        existing.any { it.date >= java.time.LocalDate.now().minusDays(7).toString() }
+                        existing.any { it.date >= today.minusDays(7).toString() } &&
+                        !missingTransactionClose
                     val now = System.currentTimeMillis()
                     if (!force && (covered || now - (reportHistoryRefresh[key] ?: 0L) < 6 * 60 * 60_000L))
                         return@withPermit

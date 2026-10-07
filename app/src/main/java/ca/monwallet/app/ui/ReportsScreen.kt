@@ -78,7 +78,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     var loading by remember { mutableStateOf(false) }
     LaunchedEffect(selected, range, w.transactions) {
         loading = true
-        try { vm.services.refreshReportHistory(selected, range)
+        try { vm.services.refreshReportHistory(selected)
         } finally { loading = false }
     }
     val summary = remember(w.transactions, w.prices, selected, range, snapshots) {
@@ -119,7 +119,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { vm.run { vm.services.refreshReportHistory(selected, range, true) } }) {
+                TextButton(onClick = { vm.run { vm.services.refreshReportHistory(selected, true) } }) {
                     Text("↻ Actualiser", color = Blue, fontSize = 12.sp)
                 }
                 TextButton(onClick = { csvLauncher.launch("MonWallet-Rapports-${LocalDate.now()}.csv") }) {
