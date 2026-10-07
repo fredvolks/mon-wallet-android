@@ -159,11 +159,14 @@ class Yahoo : MarketDataProvider {
             } ?: emptyList()
     }
 
-    override suspend fun news(s: Security) =
-        get("/v1/finance/search", mapOf("q" to s.symbol, "quotesCount" to "0", "newsCount" to "10"))
+    private suspend fun searchNews(query: String, symbol: String, strict: Boolean): List<News> =
+        get("/v1/finance/search", mapOf("q" to query, "quotesCount" to "0", "newsCount" to "10"))
             .optJSONArray("news")
             ?.objects()
             ?.mapNotNull { o ->
+                // The issuer-name fallback must never attribute a similarly named
+                // company or a generic search result to this security.
+                if (strict && !YahooNewsMatcher.identifies(o, symbol)) return@mapNotNull null
                 val link =
                     o.text("link")?.takeIf { it.startsWith("https://") } ?: return@mapNotNull null
                 News(
@@ -173,6 +176,20 @@ class Yahoo : MarketDataProvider {
                     o.optLong("providerPublishTime") * 1000,
                 )
             } ?: emptyList()
+
+    override suspend fun news(s: Security): List<News> {
+        val direct = searchNews(s.symbol, s.symbol, strict = false)
+        if (direct.isNotEmpty() || s.currency != "CAD" || s.name.isBlank() ||
+            s.name.equals(s.symbol, ignoreCase = true)) return direct
+        return searchNews(s.name, s.symbol, strict = true)
+    }
+}
+
+internal object YahooNewsMatcher {
+    fun identifies(article: JSONObject, symbol: String): Boolean {
+        val related = article.optJSONArray("relatedTickers") ?: return false
+        return (0 until related.length()).any { related.optString(it).equals(symbol, true) }
+    }
 }
 
 /** Only exchange-identified US shares can have a Yahoo extended-session line. */
