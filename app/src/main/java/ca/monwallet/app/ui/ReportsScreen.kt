@@ -156,7 +156,8 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                 item { ReportMonthYear(snapshots) }
             }
             2 -> {
-                item { ReportCalendar(snapshots, w.transactions.filter { selected == null || it.portfolioId == selected },
+                item { ReportCalendar(w, snapshots,
+                    w.transactions.filter { selected == null || it.portfolioId == selected },
                     month, { month = it; vm.run { vm.services.repo.setting("reports_month", month.toString()) } }) }
                 item { ReportMonthYear(snapshots) }
             }
@@ -248,6 +249,17 @@ private fun ReportMetrics(summary: ReportSummary, current: Result?) {
             }
             Spacer(Modifier.height(10.dp))
         }
+        if (summary.complete) {
+            val last = summary.days.last()
+            val base = summary.base!!
+            val realizedChange = last.realizedPnl - base.realizedPnl
+            val unrealizedChange = last.unrealizedPnl?.let { end -> base.unrealizedPnl?.let { end - it } }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Metric("Gain réalisé", signed(realizedChange), tint(realizedChange))
+                Metric("Gain non réalisé", signed(unrealizedChange), tint(unrealizedChange))
+            }
+            Caption("Réalisé et non réalisé : variations sur la période; dividendes et frais sont comptés séparément.")
+        }
         if (summary.complete) Caption("Rapport arrêté au ${date(summary.days.last().date.toString())} (dernière clôture disponible).")
     }
 }
@@ -299,9 +311,12 @@ private fun ReportStatistics(summary: ReportSummary, history: List<PortfolioDail
         Metric("Drawdown actuel", percent(summary.currentDrawdown), Red)
         Metric("Rendement personnel annualisé (MWR / XIRR)", percent(summary.personalReturn), tint(summary.personalReturn))
         Caption("Le rendement personnel tient compte du moment des apports et retraits; le rendement de la courbe neutralise leurs montants.")
-        val months = history.drop(1).filter { it.dailyReturn != null }
-            .groupBy { YearMonth.from(it.date) }.mapValues { (_, days) ->
-                days.fold(ONE) { acc, day -> acc * (ONE + day.dailyReturn!!.divide(BigDecimal(100), MC)) }
+        val months = history.drop(1).groupBy { YearMonth.from(it.date) }
+            .filterValues { days -> days.any { it.dailyReturn != null } &&
+                days.none { it.closingValue == null || (it.hasMarketClose && it.dailyReturn == null) } }
+            .mapValues { (_, days) ->
+                days.mapNotNull { it.dailyReturn }.fold(ONE) { acc, daily ->
+                    acc * (ONE + daily.divide(BigDecimal(100), MC)) }
             }
         if (months.isNotEmpty()) {
             val best = months.maxByOrNull { it.value }
@@ -337,7 +352,7 @@ private fun ReportMonthYear(history: List<PortfolioDailySnapshot>) {
         Text("Performance mensuelle", fontWeight = FontWeight.SemiBold)
         days.groupBy { YearMonth.from(it.date) }.toSortedMap(reverseOrder()).entries.take(12).forEach { (month, list) ->
             val valid = list.any { it.dailyReturn != null } &&
-                list.none { it.hasMarketClose && it.dailyReturn == null }
+                list.none { it.closingValue == null || (it.hasMarketClose && it.dailyReturn == null) }
             val factor = list.mapNotNull { it.dailyReturn }.fold(ONE) { a, r ->
                 a * (ONE + r.divide(BigDecimal(100), MC)) }
             val change = if (valid) (factor - ONE) * BigDecimal(100) else null
@@ -351,7 +366,7 @@ private fun ReportMonthYear(history: List<PortfolioDailySnapshot>) {
         Text("Performance annuelle", fontWeight = FontWeight.SemiBold)
         days.groupBy { it.date.year }.toSortedMap(reverseOrder()).forEach { (year, list) ->
             val valid = list.any { it.dailyReturn != null } &&
-                list.none { it.hasMarketClose && it.dailyReturn == null }
+                list.none { it.closingValue == null || (it.hasMarketClose && it.dailyReturn == null) }
             val factor = list.mapNotNull { it.dailyReturn }.fold(ONE) { a, r ->
                 a * (ONE + r.divide(BigDecimal(100), MC)) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -363,16 +378,30 @@ private fun ReportMonthYear(history: List<PortfolioDailySnapshot>) {
 }
 
 @Composable
-private fun ReportCalendar(history: List<PortfolioDailySnapshot>, transactions: List<Transaction>,
+private fun ReportCalendar(wallet: Wallet, history: List<PortfolioDailySnapshot>, transactions: List<Transaction>,
     month: YearMonth, onMonth: (YearMonth) -> Unit) {
     var day by remember { mutableStateOf<PortfolioDailySnapshot?>(null) }
+    var yearMenu by remember { mutableStateOf(false) }
     val byDate = history.associateBy { it.date }
     CardBlock {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween) {
             TextButton(onClick = { onMonth(month.minusMonths(1)) }) { Text("‹", fontSize = 24.sp) }
-            Text("${month.month.getDisplayName(TextStyle.FULL, Locale.FRENCH)} ${month.year}",
-                fontWeight = FontWeight.SemiBold)
+            Box {
+                TextButton(onClick = { yearMenu = true }) {
+                    Text("${month.month.getDisplayName(TextStyle.FULL, Locale.FRENCH)} ${month.year} ▾",
+                        color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+                DropdownMenu(yearMenu, { yearMenu = false }) {
+                    val oldest = history.getOrNull(1)?.date?.year ?: LocalDate.now().year
+                    (LocalDate.now().year downTo oldest).forEach { year ->
+                        DropdownMenuItem(text = { Text(year.toString()) }, onClick = {
+                            yearMenu = false
+                            onMonth(YearMonth.of(year, month.month).coerceAtMost(YearMonth.now()))
+                        })
+                    }
+                }
+            }
             TextButton(onClick = { onMonth(month.plusMonths(1)) },
                 enabled = month < YearMonth.now()) { Text("›", fontSize = 24.sp) }
         }
@@ -421,6 +450,22 @@ private fun ReportCalendar(history: List<PortfolioDailySnapshot>, transactions: 
                 Metric("Retraits", money(today.filter { it.type == TxType.WITHDRAWAL }.fold(ZERO) { a, t -> a + t.price * t.fxRate }))
                 Metric("Dividendes", money(today.filter { it.type == TxType.DIVIDEND }.fold(ZERO) { a, t -> a + t.cad }))
                 Caption("Achats : ${today.count { it.type == TxType.BUY }} · Ventes : ${today.count { it.type == TxType.SELL }}")
+                val previous = history.lastOrNull { it.date < selected.date && it.closingValue != null }
+                if (selected.dailyReturn != null && previous != null) {
+                    val contributions = (selected.positions.keys + previous.positions.keys +
+                        today.mapNotNull { it.securityId }).distinct().map { id ->
+                        val changes = today.filter { it.securityId == id }
+                        val buy = changes.filter { it.type == TxType.BUY }.fold(ZERO) { a, t -> a + t.cad }
+                        val sale = changes.filter { it.type == TxType.SELL }.fold(ZERO) { a, t -> a + t.cad }
+                        val income = changes.filter { it.type == TxType.DIVIDEND }.fold(ZERO) { a, t -> a + t.cad }
+                        id to ((selected.positions[id] ?: ZERO) - (previous.positions[id] ?: ZERO)
+                            - buy + sale + income)
+                    }
+                    contributions.maxByOrNull { it.second }?.let { (id, pnl) ->
+                        Metric("Meilleur titre", "${wallet.security(id)?.ticker ?: "—"} · ${signed(pnl)}", tint(pnl)) }
+                    contributions.minByOrNull { it.second }?.let { (id, pnl) ->
+                        Metric("Pire titre", "${wallet.security(id)?.ticker ?: "—"} · ${signed(pnl)}", tint(pnl)) }
+                }
                 if (selected.dailyReturn == null) Caption("Aucune séance ou historique incomplet ce jour-là.")
             }
         }
@@ -506,6 +551,23 @@ private fun ReportFlows(wallet: Wallet, portfolioId: String?, summary: ReportSum
                         color = tint(days.fold(ZERO) { a, d -> a + d.netExternalFlow }))
                 }
             }
+        Spacer(Modifier.height(8.dp))
+        Text("Capital ajouté par année", fontWeight = FontWeight.SemiBold)
+        history.drop(1).groupBy { it.date.year }.toSortedMap(reverseOrder()).forEach { (year, days) ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(year.toString())
+                Text(signed(days.fold(ZERO) { a, d -> a + d.netExternalFlow }))
+            }
+        }
+    }
+    CardBlock {
+        Text("Historique du capital net", fontWeight = FontWeight.SemiBold)
+        history.drop(1).filter { it.netExternalFlow != ZERO }.asReversed().take(30).forEach { day ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("${date(day.date.toString())}  ${signed(day.netExternalFlow)}", fontSize = 12.sp)
+                Text(money(day.capitalInvested), fontSize = 12.sp)
+            }
+        }
     }
     CardBlock {
         Text("Mouvements", fontWeight = FontWeight.SemiBold)

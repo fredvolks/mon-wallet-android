@@ -130,4 +130,25 @@ class ReportEngineTest {
         assertNull(ReportEngine.benchmark(wallet.copy(prices = wallet.prices.filter { it.securityId != fx.id }),
             "^GSPC", LocalDate.parse("2026-01-05"), LocalDate.parse("2026-01-06")))
     }
+
+    @Test fun closedWeekendDoesNotGenerateFalseDailyPnl() {
+        val wallet = Wallet(securities = listOf(cad), transactions = listOf(
+            tx(TxType.DEPOSIT, "2026-01-09", "1000"),
+            tx(TxType.BUY, "2026-01-09", "100", cad, "10"),
+            tx(TxType.DEPOSIT, "2026-01-10", "200"),
+        ), prices = listOf(point(cad, "2026-01-09", "100"),
+            point(cad, "2026-01-12", "110")))
+        val days = ReportEngine.history(wallet)
+        val saturday = days.single { it.date == LocalDate.parse("2026-01-10") }
+        assertNull(saturday.dailyReturn)
+        assertNull(saturday.dailyPnl)
+        approx("100", summary(wallet).gain)
+    }
+
+    @Test fun xirrUsesDatedCashFlowsAndTerminalValue() {
+        val start = LocalDate.of(2025, 1, 1)
+        val end = start.plusYears(1)
+        approx("10", ReportEngine.xirr(listOf(start to bd("1000")), end, bd("1100")))
+        assertNull(ReportEngine.xirr(emptyList(), end, bd("1100")))
+    }
 }
