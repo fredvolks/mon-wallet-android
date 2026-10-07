@@ -210,17 +210,19 @@ object ReportEngine {
             implicit, dividends, fees, if (complete) worst else null,
             if (complete) current else null, confirmed.maxByOrNull { it.dailyReturn!! },
             confirmed.minByOrNull { it.dailyReturn!! }, contributions,
-            if (complete) xirr(cashFlows, latest!!.date, latest.closingValue!!) else null,
+            if (complete) xirr(listOf(base!!.date to base.closingValue!!) + cashFlows,
+                latest!!.date, latest.closingValue!!) else null,
             cumulative)
     }
 
     /** Annualized money weighted return. External cash flows are investor outlays. */
     fun xirr(flows: List<Pair<LocalDate, BigDecimal>>, end: LocalDate,
         finalValue: BigDecimal): BigDecimal? {
-        if (flows.isEmpty() || finalValue <= ZERO) return null
-        val origin = flows.minOf { it.first }
+        val relevant = flows.filter { it.second != ZERO }
+        if (relevant.isEmpty() || finalValue <= ZERO) return null
+        val origin = relevant.minOf { it.first }
         if (ChronoUnit.DAYS.between(origin, end) < 7) return null
-        val amounts = flows.map { it.first to -it.second } + (end to finalValue)
+        val amounts = relevant.map { it.first to -it.second } + (end to finalValue)
         fun npv(rate: Double): Double = amounts.sumOf { (day, amount) ->
             val years = ChronoUnit.DAYS.between(origin, day) / 365.25
             amount.toDouble() / Math.pow(1.0 + rate, years)

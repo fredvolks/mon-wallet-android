@@ -7,7 +7,7 @@ La page Rapports reconstruit les clôtures depuis les transactions locales et le
 - Le capital net suit `Engine.calculate`: dépôts et retraits explicites, plus financement implicite d'achats ou de frais lorsque l'encaisse était insuffisante. Un achat déjà financé par l'encaisse n'est pas compté une deuxième fois.
 - Pour chaque date valorisée : `P&L = valeur de clôture − valeur précédente − variation du capital net`. Une vente et un dividende restent dans l'encaisse; ils ne sont pas un retrait du portefeuille. Le P&L et la valeur sont en CAD au taux historique.
 - Le rendement quotidien ajusté est `P&L / (valeur précédente + flux externe net)`. Les sous-périodes sont chaînées par multiplication des facteurs quotidiens et la courbe est remise à zéro à sa première valorisation. La date des transactions ne contient pas l'heure ni une valorisation au moment du flux : tout flux du jour est supposé intervenir avant la clôture. Ce rendement quotidien est donc une **estimation ajustée des flux**, et pas un TWR exact lorsqu'un apport ou retrait arrive en cours de séance.
-- Le rendement personnel (XIRR), s'il existe assez de dates et de flux, utilise les apports négatifs, les retraits positifs et la valeur terminale positive. Il est annualisé et ne remplace pas le rendement principal.
+- Le rendement personnel (XIRR), s'il existe assez de dates et de flux, utilise la valeur de départ et les apports comme sorties, les retraits comme entrées, puis la valeur terminale. Il est annualisé et ne remplace pas le rendement principal.
 - Un retrait complet, une séance sans cours exploitable, une devise sans FX historique ou une durée antérieure à l'existence du portefeuille ne génèrent pas de performance artificielle.
 
 ## Benchmarks et calendrier

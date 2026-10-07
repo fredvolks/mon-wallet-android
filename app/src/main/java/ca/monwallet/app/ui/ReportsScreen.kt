@@ -40,8 +40,11 @@ private val benchmarkColors = listOf(Blue, Color(0xFF9F76FF), Color(0xFFFFA04D),
 
 @Composable
 fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
-    val validId = w.settings["reports_portfolio"]?.takeIf { id -> w.portfolios.any { it.id == id } }
-    var selected by remember(validId, initialPortfolio) { mutableStateOf(validId ?: initialPortfolio) }
+    val savedPortfolio = w.settings["reports_portfolio"]
+    val validId = savedPortfolio?.takeIf { id -> w.portfolios.any { it.id == id } }
+    var selected by remember(savedPortfolio, initialPortfolio) {
+        mutableStateOf(if (savedPortfolio == "all") null else validId ?: initialPortfolio)
+    }
     var portfolioMenu by remember { mutableStateOf(false) }
     var tab by remember(w.settings["reports_tab"]) {
         mutableIntStateOf(w.settings["reports_tab"]?.toIntOrNull()?.coerceIn(0, 4) ?: 0)
@@ -60,6 +63,10 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     var benchmarks by remember(w.settings["reports_benchmarks"]) {
         mutableStateOf(w.settings["reports_benchmarks"]?.split('|')?.filter { it in benchmarkNames }?.toSet()
             ?: setOf("^GSPC", "^IXIC", "^GSPTSE", "XEQT.TO"))
+    }
+    fun selectTab(index: Int) {
+        tab = index
+        vm.run { vm.services.repo.setting("reports_tab", index.toString()) }
     }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -120,10 +127,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                     Text("CSV", color = Blue, fontSize = 12.sp)
                 }
             }
-            Chips(reportTabs, tab) { index ->
-                tab = index
-                vm.run { vm.services.repo.setting("reports_tab", index.toString()) }
-            }
+            Chips(reportTabs, tab, ::selectTab)
             Chips(ReportRange.entries.map { it.label }, range.ordinal) { index ->
                 range = ReportRange.entries[index]
                 vm.run { vm.services.repo.setting("reports_range", range.name) }
@@ -135,11 +139,11 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                 item { ReportHero(summary, mode, onMode = { mode = it; vm.run {
                     vm.services.repo.setting("reports_chart", it.toString()) } }) }
                 item { ReportMetrics(summary, current) }
-                item { Comparison(w, summary, benchmarks) { tab = 1 } }
+                item { Comparison(w, summary, benchmarks) { selectTab(1) } }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.weight(1f)) { ReportMini("Calendrier", "Rendement quotidien", { tab = 2 }) }
-                        Box(Modifier.weight(1f)) { ReportMini("Allocation", "Positions actuelles", { tab = 3 }) }
+                        Box(Modifier.weight(1f)) { ReportMini("Calendrier", "Rendement quotidien", { selectTab(2) }) }
+                        Box(Modifier.weight(1f)) { ReportMini("Allocation", "Positions actuelles", { selectTab(3) }) }
                     }
                 }
             }

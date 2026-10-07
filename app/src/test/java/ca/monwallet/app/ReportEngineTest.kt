@@ -149,6 +149,10 @@ class ReportEngineTest {
         val start = LocalDate.of(2025, 1, 1)
         val end = start.plusYears(1)
         approx("10", ReportEngine.xirr(listOf(start to bd("1000")), end, bd("1100")))
+        val withLaterDeposit = ReportEngine.xirr(listOf(start to bd("1000"),
+            start.plusMonths(6) to bd("1000")), end, bd("2100"))
+        assertNotNull(withLaterDeposit)
+        assertTrue(withLaterDeposit!! > ZERO && withLaterDeposit < bd("10"))
         assertNull(ReportEngine.xirr(emptyList(), end, bd("1100")))
     }
 }
