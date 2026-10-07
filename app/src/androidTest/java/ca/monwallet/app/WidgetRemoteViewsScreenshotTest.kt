@@ -25,13 +25,16 @@ import org.junit.runner.RunWith
 /** Captures the actual RemoteViews layout with explicit example holdings. */
 @RunWith(AndroidJUnit4::class)
 class WidgetRemoteViewsScreenshotTest {
-    @Test fun fiveRowsAndDailyHeroRenderWithoutClipping() { runBlocking {
+    @Test fun fiveRowsAndDailyHeroRenderWithoutClipping() = captureTitles(5, 160)
+    @Test fun sixRowsFillTheColumnWithoutClipping() = captureTitles(6, 172)
+
+    private fun captureTitles(count: Int, heightDp: Int) { runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val portfolio = Portfolio(name = "Disnat")
-        val tickers = listOf("XEQT", "TSM", "GURU", "PHOS", "MCD")
-        val amounts = listOf("46.20", "485.80", "2.80", "2.06", "19.55")
-        val changes = listOf("0.54", "3.01", "-2.96", "-2.83", "0.31")
+        val tickers = listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "DOL").take(count)
+        val amounts = listOf("46.20", "485.80", "2.80", "2.06", "19.55", "184.33")
+        val changes = listOf("0.54", "3.01", "-2.96", "-2.83", "0.31", "0.85")
         val securities = tickers.mapIndexed { index, ticker ->
             Security.of(ticker, ticker, if (index == 1 || index == 4) "NYSE" else "TSX",
                 if (index == 1 || index == 4) "USD" else "CAD")
@@ -50,38 +53,43 @@ class WidgetRemoteViewsScreenshotTest {
             }.toMap())
         val result = Result(holdings, BigDecimal("9300"), ZERO, BigDecimal("9348.36"),
             ZERO, ZERO, BigDecimal("48.36"), BigDecimal("6535.135"))
-        val settings = WidgetSettings(style = "Daily + Titres", titleCount = 5,
+        val settings = WidgetSettings(style = "Daily + Titres", titleCount = count,
             custom = true, titleIds = securities.map { it.id }, price = true, chart = false,
             logo = true, titleTotalPercent = false)
         val remote = WidgetWideRenderer.render(context, 101, null, settings, wallet,
-            portfolio.id, result, false, emptyList(), 360 to 160)
+            portfolio.id, result, false, emptyList(), 360 to heightDp)
         var screenshot: Bitmap? = null
         instrumentation.runOnMainSync {
             val view = remote.apply(context, null)
             val scale = context.resources.displayMetrics.density
             val width = (360 * scale).roundToInt()
-            val height = (160 * scale).roundToInt()
+            val height = (heightDp * scale).roundToInt()
             view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
             view.layout(0, 0, width, height)
             val rows = view.findViewById<LinearLayout>(R.id.widget_rows)
-            assertEquals(5, rows.childCount)
+            assertEquals(count, rows.childCount)
             val amount = view.findViewById<TextView>(R.id.widget_amount)
             assertTrue(amount.textSize >
                 view.findViewById<TextView>(R.id.widget_total).textSize)
             assertTrue("Daily amount clipped: ${amount.text}",
                 amount.paint.measureText(amount.text.toString()) <= amount.width)
-            assertTrue(rows.getChildAt(4).bottom <= rows.height)
-            for (index in 0 until 5) {
+            assertEquals(rows.height, rows.getChildAt(count - 1).bottom)
+            val commonTextSize = rows.getChildAt(0)
+                .findViewById<TextView>(R.id.widget_row_ticker).textSize
+            for (index in 0 until count) {
                 val row = rows.getChildAt(index)
                 assertNotNull(row.findViewById<ImageView>(R.id.widget_row_logo).drawable)
                 val text = row.findViewById<TextView>(R.id.widget_row_ticker)
+                assertEquals("All price columns need the same character width",
+                    commonTextSize, text.textSize, 0.1f)
                 assertTrue("Missing title ${tickers[index]} in ${text.text}",
                     text.text.contains(tickers[index]))
                 assertTrue("Missing price in ${text.text}",
                     text.text.contains(amounts[index].replace('.', ',')))
                 assertTrue("Missing day percent in ${text.text}", text.text.contains("%"))
-                assertTrue("Row $index clipped: ${text.text}, width ${text.width}",
+                assertTrue("Row $index clipped: ${text.text}, width ${text.width}, " +
+                    "painted ${text.paint.measureText(text.text.toString())}",
                     text.right <= row.width && text.paint.measureText(text.text.toString()) <= text.width)
             }
             screenshot = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
@@ -106,7 +114,9 @@ class WidgetRemoteViewsScreenshotTest {
                 "bitmap rect $x,$y, text=${title.text}", painted)
         }
         val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "widget-4x2-daily-fixture.png")
+            put(MediaStore.Images.Media.DISPLAY_NAME,
+                if (count == 5) "widget-4x2-daily-fixture.png"
+                else "widget-4x2-six-titles.png")
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
             put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MonWallet")
         }

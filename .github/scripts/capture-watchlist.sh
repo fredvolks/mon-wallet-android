@@ -5,6 +5,7 @@ test_status=$?
 adb pull /sdcard/Pictures/MonWallet/watchlist-real.png watchlist-real.png
 pull_status=$?
 adb pull /sdcard/Pictures/MonWallet/widget-4x2-daily-fixture.png widget-4x2-daily-fixture.png || true
+adb pull /sdcard/Pictures/MonWallet/widget-4x2-six-titles.png widget-4x2-six-titles.png || true
 adb pull /sdcard/Pictures/MonWallet/watchlist-diagnostic.png watchlist-diagnostic.png || true
 adb logcat -d -s WatchlistNetworkTest:* MonWalletQuote:* > watchlist-provider-log.txt
 if [ "$test_status" -ne 0 ]; then exit "$test_status"; fi

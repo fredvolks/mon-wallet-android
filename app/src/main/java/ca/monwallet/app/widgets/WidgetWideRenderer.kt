@@ -161,6 +161,50 @@ internal object WidgetWideRenderer {
             WidgetTitleLayout.Density.COMPACT -> R.layout.wallet_widget_wide_row
             WidgetTitleLayout.Density.ULTRA -> R.layout.wallet_widget_wide_row_ultra
         }
+        val summaries = titles.mapNotNull { holding ->
+            val security = wallet.security(holding.securityId) ?: return@mapNotNull null
+            val q = wallet.quotes[security.id]
+            val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) }
+                ?.let { NormalizedQuote.from(it) }
+            val session = extended?.marketSession
+            val extraPrice = when (session) {
+                MarketSession.PRE_MARKET -> extended.preMarketPrice
+                MarketSession.AFTER_HOURS -> extended.afterHoursPrice
+                else -> null
+            }
+            val extraPercent = when (session) {
+                MarketSession.PRE_MARKET -> extended.preMarketChangePercent
+                MarketSession.AFTER_HOURS -> extended.afterHoursChangePercent
+                else -> null
+            }
+            val showPrice = config.price && !config.hideAmounts
+            security.id to titleSummary(if (config.ticker) security.ticker else security.name,
+                if (showPrice) number(extraPrice ?: q?.price) else "",
+                if (extraPrice != null) extraPercent else q?.percent,
+                showPrice, config.titleDayPercent, session.takeIf { extraPrice != null })
+        }.toMap()
+        // One text size for every title keeps the monospace price/% columns aligned.
+        // Account for the actual 4x2 width, the divider, and the larger logos.
+        val logoWidth = if (!config.logo) 0f else when (plan.density) {
+            WidgetTitleLayout.Density.SPACIOUS -> 31f
+            WidgetTitleLayout.Density.COMPACT -> 25f
+            WidgetTitleLayout.Density.ULTRA -> 22f
+        }
+        val maxSp = when (plan.density) {
+            WidgetTitleLayout.Density.SPACIOUS -> 13f
+            WidgetTitleLayout.Density.COMPACT -> 12f
+            WidgetTitleLayout.Density.ULTRA -> 11f
+        }
+        val metrics = c.resources.displayMetrics
+        val roomPx = (((minWidth - 30f) * .55f - logoWidth - 3f).coerceAtLeast(60f)) *
+            metrics.density
+        val measure = Paint().apply {
+            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            textSize = maxSp * metrics.scaledDensity
+        }
+        val widestPx = summaries.values.maxOfOrNull { measure.measureText(it.toString()) } ?: 0f
+        val rowTextSp = if (widestPx > 0f) (maxSp * roomPx / widestPx)
+            .coerceIn(8f, maxSp) else maxSp
         val extendedSessions = mutableSetOf<MarketSession>()
         for (holding in titles) {
             val security = wallet.security(holding.securityId) ?: continue
@@ -181,11 +225,6 @@ internal object WidgetWideRenderer {
                 MarketSession.AFTER_HOURS -> extended.afterHoursPrice
                 else -> null
             }
-            val extraPercent = when (session) {
-                MarketSession.PRE_MARKET -> extended.preMarketChangePercent
-                MarketSession.AFTER_HOURS -> extended.afterHoursChangePercent
-                else -> null
-            }
             if (extraPrice != null && session != null) extendedSessions.add(session)
             row.setViewVisibility(R.id.widget_row_session, View.GONE)
             row.setTextViewText(R.id.widget_row_session,
@@ -193,18 +232,14 @@ internal object WidgetWideRenderer {
             row.setTextColor(R.id.widget_row_session,
                 if (session == MarketSession.PRE_MARKET) Color.rgb(90, 183, 255)
                 else Color.rgb(181, 150, 241))
-            val showPrice = config.price && !config.hideAmounts
-            val quotePrice = extraPrice ?: q?.price
-            val priceText = if (!showPrice) "" else number(quotePrice)
             row.setViewVisibility(R.id.widget_row_price, View.GONE)
-            val dayPercent = if (extraPrice != null) extraPercent else q?.percent
             row.setViewVisibility(R.id.widget_row_values, View.GONE)
             // A single text cell keeps all quote figures in the actual RemoteViews
             // draw pass. Separate nested numeric TextViews can measure normally yet
             // paint nothing on some Android widget hosts.
-            val summary = titleSummary(label, priceText, dayPercent,
-                showPrice, config.titleDayPercent, session.takeIf { extraPrice != null })
-            row.setTextViewText(R.id.widget_row_ticker, summary)
+            row.setTextViewTextSize(R.id.widget_row_ticker,
+                android.util.TypedValue.COMPLEX_UNIT_SP, rowTextSp)
+            row.setTextViewText(R.id.widget_row_ticker, summaries[security.id] ?: label)
             row.setOnClickPendingIntent(R.id.widget_row,
                 PendingIntent.getActivity(c, id xor security.id.hashCode(),
                     Intent(c, MainActivity::class.java).putExtra("security", security.id),

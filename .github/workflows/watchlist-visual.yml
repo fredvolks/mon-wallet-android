@@ -30,6 +30,7 @@ jobs:
           path: |
             watchlist-real.png
             widget-4x2-daily-fixture.png
+            widget-4x2-six-titles.png
             watchlist-diagnostic.png
             watchlist-provider-log.txt
             app/build/outputs/androidTest-results/**
