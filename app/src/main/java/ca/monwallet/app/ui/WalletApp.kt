@@ -288,7 +288,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                                 vm.run("Transaction supprimée") { s.repo.remove(id) }
                             }
                         }
-                        composable("reports") { ReportsScreen(w) }
+                        composable("reports") { ReportsScreen(w, vm, portfolio) }
                         composable("markets") { MarketsScreen(w, vm) { detail(it) } }
                         composable("watchlist") {
                             WatchlistScreen(w, vm, { detail(it) }, { buy(it) }, { alert = it }) {

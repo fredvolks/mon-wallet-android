@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.17 — 2026-10-07 (Rapports historiques)
+
+- Rapports : sélecteur de portefeuille, vue d’ensemble, performance, calendrier mensuel avec détail par jour, allocation et flux; périodes 1S, 1M, 3M, 6M, YTD, 1A, 5A, 10A et total. Le graphique compare rendement ajusté des flux, gain en dollars et valeur au capital net investi; export CSV des journées disponibles.
+- Valeurs quotidiennes reconstruites à partir des transactions, des clôtures historiques et du taux USD/CAD historique. Dépôts, retraits et financement direct des achats sont séparés des gains; ventes et dividendes restent des flux internes. Les périodes sans cours ou FX fiables sont explicitement incomplètes. Les rendements des jours avec flux utilisent l’hypothèse d’un flux en début de journée faute d’heure d’exécution.
+- Comparaison S&P 500, NASDAQ, TSX et XEQT à base 0 %, en CAD à partir de vrais cours, sans dividendes; analyse des contributeurs, drawdown, rendement personnel annualisé, synthèses mensuelles et annuelles. Préférences Rapports mémorisées; tests de dépôts, retraits, dividendes, vente partielle, transaction rétroactive, FX et historique insuffisant.
+- Les calculs de Rapports sont dérivés du cache de cours et des transactions existants : aucun schéma Room nouveau et aucune migration requise pour cette version.
+
 ## Mon Wallet v0.2.16 — 2026-10-07 (titres du widget 4x2)
 
 - La liste à droite du widget répartit les lignes sur toute la hauteur disponible. Logos et texte sont agrandis, avec réduction automatique du texte si un prix long doit tenir dans la largeur. Les sections Daily, rendement total, indices et actions du widget conservent leur disposition.
