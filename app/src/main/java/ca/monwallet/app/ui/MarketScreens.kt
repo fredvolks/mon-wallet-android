@@ -107,12 +107,17 @@ fun WatchlistScreen(
     onAlert: (Security) -> Unit,
     onAdd: (String) -> Unit,
 ) {
-    var selected by remember { mutableStateOf<String?>(null) }
+    var selected by remember(w.settings["watchlist:selected"], w.watchlists) {
+        mutableStateOf(w.settings["watchlist:selected"]?.takeIf { key ->
+            w.watchlists.any { it.id == key }
+        } ?: w.watchlists.firstOrNull()?.id)
+    }
     val list = w.watchlists.find { it.id == selected } ?: w.watchlists.firstOrNull()
     var naming by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var choose by remember { mutableStateOf<Pair<Security, WatchItem?>?>(null) }
+    var quick by remember { mutableStateOf<Security?>(null) }
     var deleting by remember { mutableStateOf(false) }
     var options by remember { mutableStateOf(false) }
     var sortDialog by remember { mutableStateOf(false) }
@@ -217,12 +222,7 @@ fun WatchlistScreen(
     }
     fun move(item: WatchItem, delta: Int) {
         if (sortKey != "manual") return
-        val index = items.indexOf(item)
-        val other = items.getOrNull(index + delta) ?: return
-        vm.run {
-            vm.services.repo.put("watch_item", item.id, item.copy(order = other.order))
-            vm.services.repo.put("watch_item", other.id, other.copy(order = item.order))
-        }
+        vm.run { vm.services.repo.moveWatchItem(item.watchlistId, item.id, delta) }
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val grid = remember(columns, maxWidth) { watchGridSpec(columns, maxWidth - 16.dp) }
@@ -235,6 +235,7 @@ fun WatchlistScreen(
                 Box(Modifier.weight(1f)) {
                     Chips(w.watchlists.map { it.name }, w.watchlists.indexOf(list)) {
                         selected = w.watchlists[it].id
+                        vm.run { vm.services.repo.setting("watchlist:selected", selected!!) }
                     }
                 }
                 IconButton(
@@ -346,7 +347,7 @@ fun WatchlistScreen(
             w.security(item.securityId)?.let { s ->
                 var open by remember { mutableStateOf(false) }
                 WatchLine(w, s, item, facts[s.id], period, columns, horizontal, grid, followSpark, showName,
-                    showExtended, { onDetail(s) }, { move(item, it) }) {
+                    showExtended, { quick = s }, { move(item, it) }) {
                     Box {
                         IconButton(onClick = { open = true }, modifier = Modifier.size(22.dp)) {
                             Icon(Icons.Outlined.MoreVert, stringResource(R.string.watchlist_actions), Modifier.size(16.dp))
@@ -460,6 +461,7 @@ fun WatchlistScreen(
                             )
                         vm.run { vm.services.repo.put("watchlist", new.id, new) }
                         selected = new.id
+                        vm.run { vm.services.repo.setting("watchlist:selected", new.id) }
                         naming = false
                     },
                 ) {
@@ -483,6 +485,118 @@ fun WatchlistScreen(
                 if (item != null && item.watchlistId != target) vm.services.repo.remove(item.id)
             }
             choose = null
+        }
+    }
+    quick?.let { security ->
+        WatchQuickPanel(security, w, vm, onClose = { quick = null },
+            onFull = { quick = null; onDetail(security) },
+            onAlert = { quick = null; onAlert(security) },
+            onBuy = { quick = null; onBuy(security) },
+            onWatch = { quick = null; choose = security to null })
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WatchQuickPanel(security: Security, w: Wallet, vm: WalletViewModel,
+    onClose: () -> Unit, onFull: () -> Unit, onAlert: () -> Unit,
+    onBuy: () -> Unit, onWatch: () -> Unit) {
+    val ranges = listOf("1J", "1S", "1M", "3M", "6M", "1A", "5A")
+    val codes = listOf("1d", "5d", "1mo", "3mo", "6mo", "1y", "5y")
+    var period by remember(security.id) { mutableIntStateOf(0) }
+    var points by remember(security.id) { mutableStateOf<List<Point>>(emptyList()) }
+    var loading by remember(security.id) { mutableStateOf(true) }
+    var facts by remember(security.id) { mutableStateOf<WatchFacts?>(null) }
+    val q = w.quotes[security.id]
+    val extended = q?.takeIf { supportsUsExtendedHours(security) }
+        ?.let { NormalizedQuote.from(it) }
+    LaunchedEffect(security.id, period) {
+        loading = true
+        points = try {
+            vm.services.market.history(security, codes[period], if (period == 0) "5m" else "1d")
+        } catch (e: CancellationException) { throw e }
+        catch (_: Exception) {
+            if (period == 0) emptyList() else w.prices.filter { it.securityId == security.id }
+        }
+        loading = false
+    }
+    LaunchedEffect(security.id) {
+        val finance = try { vm.services.market.fundamentals(security) }
+            catch (e: CancellationException) { throw e } catch (_: Exception) { null }
+        val analyst = try { vm.services.market.analyst(security) }
+            catch (e: CancellationException) { throw e } catch (_: Exception) { null }
+        facts = WatchFacts(finance, analyst)
+    }
+    ModalBottomSheet(onDismissRequest = onClose, containerColor = Panel) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onFull),
+                verticalAlignment = Alignment.CenterVertically) {
+                Logo(security, 34.dp)
+                Spacer(Modifier.width(9.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(security.ticker, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(security.name, fontSize = 11.sp, color = Muted,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Icon(Icons.Outlined.ChevronRight, "Ouvrir la fiche")
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(money(q?.price, security.currency), fontSize = 23.sp,
+                    fontWeight = FontWeight.Bold)
+                Text("${signed(q?.change, security.currency)}  ${percent(q?.percent)}",
+                    color = tint(q?.change), fontWeight = FontWeight.SemiBold)
+            }
+            val extra = when (extended?.marketSession) {
+                MarketSession.PRE_MARKET -> extended.preMarketPrice
+                MarketSession.AFTER_HOURS -> extended.afterHoursPrice
+                else -> null
+            }
+            if (extra != null) {
+                val pre = extended?.marketSession == MarketSession.PRE_MARKET
+                Text((if (pre) "☀ PRE  " else "☾ AFTER  ") +
+                    number(extra) + "  " + percent(if (pre) extended?.preMarketChangePercent
+                        else extended?.afterHoursChangePercent),
+                    color = if (pre) Blue else Color(0xFFAC9CDA), fontSize = 12.sp)
+            }
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                ranges.forEachIndexed { index, range ->
+                    FilterChip(selected = period == index, onClick = { period = index },
+                        label = { Text(range, fontSize = 10.sp) })
+                }
+            }
+            if (points.size > 1) Chart(points.map { it.close },
+                modifier = Modifier.fillMaxWidth().height(95.dp),
+                color = tint(points.last().close - points.first().close))
+            else Text(if (loading) "Chargement du graphique…" else "Historique indisponible",
+                fontSize = 12.sp, color = Muted)
+            val latest = points.lastOrNull()
+            val open = points.firstOrNull()?.open
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column { Caption("Open"); Text(number(open)) }
+                Column { Caption("High"); Text(number(latest?.high)) }
+                Column { Caption("Low"); Text(number(latest?.low)) }
+                Column { Caption("Clôture préc."); Text(number(q?.previous)) }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column { Caption("Volume"); Text(number(q?.volume, 0)) }
+                Column { Caption("Cap. (M)"); Text(number(facts?.metric("Capitalisation (M)"), 0)) }
+                Column { Caption("P/E"); Text(number(facts?.pe(q?.price))) }
+                Column { Caption("Dividende"); Text(percent(facts?.dividend())) }
+            }
+            if (facts?.analyst?.target != null)
+                Text("Objectif analystes  " + money(facts?.analyst?.target, security.currency),
+                    fontSize = 12.sp, color = Muted)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                TextButton(onClick = onAlert) { Text("Alerte") }
+                TextButton(onClick = onBuy) { Text("Portefeuille") }
+                TextButton(onClick = onWatch) { Text("Watchlist") }
+                TextButton(onClick = onFull) { Text("Ouvrir la fiche") }
+            }
+            Spacer(Modifier.height(12.dp))
         }
     }
 }

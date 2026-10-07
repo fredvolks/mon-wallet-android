@@ -7,6 +7,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import ca.monwallet.app.widgets.WidgetChartData
+import ca.monwallet.app.data.Catalog
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,6 +31,12 @@ class Widget4x2LayoutTest {
         assertTrue(WidgetChartData.choose(emptyList(), emptyList(), emptyList()).isEmpty())
     }
 
+    @Test fun indexTilesAreBackedByMarketSymbols() {
+        assertEquals(setOf("^GSPC", "^IXIC", "^DJI"),
+            Catalog.markets.map { it.symbol }
+                .filter { it in setOf("^GSPC", "^IXIC", "^DJI") }.toSet())
+    }
+
     @Test fun fourByTwoKeepsDailyHeroAndTotalBesideFiveTitles() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val inflater = LayoutInflater.from(context)
@@ -51,11 +58,14 @@ class Widget4x2LayoutTest {
         val total = widget.findViewById<View>(R.id.widget_total)
         val titleRows = widget.findViewById<View>(R.id.widget_rows)
         val footer = widget.findViewById<View>(R.id.widget_footer)
+        val indices = widget.findViewById<View>(R.id.widget_indices)
         assertTrue(total.width > 0)
         assertTrue(titleRows.width > 0)
         assertTrue(total.right < titleRows.left)
         val hero = widget.findViewById<View>(R.id.widget_day_pill)
         assertTrue(hero.height > total.height)
+        assertTrue(indices.height > 0)
+        assertTrue(indices.bottom <= titleRows.bottom)
         assertTrue(rows.getChildAt(4).bottom <= rows.height)
         assertTrue(titleRows.bottom <= footer.top)
         assertTrue(footer.bottom <= height)

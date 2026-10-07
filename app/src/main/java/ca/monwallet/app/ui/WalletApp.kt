@@ -43,6 +43,7 @@ fun LockScreen(unlock: () -> Unit) {
 
 @Composable
 fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
+    widgetSection: Pair<String, Int>?,
     biometric: (() -> Unit) -> Unit) {
     val vm: WalletViewModel = viewModel()
     val s = vm.services
@@ -138,6 +139,12 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                 nav.navigate("portfolio") { launchSingleTop = true; popUpTo("portfolio") }
             }
         }
+    }
+    LaunchedEffect(widgetSection) {
+        if (widgetSection?.first == "markets")
+            nav.navigate("markets") { launchSingleTop = true; popUpTo("portfolio") }
+        if (widgetSection?.first == "reports")
+            nav.navigate("reports") { launchSingleTop = true; popUpTo("portfolio") }
     }
     val tabs =
         listOf(

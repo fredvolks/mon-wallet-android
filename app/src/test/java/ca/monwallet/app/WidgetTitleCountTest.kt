@@ -32,13 +32,13 @@ class WidgetTitleCountTest {
         val six = WidgetTitleLayout.plan(automatic.copy(titleCount = 6), "Widget4x2", 172, 6)
         assertEquals(6, six.visible)
         assertEquals(WidgetTitleLayout.Density.ULTRA, six.density)
-        assertTrue(six.footer)
+        assertFalse(six.footer)
         val five = WidgetTitleLayout.plan(automatic.copy(titleCount = 5), "Widget4x2", 150, 6)
         assertEquals(WidgetTitleLayout.Density.COMPACT, five.density)
         assertFalse(five.chart)
-        assertTrue(five.footer)
-        assertFalse(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 160, 6).chart)
-        assertFalse(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 180, 6).chart)
+        assertFalse(five.footer)
+        assertTrue(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 160, 6).chart)
+        assertTrue(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 180, 6).chart)
         assertTrue(WidgetTitleLayout.plan(automatic.copy(titleCount = 3), "Widget4x2", 220, 6).chart)
     }
 

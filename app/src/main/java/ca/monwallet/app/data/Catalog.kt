@@ -31,6 +31,7 @@ object Catalog {
         listOf(
             Security.of("^GSPC", "S&P 500", "S&P", "USD", "INDEX"),
             Security.of("^IXIC", "NASDAQ Composite", "NASDAQ", "USD", "INDEX"),
+            Security.of("^DJI", "Dow Jones Industrial Average", "NYSE", "USD", "INDEX"),
             Security.of("^GSPTSE", "S&P/TSX Composite", "TSX", "CAD", "INDEX"),
             Security.of("BTC-USD", "Bitcoin", "Crypto", "USD", "CRYPTO"),
             Security.of("^VIX", "VIX", "CBOE", "USD", "INDEX"),

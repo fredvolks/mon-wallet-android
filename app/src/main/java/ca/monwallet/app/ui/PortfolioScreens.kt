@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import ca.monwallet.app.domain.*
@@ -76,6 +77,11 @@ fun PortfolioScreen(
         mutableStateOf(w.settings["compact_sparkline_period"] ?: "Jour")
     }
     var sortMenu by remember { mutableStateOf(false) }
+    var showColumns by remember { mutableStateOf(false) }
+    var compactColumns by remember(w.settings["portfolio_columns"]) {
+        mutableStateOf(PortfolioTableColumns.restore(w.settings["portfolio_columns"]))
+    }
+    val tableScroll = rememberScrollState()
     val result = remember(w, selected) { runCatching { w.result(selected) }.getOrNull() }
     val snapshots by
         produceState(emptyList<Snapshot>(), w.transactions, w.prices, selected) {
@@ -126,9 +132,10 @@ fun PortfolioScreen(
         }
     }
     val sparkIds = owned.joinToString("|") { it.securityId }
-    val sparklines by produceState<Map<String, List<Point>>>(emptyMap(), compact, sparkIds, sparkPeriod) {
+    val sparklines by produceState<Map<String, List<Point>>>(emptyMap(), compact, sparkIds,
+        sparkPeriod, compactColumns) {
         value = emptyMap()
-        if (!compact) return@produceState
+        if (!compact || "sparkline" !in compactColumns) return@produceState
         val (range, interval) = when (sparkPeriod) {
             "1S" -> "5d" to "1h"
             "1M" -> "1mo" to "1d"
@@ -185,6 +192,8 @@ fun PortfolioScreen(
                         Text("${signed(result?.day)}  ${percent(result?.dayPercent)}",
                             fontSize = 12.sp, color = tint(result?.day),
                             fontWeight = FontWeight.SemiBold)
+                        Text("Profit portefeuille  ${percent(result?.percent)}",
+                            fontSize = 11.sp, color = tint(result?.pnl))
                     }
                 }
             } else CardBlock {
@@ -203,13 +212,9 @@ fun PortfolioScreen(
                         modifier = Modifier.weight(1f),
                     )
                     Column(horizontalAlignment = Alignment.End) {
-                        Caption(stringResource(R.string.ui_gain_total_e7887))
-                        Text(
-                            signed(result?.pnl),
-                            color = tint(result?.pnl),
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(percent(result?.percent), color = tint(result?.pnl), fontSize = 12.sp)
+                        Caption("Profit portefeuille")
+                        Text(percent(result?.percent), color = tint(result?.pnl),
+                            fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     }
                 }
                 Chart(
@@ -263,6 +268,9 @@ fun PortfolioScreen(
                         Icon(Icons.Outlined.Sort, "Tri et options", Modifier.size(19.dp))
                     }
                     DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                        DropdownMenuItem(text = { Text("⚙ Colonnes") }, onClick = {
+                            sortMenu = false; showColumns = true
+                        })
                         listOf("Valeur", "Ticker", "Gain jour", "Perte jour", "Gain total",
                             "Poids portefeuille", "Ordre manuel").forEach { option ->
                             DropdownMenuItem(text = { Text((if (compactSort == option) "✓ " else "") + option) },
@@ -314,6 +322,18 @@ fun PortfolioScreen(
                 )
             }
         else
+            if (compact) {
+                item { PortfolioTableHeader(compactColumns, tableScroll) }
+                items(holdings, key = { it.securityId }) { h ->
+                    w.security(h.securityId)?.let { security ->
+                        PortfolioTableRow(w, security, h, result, compactColumns, tableScroll,
+                            sparklines[security.id].orEmpty(),
+                            compactSort == "Ordre manuel", { moveHolding(security.id, it) }) {
+                            onDetail(security)
+                        }
+                    }
+                }
+            } else
             items(holdings, key = { it.securityId }) { h ->
                 w.security(h.securityId)?.let { s ->
                     HoldingRow(w, s, h, compact, result.value,
@@ -327,6 +347,166 @@ fun PortfolioScreen(
             )
         }
     }
+    if (showColumns) PortfolioColumnPicker(compactColumns, { updated ->
+        compactColumns = updated
+        vm.run { vm.services.repo.setting("portfolio_columns", updated.joinToString("|")) }
+    }, { showColumns = false })
+}
+
+private object PortfolioTableColumns {
+    val labels = linkedMapOf(
+        "ticker" to "Ticker", "value" to "Valeur", "dayAmount" to "Jour $",
+        "dayPercent" to "Jour %", "totalPercent" to "Total %", "totalAmount" to "Total $",
+        "price" to "Prix", "average" to "Prix moyen", "quantity" to "Parts",
+        "weight" to "Poids %", "invested" to "Capital investi",
+        "realized" to "Gain réalisé", "unrealized" to "Gain non réalisé",
+        "dividend" to "Dividendes", "fx" to "Effet FX", "sparkline" to "Sparkline",
+    )
+    val defaults = listOf("ticker", "value", "dayAmount", "dayPercent", "totalPercent")
+    val presets = linkedMapOf("Minimal" to listOf("ticker", "value", "dayPercent", "totalPercent"),
+        "Journalier" to listOf("ticker", "value", "dayAmount", "dayPercent"),
+        "Performance" to listOf("ticker", "value", "totalAmount", "totalPercent"),
+        "Complet" to listOf("ticker", "quantity", "price", "average", "value",
+            "dayAmount", "dayPercent", "totalAmount", "totalPercent", "weight"))
+    fun restore(raw: String?): List<String> = raw?.split('|')
+        ?.filter { it in labels }.orEmpty().distinct().takeIf { it.isNotEmpty() }
+        ?.let { listOf("ticker") + it.filter { key -> key != "ticker" } } ?: defaults
+    fun width(key: String): Dp = when (key) {
+        "ticker" -> 78.dp
+        "sparkline" -> 62.dp
+        "quantity", "weight", "dayPercent", "totalPercent" -> 60.dp
+        else -> 76.dp
+    }
+}
+
+@Composable
+private fun PortfolioTableGrid(columns: List<String>, scroll: ScrollState,
+    modifier: Modifier = Modifier, ticker: @Composable () -> Unit,
+    value: @Composable (String) -> Unit) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(PortfolioTableColumns.width("ticker")),
+            contentAlignment = Alignment.CenterStart) { ticker() }
+        Row(Modifier.weight(1f).horizontalScroll(scroll),
+            verticalAlignment = Alignment.CenterVertically) {
+            columns.filter { it != "ticker" }.forEach { key ->
+                Box(Modifier.width(PortfolioTableColumns.width(key)),
+                    contentAlignment = Alignment.CenterEnd) { value(key) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PortfolioTableHeader(columns: List<String>, scroll: ScrollState) {
+    PortfolioTableGrid(columns, scroll, Modifier.height(23.dp),
+        ticker = { Text("TICKER", color = Muted, fontSize = 9.sp) },
+        value = { key -> Text(PortfolioTableColumns.labels.getValue(key).uppercase(),
+            Modifier.fillMaxWidth(), textAlign = TextAlign.End, color = Muted, fontSize = 9.sp,
+            maxLines = 1, overflow = TextOverflow.Ellipsis) })
+    HorizontalDivider(color = Border)
+}
+
+@Composable
+private fun PortfolioTableRow(w: Wallet, s: Security, h: Holding, result: Result,
+    columns: List<String>, scroll: ScrollState, spark: List<Point>, manual: Boolean,
+    move: (Int) -> Unit, onClick: () -> Unit) {
+    var drag by remember(s.id) { mutableFloatStateOf(0f) }
+    PortfolioTableGrid(columns, scroll, Modifier.height(37.dp).clickable(onClick = onClick),
+        ticker = {
+            Row(Modifier.pointerInput(s.id, manual) {
+                if (manual) detectDragGesturesAfterLongPress(onDragEnd = { drag = 0f },
+                    onDragCancel = { drag = 0f }) { change, distance ->
+                    change.consume()
+                    drag += distance.y
+                    if (drag > 24.dp.toPx()) { move(1); drag = 0f }
+                    if (drag < -24.dp.toPx()) { move(-1); drag = 0f }
+                }
+            }, verticalAlignment = Alignment.CenterVertically) {
+                Logo(s, 20.dp)
+                Spacer(Modifier.width(4.dp))
+                Column {
+                    Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(compactQuantity(s, h.quantity), fontSize = 8.sp, color = Muted,
+                        maxLines = 1)
+                }
+            }
+        }, value = { key ->
+            if (key == "sparkline") {
+                if (spark.size > 1) Chart(spark.map { it.close },
+                    modifier = Modifier.fillMaxWidth().height(20.dp), color = tint(h.day))
+            } else {
+                val shown = when (key) {
+                    "value" -> money(h.value)
+                    "dayAmount" -> signed(h.day)
+                    "dayPercent" -> percent(h.dayPercent)
+                    "totalAmount", "unrealized" -> signed(h.pnl)
+                    "totalPercent" -> percent(h.percent)
+                    "price" -> number(w.quotes[s.id]?.price)
+                    "average" -> number(h.average)
+                    "quantity" -> number(h.quantity)
+                    "weight" -> percent(h.value?.let { v ->
+                        result.value?.takeIf { it.signum() > 0 }?.let { v.pct(it) }
+                    })
+                    "invested" -> money(h.costCad)
+                    "realized" -> signed(h.realized)
+                    "dividend" -> signed(h.dividends)
+                    "fx" -> signed(h.fxGain)
+                    else -> "—"
+                }
+                val amount = when (key) {
+                    "dayAmount", "dayPercent" -> h.day
+                    "totalAmount", "totalPercent", "unrealized" -> h.pnl
+                    "realized" -> h.realized
+                    "fx" -> h.fxGain
+                    else -> null
+                }
+                Text(shown, Modifier.fillMaxWidth(), textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    fontSize = 10.sp, fontWeight = if (key == "value") FontWeight.SemiBold
+                        else FontWeight.Normal,
+                    color = if (amount == null) MaterialTheme.colorScheme.onSurface else tint(amount),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        })
+    HorizontalDivider(color = Border.copy(alpha = .45f))
+}
+
+@Composable
+private fun PortfolioColumnPicker(columns: List<String>, update: (List<String>) -> Unit,
+    close: () -> Unit) {
+    AlertDialog(onDismissRequest = close, title = { Text("Colonnes · Mes titres") },
+        text = {
+            Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
+                PortfolioTableColumns.presets.forEach { (name, preset) ->
+                    TextButton(onClick = { update(preset) }) { Text("Preset : $name") }
+                }
+                HorizontalDivider()
+                (columns + PortfolioTableColumns.labels.keys.filter { it !in columns }).forEach { key ->
+                    var offset by remember(key) { mutableFloatStateOf(0f) }
+                    Row(Modifier.fillMaxWidth().height(40.dp).pointerInput(key, columns) {
+                        detectDragGesturesAfterLongPress(onDragEnd = { offset = 0f },
+                            onDragCancel = { offset = 0f }) { change, drag ->
+                            change.consume()
+                            offset += drag.y
+                            val index = columns.indexOf(key)
+                            val target = if (offset > 24.dp.toPx()) index + 1
+                                else if (offset < -24.dp.toPx()) index - 1 else index
+                            if (index > 0 && target in 1 until columns.size && target != index) {
+                                update(columns.toMutableList().apply { add(target, removeAt(index)) })
+                                offset = 0f
+                            }
+                        }
+                    }, verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(key in columns, enabled = key != "ticker", onCheckedChange = { yes ->
+                            update(if (yes) columns + key else columns - key)
+                        })
+                        Text((if (key in columns && key != "ticker") "☰  " else "") +
+                            PortfolioTableColumns.labels.getValue(key), fontSize = 13.sp)
+                    }
+                }
+            }
+        }, confirmButton = { TextButton(onClick = close) { Text("Terminé") } })
 }
 
 @Composable

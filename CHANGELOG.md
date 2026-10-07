@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.13 — 2026-10-07 (tableaux et widget 4x2)
+
+- Watchlist : dernière liste choisie sauvegardée dans les paramètres synchronisables; ordre manuel et ajout d'un titre écrits atomiquement dans Room. Un toucher ouvre un panneau rapide avec graphique et métriques réelles; la fiche complète reste accessible depuis ce panneau ou le menu.
+- Portefeuille : vue Compact sous forme de tableau dense, ticker fixe, colonnes personnalisables et réordonnables, presets, défilement horizontal, P&L jour et total visibles. Les préférences sont persistées; la sparkline n'est chargée que si sa colonne est activée. Le profit du portefeuille en % apparaît dans l'en-tête.
+- Widget 4x2 : le P&L du jour reste dominant, avec rendement total à gauche; S&P 500, NASDAQ et Dow Jones lisent les cours mis en cache. Les cours des titres n'affichent plus CAD/USD. Le graphique utilise seulement les vrais points intrajournaliers lorsque la taille le permet; la séance terminée reste affichée après fermeture. La confidentialité et les paramètres par instance demeurent actifs.
+- Aucune analyse IA ou donnée canadienne supplémentaire n'est simulée. Les services de news IA autonomes et leurs secrets backend exigent encore un déploiement et des tests avec sources autorisées.
+
 ## Mon Wallet v0.2.12 — 2026-10-06 (Daily, Watchlist et hors séance)
 
 - Watchlist : ticker seul, sans place ni état « Cache » répété; ligne PRE/AFTER de 16 dp immédiatement sous le cours régulier avec les mêmes colonnes. Le tri reste accessible dans le menu.

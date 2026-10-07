@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.work.*
 import ca.monwallet.app.MonWallet
 import ca.monwallet.app.R
+import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.MarketSession
 import ca.monwallet.app.marketdata.NormalizedQuote
@@ -313,7 +314,7 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
                     if (config.showDailyLabel) Text(if (today || result?.day == null) stringResource(R.string.widget_today)
                         else "Dernière séance", color = Muted, fontSize = 9.sp, maxLines = 1)
                     if (config.dayAmount && !config.hideAmounts)
-                        Text(if (result?.day == null) "Marché fermé" else signed(result.day),
+                        Text(if (result?.day == null) "Données indisponibles" else signed(result.day),
                             color = dayTint, fontSize = if (result?.day == null) 15.sp
                                 else if (config.dailyHero) 26.sp else 21.sp,
                             lineHeight = if (config.dailyHero) 28.sp else 23.sp,
@@ -337,13 +338,28 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
                         }
                     }
                 }
-                if (config.totalPercent) Row(Modifier.fillMaxWidth().height(27.dp).padding(top = 3.dp)
+                if (config.totalPercent) Row(Modifier.fillMaxWidth().height(23.dp).padding(top = 2.dp)
                     .background(Color(0xFF102530), RoundedCornerShape(13.dp))
                     .padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.widget_return_total), Modifier.weight(1f),
                         color = Muted, fontSize = 8.sp, maxLines = 1)
                     Text(percent(result?.percent), color = totalTint, fontSize = 16.sp,
                         maxLines = 1)
+                }
+                Row(Modifier.fillMaxWidth().height(24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    listOf("^GSPC" to "S&P 500", "^IXIC" to "NASDAQ",
+                        "^DJI" to "DOW JONES").forEach { (symbol, label) ->
+                        val market = Catalog.markets.firstOrNull { it.symbol == symbol }
+                        val value = market?.let { wallet.quotes[it.id]?.percent }
+                        Column(Modifier.weight(1f)) {
+                            Text(label, color = Muted, fontSize = 7.sp, maxLines = 1)
+                            Text(percent(value), color = when (value?.signum()) {
+                                -1 -> Red; 1 -> Green; else -> Muted
+                            }, fontSize = 10.sp, maxLines = 1)
+                        }
+                    }
                 }
             }
             Spacer(Modifier.width(5.dp))
@@ -369,7 +385,7 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
                         MarketSession.AFTER_HOURS -> normalized.afterHoursChangePercent
                         else -> null
                     }
-                    val shownPercent = if (extraPrice == null) h.dayPercent else change
+                    val shownPercent = if (extraPrice == null) q?.percent else change
                     Row(Modifier.fillMaxWidth().height(plan.density.rowHeight.dp),
                         verticalAlignment = Alignment.CenterVertically) {
                         if (config.logo) Logo(security, logo)
@@ -379,7 +395,7 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
                         if (extraPrice != null) Text(if (normalized?.marketSession == MarketSession.PRE_MARKET)
                             "☀" else "☾", color = Blue, fontSize = 9.sp)
                         if (config.price && !config.hideAmounts)
-                            Text(money(extraPrice ?: q?.price, security.currency),
+                            Text(number(extraPrice ?: q?.price),
                                 Modifier.weight(1.9f), fontSize = font, maxLines = 1,
                                 overflow = TextOverflow.Ellipsis)
                         if (config.titleDayPercent)

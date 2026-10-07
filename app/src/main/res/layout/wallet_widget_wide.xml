@@ -52,8 +52,8 @@
                     android:visibility="gone" android:contentDescription="@string/widget_chart_description"/>
             </LinearLayout>
             <LinearLayout android:id="@+id/widget_total_group"
-                android:layout_width="match_parent" android:layout_height="27dp"
-                android:layout_marginTop="3dp" android:gravity="center_vertical"
+                android:layout_width="match_parent" android:layout_height="23dp"
+                android:layout_marginTop="2dp" android:gravity="center_vertical"
                 android:paddingStart="7dp" android:paddingEnd="6dp"
                 android:background="@drawable/widget_total_capsule">
                 <TextView android:id="@+id/widget_total_label" android:layout_width="0dp"
@@ -64,6 +64,41 @@
                     android:layout_height="wrap_content" android:singleLine="true"
                     android:includeFontPadding="false" android:textStyle="bold"
                     android:textSize="17sp" android:textColor="#58F48B"/>
+            </LinearLayout>
+            <LinearLayout android:id="@+id/widget_indices"
+                android:layout_width="match_parent" android:layout_height="24dp"
+                android:layout_marginTop="1dp" android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <LinearLayout android:id="@+id/widget_sp500_group" android:layout_width="0dp"
+                    android:layout_height="match_parent" android:layout_weight="1"
+                    android:orientation="vertical" android:gravity="center">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="S&amp;P 500" android:textColor="#9FBAC5" android:textSize="7sp"
+                        android:includeFontPadding="false" android:singleLine="true"/>
+                    <TextView android:id="@+id/widget_sp500" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:textColor="#C9DDE4"
+                        android:textSize="10sp" android:includeFontPadding="false" android:singleLine="true"/>
+                </LinearLayout>
+                <LinearLayout android:id="@+id/widget_nasdaq_group" android:layout_width="0dp"
+                    android:layout_height="match_parent" android:layout_weight="1"
+                    android:orientation="vertical" android:gravity="center">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="NASDAQ" android:textColor="#9FBAC5" android:textSize="7sp"
+                        android:includeFontPadding="false" android:singleLine="true"/>
+                    <TextView android:id="@+id/widget_nasdaq" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:textColor="#C9DDE4"
+                        android:textSize="10sp" android:includeFontPadding="false" android:singleLine="true"/>
+                </LinearLayout>
+                <LinearLayout android:id="@+id/widget_dow_group" android:layout_width="0dp"
+                    android:layout_height="match_parent" android:layout_weight="1"
+                    android:orientation="vertical" android:gravity="center">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="DOW JONES" android:textColor="#9FBAC5" android:textSize="7sp"
+                        android:includeFontPadding="false" android:singleLine="true"/>
+                    <TextView android:id="@+id/widget_dow" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:textColor="#C9DDE4"
+                        android:textSize="10sp" android:includeFontPadding="false" android:singleLine="true"/>
+                </LinearLayout>
             </LinearLayout>
             <TextView android:id="@+id/widget_extras" android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:singleLine="true"

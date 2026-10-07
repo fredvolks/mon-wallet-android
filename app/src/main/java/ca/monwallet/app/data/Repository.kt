@@ -131,16 +131,32 @@ class Repository(val db: Database, val scope: CoroutineScope) {
 
     suspend fun setting(key: String, value: String) = put("setting", key, Setting(key, value))
 
+    /** Reorder as one Room transaction so a quote refresh or cloud sync never sees a swap in flight. */
+    suspend fun moveWatchItem(watchlistId: String, itemId: String, delta: Int) = mutex.withLock {
+        db.withTransaction {
+            val items = current().items.filter { it.watchlistId == watchlistId }
+                .sortedWith(compareBy<WatchItem> { it.order }.thenBy { it.id }).toMutableList()
+            val from = items.indexOfFirst { it.id == itemId }
+            val to = from + delta
+            if (from < 0 || to !in items.indices) return@withTransaction
+            java.util.Collections.swap(items, from, to)
+            items.forEachIndexed { order, item ->
+                if (item.order != order) raw("watch_item", item.id, item.copy(order = order))
+            }
+        }
+    }
+
     suspend fun watch(security: Security, list: String) {
-        if (current().items.any { it.watchlistId == list && it.securityId == security.id }) return
-        put("security", security.id, security)
-        val i =
-            WatchItem(
-                watchlistId = list,
-                securityId = security.id,
-                order = current().items.count { it.watchlistId == list },
-            )
-        put("watch_item", i.id, i)
+        mutex.withLock {
+            db.withTransaction {
+                val items = current().items.filter { it.watchlistId == list }
+                if (items.any { it.securityId == security.id }) return@withTransaction
+                raw("security", security.id, security)
+                val next = (items.maxOfOrNull { it.order } ?: -1) + 1
+                val item = WatchItem(watchlistId = list, securityId = security.id, order = next)
+                raw("watch_item", item.id, item)
+            }
+        }
     }
 
     suspend fun quote(q: Quote) =

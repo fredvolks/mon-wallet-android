@@ -18,6 +18,7 @@ import android.view.View
 import android.widget.RemoteViews
 import ca.monwallet.app.MainActivity
 import ca.monwallet.app.R
+import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Result
 import ca.monwallet.app.domain.Wallet
@@ -67,7 +68,7 @@ internal object WidgetWideRenderer {
         val showPercent = !hidden && config.dayPercent && result?.dayPercent != null
         views.setTextViewText(R.id.widget_amount, when {
             showAmount -> signed(result?.day)
-            unavailable -> "Marché fermé"
+            unavailable -> "Données indisponibles"
             else -> ""
         })
         views.setTextViewText(R.id.widget_percent, if (showPercent) percent(result?.dayPercent) else "")
@@ -98,6 +99,17 @@ internal object WidgetWideRenderer {
         }
         views.setTextViewText(R.id.widget_extras, extras.joinToString(" · "))
         views.setViewVisibility(R.id.widget_extras, if (extras.isEmpty()) View.GONE else View.VISIBLE)
+
+        // These are cached provider quotes, including the completed session after close.
+        // Never infer 0% when a feed has not supplied an index quote.
+        listOf("^GSPC" to R.id.widget_sp500, "^IXIC" to R.id.widget_nasdaq,
+            "^DJI" to R.id.widget_dow).forEach { (symbol, viewId) ->
+            val security = Catalog.markets.firstOrNull { it.symbol == symbol }
+            val change = security?.let { wallet.quotes[it.id]?.percent }
+            views.setTextViewText(viewId, if (hidden) "" else percent(change))
+            views.setTextColor(viewId, tone(change?.signum()))
+        }
+        views.setViewVisibility(R.id.widget_indices, if (hidden) View.GONE else View.VISIBLE)
 
         val options = if (sizeOverrideDp == null) AppWidgetManager.getInstance(c)
             .getAppWidgetOptions(id) else null
@@ -160,11 +172,9 @@ internal object WidgetWideRenderer {
                 else Color.rgb(181, 150, 241))
             val showPrice = config.price && !config.hideAmounts
             val quotePrice = extraPrice ?: q?.price
-            val priceText = if (!showPrice) "" else if (minWidth < 290 && quotePrice != null)
-                    number(quotePrice) + if (security.currency == "USD") " U$" else " $"
-                else money(quotePrice, security.currency)
+            val priceText = if (!showPrice) "" else number(quotePrice)
             row.setViewVisibility(R.id.widget_row_price, View.GONE)
-            val dayPercent = if (extraPrice != null) extraPercent else holding.dayPercent
+            val dayPercent = if (extraPrice != null) extraPercent else q?.percent
             val details = buildList {
                 if (config.titleDayPercent) add(percent(dayPercent))
                 if (config.titleTotalPercent)
@@ -191,7 +201,7 @@ internal object WidgetWideRenderer {
             }
             if (showPrice) {
                 val start = summary.length
-                summary.append(" ").append(priceText.padStart(11))
+                summary.append(" ").append(priceText.padStart(8))
                 summary.setSpan(ForegroundColorSpan(Color.rgb(218, 230, 235)),
                     start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
@@ -242,6 +252,19 @@ internal object WidgetWideRenderer {
         views.setViewVisibility(R.id.widget_footer,
             if (plan.footer && !hidden) View.VISIBLE else View.GONE)
         views.setOnClickPendingIntent(R.id.widget_root,
+            PendingIntent.getActivity(c, id + 20000,
+                Intent(c, MainActivity::class.java).putExtra("portfolio", portfolio),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        val marketsIntent = PendingIntent.getActivity(c, id + 30000,
+            Intent(c, MainActivity::class.java).putExtra("section", "markets"),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        listOf(R.id.widget_sp500_group, R.id.widget_nasdaq_group,
+            R.id.widget_dow_group).forEach { views.setOnClickPendingIntent(it, marketsIntent) }
+        views.setOnClickPendingIntent(R.id.widget_total_group,
+            PendingIntent.getActivity(c, id + 40000,
+                Intent(c, MainActivity::class.java).putExtra("section", "reports"),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        views.setOnClickPendingIntent(R.id.widget_day_pill,
             PendingIntent.getActivity(c, id + 20000,
                 Intent(c, MainActivity::class.java).putExtra("portfolio", portfolio),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))

@@ -22,6 +22,7 @@ class MainActivity : FragmentActivity() {
     private var locked by mutableStateOf(false)
     private var deepSecurity by mutableStateOf<String?>(null)
     private var widgetPortfolio by mutableStateOf<Pair<String?, Int>?>(null)
+    private var widgetSection by mutableStateOf<Pair<String, Int>?>(null)
     private var widgetOpenCount = 0
     private val services
         get() = (application as MonWallet).services
@@ -33,7 +34,7 @@ class MainActivity : FragmentActivity() {
         setContent {
             WalletTheme {
                 if (locked) LockScreen { authenticate { locked = false } }
-                else WalletApp(deepSecurity, widgetPortfolio) { action -> authenticate(action) }
+                else WalletApp(deepSecurity, widgetPortfolio, widgetSection) { action -> authenticate(action) }
             }
         }
     }
@@ -46,6 +47,10 @@ class MainActivity : FragmentActivity() {
 
     private fun handle(intent: Intent) {
         deepSecurity = intent.getStringExtra("security")
+        intent.getStringExtra("section")?.let { section ->
+            widgetOpenCount++
+            widgetSection = section to widgetOpenCount
+        }
         if (intent.hasExtra("portfolio")) {
             widgetOpenCount++
             widgetPortfolio = intent.getStringExtra("portfolio") to widgetOpenCount

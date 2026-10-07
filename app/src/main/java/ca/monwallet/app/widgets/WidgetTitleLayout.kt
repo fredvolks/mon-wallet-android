@@ -45,13 +45,12 @@ internal object WidgetTitleLayout {
             visible >= 4 -> Density.COMPACT
             else -> Density.SPACIOUS
         }
-        // Wide chart now lives inside the Daily card. Hide it when the Daily
-        // amount and percentage need that vertical space.
+        // Reserve a compact intraday plot within the Daily card on a normal 4x2.
         val chart = config.chart && config.style in
             setOf("Mixte", "Mixte premium", "Daily + Titres", "Graphique") &&
-            (!isWide || height >= 220)
+            (!isWide || height >= 155)
         val footer = config.showUpdated &&
-            (!isWide || height >= 139)
+            (!isWide || height >= 190)
         return Plan(limit, visible, density, chart, footer)
     }
 }
