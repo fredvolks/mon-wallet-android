@@ -30,6 +30,19 @@ function adminKey(): string | null {
   return keys.default || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || null;
 }
 
+async function authorized(req: Request, project: string, secret: string): Promise<boolean> {
+  if (req.headers.get("apikey") === secret) return true;
+  const token = req.headers.get("x-news-cron-token");
+  if (!token || !/^[0-9a-f-]{72}$/i.test(token)) return false;
+  try {
+    const response = await fetch(`${project}/rest/v1/rpc/validate_news_cron_token`, {
+      method: "POST", headers: { apikey: secret, "Content-Type": "application/json" },
+      body: JSON.stringify({ provided: token }), signal: AbortSignal.timeout(5_000),
+    });
+    return response.ok && await response.json() === true;
+  } catch { return false; }
+}
+
 async function rest(project: string, key: string, path: string, init: RequestInit = {}) {
   const response = await fetch(`${project}/rest/v1/${path}`, {
     ...init, headers: { apikey: key, "Content-Type": "application/json",
@@ -67,14 +80,35 @@ async function analyze(article: Article, key: string, model: string): Promise<An
 Deno.serve(async (req: Request) => {
   const secret = adminKey();
   if (!secret) return Response.json({ error: "Backend secret not configured" }, { status: 503 });
-  if (req.headers.get("apikey") !== secret) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const project = Deno.env.get("SUPABASE_URL");
+  if (!project) return Response.json({ error: "Project URL missing" }, { status: 503 });
+  if (!await authorized(req, project, secret))
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   if (req.method !== "POST") return Response.json({ error: "POST required" }, { status: 405 });
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openaiKey) return Response.json({ error: "OpenAI backend secret not configured" },
     { status: 503 });
-  const project = Deno.env.get("SUPABASE_URL");
-  if (!project) return Response.json({ error: "Project URL missing" }, { status: 503 });
   const model = Deno.env.get("OPENAI_NEWS_MODEL") || "gpt-4o-mini";
+  // Privileged diagnostic: validate the actual Responses entitlement without
+  // creating a synthetic financial article or storing a test analysis.
+  if (new URL(req.url).searchParams.get("probe") === "key") {
+    try {
+      const check = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST", headers: { Authorization: `Bearer ${openaiKey}`,
+          "Content-Type": "application/json" },
+        body: JSON.stringify({ model, store: false, max_output_tokens: 20,
+          input: "Réponds uniquement OK." }), signal: AbortSignal.timeout(20_000),
+      });
+      const payload = await check.json().catch(() => ({}));
+      return Response.json({ configured: true, apiStatus: check.status,
+        usable: check.ok, errorCode: check.ok ? null : payload?.error?.code ?? null,
+        errorType: check.ok ? null : payload?.error?.type ?? null },
+        { status: check.ok ? 200 : 502 });
+    } catch {
+      return Response.json({ configured: true, usable: false,
+        error: "OpenAI unreachable" }, { status: 502 });
+    }
+  }
   let processed = 0; let failed = 0;
   try {
     // An ERROR waits at least an hour; a crashed PROCESSING claim can be recovered.

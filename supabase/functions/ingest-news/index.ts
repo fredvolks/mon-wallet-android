@@ -12,6 +12,19 @@ function adminKey(): string | null {
   return keys.default || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || null;
 }
 
+async function authorized(req: Request, project: string, secret: string): Promise<boolean> {
+  if (req.headers.get("apikey") === secret) return true;
+  const token = req.headers.get("x-news-cron-token");
+  if (!token || !/^[0-9a-f-]{72}$/i.test(token)) return false;
+  try {
+    const response = await fetch(`${project}/rest/v1/rpc/validate_news_cron_token`, {
+      method: "POST", headers: { apikey: secret, "Content-Type": "application/json" },
+      body: JSON.stringify({ provided: token }), signal: AbortSignal.timeout(5_000),
+    });
+    return response.ok && await response.json() === true;
+  } catch { return false; }
+}
+
 function canonical(raw: string): string | null {
   try {
     const u = new URL(raw);
@@ -58,7 +71,7 @@ async function fmp(path: string, key: string): Promise<FmpItem[]> {
   u.searchParams.set("page", "0"); u.searchParams.set("limit", "100");
   u.searchParams.set("apikey", key);
   const response = await fetch(u, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`FMP HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`FMP ${path} HTTP ${response.status}`);
   const data: unknown = await response.json();
   if (!Array.isArray(data)) throw new Error("FMP returned no article array");
   return data as FmpItem[];
@@ -67,21 +80,27 @@ async function fmp(path: string, key: string): Promise<FmpItem[]> {
 Deno.serve(async (req: Request) => {
   const secret = adminKey();
   if (!secret) return Response.json({ error: "Backend secret not configured" }, { status: 503 });
-  if (req.headers.get("apikey") !== secret) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const project = Deno.env.get("SUPABASE_URL");
+  if (!project) return Response.json({ error: "Project URL missing" }, { status: 503 });
+  if (!await authorized(req, project, secret))
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   if (req.method !== "POST") return Response.json({ error: "POST required" }, { status: 405 });
   const fmpKey = Deno.env.get("FMP_API_KEY");
   if (!fmpKey) return Response.json({ error: "News provider not configured" }, { status: 503 });
   try {
-    const [stock, releases] = await Promise.all([fmp("stock-latest", fmpKey),
+    const feeds = await Promise.allSettled([fmp("stock-latest", fmpKey),
       fmp("press-releases-latest", fmpKey)]);
-    const rows = (await Promise.all((stock.concat(releases)).map(normalize)))
+    const unavailable = feeds.filter((result): result is PromiseRejectedResult =>
+      result.status === "rejected").map((result) =>
+      result.reason instanceof Error ? result.reason.message : "FMP source unavailable");
+    if (unavailable.length === feeds.length) throw new Error(unavailable.join("; "));
+    const received = feeds.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+    const rows = (await Promise.all(received.map(normalize)))
       .filter((article): article is Article => article !== null);
     const uniqueByUrl = [...new Map(rows.map((article) =>
       [article.canonical_url, article])).values()];
     const unique = [...new Map(uniqueByUrl.map((article) =>
       [article.content_hash, article])).values()];
-    const project = Deno.env.get("SUPABASE_URL");
-    if (!project) throw new Error("Project URL missing");
     const result = await fetch(`${project}/rest/v1/news_articles?on_conflict=content_hash`, {
       method: "POST", headers: { apikey: secret, "Content-Type": "application/json",
         Prefer: "resolution=ignore-duplicates,return=representation" },
@@ -96,7 +115,8 @@ Deno.serve(async (req: Request) => {
         body: "{}", signal: AbortSignal.timeout(45_000),
       }).catch(() => null));
     }
-    return Response.json({ received: rows.length, inserted: inserted.length });
+    return Response.json({ received: rows.length, inserted: inserted.length,
+      unavailableSources: unavailable });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Ingestion failed" },
       { status: 502 });
