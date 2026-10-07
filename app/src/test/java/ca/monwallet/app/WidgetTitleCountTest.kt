@@ -94,7 +94,8 @@ class WidgetTitleCountTest {
             val amount = widget.findViewById<android.widget.TextView>(R.id.widget_amount)
             val total = widget.findViewById<android.widget.TextView>(R.id.widget_total)
             assertTrue(amount.textSize > total.textSize)
-            assertTrue(rows.getChildAt(count - 1).bottom <= rows.height)
+            assertEquals("$count titles should use the available column height",
+                rows.height, rows.getChildAt(count - 1).bottom)
             for (index in 0 until count) {
                 val row = rows.getChildAt(index)
                 for (cell in listOf(R.id.widget_row_ticker, R.id.widget_row_price,

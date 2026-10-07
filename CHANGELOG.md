@@ -1,5 +1,9 @@
 # Versions
 
+## Mon Wallet v0.2.16 — 2026-10-07 (titres du widget 4x2)
+
+- La liste à droite du widget répartit les lignes sur toute la hauteur disponible. Logos et texte sont agrandis, avec réduction automatique du texte si un prix long doit tenir dans la largeur. Les sections Daily, rendement total, indices et actions du widget conservent leur disposition.
+
 ## Mon Wallet v0.2.15 — 2026-10-07 (nouvelles canadiennes, alertes et densité)
 
 - Le flux Canada ingère toutes les 30 minutes les communiqués GlobeNewswire Canada dont la place et le symbole canadiens sont explicitement identifiés (TSX, TSXV, CSE, NEO/Cboe Canada). Les anciens communiqués généraux sans ticker sont conservés en base, mais exclus de l'application. Pour les titres canadiens suivis, la recherche Yahoo par nom de société sert de repli si la recherche par symbole ne donne rien, seulement quand le résultat indique exactement le symbole coté. Chaque article affiche sa source et sa date; aucune analyse IA n'est inventée. La tâche IA reste inactive faute de crédits API.
