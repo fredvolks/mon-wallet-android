@@ -532,6 +532,7 @@ private fun ReportAllocation(wallet: Wallet, portfolioId: String?, result: Resul
 @Composable
 private fun ReportFlows(wallet: Wallet, portfolioId: String?, summary: ReportSummary,
     history: List<PortfolioDailySnapshot>) {
+    val allTransactions = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
     val tx = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
         .filter { summary.base == null || it.date > summary.base.date.toString() }
         .filter { it.type in setOf(TxType.DEPOSIT, TxType.WITHDRAWAL, TxType.DIVIDEND, TxType.FEE) }
@@ -542,6 +543,13 @@ private fun ReportFlows(wallet: Wallet, portfolioId: String?, summary: ReportSum
         Metric("Retraits", money(summary.withdrawals))
         Metric("Achats financés directement", money(summary.implicitFunding.takeIf { summary.complete }))
         Metric("Dividendes", money(summary.dividends))
+        val thisYear = LocalDate.now().year.toString()
+        val dividendsYtd = allTransactions.filter { it.type == TxType.DIVIDEND && it.date.startsWith(thisYear) }
+            .fold(ZERO) { a, t -> a + t.cad }
+        val dividendsTotal = allTransactions.filter { it.type == TxType.DIVIDEND }
+            .fold(ZERO) { a, t -> a + t.cad }
+        Metric("Dividendes YTD", money(dividendsYtd))
+        Metric("Dividendes total", money(dividendsTotal))
         Metric("Frais", money(summary.fees))
         Caption("Un achat financé directement augmente le capital net si l’encaisse ne suffit pas. Une vente reste dans l’encaisse : elle n’est pas un retrait.")
     }
