@@ -25,10 +25,11 @@ import org.junit.runner.RunWith
 /** Captures the actual RemoteViews layout with explicit example holdings. */
 @RunWith(AndroidJUnit4::class)
 class WidgetRemoteViewsScreenshotTest {
-    @Test fun fiveRowsAndDailyHeroRenderWithoutClipping() = captureTitles(5, 160)
-    @Test fun sixRowsFillTheColumnWithoutClipping() = captureTitles(6, 172)
+    // Reproduces the 616x333 ratio measured from the user's One UI screenshot.
+    @Test fun fiveRowsAndDailyHeroRenderWithoutClipping() = captureTitles(5, 334, 180)
+    @Test fun sixRowsFillTheColumnWithoutClipping() = captureTitles(6, 334, 181)
 
-    private fun captureTitles(count: Int, heightDp: Int) { runBlocking {
+    private fun captureTitles(count: Int, widthDp: Int, heightDp: Int) { runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val portfolio = Portfolio(name = "Disnat")
@@ -57,12 +58,12 @@ class WidgetRemoteViewsScreenshotTest {
             custom = true, titleIds = securities.map { it.id }, price = true, chart = false,
             logo = true, titleTotalPercent = false)
         val remote = WidgetWideRenderer.render(context, 101, null, settings, wallet,
-            portfolio.id, result, false, emptyList(), 360 to heightDp)
+            portfolio.id, result, false, emptyList(), widthDp to heightDp)
         var screenshot: Bitmap? = null
         instrumentation.runOnMainSync {
             val view = remote.apply(context, null)
             val scale = context.resources.displayMetrics.density
-            val width = (360 * scale).roundToInt()
+            val width = (widthDp * scale).roundToInt()
             val height = (heightDp * scale).roundToInt()
             view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))

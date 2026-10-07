@@ -76,10 +76,9 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
         }.getOrDefault(emptyList()) }
     }
     var loading by remember { mutableStateOf(false) }
-    LaunchedEffect(selected, range, w.transactions.map { it.securityId }.distinct()) {
+    LaunchedEffect(selected, range, w.transactions) {
         loading = true
-        try { vm.services.refreshReportHistory(selected,
-            if (range == ReportRange.TEN_YEARS || range == ReportRange.TOTAL) 10 else 5)
+        try { vm.services.refreshReportHistory(selected, range)
         } finally { loading = false }
     }
     val summary = remember(w.transactions, w.prices, selected, range, snapshots) {
@@ -120,7 +119,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { vm.run { vm.services.refreshReportHistory(selected, 10, true) } }) {
+                TextButton(onClick = { vm.run { vm.services.refreshReportHistory(selected, range, true) } }) {
                     Text("↻ Actualiser", color = Blue, fontSize = 12.sp)
                 }
                 TextButton(onClick = { csvLauncher.launch("MonWallet-Rapports-${LocalDate.now()}.csv") }) {
@@ -136,7 +135,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
         }
         when (tab) {
             0 -> {
-                item { ReportHero(summary, mode, onMode = { mode = it; vm.run {
+                item { ReportHero(summary, current, mode, onMode = { mode = it; vm.run {
                     vm.services.repo.setting("reports_chart", it.toString()) } }) }
                 item { ReportMetrics(summary, current) }
                 item { Comparison(w, summary, benchmarks) { selectTab(1) } }
@@ -148,7 +147,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                 }
             }
             1 -> {
-                item { ReportHero(summary, mode, onMode = { mode = it; vm.run {
+                item { ReportHero(summary, current, mode, onMode = { mode = it; vm.run {
                     vm.services.repo.setting("reports_chart", it.toString()) } }) }
                 item { ReportMetrics(summary, current) }
                 item { Comparison(w, summary, benchmarks) { symbol ->
@@ -183,14 +182,22 @@ private fun ReportMini(title: String, subtitle: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ReportHero(summary: ReportSummary, mode: Int, onMode: (Int) -> Unit) {
+private fun ReportHero(summary: ReportSummary, current: Result?, mode: Int, onMode: (Int) -> Unit) {
     CardBlock {
-        Caption("Rendement du portefeuille · ${summary.range.label}")
+        Caption("Rendement du portefeuille · " + if (summary.partialPeriod)
+            "depuis le premier achat (${summary.range.label} partielle)" else summary.range.label)
         if (!summary.complete) {
             Spacer(Modifier.height(6.dp))
             Text(summary.reason ?: "Historique insuffisant", color = Muted,
                 fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
-            Caption("Aucune performance reconstruite à partir de cours manquants.")
+            if (current?.pnl != null && current.invested > ZERO) {
+                Spacer(Modifier.height(8.dp))
+                Caption("Profit total depuis les achats · cours actuels")
+                Text("${signed(current.pnl)}  ·  ${percent(current.percent)}",
+                    color = tint(current.pnl), fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold)
+            }
+            Caption("Le rendement de la période attend les clôtures et les taux FX manquants.")
             return@CardBlock
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,

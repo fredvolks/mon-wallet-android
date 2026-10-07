@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.os.Bundle
+import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
@@ -121,9 +122,11 @@ open class WalletWidget : AppWidgetProvider() {
                     (s.secure.get("biometric") == "true" &&
                         s.secure.get("hide_widgets") != "false") || owner != s.repo.owner.value || !valid
                 val result = if (hidden) null else runCatching { wallet.result(portfolio) }.getOrNull()
-                val widgetHeight = manager.getAppWidgetOptions(id)
-                    .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
-                        if (kind.endsWith("4x3")) 240 else if (kind.endsWith("2x3")) 180 else 150)
+                val options = manager.getAppWidgetOptions(id)
+                val widgetSize = WidgetDimensions.current(c, options,
+                    if (kind.endsWith("4x3")) 250 to 240
+                    else if (kind.endsWith("2x3")) 130 to 180 else 250 to 150)
+                val widgetHeight = widgetSize.second
                 val titlePlan = WidgetTitleLayout.plan(config, kind, widgetHeight,
                     result?.let { config.titles(it).size } ?: 0)
                 if (kind.endsWith("4x2")) {
@@ -132,8 +135,16 @@ open class WalletWidget : AppWidgetProvider() {
                             s.repo.gson.fromJson(it.payload, Array<Point>::class.java).toList()
                         }.getOrDefault(emptyList())
                     }.sortedBy { it.timestamp }
-                    manager.updateAppWidget(id, WidgetWideRenderer.render(c, id, info, config,
-                        wallet, portfolio, result, hidden, points))
+                    val sizes = WidgetDimensions.exactSizes(options)
+                    val rendered = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                        sizes.isNotEmpty()) {
+                        RemoteViews(sizes.associateWith { size ->
+                            WidgetWideRenderer.render(c, id, info, config, wallet, portfolio,
+                                result, hidden, points, size.width.toInt() to size.height.toInt())
+                        })
+                    } else WidgetWideRenderer.render(c, id, info, config, wallet,
+                        portfolio, result, hidden, points, widgetSize)
+                    manager.updateAppWidget(id, rendered)
                     continue
                 }
                 val views = RemoteViews(c.packageName, R.layout.wallet_widget)

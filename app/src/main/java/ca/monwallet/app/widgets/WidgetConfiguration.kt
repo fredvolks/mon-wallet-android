@@ -34,6 +34,7 @@ import ca.monwallet.app.marketdata.NormalizedQuote
 import ca.monwallet.app.marketdata.supportsUsExtendedHours
 import ca.monwallet.app.ui.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 class WidgetConfiguration : ComponentActivity() {
@@ -45,9 +46,11 @@ class WidgetConfiguration : ComponentActivity() {
         val providerKind = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)
             ?.provider?.className.orEmpty()
         val wide = providerKind.endsWith("Widget4x2")
-        val widgetHeight = AppWidgetManager.getInstance(this).getAppWidgetOptions(id)
-            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
-                if (providerKind.endsWith("4x3")) 240 else if (providerKind.endsWith("2x3")) 180 else 150)
+        val widgetSize = WidgetDimensions.current(this,
+            AppWidgetManager.getInstance(this).getAppWidgetOptions(id),
+            if (providerKind.endsWith("4x3")) 250 to 240
+            else if (providerKind.endsWith("2x3")) 130 to 180 else 250 to 150)
+        val widgetHeight = widgetSize.second
         val services = (application as MonWallet).services
         setContent {
             WalletTheme {
@@ -73,7 +76,16 @@ class WidgetConfiguration : ComponentActivity() {
                         .padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         Text(stringResource(R.string.widget_configure),
                             style = MaterialTheme.typography.headlineSmall)
-                        if (wide) WidgetWidePreview(wallet, key, result, config, cached, widgetHeight)
+                        if (wide) {
+                            WidgetWidePreview(wallet, key, result, config, cached,
+                                widgetSize.first, widgetHeight)
+                            val scale = resources.displayMetrics.density
+                            Text("Taille signalée par le lanceur : ${widgetSize.first} × " +
+                                "$widgetHeight dp (environ " +
+                                "${(widgetSize.first * scale).roundToInt()} × " +
+                                "${(widgetHeight * scale).roundToInt()} px de contenu)",
+                                color = Muted, style = MaterialTheme.typography.labelSmall)
+                        }
                         else Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(12.dp)) {
                                 Text(stringResource(R.string.widget_preview), color = Muted)
@@ -275,7 +287,7 @@ class WidgetConfiguration : ComponentActivity() {
 
 @Composable
 private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
-    config: WidgetSettings, cached: List<Point>, heightDp: Int) {
+    config: WidgetSettings, cached: List<Point>, widthDp: Int, heightDp: Int) {
     val portfolio = key.takeUnless { it == "all" }
     val title = wallet.portfolios.find { it.id == key }?.name
         ?: if (portfolio == null) stringResource(R.string.all_portfolios) else "Portefeuille supprimé"
@@ -296,7 +308,7 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
         null, 0 -> Muted
         else -> Green
     }
-    Column(Modifier.fillMaxWidth().height(heightDp.dp)
+    Column(Modifier.widthIn(max = widthDp.dp).height(heightDp.dp)
         .background(Color(0xFF061722), RoundedCornerShape(22.dp))
         .border(1.dp, Color(0xFF19747B), RoundedCornerShape(22.dp))
         .padding(horizontal = 9.dp, vertical = 4.dp)) {

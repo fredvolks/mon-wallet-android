@@ -41,6 +41,23 @@ class ReportEngineTest {
         assertEquals(ZERO, result.days.last().dailyPnl)
     }
 
+    @Test fun purchasesThisWeekReconstructCalendarAndShowPartialWeekSinceFirstBuy() {
+        val wallet = Wallet(securities = listOf(cad), transactions = listOf(
+            tx(TxType.BUY, "2026-01-05", "100", cad, "10"),
+            tx(TxType.BUY, "2026-01-06", "100", cad, "5"),
+        ), prices = listOf(point(cad, "2026-01-05", "101"),
+            point(cad, "2026-01-06", "110")))
+        val history = ReportEngine.history(wallet)
+        approx("10", history.single { it.date.toString() == "2026-01-05" }.dailyPnl)
+        approx("140", history.single { it.date.toString() == "2026-01-06" }.dailyPnl)
+        val week = ReportEngine.summary(wallet, history, ReportRange.WEEK,
+            LocalDate.parse("2026-01-07"))
+        assertTrue(week.complete)
+        assertTrue(week.partialPeriod)
+        approx("150", week.gain)
+        approx("1500", week.capital)
+    }
+
     @Test fun depositAndWithdrawalInSamePeriodAreExternalFlows() {
         val wallet = Wallet(securities = listOf(cad), transactions = listOf(
             tx(TxType.DEPOSIT, "2026-01-05", "1000"),

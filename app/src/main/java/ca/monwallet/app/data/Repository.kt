@@ -162,15 +162,20 @@ class Repository(val db: Database, val scope: CoroutineScope) {
     suspend fun quote(q: Quote) =
         dao.cache(Cache(q.securityId, "quote", gson.toJson(q), q.fetchedAt))
 
-    suspend fun points(id: String, points: List<Point>, intraday: Boolean = false) =
-        dao.cache(
-            Cache(
-                "${if(intraday)"intraday"else"history"}:$id",
-                if (intraday) "intraday" else "history",
-                gson.toJson(points),
-                System.currentTimeMillis(),
-            )
-        )
+    suspend fun points(id: String, points: List<Point>, intraday: Boolean = false) {
+        if (points.isEmpty()) return // A failed provider response cannot erase real history.
+        val kind = if (intraday) "intraday" else "history"
+        val key = "$kind:$id"
+        mutex.withLock {
+            val saved = if (intraday) emptyList() else dao.cache().firstOrNull { it.id == key }
+                ?.let { runCatching { gson.fromJson(it.payload, Array<Point>::class.java).toList() }
+                    .getOrDefault(emptyList()) }.orEmpty()
+            val combined = if (intraday) points else (saved + points)
+                .filter { it.securityId == id }
+                .associateBy { it.date }.values.sortedBy { it.date }
+            dao.cache(Cache(key, kind, gson.toJson(combined), System.currentTimeMillis()))
+        }
+    }
 
     suspend fun switch(user: String) = mutex.withLock { owner.value = user }
 

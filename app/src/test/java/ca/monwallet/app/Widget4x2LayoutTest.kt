@@ -22,17 +22,17 @@ import org.robolectric.annotation.Config
 class Widget4x2LayoutTest {
     @Test fun titlePricesAndPercentsShareLeftAlignedColumnsEvenWithPreMarket() {
         val regular = WidgetWideRenderer.titleSummary("XEQT", "46,20", BigDecimal("0.54"),
-            true, true, null).toString()
+            true, true, null, 4, 8).toString()
         val pre = WidgetWideRenderer.titleSummary("TSM", "472,50", BigDecimal("-2.03"),
-            true, true, MarketSession.PRE_MARKET).toString()
+            true, true, MarketSession.PRE_MARKET, 4, 8).toString()
         val large = WidgetWideRenderer.titleSummary("ASML", "1 859,86", BigDecimal("1.08"),
-            true, true, MarketSession.AFTER_HOURS).toString()
-        assertEquals(6, regular.indexOf("46,20"))
-        assertEquals(6, pre.indexOf("472,50"))
-        assertEquals(6, large.indexOf("1 859,86"))
-        assertEquals(16, regular.indexOf("+0,54"))
-        assertEquals(16, pre.indexOf("-2,03"))
-        assertEquals(16, large.indexOf("+1,08"))
+            true, true, MarketSession.AFTER_HOURS, 4, 8).toString()
+        assertEquals(5, regular.indexOf("46,20"))
+        assertEquals(5, pre.indexOf("472,50"))
+        assertEquals(5, large.indexOf("1 859,86"))
+        assertEquals(13, regular.indexOf("+0,54"))
+        assertEquals(13, pre.indexOf("-2,03"))
+        assertEquals(13, large.indexOf("+1,08"))
         assertTrue(pre.indexOf("☀") > pre.indexOf("-2,03"))
     }
 
@@ -69,8 +69,9 @@ class Widget4x2LayoutTest {
         val chart = widget.findViewById<View>(R.id.widget_chart)
         chart.visibility = View.GONE
         val px = context.resources.displayMetrics.density
-        val width = (360 * px).toInt()
-        val height = (160 * px).toInt()
+        // The user's real One UI capture has a 616:333 widget ratio, not 360:160.
+        val width = (334 * px).toInt()
+        val height = (180 * px).toInt()
         widget.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
         widget.layout(0, 0, width, height)

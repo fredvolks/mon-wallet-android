@@ -1,5 +1,13 @@
 # Versions
 
+## Mon Wallet v0.2.18 — 2026-10-07 (dimensions réelles du widget 4×2)
+
+- Le widget utilise les dimensions exactes annoncées par Android 12+ pour chaque taille du lanceur, y compris après redimensionnement; sur les anciens lanceurs, la hauteur portrait provient de `MAX_HEIGHT` plutôt que de la hauteur minimale paysage.
+- L’aperçu affiche les dimensions détectées en dp et l’estimation des pixels de contenu. La largeur des colonnes ticker et prix est ajustée aux titres effectivement choisis, ce qui permet d’agrandir leur texte sans couper les chiffres.
+- Les tests de widget sont calibrés au rapport 1,85:1 mesuré dans une capture réelle One UI du S25 Ultra (environ 616 × 333 pixels dans l’image reçue), au lieu du précédent 2,25:1 théorique. La vérification finale sur le téléphone reste à faire après installation.
+- Rapports : la période 1S charge un historique court au lieu de demander systématiquement cinq ans. Une réponse vide ou une erreur de source ne bloque plus la prochaine tentative pendant 24 heures; Twelve Data peut céder à une vraie clôture Yahoo lorsqu'une bourse ou un forfait n'est pas couvert. Le cache fusionne les clôtures par date pour conserver les anciennes journées.
+- Si le portefeuille a commencé pendant une période courte, Rapports affiche explicitement une performance **partielle depuis le premier achat** lorsque les clôtures existent. Si les clôtures manquent encore, la page montre le profit total calculé au cours actuel, clairement distinct du rendement de la période. Le calendrier reconstruit les séances disponibles à partir des achats, ventes, liquidités et clôtures réelles.
+
 ## Mon Wallet v0.2.17 — 2026-10-07 (Rapports historiques)
 
 - Rapports : sélecteur de portefeuille, vue d’ensemble, performance, calendrier mensuel avec détail par jour, allocation et flux; périodes 1S, 1M, 3M, 6M, YTD, 1A, 5A, 10A et total. Le graphique compare rendement ajusté des flux, gain en dollars et valeur au capital net investi; export CSV des journées disponibles.

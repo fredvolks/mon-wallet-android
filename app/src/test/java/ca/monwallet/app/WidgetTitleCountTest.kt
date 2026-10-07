@@ -59,8 +59,8 @@ class WidgetTitleCountTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val inflater = LayoutInflater.from(context)
         for ((count, layout, widgetHeight) in listOf(
-            Triple(5, R.layout.wallet_widget_wide_row, 150),
-            Triple(6, R.layout.wallet_widget_wide_row_ultra, 172))) {
+            Triple(5, R.layout.wallet_widget_wide_row, 180),
+            Triple(6, R.layout.wallet_widget_wide_row_ultra, 181))) {
             val widget = inflater.inflate(R.layout.wallet_widget_wide, null)
             widget.findViewById<TextView>(R.id.widget_total).text = "+0,52 %"
             widget.findViewById<TextView>(R.id.widget_total_label).text = "Rendement total"
@@ -83,7 +83,7 @@ class WidgetTitleCountTest {
             widget.findViewById<View>(R.id.widget_chart).visibility = View.GONE
             widget.findViewById<View>(R.id.widget_footer).visibility = View.GONE
             val px = context.resources.displayMetrics.density
-            val width = (360 * px).toInt()
+            val width = (334 * px).toInt()
             val height = (widgetHeight * px).toInt()
             widget.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))

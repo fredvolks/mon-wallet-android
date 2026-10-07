@@ -62,6 +62,7 @@ data class ReportSummary(
     val contributions: List<ReportContribution>,
     val personalReturn: BigDecimal?,
     val cumulative: List<Pair<LocalDate, BigDecimal>>,
+    val partialPeriod: Boolean = false,
 )
 
 object ReportEngine {
@@ -153,13 +154,18 @@ object ReportEngine {
     fun summary(wallet: Wallet, history: List<PortfolioDailySnapshot>, range: ReportRange,
         today: LocalDate = LocalDate.now(), portfolioId: String? = null): ReportSummary {
         val cutoff = range.start(today)
-        val base = if (cutoff == null) history.firstOrNull()
+        val startedAfterCutoff = cutoff != null &&
+            (history.getOrNull(1)?.date ?: LocalDate.MAX) > cutoff
+        val canReportSinceInception = range in setOf(ReportRange.WEEK, ReportRange.MONTH,
+            ReportRange.THREE_MONTHS, ReportRange.SIX_MONTHS, ReportRange.YTD, ReportRange.YEAR)
+        val partialPeriod = startedAfterCutoff && canReportSinceInception
+        val base = if (cutoff == null || partialPeriod) history.firstOrNull()
             else history.lastOrNull { it.date <= cutoff }
         val days = if (base == null) emptyList() else history.filter {
             it.date > base.date && it.date <= today
         }
         val latest = days.lastOrNull() ?: base
-        val tooYoung = cutoff != null && (history.getOrNull(1)?.date ?: LocalDate.MAX) > cutoff
+        val tooYoung = startedAfterCutoff && !partialPeriod
         val missing = days.any { it.closingValue == null ||
             (it.hasMarketClose && it.dailyReturn == null) }
         val complete = base != null && !tooYoung && !missing && days.isNotEmpty() &&
@@ -227,7 +233,7 @@ object ReportEngine {
             confirmed.minByOrNull { it.dailyReturn!! }, contributions,
             if (complete) xirr(listOf(base!!.date to base.closingValue!!) + cashFlows,
                 latest!!.date, latest.closingValue!!) else null,
-            cumulative)
+            cumulative, partialPeriod)
     }
 
     /** Annualized money weighted return. External cash flows are investor outlays. */

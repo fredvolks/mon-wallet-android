@@ -38,13 +38,14 @@ import java.time.LocalDate
 /** RemoteViews restricted to the 4x2 provider. No placeholder prices or sample holdings. */
 internal object WidgetWideRenderer {
     internal fun titleSummary(label: String, priceText: String, dayPercent: java.math.BigDecimal?,
-        showPrice: Boolean, showPercent: Boolean, session: MarketSession?): SpannableStringBuilder {
+        showPrice: Boolean, showPercent: Boolean, session: MarketSession?,
+        tickerChars: Int = 5, priceChars: Int = 10): SpannableStringBuilder {
         val summary = SpannableStringBuilder()
         // Keep every value at the same monospace character offset, even with PRE/AH.
-        summary.append(label.take(5).padEnd(5)).append(" ")
+        summary.append(label.take(tickerChars).padEnd(tickerChars)).append(" ")
         if (showPrice) {
             val start = summary.length
-            summary.append(priceText.take(10).padEnd(10))
+            summary.append(priceText.take(priceChars).padEnd(priceChars))
             summary.setSpan(ForegroundColorSpan(Color.rgb(218, 230, 235)),
                 start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
@@ -134,12 +135,10 @@ internal object WidgetWideRenderer {
         }
         views.setViewVisibility(R.id.widget_indices, if (hidden) View.GONE else View.VISIBLE)
 
-        val options = if (sizeOverrideDp == null) AppWidgetManager.getInstance(c)
-            .getAppWidgetOptions(id) else null
-        val minHeight = sizeOverrideDp?.second
-            ?: options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 150) ?: 150
-        val minWidth = sizeOverrideDp?.first
-            ?: options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250) ?: 250
+        val size = sizeOverrideDp ?: WidgetDimensions.current(c,
+            AppWidgetManager.getInstance(c).getAppWidgetOptions(id), 250 to 150)
+        val minWidth = size.first
+        val minHeight = size.second
         val ordered = if (hidden || result == null) emptyList() else config.titles(result)
         val plan = WidgetTitleLayout.plan(config, "4x2", minHeight, ordered.size)
         val chartSeries = if (hidden || !plan.chart || result == null) emptyList()
@@ -161,7 +160,9 @@ internal object WidgetWideRenderer {
             WidgetTitleLayout.Density.COMPACT -> R.layout.wallet_widget_wide_row
             WidgetTitleLayout.Density.ULTRA -> R.layout.wallet_widget_wide_row_ultra
         }
-        val summaries = titles.mapNotNull { holding ->
+        data class TitleQuote(val id: String, val label: String, val price: String,
+            val change: java.math.BigDecimal?, val session: MarketSession?)
+        val quoteDetails = titles.mapNotNull { holding ->
             val security = wallet.security(holding.securityId) ?: return@mapNotNull null
             val q = wallet.quotes[security.id]
             val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) }
@@ -178,11 +179,20 @@ internal object WidgetWideRenderer {
                 else -> null
             }
             val showPrice = config.price && !config.hideAmounts
-            security.id to titleSummary(if (config.ticker) security.ticker else security.name,
+            TitleQuote(security.id, if (config.ticker) security.ticker else security.name,
                 if (showPrice) number(extraPrice ?: q?.price) else "",
                 if (extraPrice != null) extraPercent else q?.percent,
-                showPrice, config.titleDayPercent, session.takeIf { extraPrice != null })
-        }.toMap()
+                session.takeIf { extraPrice != null })
+        }
+        // Reserve only as many characters as this widget's selected titles need.
+        // Ten fixed price characters made the type needlessly tiny on a real 4x2.
+        val tickerChars = (quoteDetails.maxOfOrNull { it.label.length } ?: 4).coerceIn(4, 5)
+        val priceChars = (quoteDetails.maxOfOrNull { it.price.length } ?: 6).coerceAtLeast(6)
+        val summaries = quoteDetails.associate { detail ->
+            detail.id to titleSummary(detail.label, detail.price, detail.change,
+                config.price && !config.hideAmounts, config.titleDayPercent, detail.session,
+                tickerChars, priceChars)
+        }
         // One text size for every title keeps the monospace price/% columns aligned.
         // Account for the actual 4x2 width, the divider, and the larger logos.
         val logoWidth = if (!config.logo) 0f else when (plan.density) {

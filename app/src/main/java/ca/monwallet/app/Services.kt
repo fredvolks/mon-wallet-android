@@ -70,35 +70,50 @@ class Services(val context: Context) {
     private val reportHistoryRefresh = ConcurrentHashMap<String, Long>()
 
     /** Fetch only real daily closes needed by Reports. Retain older cached closes on errors. */
-    suspend fun refreshReportHistory(portfolioId: String?, years: Int, force: Boolean = false) {
+    suspend fun refreshReportHistory(portfolioId: String?, period: ReportRange, force: Boolean = false) {
         val wallet = repo.current()
-        val ids = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
+        val transactions = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
+        val ids = transactions
             .mapNotNull { it.securityId }.toSet()
         val benchmarks = (Catalog.markets.filter { it.symbol in
             setOf("^GSPC", "^IXIC", "^GSPTSE", "CAD=X") } +
             Catalog.stocks.filter { it.symbol == "XEQT.TO" })
         val securities = (wallet.securities.filter { it.id in ids } + benchmarks).distinctBy { it.id }
-        val range = if (years >= 10) "10y" else "5y"
+        val range = when (period) {
+            ReportRange.WEEK -> "1mo"
+            ReportRange.MONTH -> "3mo"
+            ReportRange.THREE_MONTHS -> "6mo"
+            ReportRange.SIX_MONTHS, ReportRange.YTD -> "1y"
+            ReportRange.YEAR -> "2y"
+            ReportRange.FIVE_YEARS -> "5y"
+            ReportRange.TEN_YEARS, ReportRange.TOTAL -> "10y"
+        }
         val gate = Semaphore(3)
         supervisorScope {
             securities.map { security -> async {
                 gate.withPermit {
                     val key = "${security.id}:$range"
                     val existing = wallet.prices.filter { it.securityId == security.id }
-                    val earliestNeeded = java.time.LocalDate.now().minusYears(years.toLong())
-                    val covered = existing.any { it.date <= earliestNeeded.plusDays(7).toString() } &&
+                    val earliestNeeded = period.start(java.time.LocalDate.now())
+                        ?: transactions.minOfOrNull { java.time.LocalDate.parse(it.date) }
+                        ?: java.time.LocalDate.now()
+                    val covered = existing.size >= 2 &&
+                        existing.any { it.date <= earliestNeeded.plusDays(7).toString() } &&
                         existing.any { it.date >= java.time.LocalDate.now().minusDays(7).toString() }
                     val now = System.currentTimeMillis()
-                    if (!force && (covered || now - (reportHistoryRefresh[key] ?: 0L) < 86_400_000L))
+                    if (!force && (covered || now - (reportHistoryRefresh[key] ?: 0L) < 6 * 60 * 60_000L))
                         return@withPermit
-                    reportHistoryRefresh[key] = now
                     try {
                         val fresh = market.history(security, range, "1d")
-                        if (fresh.isNotEmpty()) repo.points(security.id, fresh)
+                        if (fresh.isNotEmpty()) {
+                            // Repository merges closes with any longer history already cached.
+                            repo.points(security.id, fresh)
+                            reportHistoryRefresh[key] = now
+                        }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
-                        // Empty or unavailable history is visible as an incomplete report.
+                        // Failed requests remain retryable; never replace a real close.
                     }
                 }
             } }.awaitAll()

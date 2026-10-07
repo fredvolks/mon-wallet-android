@@ -501,8 +501,20 @@ class Router(private val settings: SecureSettings) : MarketDataProvider {
 
     override suspend fun quote(s: Security) = provider().quote(s)
 
-    override suspend fun history(s: Security, range: String, interval: String) =
-        provider().history(s, range, interval)
+    override suspend fun history(s: Security, range: String, interval: String): List<Point> {
+        val selected = provider()
+        if (selected is Yahoo) return selected.history(s, range, interval)
+        // Twelve Data coverage varies by exchange and plan. A genuine Yahoo close
+        // can fill an unsupported market without relabelling it as Twelve Data.
+        return try {
+            val primary = selected.history(s, range, interval)
+            if (primary.isEmpty()) yahoo.history(s, range, interval) else primary
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            yahoo.history(s, range, interval)
+        }
+    }
 
     override suspend fun search(q: String) = provider().search(q)
 
