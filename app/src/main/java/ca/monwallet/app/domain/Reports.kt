@@ -67,6 +67,12 @@ data class ReportSummary(
 object ReportEngine {
     private val oneHundred = BigDecimal(100)
     private val maxCloseAge = 7L
+    private data class HistoryKey(val portfolioId: String?, val transactions: List<Transaction>,
+        val prices: List<Point>, val securities: List<Security>, val today: LocalDate)
+    private val historyCache = object : LinkedHashMap<HistoryKey, List<PortfolioDailySnapshot>>(4, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<HistoryKey,
+            List<PortfolioDailySnapshot>>?): Boolean = size > 4
+    }
 
     private fun pointAt(points: List<Point>, date: LocalDate): Point? =
         points.lastOrNull { it.date <= date.toString() }
@@ -74,6 +80,15 @@ object ReportEngine {
 
     /** A missing position close or historical USD/CAD rate invalidates that day's valuation. */
     fun history(wallet: Wallet, portfolioId: String? = null): List<PortfolioDailySnapshot> {
+        val key = HistoryKey(portfolioId, wallet.transactions, wallet.prices, wallet.securities,
+            LocalDate.now())
+        synchronized(historyCache) { historyCache[key]?.let { return it } }
+        val snapshots = calculateHistory(wallet, portfolioId)
+        synchronized(historyCache) { historyCache[key] = snapshots }
+        return snapshots
+    }
+
+    private fun calculateHistory(wallet: Wallet, portfolioId: String?): List<PortfolioDailySnapshot> {
         val tx = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
             .sortedWith(compareBy<Transaction> { it.date }.thenBy { it.createdAt }.thenBy { it.id })
         if (tx.isEmpty()) return emptyList()

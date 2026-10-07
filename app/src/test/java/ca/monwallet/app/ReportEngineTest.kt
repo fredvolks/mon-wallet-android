@@ -82,6 +82,8 @@ class ReportEngineTest {
         approx("0", summary(base).gain)
         val revised = base.copy(transactions = base.transactions +
             tx(TxType.BUY, "2026-01-05", "100", cad, "10"))
+        assertSame(ReportEngine.history(base), ReportEngine.history(base))
+        assertNotSame(ReportEngine.history(base), ReportEngine.history(revised))
         approx("100", summary(revised).gain)
         approx("1100", ReportEngine.history(revised).last().closingValue)
     }

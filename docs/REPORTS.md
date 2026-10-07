@@ -18,6 +18,6 @@ Le calendrier ne donne un P&L quotidien que pour une journée valorisée avec co
 
 ## Recalcul et données
 
-Rapports dépend de la liste des transactions et des séries historiques observées par `StateFlow`. Une transaction rétroactive, une correction du cache de cours ou du FX déclenche un recalcul hors du thread UI. Les séries historiques restent en cache Room après fermeture et mise à jour de l'application. Aucun changement de schéma Room n'est nécessaire. Le CSV exporte seulement les dates calculées du portefeuille et de la période sélectionnés.
+Rapports dépend de la liste des transactions et des séries historiques observées par `StateFlow`. Les snapshots calculés sont conservés en mémoire entre deux ouvertures de l'écran; une transaction rétroactive, une correction du cache de cours ou du FX invalide cette entrée et déclenche un recalcul hors du thread UI. Les séries historiques restent en cache Room après fermeture et mise à jour de l'application; les snapshots sont reconstruits une fois au lancement suivant. Aucun changement de schéma Room n'est nécessaire. Le CSV exporte seulement les dates calculées du portefeuille et de la période sélectionnés.
 
 Tests unitaires : dépôt sans effet de rendement, dépôt/retrait, dividende, vente partielle, transaction rétroactive, FX historique, week-end, XIRR, benchmark et couverture insuffisante. Les essais visuels sur Samsung Galaxy S25 Ultra nécessitent un appareil connecté; les builds CI compilent et exécutent les tests JVM.
