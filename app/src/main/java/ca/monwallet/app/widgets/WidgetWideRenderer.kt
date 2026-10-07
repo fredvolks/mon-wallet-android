@@ -37,6 +37,33 @@ import java.time.LocalDate
 
 /** RemoteViews restricted to the 4x2 provider. No placeholder prices or sample holdings. */
 internal object WidgetWideRenderer {
+    internal fun titleSummary(label: String, priceText: String, dayPercent: java.math.BigDecimal?,
+        showPrice: Boolean, showPercent: Boolean, session: MarketSession?): SpannableStringBuilder {
+        val summary = SpannableStringBuilder()
+        // Keep every value at the same monospace character offset, even with PRE/AH.
+        summary.append(label.take(5).padEnd(5)).append(" ")
+        if (showPrice) {
+            val start = summary.length
+            summary.append(priceText.take(10).padEnd(10))
+            summary.setSpan(ForegroundColorSpan(Color.rgb(218, 230, 235)),
+                start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        if (showPercent) {
+            val start = summary.length
+            summary.append(percent(dayPercent))
+            summary.setSpan(ForegroundColorSpan(tone(dayPercent?.signum())),
+                start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        if (session in setOf(MarketSession.PRE_MARKET, MarketSession.AFTER_HOURS)) {
+            val start = summary.length
+            summary.append(if (session == MarketSession.PRE_MARKET) " ☀" else " ☾")
+            summary.setSpan(ForegroundColorSpan(if (session == MarketSession.PRE_MARKET)
+                Color.rgb(90, 183, 255) else Color.rgb(181, 150, 241)),
+                start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        return summary
+    }
+
     suspend fun render(
         c: Context, id: Int, info: AppWidgetProviderInfo?,
         config: WidgetSettings, wallet: Wallet, portfolio: String?,
@@ -68,12 +95,12 @@ internal object WidgetWideRenderer {
         val showPercent = !hidden && config.dayPercent && result?.dayPercent != null
         views.setTextViewText(R.id.widget_amount, when {
             showAmount -> signed(result?.day)
-            unavailable -> "Données indisponibles"
+            unavailable -> "Jour indisponible"
             else -> ""
         })
         views.setTextViewText(R.id.widget_percent, if (showPercent) percent(result?.dayPercent) else "")
         views.setTextViewTextSize(R.id.widget_amount, android.util.TypedValue.COMPLEX_UNIT_SP,
-            if (unavailable) 15f else if (config.dailyHero) 26f else 22f)
+            if (unavailable) 12f else if (config.dailyHero) 26f else 22f)
         views.setTextViewTextSize(R.id.widget_percent, android.util.TypedValue.COMPLEX_UNIT_SP,
             if (config.dailyHero) 24f else 17f)
         views.setViewVisibility(R.id.widget_amount, if (showAmount) View.VISIBLE else View.GONE)
@@ -171,33 +198,12 @@ internal object WidgetWideRenderer {
             val priceText = if (!showPrice) "" else number(quotePrice)
             row.setViewVisibility(R.id.widget_row_price, View.GONE)
             val dayPercent = if (extraPrice != null) extraPercent else q?.percent
-            val details = if (config.titleDayPercent) listOf(percent(dayPercent)) else emptyList()
             row.setViewVisibility(R.id.widget_row_values, View.GONE)
             // A single text cell keeps all quote figures in the actual RemoteViews
             // draw pass. Separate nested numeric TextViews can measure normally yet
             // paint nothing on some Android widget hosts.
-            val summary = SpannableStringBuilder()
-            summary.append(label.take(5).padEnd(5))
-            if (extraPrice != null) {
-                val start = summary.length
-                summary.append(if (session == MarketSession.PRE_MARKET) "☀" else "☾")
-                summary.setSpan(ForegroundColorSpan(if (session == MarketSession.PRE_MARKET)
-                    Color.rgb(90, 183, 255) else Color.rgb(181, 150, 241)),
-                    start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            if (showPrice) {
-                val start = summary.length
-                summary.append(" ").append(priceText.padStart(8))
-                summary.setSpan(ForegroundColorSpan(Color.rgb(218, 230, 235)),
-                    start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            if (details.isNotEmpty()) {
-                val start = summary.length
-                summary.append(" ").append(details.joinToString(" · "))
-                summary.setSpan(ForegroundColorSpan(tone((if (config.titleDayPercent)
-                    dayPercent else holding.percent)?.signum())), start, summary.length,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
+            val summary = titleSummary(label, priceText, dayPercent,
+                showPrice, config.titleDayPercent, session.takeIf { extraPrice != null })
             row.setTextViewText(R.id.widget_row_ticker, summary)
             row.setOnClickPendingIntent(R.id.widget_row,
                 PendingIntent.getActivity(c, id xor security.id.hashCode(),

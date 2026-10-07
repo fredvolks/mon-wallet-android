@@ -78,8 +78,9 @@ class Services(val context: Context) {
             }
         }
 
-    suspend fun refreshForeground(securities: List<Security>) {
-        if (busy.value || securities.isEmpty()) return
+    suspend fun refreshForeground(securities: List<Security>): Boolean {
+        if (busy.value || securities.isEmpty()) return false
+        val before = repo.state.value.quotes
         val gate = Semaphore(2)
         val updates = supervisorScope {
             securities.distinctBy { it.id }.take(20).map { security ->
@@ -99,11 +100,18 @@ class Services(val context: Context) {
                 }
             }.awaitAll().filterNotNull()
         }
+        val changed = updates.any { fresh -> before[fresh.securityId]?.let { old ->
+            fresh.timestamp > old.timestamp || fresh.price != old.price ||
+                fresh.preMarketTimestamp != old.preMarketTimestamp ||
+                fresh.afterHoursTimestamp != old.afterHoursTimestamp
+        } ?: true }
         marketStatus.value = if (updates.isEmpty())
             "Derniers cours en cache · fournisseur indisponible"
         else if (updates.any { (it.delay ?: 0) > 0 })
-            "Cours actualisés · certains différés par le fournisseur"
-        else "Cours actualisés · délai du fournisseur non garanti"
+            "Cotation vérifiée · certains cours différés"
+        else if (changed) "Nouvelle cotation reçue · délai non garanti"
+        else "Dernière cotation inchangée · délai non garanti"
+        return true
     }
 
     suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false,

@@ -1,11 +1,43 @@
 // Scheduled service-to-service endpoint. Never expose provider or admin keys to Android.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { XMLParser } from "npm:fast-xml-parser@4.5.3";
 type FmpItem = Record<string, unknown>;
 type Article = {
   content_hash: string; canonical_url: string; title: string; excerpt: string;
   source: string; provider: string; market: "CANADA" | "USA" | "MACRO";
   tickers: string[]; published_at: string;
 };
+const CANADA_RSS = "https://www.globenewswire.com/RssFeed/country/canada";
+const xmlParser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true,
+  processEntities: false, trimValues: true });
+
+function value(raw: unknown): string {
+  if (typeof raw === "string" || typeof raw === "number") return String(raw).trim();
+  if (raw && typeof raw === "object") return value((raw as Record<string, unknown>)["#text"] || "");
+  return "";
+}
+
+function plain(raw: unknown): string {
+  return value(raw).replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|#160);/gi, " ")
+    .replace(/&amp;/gi, "&").replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">").replace(/\s+/g, " ").trim();
+}
+
+// Bare tickers can belong to a different issuer (notably GURU and PHOS).
+// Associate only tickers accompanied by a Canadian exchange in the release.
+function canadianSymbols(text: string): string[] {
+  const symbols = new Set<string>();
+  const listing = /\b(TSX[\s-]?VENTURE|TSX[\s-]?V|TSXV|TSX|CSE|NEO|CBOE\s+CANADA)\s*(?:SYMBOL\s*)?[:：]\s*([A-Z][A-Z0-9.-]{0,11})\b/gi;
+  for (const match of text.matchAll(listing)) {
+    const exchange = match[1].toUpperCase().replace(/[\s-]/g, "");
+    const base = match[2].toUpperCase().replace(/\.$/, "");
+    const suffix = exchange === "TSX" ? ".TO" :
+      exchange === "TSXV" || exchange === "TSXVENTURE" ? ".V" :
+      exchange === "CSE" ? ".CN" : ".NE";
+    symbols.add(base.endsWith(suffix) ? base : base + suffix);
+  }
+  return [...symbols].slice(0, 12);
+}
 
 function adminKey(): string | null {
   const keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}") as Record<string, string>;
@@ -54,27 +86,43 @@ async function normalize(row: FmpItem): Promise<Article | null> {
     String(row.symbol || row.symbols || "").split(",");
   const tickers = symbols.map((s) => String(s).trim().toUpperCase())
     .filter((s) => /^[A-Z^][A-Z0-9.^-]{0,17}$/.test(s)).slice(0, 12);
-  const market = tickers.some((s) => /\.(TO|V|NE|CN)$/.test(s)) ? "CANADA" :
+  // The Canada country feed also contains non-financial press releases. Keep
+  // stock news only when the release itself names a Canadian listing.
+  if (row.market === "CANADA" && tickers.length === 0) return null;
+  const market = row.market === "CANADA" ? "CANADA" :
+    tickers.some((s) => /\.(TO|V|NE|CN)$/.test(s)) ? "CANADA" :
     tickers.length ? "USA" : "MACRO";
   const titleKey = title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const contentHash = await digest(titleKey + "|" + published.toISOString().slice(0, 10));
   return {
     content_hash: contentHash, canonical_url: url, title: title.slice(0, 500),
     excerpt: String(row.text || row.content || "").slice(0, 2400),
-    source: source.slice(0, 120), provider: "Financial Modeling Prep",
+    source: source.slice(0, 120), provider: String(row.provider || "Financial Modeling Prep"),
     market, tickers, published_at: published.toISOString(),
   };
 }
 
-async function fmp(path: string, key: string): Promise<FmpItem[]> {
-  const u = new URL(`https://financialmodelingprep.com/stable/news/${path}`);
-  u.searchParams.set("page", "0"); u.searchParams.set("limit", "100");
-  u.searchParams.set("apikey", key);
-  const response = await fetch(u, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`FMP ${path} HTTP ${response.status}`);
-  const data: unknown = await response.json();
-  if (!Array.isArray(data)) throw new Error("FMP returned no article array");
-  return data as FmpItem[];
+async function canadaFeed(): Promise<FmpItem[]> {
+  const response = await fetch(CANADA_RSS, {
+    headers: { Accept: "application/rss+xml, application/xml" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error(`GlobeNewswire Canada RSS HTTP ${response.status}`);
+  const xml = await response.text();
+  if (xml.length > 1_000_000) throw new Error("Canada RSS response too large");
+  const feed = xmlParser.parse(xml) as { rss?: { channel?: { item?: unknown } } };
+  const items = feed.rss?.channel?.item;
+  if (!items) throw new Error("GlobeNewswire Canada RSS has no items");
+  const rows = Array.isArray(items) ? items : [items];
+  return rows.filter((item): item is Record<string, unknown> =>
+    item !== null && typeof item === "object").map((item) => {
+      const title = plain(item.title);
+      const description = plain(item.description);
+      return { title, url: value(item.link), site: "GlobeNewswire",
+        publishedDate: value(item.pubDate || item.date), text: description.slice(0, 1800),
+        symbols: canadianSymbols(`${title} ${description}`), market: "CANADA",
+        provider: "GlobeNewswire · RSS Canada" };
+    });
 }
 
 Deno.serve(async (req: Request) => {
@@ -85,16 +133,8 @@ Deno.serve(async (req: Request) => {
   if (!await authorized(req, project, secret))
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   if (req.method !== "POST") return Response.json({ error: "POST required" }, { status: 405 });
-  const fmpKey = Deno.env.get("FMP_API_KEY");
-  if (!fmpKey) return Response.json({ error: "News provider not configured" }, { status: 503 });
   try {
-    const feeds = await Promise.allSettled([fmp("stock-latest", fmpKey),
-      fmp("press-releases-latest", fmpKey)]);
-    const unavailable = feeds.filter((result): result is PromiseRejectedResult =>
-      result.status === "rejected").map((result) =>
-      result.reason instanceof Error ? result.reason.message : "FMP source unavailable");
-    if (unavailable.length === feeds.length) throw new Error(unavailable.join("; "));
-    const received = feeds.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+    const received = await canadaFeed();
     const rows = (await Promise.all(received.map(normalize)))
       .filter((article): article is Article => article !== null);
     const uniqueByUrl = [...new Map(rows.map((article) =>
@@ -108,15 +148,10 @@ Deno.serve(async (req: Request) => {
     });
     if (!result.ok) throw new Error(`News storage HTTP ${result.status}`);
     const inserted = (await result.json()) as Article[];
-    // OpenAI is optional at ingestion time; keep raw sourced news for retry.
-    if (inserted.length && Deno.env.get("OPENAI_API_KEY")) {
-      EdgeRuntime.waitUntil(fetch(`${project}/functions/v1/analyze-news`, {
-        method: "POST", headers: { apikey: secret, "Content-Type": "application/json" },
-        body: "{}", signal: AbortSignal.timeout(45_000),
-      }).catch(() => null));
-    }
+    // Keep sourced headlines separate from AI. No OpenAI call or paid feed is
+    // made by this job; an unavailable analysis remains visibly non-analysed.
     return Response.json({ received: rows.length, inserted: inserted.length,
-      unavailableSources: unavailable });
+      identifiedTickers: rows.filter((row) => row.tickers.length).length });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Ingestion failed" },
       { status: 502 });

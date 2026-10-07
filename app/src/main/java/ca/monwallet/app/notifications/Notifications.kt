@@ -5,11 +5,14 @@ import android.app.*
 import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import ca.monwallet.app.*
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.Finnhub
+import ca.monwallet.app.news.NewsArticle
+import java.net.URI
 import java.time.LocalDate
 
 object Notifications {
@@ -37,6 +40,29 @@ object Notifications {
             ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
 
+    /** A notification for a sourced article opens that exact article in a browser. */
+    internal fun destination(c: Context, event: AlertEvent): Intent {
+        val source = event.sourceUrl?.takeIf { url ->
+            runCatching { val uri = URI(url)
+                uri.scheme.equals("https", true) && !uri.host.isNullOrBlank() &&
+                    uri.userInfo == null }.getOrDefault(false)
+        }
+        return if (event.channel == "news" && source != null)
+            Intent(Intent.ACTION_VIEW, Uri.parse(source)).addCategory(Intent.CATEGORY_BROWSABLE)
+        else Intent(c, MainActivity::class.java).putExtra("security", event.securityId)
+    }
+
+    // A small, explicit rule for sourced exchange-listed Canadian disclosures when
+    // paid IA analysis is unavailable. Promotional/ambiguous headlines do not alert.
+    internal fun importantCanadianDisclosure(article: NewsArticle): Boolean =
+        article.analysis == null && article.market == "CANADA" &&
+            article.provider == "GlobeNewswire · RSS Canada" && article.tickers.isNotEmpty() &&
+            Regex("\\b(financial results|quarterly results|annual results|earnings|guidance|" +
+                "dividend|definitive agreement|material contract|acquisition completed|" +
+                "résultats financiers|résultats trimestriels|prévisions|dividende|" +
+                "contrat signé|acquisition complétée)\\b", RegexOption.IGNORE_CASE)
+                .containsMatchIn(article.title)
+
     private suspend fun emit(s: Services, event: AlertEvent) {
         val w = s.repo.current()
         if (w.events.any { it.eventKey == event.eventKey }) return
@@ -46,7 +72,7 @@ object Notifications {
             PendingIntent.getActivity(
                 s.context,
                 event.id.hashCode(),
-                Intent(s.context, MainActivity::class.java).putExtra("security", event.securityId),
+                destination(s.context, event),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
         s.context
@@ -140,29 +166,31 @@ object Notifications {
                         }
                     }
             }
-            // Only a sourced backend analysis may authorize an IA notification.
             if (pref.news)
                 s.news.state.value.articles
                     .filter { n ->
                         val analysis = n.analysis
-                        analysis != null && analysis.notificationWorthy &&
-                            analysis.importance in setOf("HIGH", "CRITICAL") &&
+                        val analyzed = analysis != null && analysis.notificationWorthy &&
+                            analysis.importance in setOf("HIGH", "CRITICAL")
+                        val sourced = importantCanadianDisclosure(n)
+                        (analyzed || sourced) &&
                             n.tickers.any { it.equals(security.symbol, ignoreCase = true) } &&
-                            System.currentTimeMillis() - n.publishedAt in 0..(48L * 3600_000)
+                            System.currentTimeMillis() - n.publishedAt in
+                                0L..(if (sourced) 6L * 3600_000 else 48L * 3600_000)
                     }
                     .forEach { n ->
                         emit(
                             s,
                             AlertEvent(
                                 securityId = security.id,
-                                title = "${security.ticker} · ${n.analysis?.importance} · ${n.source}",
+                                title = "${security.ticker} · ${n.analysis?.importance ?: "Actualité"} · ${n.source}",
                                 body = n.analysis?.summaryFr?.takeIf { it.isNotBlank() } ?: n.title,
                                 channel = "news",
-                                eventKey = "news:ia:${n.id}:${security.id}",
+                                eventKey = "news:${n.id}:${security.id}",
+                                sourceUrl = n.url,
                             ),
                         )
                     }
         }
     }
 }
-

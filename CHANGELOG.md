@@ -1,5 +1,13 @@
 # Versions
 
+## Mon Wallet v0.2.15 — 2026-10-07 (nouvelles canadiennes, alertes et densité)
+
+- Le flux Canada ingère toutes les 30 minutes les communiqués GlobeNewswire Canada dont la place et le symbole canadiens sont explicitement identifiés (TSX, TSXV, CSE, NEO/Cboe Canada). Les anciens communiqués généraux sans ticker sont conservés en base, mais exclus de l'application. Chaque article affiche sa source et sa date; aucune analyse IA n'est inventée. La tâche IA reste inactive faute de crédits API.
+- Une alerte News pertinente touche seulement un titre suivi. Une analyse backend HIGH/CRITICAL peut la déclencher; certains résultats, prévisions, contrats ou dividendes d'un communiqué canadien sourcé et récent peuvent aussi être signalés sans IA. Toucher la notification ouvre directement l'article HTTPS original; les alertes de prix ouvrent toujours la fiche titre.
+- Portefeuille Compact : ticker seul dans la première colonne, sans quantité en seconde ligne; les parts restent accessibles par la colonne optionnelle et la fiche titre. Lignes du tableau resserrées.
+- Actualisation au premier plan : nouvelle tentative rapide si l'analyse complète occupait déjà le fournisseur, puis vérification des cours des positions détenues toutes les 30 secondes durant la séance active. Le statut distingue une nouvelle cotation d'une cotation inchangée et ne présente jamais le fournisseur comme temps réel garanti. Arrêt de la boucle quand l'application quitte le premier plan.
+- Widget 4x2 : prix et pourcentages utilisent des départs de colonne identiques pour tous les titres; l'icône PRE/AFTER ne déplace plus les chiffres. L'indisponibilité du P&L jour s'affiche sans texte coupé. Tests de grille et de redirection des notifications.
+
 ## Mon Wallet v0.2.14 — 2026-10-07 (fil News et pipeline IA)
 
 - Nouvel onglet News interne avec « Pour moi », Canada, USA, Marchés et Toutes; articles sourcés des titres du portefeuille et des Watchlists, cache local, déduplication, filtre pour les nouvelles faibles, détails et résumés IA seulement lorsqu'une analyse backend existe.

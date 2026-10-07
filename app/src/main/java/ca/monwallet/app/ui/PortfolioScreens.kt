@@ -411,7 +411,7 @@ private fun PortfolioTableRow(w: Wallet, s: Security, h: Holding, result: Result
     columns: List<String>, scroll: ScrollState, spark: List<Point>, manual: Boolean,
     move: (Int) -> Unit, onClick: () -> Unit) {
     var drag by remember(s.id) { mutableFloatStateOf(0f) }
-    PortfolioTableGrid(columns, scroll, Modifier.height(37.dp).clickable(onClick = onClick),
+    PortfolioTableGrid(columns, scroll, Modifier.height(34.dp).clickable(onClick = onClick),
         ticker = {
             Row(Modifier.pointerInput(s.id, manual) {
                 if (manual) detectDragGesturesAfterLongPress(onDragEnd = { drag = 0f },
@@ -424,12 +424,8 @@ private fun PortfolioTableRow(w: Wallet, s: Security, h: Holding, result: Result
             }, verticalAlignment = Alignment.CenterVertically) {
                 Logo(s, 20.dp)
                 Spacer(Modifier.width(4.dp))
-                Column {
-                    Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(compactQuantity(s, h.quantity), fontSize = 8.sp, color = Muted,
-                        maxLines = 1)
-                }
+                Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }, value = { key ->
             if (key == "sparkline") {

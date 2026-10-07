@@ -150,6 +150,10 @@ class NewsRepository(private val repo: Repository, private val market: Router,
             val tickers = row.optJSONArray("tickers")?.let { arr ->
                 (0 until arr.length()).mapNotNull { arr.optString(it).takeIf(String::isNotBlank) }
             }.orEmpty()
+            // Older ingests contained general press releases from the country RSS.
+            // Keep them in storage, but never show those as stock news.
+            if (row.optString("provider") == "GlobeNewswire · RSS Canada" &&
+                tickers.isEmpty()) return@mapNotNull null
             NewsArticle(row.getString("id"), row.optString("title"),
                 row.optString("source"), urlValue, published, tickers,
                 row.optString("market"), row.optString("provider"), analysis)

@@ -8,6 +8,9 @@ import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import ca.monwallet.app.widgets.WidgetChartData
 import ca.monwallet.app.data.Catalog
+import ca.monwallet.app.widgets.WidgetWideRenderer
+import ca.monwallet.app.marketdata.MarketSession
+import java.math.BigDecimal
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,6 +20,22 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = TestMonWallet::class)
 class Widget4x2LayoutTest {
+    @Test fun titlePricesAndPercentsShareLeftAlignedColumnsEvenWithPreMarket() {
+        val regular = WidgetWideRenderer.titleSummary("XEQT", "46,20", BigDecimal("0.54"),
+            true, true, null).toString()
+        val pre = WidgetWideRenderer.titleSummary("TSM", "472,50", BigDecimal("-2.03"),
+            true, true, MarketSession.PRE_MARKET).toString()
+        val large = WidgetWideRenderer.titleSummary("ASML", "1 859,86", BigDecimal("1.08"),
+            true, true, MarketSession.AFTER_HOURS).toString()
+        assertEquals(6, regular.indexOf("46,20"))
+        assertEquals(6, pre.indexOf("472,50"))
+        assertEquals(6, large.indexOf("1 859,86"))
+        assertEquals(16, regular.indexOf("+0,54"))
+        assertEquals(16, pre.indexOf("-2,03"))
+        assertEquals(16, large.indexOf("+1,08"))
+        assertTrue(pre.indexOf("☀") > pre.indexOf("-2,03"))
+    }
+
     @Test fun previewCanInstallBesideTheExistingRelease() {
         assertEquals("ca.monwallet.app.preview2", BuildConfig.APPLICATION_ID)
     }

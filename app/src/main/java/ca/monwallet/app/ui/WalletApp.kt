@@ -97,13 +97,15 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             s.foregroundSecurities.collectLatest { visible ->
                 while (isActive && visible.isNotEmpty()) {
-                    s.refreshForeground(visible)
+                    val attempted = s.refreshForeground(visible)
                     val quotes = s.repo.state.value.quotes
                     val active = visible.any { security ->
                         quotes[security.id]?.let { q -> q.marketOpen == true ||
                             q.marketSession == "PRE_MARKET" || q.marketSession == "AFTER_HOURS" } == true
                     }
-                    delay(if (active) 60_000L else 180_000L)
+                    // An initial full refresh may still be running; retry promptly.
+                    // The foreground loop is cancelled when the app is paused.
+                    delay(if (!attempted) 5_000L else if (active) 30_000L else 180_000L)
                 }
             }
         }
@@ -111,8 +113,11 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
     LaunchedEffect(route, w.transactions, portfolio, selectedSecurity) {
         when (route) {
             "portfolio" -> {
-                val ids = w.transactions.filter { portfolio == null || it.portfolioId == portfolio }
-                    .mapNotNull { it.securityId }.toSet()
+                // Prioritize positions still held; old fully sold transactions must not
+                // consume the foreground quote budget before visible holdings.
+                val ids = runCatching { w.result(portfolio).holdings
+                    .filter { it.quantity > ZERO }.map { it.securityId }.toSet() }
+                    .getOrDefault(emptySet())
                 s.foregroundSecurities.value = w.securities.filter { it.id in ids }.take(20)
             }
             "detail/{id}" -> s.foregroundSecurities.value = listOfNotNull(

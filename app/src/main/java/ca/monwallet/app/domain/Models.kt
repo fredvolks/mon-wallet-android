@@ -157,6 +157,7 @@ data class AlertEvent(
     val channel: String,
     val timestamp: Long = System.currentTimeMillis(),
     val eventKey: String = id,
+    val sourceUrl: String? = null,
 )
 
 data class Setting(val id: String, val value: String)
