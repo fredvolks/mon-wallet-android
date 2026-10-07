@@ -136,9 +136,11 @@ class WidgetConfiguration : ComponentActivity() {
                         if (wide) WidgetSwitch(stringResource(R.string.widget_total_percent), config.totalPercent) {
                             config = config.copy(totalPercent = it)
                         }
-                        WidgetSwitch(stringResource(R.string.widget_gain_amount), config.totalAmount) { config = config.copy(totalAmount = it) }
-                        WidgetSwitch(stringResource(R.string.widget_current_value), config.value) { config = config.copy(value = it) }
-                        WidgetSwitch(stringResource(R.string.widget_capital), config.invested) { config = config.copy(invested = it) }
+                        if (!wide) {
+                            WidgetSwitch(stringResource(R.string.widget_gain_amount), config.totalAmount) { config = config.copy(totalAmount = it) }
+                            WidgetSwitch(stringResource(R.string.widget_current_value), config.value) { config = config.copy(value = it) }
+                            WidgetSwitch(stringResource(R.string.widget_capital), config.invested) { config = config.copy(invested = it) }
+                        }
                         WidgetSection(stringResource(R.string.widget_section_titles))
                         WidgetSwitch(stringResource(R.string.widget_show_titles), config.showTitles) { config = config.copy(showTitles = it) }
                         if (config.showTitles) {

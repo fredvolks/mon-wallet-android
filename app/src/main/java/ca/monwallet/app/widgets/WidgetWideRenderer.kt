@@ -92,13 +92,9 @@ internal object WidgetWideRenderer {
                 daySign < 0 -> R.drawable.widget_pill_negative
                 else -> R.drawable.widget_pill_positive
             })
-        val extras = if (hidden || config.hideAmounts) emptyList() else buildList {
-            if (config.totalAmount) add(c.getString(R.string.widget_gain) + " " + signed(result?.pnl))
-            if (config.value) add(c.getString(R.string.widget_value) + " " + money(result?.value))
-            if (config.invested) add(c.getString(R.string.widget_invested) + " " + money(result?.invested))
-        }
-        views.setTextViewText(R.id.widget_extras, extras.joinToString(" · "))
-        views.setViewVisibility(R.id.widget_extras, if (extras.isEmpty()) View.GONE else View.VISIBLE)
+        // The 4x2 never reveals wallet value or capital, including legacy configs.
+        views.setTextViewText(R.id.widget_extras, "")
+        views.setViewVisibility(R.id.widget_extras, View.GONE)
 
         // These are cached provider quotes, including the completed session after close.
         // Never infer 0% when a feed has not supplied an index quote.
@@ -175,17 +171,7 @@ internal object WidgetWideRenderer {
             val priceText = if (!showPrice) "" else number(quotePrice)
             row.setViewVisibility(R.id.widget_row_price, View.GONE)
             val dayPercent = if (extraPrice != null) extraPercent else q?.percent
-            val details = buildList {
-                if (config.titleDayPercent) add(percent(dayPercent))
-                if (config.titleTotalPercent)
-                    add(c.getString(R.string.widget_total_short) + " " + percent(holding.percent))
-                if (config.titleDayAmount && !config.hideAmounts)
-                    add(if (extraPrice == null) signed(holding.day) else "—")
-                if (config.titleValue && !config.hideAmounts) add(money(holding.value))
-                if (config.weight) add(percent(holding.value?.let { value ->
-                    result?.value?.takeIf { it.signum() != 0 }?.let { value.pct(it) }
-                }))
-            }
+            val details = if (config.titleDayPercent) listOf(percent(dayPercent)) else emptyList()
             row.setViewVisibility(R.id.widget_row_values, View.GONE)
             // A single text cell keeps all quote figures in the actual RemoteViews
             // draw pass. Separate nested numeric TextViews can measure normally yet

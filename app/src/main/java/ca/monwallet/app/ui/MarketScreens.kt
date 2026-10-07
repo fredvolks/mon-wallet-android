@@ -572,12 +572,13 @@ private fun WatchQuickPanel(security: Security, w: Wallet, vm: WalletViewModel,
                 color = tint(points.last().close - points.first().close))
             else Text(if (loading) "Chargement du graphique…" else "Historique indisponible",
                 fontSize = 12.sp, color = Muted)
-            val latest = points.lastOrNull()
             val open = points.firstOrNull()?.open
+            val high = points.mapNotNull { it.high }.maxOrNull()
+            val low = points.mapNotNull { it.low }.minOrNull()
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column { Caption("Open"); Text(number(open)) }
-                Column { Caption("High"); Text(number(latest?.high)) }
-                Column { Caption("Low"); Text(number(latest?.low)) }
+                Column { Caption("High"); Text(number(high)) }
+                Column { Caption("Low"); Text(number(low)) }
                 Column { Caption("Clôture préc."); Text(number(q?.previous)) }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
