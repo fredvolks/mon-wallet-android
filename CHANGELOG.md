@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.14 — 2026-10-07 (fil News et pipeline IA)
+
+- Nouvel onglet News interne avec « Pour moi », Canada, USA, Marchés et Toutes; articles sourcés des titres du portefeuille et des Watchlists, cache local, déduplication, filtre pour les nouvelles faibles, détails et résumés IA seulement lorsqu'une analyse backend existe.
+- Tables Supabase `news_articles` et `news_analysis` avec lecture publique et écriture réservée au service; fonctions `ingest-news` (FMP) et `analyze-news` (OpenAI Responses) déployées. Les clés restent côté backend. L'analyse ne fabrique pas de nouvelles ni de recommandations d'achat.
+- Les notifications News exigent une analyse HIGH/CRITICAL pertinente et un titre suivi; les titres bruts ne déclenchent plus d'alerte IA. Reprise des erreurs d'analyse avec délai et récupération des traitements interrompus.
+- Le flux FMP et l'analyse autonome exigent encore `FMP_API_KEY`, `OPENAI_API_KEY` et une planification côté Supabase; ces secrets ne sont pas configurés dans cette livraison. Les articles Yahoo des titres suivis restent identifiés comme source non officielle et ne sont jamais présentés comme analysés par l'IA.
+
 ## Mon Wallet v0.2.13 — 2026-10-07 (tableaux et widget 4x2)
 
 - Watchlist : dernière liste choisie sauvegardée dans les paramètres synchronisables; ordre manuel et ajout d'un titre écrits atomiquement dans Room. Un toucher ouvre un panneau rapide avec graphique et métriques réelles; la fiche complète reste accessible depuis ce panneau ou le menu.

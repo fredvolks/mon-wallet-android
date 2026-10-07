@@ -8,6 +8,7 @@ import ca.monwallet.app.data.*
 import ca.monwallet.app.database.Database
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.*
+import ca.monwallet.app.news.NewsRepository
 import ca.monwallet.app.notifications.*
 import ca.monwallet.app.sync.SyncManager
 import ca.monwallet.app.updates.Updater
@@ -56,6 +57,7 @@ class Services(val context: Context) {
     val auth = AuthManager(secure, repo)
     val sync = SyncManager(repo, auth)
     val market = Router(secure)
+    val news = NewsRepository(repo, market, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY)
     val discovery by lazy { Discovery(this) }
     val foregroundSecurities = MutableStateFlow<List<Security>>(emptyList())
     val updater = Updater(context, secure)
@@ -145,6 +147,8 @@ class Services(val context: Context) {
             marketStatus.value =
                 if (errors.get() == 0) "Cours actualisés · délai non garanti"
                 else "${errors.get()} cours indisponible(s) · cache conservé"
+            try { news.refresh(w) } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { /* The quote refresh and cached news remain usable. */ }
             runCatching { Notifications.evaluate(this) }
             if (notifyWidgets) WalletWidget.updateAll(context)
             if (auth.user.value != null) runCatching { sync.sync() }

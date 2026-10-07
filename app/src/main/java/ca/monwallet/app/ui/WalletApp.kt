@@ -152,6 +152,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             "markets" to R.string.nav_markets,
             "watchlist" to R.string.nav_watchlist,
             "discover" to R.string.nav_discover,
+            "news" to R.string.nav_news,
             "profile" to R.string.nav_profile,
         )
     val icons =
@@ -160,6 +161,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             Icons.Outlined.ShowChart,
             Icons.Outlined.StarOutline,
             Icons.Outlined.Explore,
+            Icons.Outlined.Article,
             Icons.Outlined.PersonOutline,
         )
     val onboarded = prefs["onboarded"] == "true" || user != null
@@ -291,6 +293,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                             }
                         }
                         composable("discover") { DiscoverScreen(vm) { detail(it) } }
+                        composable("news") { NewsScreen(w, vm) { detail(it) } }
                         composable("profile") { ProfileScreen(w, vm, biometric) }
                         composable("detail/{id}") { entry ->
                             val id = entry.arguments?.getString("id")

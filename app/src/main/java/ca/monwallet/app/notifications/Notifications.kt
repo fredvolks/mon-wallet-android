@@ -140,25 +140,29 @@ object Notifications {
                         }
                     }
             }
+            // Only a sourced backend analysis may authorize an IA notification.
             if (pref.news)
-                runCatching {
-                    s.market
-                        .news(security)
-                        .filter { System.currentTimeMillis() - it.timestamp < 24 * 3600_000L }
-                        .take(2)
-                        .forEach { n ->
-                            emit(
-                                s,
-                                AlertEvent(
-                                    securityId = security.id,
-                                    title = "${security.ticker} · ${n.source}",
-                                    body = n.title,
-                                    channel = "news",
-                                    eventKey = "news:${n.url}",
-                                ),
-                            )
-                        }
-                }
+                s.news.state.value.articles
+                    .filter { n ->
+                        val analysis = n.analysis
+                        analysis != null && analysis.notificationWorthy &&
+                            analysis.importance in setOf("HIGH", "CRITICAL") &&
+                            n.tickers.any { it.equals(security.symbol, ignoreCase = true) } &&
+                            System.currentTimeMillis() - n.publishedAt in 0..(48L * 3600_000)
+                    }
+                    .forEach { n ->
+                        emit(
+                            s,
+                            AlertEvent(
+                                securityId = security.id,
+                                title = "${security.ticker} · ${n.analysis?.importance} · ${n.source}",
+                                body = n.analysis?.summaryFr?.takeIf { it.isNotBlank() } ?: n.title,
+                                channel = "news",
+                                eventKey = "news:ia:${n.id}:${security.id}",
+                            ),
+                        )
+                    }
         }
     }
 }
+

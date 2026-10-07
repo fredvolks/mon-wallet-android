@@ -65,6 +65,7 @@
     <string name="nav_markets">Markets</string>
     <string name="nav_watchlist">Watchlist</string>
     <string name="nav_discover">Discover</string>
+    <string name="nav_news">News</string>
     <string name="nav_profile">Profile</string>
     <string name="nav_history">History</string>
     <string name="nav_reports">Reports</string>
