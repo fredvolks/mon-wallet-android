@@ -147,11 +147,12 @@ class Services(val context: Context) {
                         (!force && now - (reportHistoryAttempt[key] ?: 0L) < 90_000L))
                         return@withPermit FetchResult(security, cached.size, cachedCovered, null)
                     reportHistoryAttempt[key] = now
-                    var points = emptyList<Point>()
+                    var points = cached
                     var failure: String? = null
                     try {
                         try {
-                            points = market.history(security, range, "1d")
+                            val fresh = market.history(security, range, "1d")
+                            points = (points + fresh).distinctBy { it.date }.sortedBy { it.date }
                         } catch (cancelled: CancellationException) {
                             throw cancelled
                         } catch (error: Exception) {
