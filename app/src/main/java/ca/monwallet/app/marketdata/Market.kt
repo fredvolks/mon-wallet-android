@@ -408,6 +408,8 @@ class Twelve(private val key: String) : MarketDataProvider {
                 "1mo" -> 30
                 "3mo" -> 100
                 "6mo" -> 200
+                // Request enough daily bars to cover the current calendar year.
+                "ytd" -> java.time.LocalDate.now().dayOfYear + 5
                 "1y" -> 300
                 else -> 5000
             }
