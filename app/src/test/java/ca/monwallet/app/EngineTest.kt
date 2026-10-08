@@ -206,6 +206,19 @@ class EngineTest {
     }
 
     @Test
+    fun latestHistoricalCloseSuppliesMissingPreviousQuote() {
+        val security = Security("XEQT", "XEQT.TO", "XEQT", "TSX", "CAD")
+        val wallet = Wallet(
+            securities = listOf(security),
+            transactions = listOf(tx("10", "100", "2026-10-07")),
+            quotes = mapOf("XEQT" to Quote("XEQT", d("110"), null, "CAD",
+                0, "2026-10-08", "Test")),
+            prices = listOf(Point("XEQT", "2026-10-07", d("100"), 0)),
+        )
+        equal("100", wallet.result().day)
+    }
+
+    @Test
     fun dailyBuyFlowsNotProfit() {
         val r =
             Engine.calculate(
@@ -294,6 +307,18 @@ class EngineTest {
         val r=Engine.calculate(listOf(tx("10","100"),tx("10","105","2026-10-02",TxType.SELL)),
             mapOf("XEQT" to quote("106","100")))
         equal("50",r.day)
+    }
+
+    @Test fun mixedMarketSessionsKeepTheLatestPerSecurityDailyPnl() {
+        val transactions = listOf(
+            tx("10", "100", "2026-10-01", security = "XEQT"),
+            tx("10", "40", "2026-10-01", security = "VFV"),
+        )
+        val quotes = mapOf(
+            "XEQT" to Quote("XEQT", d("110"), d("100"), "CAD", 0, "2026-10-02", "Test"),
+            "VFV" to Quote("VFV", d("45"), d("40"), "CAD", 0, "2026-10-01", "Test"),
+        )
+        equal("150", Engine.calculate(transactions, quotes).day)
     }
 
     @Test fun staleFxDoesNotProduceDailyReturn() {

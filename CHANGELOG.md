@@ -1,5 +1,20 @@
 # Versions
 
+## Mon Wallet v0.2.21 — 2026-10-08 (rapports canadiens et Watchlists)
+
+- Finances : lorsqu’aucun fournisseur autorisé ne couvre une action canadienne, accès en un toucher aux rapports officiels gratuits sur SEDAR+. La recherche du titre se fait sur le site officiel; Mon Wallet ne récupère ni ne stocke les documents SEDAR+.
+- Watchlists : action de retrait libellée clairement « Retirer de cette Watchlist »; retirer enlève le titre de la liste sélectionnée sans toucher aux positions du portefeuille.
+- Transactions : accès « Transactions · modifier » dans le portefeuille et bouton « Modifier » visible sur chaque ligne; l’édition met à jour l’opération sans créer d’achat ou de vente.
+- Calendrier : compte les rendements chargés pour le mois et propose de recharger les clôtures historiques si aucun rendement n’est disponible.
+- Fiabilité : les lignes JSON locales mal formées sont ignorées afin qu’un cache invalide ne bloque pas l’ouverture du portefeuille.
+
+## Mon Wallet v0.2.20 — 2026-10-08 (P&L quotidien, édition et widget)
+
+- Widget : le P&L conserve la dernière performance de séance disponible quand les marchés ferment. Les portefeuilles avec des séances décalées additionnent les variations calculables sans inventer de cours manquant; une clôture historique complète un cours précédent absent du fournisseur.
+- Widget 4×2 : de 16 h à 9 h 30 (heure de Toronto), affiche les futures S&P 500, Nasdaq 100 et Dow Jones si les trois cours datent de moins de deux heures; sinon, affiche les indices au comptant.
+- Positions : modifier une entrée conserve son identifiant et son type, avec quantité, prix et date modifiables sans créer d’achat ou de vente. Les clôtures historiques sont actualisées après modification pour reconstruire le calendrier depuis l’entrée corrigée.
+- Données financières : couleurs vert/orange/rouge selon des seuils généraux de rentabilité, croissance, rendement des capitaux et frais de FNB. Les montants absolus et valorisations nécessitant un contexte sectoriel restent neutres.
+
 ## Mon Wallet v0.2.19 — 2026-10-08 (marchés, navigation et préférences)
 
 - Marchés : ajout d’un onglet Futures avec S&P 500 E-mini, NASDAQ 100 E-mini, Dow Jones E-mini et Russell 2000 E-mini. Les cours proviennent du fournisseur configuré et restent soumis à sa fraîcheur réelle.

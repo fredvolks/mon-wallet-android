@@ -37,6 +37,8 @@
     <string name="google_migration_skip">Later</string>
     <string name="finance_load_failed">Could not load financial data.</string>
     <string name="finance_no_coverage">No financial data available for this instrument from currently authorized sources.</string>
+    <string name="finance_official_reports">View free official reports on SEDAR+</string>
+    <string name="watchlist_remove_item">Remove from this watchlist</string>
     <string name="finance_open_external">View on %1$s</string>
     <string name="finance_updated_at">Last updated: %1$s</string>
     <string name="finance_annual">Annual</string>
@@ -68,6 +70,8 @@
     <string name="nav_news">News</string>
     <string name="nav_profile">Profile</string>
     <string name="nav_history">History</string>
+    <string name="portfolio_transaction_history">Transactions · edit</string>
+    <string name="transaction_edit_action">Edit</string>
     <string name="nav_reports">Reports</string>
     <string name="nav_security_detail">Security details</string>
     <string name="profile_guest">Guest mode</string>
@@ -499,4 +503,6 @@
     <string name="widget_logo">Holding logo</string>
     <string name="widget_edit">Edit</string>
     <string name="profile_widget_number">Widget %1$d</string>
+    <string name="financial_rating_help">Indicative reading: green = favorable, orange = watch, red = unfavorable. Absolute values stay neutral when sector context is needed.</string>
+    <string name="transaction_edit_in_place">Editing this existing entry; no new buy or sell will be created.</string>
 </resources>

@@ -1,0 +1,42 @@
+package ca.monwallet.app.widgets
+
+import ca.monwallet.app.data.Catalog
+import ca.monwallet.app.domain.Quote
+import ca.monwallet.app.domain.Wallet
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class WidgetIndexModeTest {
+    private val eastern = ZoneId.of("America/Toronto")
+    private fun at(hour: Int, minute: Int) =
+        ZonedDateTime.of(LocalDate.of(2026, 10, 8), LocalTime.of(hour, minute), eastern)
+
+    @Test fun futuresWindowStartsAtFourAndEndsAtNineThirtyEastern() {
+        assertFalse(WidgetIndexMode.isOvernightWindow(at(15, 59)))
+        assertTrue(WidgetIndexMode.isOvernightWindow(at(16, 0)))
+        assertTrue(WidgetIndexMode.isOvernightWindow(at(9, 29)))
+        assertFalse(WidgetIndexMode.isOvernightWindow(at(9, 30)))
+    }
+
+    @Test fun futuresAreShownOnlyWhenAllThreeQuotesAreFresh() {
+        val now = at(17, 0)
+        val quotes = Catalog.markets.filter { it.symbol in setOf("ES=F", "NQ=F", "YM=F") }
+            .associate { security ->
+                security.id to Quote(security.id, BigDecimal("100"), BigDecimal("99"),
+                    security.currency, now.toInstant().toEpochMilli(),
+                    now.toLocalDate().toString(), "Test")
+            }
+        assertTrue(WidgetIndexMode.useFutures(Wallet(quotes = quotes), now))
+        val stale = quotes.toMutableMap()
+        val security = Catalog.markets.first { it.symbol == "NQ=F" }
+        stale[security.id] = stale.getValue(security.id).copy(
+            timestamp = now.minusHours(3).toInstant().toEpochMilli())
+        assertFalse(WidgetIndexMode.useFutures(Wallet(quotes = stale), now))
+    }
+}

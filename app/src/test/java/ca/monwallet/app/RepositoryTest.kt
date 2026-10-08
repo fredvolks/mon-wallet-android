@@ -34,6 +34,25 @@ class RepositoryTest {
         repo.put("portfolio", it.id, it)
     }
 
+    @Test fun malformedLocalRowsDoNotBreakWalletLoading() {
+        val portfolio = Portfolio(name = "CELI")
+        val cacheRows = listOf(
+            ca.monwallet.app.database.Cache("quote:broken", "quote", "{", 1),
+            ca.monwallet.app.database.Cache("history:broken", "history", "not-json", 1),
+        )
+        val wallet = repo.decode(
+            listOf(
+                ca.monwallet.app.database.Record("broken", "guest", "portfolio", "{", 1, 1),
+                ca.monwallet.app.database.Record("valid", "guest", "portfolio",
+                    repo.gson.toJson(portfolio.copy(id = "valid")), 1, 1),
+            ),
+            cacheRows,
+        )
+        assertEquals(listOf("valid"), wallet.portfolios.map { it.id })
+        assertTrue(wallet.quotes.isEmpty())
+        assertTrue(wallet.prices.isEmpty())
+    }
+
     @Test fun freshGuestStartsEmpty() = runBlocking {
         assertTrue(repo.current().portfolios.isEmpty())
         assertTrue(repo.current().watchlists.isEmpty())

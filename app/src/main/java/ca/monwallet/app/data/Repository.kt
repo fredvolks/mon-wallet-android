@@ -30,14 +30,39 @@ class Repository(val db: Database, val scope: CoroutineScope) {
 
     fun decode(records: List<Record>, cache: List<Cache>): Wallet {
         val alive = records.filter { it.deletedAt == null }
-        fun <T> rows(kind: String, c: Class<T>) =
-            alive.filter { it.kind == kind }.map { gson.fromJson(it.payload, c) }
+        // Room data and synced payloads can outlive app versions. A malformed row must not
+        // terminate the StateFlow collector and leave the whole app stuck on startup.
+        fun <T : Any> rows(kind: String, c: Class<T>): List<T> =
+            alive.asSequence()
+                .filter { it.kind == kind }
+                .mapNotNull { row ->
+                    runCatching { gson.fromJson(row.payload, c) }
+                        .getOrNull()
+                        ?.takeIf { value ->
+                            runCatching {
+                                val id = c.getDeclaredField("id").apply { isAccessible = true }
+                                    .get(value) as? String
+                                id?.let { it == row.id && it.isNotBlank() } == true
+                            }.getOrDefault(false)
+                        }
+                }
+                .toList()
         val quotes =
-            cache.filter { it.kind == "quote" }.map { gson.fromJson(it.payload, Quote::class.java) }
+            cache.asSequence().filter { it.kind == "quote" }.mapNotNull { row ->
+                runCatching { gson.fromJson(row.payload, Quote::class.java) }
+                    .getOrNull()
+                    ?.takeIf { it.securityId.isNotBlank() && it.securityId == row.id }
+            }.toList()
         val points =
-            cache
-                .filter { it.kind == "history" }
-                .flatMap { gson.fromJson(it.payload, Array<Point>::class.java).toList() }
+            cache.asSequence().filter { it.kind == "history" }.flatMap { row ->
+                runCatching { gson.fromJson(row.payload, Array<Point>::class.java).toList() }
+                    .getOrDefault(emptyList())
+                    .asSequence()
+                    .filter { point ->
+                        point.securityId.isNotBlank() &&
+                            runCatching { java.time.LocalDate.parse(point.date) }.isSuccess
+                    }
+            }.toList()
         return Wallet(
             rows("portfolio", Portfolio::class.java),
             (Catalog.all + rows("security", Security::class.java))
