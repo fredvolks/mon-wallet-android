@@ -68,7 +68,9 @@ internal fun reportHistoryHasCoverage(points: List<Point>, first: LocalDate, tod
         if (date < latestClose) date.plusDays(1) else null
     }.count { it <= latestClose && it.dayOfWeek.value <= 5 }
     // On the purchase date itself, one dated quote is enough to value the new position.
-    val minimum = if (first == today) 1 else maxOf(2, kotlin.math.ceil(weekdays * 0.60).toInt())
+    // 60% allowed several missing sessions per symbol. The calendar then had no
+    // common dated closes across the whole portfolio even when every symbol passed.
+    val minimum = if (first == today) 1 else maxOf(2, kotlin.math.ceil(weekdays * 0.80).toInt())
     return dates.size >= minimum
 }
 
