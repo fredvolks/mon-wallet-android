@@ -146,7 +146,7 @@ class Services(val context: Context) {
                     val firstNeeded = relevantTransactions.minOfOrNull { LocalDate.parse(it.date) } ?: portfolioStart
                     val requiredForReports = security.id in ids || isFx
                     val range = reportHistoryRange(firstNeeded, today)
-                    val key = "${security.id}:$range:${related.hashCode()}"
+                    val key = "${security.id}:$range:${relevantTransactions.hashCode()}"
                     val now = System.currentTimeMillis()
                     val cached = wallet.prices.filter { it.securityId == security.id }
                     val cachedCovered = !requiredForReports ||
