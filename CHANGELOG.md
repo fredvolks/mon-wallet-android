@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.37 — 2026-10-08 (rendement par période et prix sur le graphique)
+
+- Fiche titre : la variation affichée suit la période sélectionnée dans le graphique, calculée entre le premier cours affiché et le cours actuel; 1J conserve la variation quotidienne.
+- Ajout de YTD (depuis le début de l’année) aux périodes du graphique, avec historique adapté aux sources Yahoo et Twelve Data.
+- Échelle de prix visible à droite du graphique, avec valeurs formatées en français canadien.
+
 ## Mon Wallet v0.2.36 — 2026-10-08 (graphique P&L vert/rouge)
 
 - Widget 4×2 : le graphique intrajournalier devient vert lorsque le P&L est positif et rouge lorsqu’il est négatif; la couleur bascule précisément au passage de zéro.
