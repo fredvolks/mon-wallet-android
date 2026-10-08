@@ -119,6 +119,18 @@ class ReportEngineTest {
         assertTrue(reportHistoryHasCoverage(closes, first, today))
     }
 
+    @Test fun scatteredTickerClosesDoNotCountAsCompleteHistory() {
+        val first = LocalDate.parse("2026-10-01")
+        val today = LocalDate.parse("2026-10-08")
+        val fourOfSixWeekdays = listOf(
+            point(cad, "2026-10-01", "100"), point(cad, "2026-10-02", "101"),
+            point(cad, "2026-10-07", "104"), point(cad, "2026-10-08", "105"),
+        )
+        val fiveOfSixWeekdays = fourOfSixWeekdays + point(cad, "2026-10-05", "102")
+        assertFalse(reportHistoryHasCoverage(fourOfSixWeekdays, first, today))
+        assertTrue(reportHistoryHasCoverage(fiveOfSixWeekdays, first, today))
+    }
+
     @Test fun sameDayPurchaseNeedsOnlyItsDatedQuoteForCalendarCoverage() {
         val today = LocalDate.parse("2026-10-08")
         assertTrue(reportHistoryHasCoverage(listOf(point(cad, today.toString(), "100")), today, today))
