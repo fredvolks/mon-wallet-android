@@ -71,6 +71,8 @@
     <string name="nav_news">News</string>
     <string name="nav_profile">Profil</string>
     <string name="nav_history">Historique</string>
+    <string name="portfolio_transaction_history">Transactions · modifier</string>
+    <string name="transaction_edit_action">Modifier</string>
     <string name="nav_reports">Rapports</string>
     <string name="nav_security_detail">Fiche du titre</string>
     <string name="profile_guest">Mode invité</string>
