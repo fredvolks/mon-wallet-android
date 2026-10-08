@@ -130,7 +130,7 @@ object Engine {
                     quote?.let { transaction.date > it.sessionDate } == true
                 else latestSession?.let { transaction.date > it } == true
             }
-            if (lateTrade) combined.copy(day = null, dayBase = null) else combined
+            return if (lateTrade) combined.copy(day = null, dayBase = null) else combined
         }
         val l = ledger(tx)
         val holdings =
