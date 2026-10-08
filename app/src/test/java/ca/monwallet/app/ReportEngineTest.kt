@@ -119,6 +119,11 @@ class ReportEngineTest {
         assertTrue(reportHistoryHasCoverage(closes, first, today))
     }
 
+    @Test fun sameDayPurchaseNeedsOnlyItsDatedQuoteForCalendarCoverage() {
+        val today = LocalDate.parse("2026-10-08")
+        assertTrue(reportHistoryHasCoverage(listOf(point(cad, today.toString(), "100")), today, today))
+    }
+
     @Test fun reportHistoryRefreshUsesSuccessfulFetchAgeForThrottle() {
         assertTrue(reportHistoryRefreshDue(force = false, lastSuccessfulRefresh = null, nowMillis = 1_000L))
         assertFalse(reportHistoryRefreshDue(force = false, lastSuccessfulRefresh = 1_000L,
