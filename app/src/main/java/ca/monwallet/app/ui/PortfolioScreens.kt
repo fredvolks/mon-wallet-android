@@ -242,7 +242,7 @@ fun PortfolioScreen(
                 TextButton(onClick = onHistory) {
                     Icon(Icons.Outlined.History, null, Modifier.size(17.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.ui_historique_34f3a))
+                    Text(stringResource(R.string.portfolio_transaction_history))
                 }
                 TextButton(onClick = onReports) {
                     Icon(Icons.Outlined.BarChart, null, Modifier.size(17.dp))
