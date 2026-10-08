@@ -393,7 +393,7 @@ fun WatchlistScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.ui_retirer_54ec2)) },
+                                text = { Text(stringResource(R.string.watchlist_remove_item)) },
                                 onClick = {
                                     open = false
                                     vm.run { vm.services.repo.remove(item.id) }

@@ -1,5 +1,13 @@
 # Versions
 
+## Mon Wallet v0.2.21 — 2026-10-08 (rapports canadiens et Watchlists)
+
+- Finances : lorsqu’aucun fournisseur autorisé ne couvre une action canadienne, accès en un toucher aux rapports officiels gratuits sur SEDAR+. La recherche du titre se fait sur le site officiel; Mon Wallet ne récupère ni ne stocke les documents SEDAR+.
+- Watchlists : action de retrait libellée clairement « Retirer de cette Watchlist »; retirer enlève le titre de la liste sélectionnée sans toucher aux positions du portefeuille.
+- Transactions : accès « Transactions · modifier » dans le portefeuille et bouton « Modifier » visible sur chaque ligne; l’édition met à jour l’opération sans créer d’achat ou de vente.
+- Calendrier : compte les rendements chargés pour le mois et propose de recharger les clôtures historiques si aucun rendement n’est disponible.
+- Fiabilité : les lignes JSON locales mal formées sont ignorées afin qu’un cache invalide ne bloque pas l’ouverture du portefeuille.
+
 ## Mon Wallet v0.2.20 — 2026-10-08 (P&L quotidien, édition et widget)
 
 - Widget : le P&L conserve la dernière performance de séance disponible quand les marchés ferment. Les portefeuilles avec des séances décalées additionnent les variations calculables sans inventer de cours manquant; une clôture historique complète un cours précédent absent du fournisseur.

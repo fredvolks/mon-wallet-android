@@ -21,6 +21,7 @@ import ca.monwallet.app.database.Cache
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.Finnhub
 import ca.monwallet.app.marketdata.NoFinancialCoverage
+import ca.monwallet.app.marketdata.FinancialSymbolResolver
 import ca.monwallet.app.marketdata.NormalizedQuote
 import ca.monwallet.app.marketdata.MarketSession
 import ca.monwallet.app.marketdata.quoteFreshnessLabel
@@ -346,8 +347,17 @@ fun DetailScreen(
                         Caption(financeError.orEmpty())
                         TextButton(onClick = { financeRetry++ }) { Text(stringResource(R.string.action_retry)) }
                     }
-                    if (!financeLoading && fundamentals == null && (financeNoData || financeError == null))
+                    if (!financeLoading && fundamentals == null && (financeNoData || financeError == null)) {
                         Caption(stringResource(R.string.finance_no_coverage))
+                        if (security.type.uppercase() != "ETF" &&
+                            FinancialSymbolResolver.resolve(security)?.market == "CANADA") {
+                            TextButton(onClick = {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.sedarplus.com")))
+                            }) {
+                                Text(stringResource(R.string.finance_official_reports))
+                            }
+                        }
+                    }
                     fundamentals?.asOf?.let { Caption(stringResource(R.string.finance_as_of, it)) }
                 }
                 val metrics =
