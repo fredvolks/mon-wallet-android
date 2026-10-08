@@ -105,6 +105,16 @@ class ReportEngineTest {
         approx("1100", ReportEngine.history(revised).last().closingValue)
     }
 
+    @Test fun reportHistoryRefreshUsesSuccessfulFetchAgeForThrottle() {
+        assertTrue(reportHistoryRefreshDue(force = false, lastSuccessfulRefresh = null, nowMillis = 1_000L))
+        assertFalse(reportHistoryRefreshDue(force = false, lastSuccessfulRefresh = 1_000L,
+            nowMillis = 1_000L + 60 * 60_000L))
+        assertTrue(reportHistoryRefreshDue(force = false, lastSuccessfulRefresh = 1_000L,
+            nowMillis = 1_000L + 6 * 60 * 60_000L))
+        assertTrue(reportHistoryRefreshDue(force = true, lastSuccessfulRefresh = 1_000L,
+            nowMillis = 2_000L))
+    }
+
     @Test fun backdatedPurchaseMovesCalendarStartAndRequiresOlderCloses() {
         val today = LocalDate.of(2026, 10, 7)
         assertEquals("1mo", reportHistoryRange(today.minusDays(6), today))

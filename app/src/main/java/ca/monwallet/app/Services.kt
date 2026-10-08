@@ -16,7 +16,6 @@ import ca.monwallet.app.widgets.WalletWidget
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.time.LocalDate
-import java.time.DayOfWeek
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +53,10 @@ open class MonWallet : Application() {
 }
 
 /** Fetch far enough back to include an edited or backdated purchase. */
+internal fun reportHistoryRefreshDue(force: Boolean, lastSuccessfulRefresh: Long?, nowMillis: Long): Boolean =
+    force || lastSuccessfulRefresh == null ||
+        nowMillis - lastSuccessfulRefresh >= 6 * 60 * 60_000L
+
 internal fun reportHistoryRange(first: LocalDate, today: LocalDate): String =
     when (ChronoUnit.DAYS.between(first, today).coerceAtLeast(0L)) {
         in 0..25 -> "1mo"
@@ -85,7 +88,9 @@ class Services(val context: Context) {
     private val recentQuotes = ConcurrentHashMap<String, Quote>()
     private val reportHistoryRefresh = ConcurrentHashMap<String, Long>()
 
-    /** Fetch only real daily closes needed by Reports. Retain older cached closes on errors. */
+    /** Fetch real daily closes for Reports. Cached endpoints alone cannot prove that
+     * every session between the first trade and the latest close is present. Retain cached
+     * closes on errors and retry at most every six hours unless forced. */
     suspend fun refreshReportHistory(portfolioId: String?, force: Boolean = false) {
         val wallet = repo.current()
         val transactions = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
@@ -106,20 +111,9 @@ class Services(val context: Context) {
                         ?: portfolioStart
                     val range = reportHistoryRange(firstNeeded, today)
                     val key = "${security.id}:$range:${related.hashCode()}"
-                    val existing = wallet.prices.filter { it.securityId == security.id }
-                    val earliestNeeded = firstNeeded
-                    val missingTransactionClose = related.any { transaction ->
-                        val day = LocalDate.parse(transaction.date)
-                        day < today && day.dayOfWeek !in
-                            setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) &&
-                            existing.none { it.date == transaction.date }
-                    }
-                    val covered = existing.size >= 2 &&
-                        existing.any { it.date <= earliestNeeded.plusDays(7).toString() } &&
-                        existing.any { it.date >= today.minusDays(7).toString() } &&
-                        !missingTransactionClose
                     val now = System.currentTimeMillis()
-                    if (!force && (covered || now - (reportHistoryRefresh[key] ?: 0L) < 6 * 60 * 60_000L))
+                    val lastSuccessfulRefresh = reportHistoryRefresh[key]
+                    if (!reportHistoryRefreshDue(force, lastSuccessfulRefresh, now))
                         return@withPermit
                     try {
                         val fresh = market.history(security, range, "1d")
