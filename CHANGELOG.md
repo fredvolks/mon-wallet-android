@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.36 — 2026-10-08 (graphique P&L vert/rouge)
+
+- Widget 4×2 : le graphique intrajournalier devient vert lorsque le P&L est positif et rouge lorsqu’il est négatif; la couleur bascule précisément au passage de zéro.
+- La ligne et le remplissage suivent le signe réel du P&L quotidien dans la tuile Daily.
+
+
 ## Mon Wallet v0.2.32 — 2026-10-08 (P&L quotidien centré dans le widget)
 
 - Widget 4×2 : centre le montant et le pourcentage du P&L quotidien dans le panneau Daily.
