@@ -71,16 +71,30 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val reportHistoryStatus by vm.services.reportHistoryStatus.collectAsState()
-    val snapshots by produceState(emptyList<PortfolioDailySnapshot>(), w.transactions, w.prices, selected) {
-        value = withContext(Dispatchers.Default) { runCatching {
-            ReportEngine.history(w, selected)
-        }.getOrDefault(emptyList()) }
-    }
+    var historyRevision by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(false) }
+    val snapshots by produceState(emptyList<PortfolioDailySnapshot>(),
+        w.transactions, w.prices, selected, historyRevision) {
+        // Read Room after a history download completes. The report must calculate from the
+        // persisted cache even if the parent wallet flow has not emitted its next frame yet.
+        val latestWallet = withContext(Dispatchers.IO) {
+            runCatching { vm.services.repo.current() }.getOrDefault(w)
+        }
+        value = withContext(Dispatchers.Default) {
+            runCatching { ReportEngine.history(latestWallet, selected) }.getOrDefault(emptyList())
+        }
+    }
+    fun refreshHistory(force: Boolean = false) {
+        vm.run {
+            loading = true
+            try { vm.services.refreshReportHistory(selected, force) }
+            finally { loading = false; historyRevision++ }
+        }
+    }
     LaunchedEffect(selected, range, w.transactions) {
         loading = true
         try { vm.services.refreshReportHistory(selected)
-        } finally { loading = false }
+        } finally { loading = false; historyRevision++ }
     }
     val summary = remember(w.transactions, w.prices, selected, range, snapshots) {
         ReportEngine.summary(w, snapshots, range, portfolioId = selected)
@@ -120,7 +134,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { vm.run { vm.services.refreshReportHistory(selected, true) } }) {
+                TextButton(onClick = { refreshHistory(force = true) }) {
                     Text("↻ Actualiser", color = Blue, fontSize = 12.sp)
                 }
                 TextButton(onClick = { csvLauncher.launch("MonWallet-Rapports-${LocalDate.now()}.csv") }) {
@@ -165,7 +179,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                     w.transactions.filter { selected == null || it.portfolioId == selected },
                     month, { month = it; vm.run { vm.services.repo.setting("reports_month", month.toString()) } },
                     refreshing = loading,
-                    onRefresh = { vm.run { vm.services.refreshReportHistory(selected, true) } }) }
+                    onRefresh = { refreshHistory(force = true) }) }
                 item { ReportMonthYear(snapshots) }
             }
             3 -> item { ReportAllocation(w, selected, current) }
