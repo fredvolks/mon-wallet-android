@@ -234,4 +234,21 @@ class ReportEngineTest {
         assertTrue(withLaterDeposit!! > ZERO && withLaterDeposit < bd("10"))
         assertNull(ReportEngine.xirr(emptyList(), end, bd("1100")))
     }
+
+    @Test fun oldClosesCannotHideMissingSessionsInTheCalendarMonth() {
+        val first = LocalDate.parse("2026-08-01")
+        val today = LocalDate.parse("2026-10-08")
+        val oldCloses = generateSequence(first) { date ->
+            if (date < today.minusDays(7)) date.plusDays(1) else null
+        }.filter { it.dayOfWeek.value <= 5 }
+            .map { point(cad, it.toString(), "100") }.toList()
+        val sparseRecent = oldCloses + point(cad, today.toString(), "100")
+        assertFalse(reportHistoryHasCoverage(sparseRecent, first, today))
+
+        val complete = generateSequence(first) { date ->
+            if (date < today) date.plusDays(1) else null
+        }.filter { it.dayOfWeek.value <= 5 }
+            .map { point(cad, it.toString(), "100") }.toList()
+        assertTrue(reportHistoryHasCoverage(complete, first, today))
+    }
 }
