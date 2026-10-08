@@ -408,8 +408,8 @@ class Twelve(private val key: String) : MarketDataProvider {
                 "1mo" -> 30
                 "3mo" -> 100
                 "6mo" -> 200
-                // Request enough daily bars to cover the current calendar year.
-                "ytd" -> java.time.LocalDate.now().dayOfYear + 5
+                // Estimate trading sessions since Jan 1, with a buffer for holidays.
+                "ytd" -> (java.time.LocalDate.now().dayOfYear * 5 / 7) + 20
                 "1y" -> 300
                 else -> 5000
             }
@@ -421,7 +421,7 @@ class Twelve(private val key: String) : MarketDataProvider {
                 "1mo" -> "1month"
                 else -> "1day"
             }
-        return get(
+        val points = get(
                 "time_series",
                 mapOf(
                     "symbol" to symbol(s),
@@ -447,6 +447,10 @@ class Twelve(private val key: String) : MarketDataProvider {
                     o.number("open"), o.number("high"), o.number("low"), o.number("volume"))
             }
             ?.reversed() ?: emptyList()
+        return if (range == "ytd") {
+            val yearStart = LocalDate.now().withDayOfYear(1).toString()
+            points.filter { it.date >= yearStart }
+        } else points
     }
 
     override suspend fun search(q: String) =
