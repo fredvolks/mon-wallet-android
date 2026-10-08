@@ -64,7 +64,9 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                     onProgress = { status = it }, applyFilters = mode == "analyst")
             else found
             status = rows.size.toString() + " titres · " +
-                (if (vm.services.secure.get("fmp_key").isNullOrBlank())
+                (if (tab == 3 && vm.services.secure.get("fmp_key").isNullOrBlank())
+                    "sélection gratuite de grandes actions liquides · "
+                else if (vm.services.secure.get("fmp_key").isNullOrBlank())
                     "sélection limitée (catalogue et titres suivis) · "
                 else "échantillon FMP de 50 par bourse · ") +
                 if (mode == "analyst") "couverture analystes US selon disponibilité" else "cours non garantis temps réel"
