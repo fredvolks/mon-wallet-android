@@ -182,6 +182,22 @@ class Services(val context: Context) {
                                 }
                             }
                         }
+                        // The selected provider may return a non-empty but truncated series.
+                        // Retry directly against the free Yahoo chart source before accepting gaps.
+                        if (!covered) {
+                            try {
+                                val yahooRange = reportHistoryFallbackRange(range) ?: range
+                                val yahooPoints = Yahoo().history(security, yahooRange, "1d")
+                                points = (points + yahooPoints).distinctBy { it.date }.sortedBy { it.date }
+                                covered = !requiredForReports ||
+                                    reportHistoryHasCoverage(points, firstNeeded, today)
+                                if (covered) failure = null
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (error: Exception) {
+                                failure = error.message?.take(90) ?: error::class.java.simpleName
+                            }
+                        }
                         if (points.isNotEmpty()) repo.points(security.id, points)
                         if (covered && points.isNotEmpty()) reportHistoryRefresh[key] = now
                         return@withPermit FetchResult(security, points.size, covered,
