@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 class CalendarHistoryNetworkTest {
     @Test fun canadianMcdCdrClosesProduceDailyCalendarPnl() = runBlocking {
         val security = Security.of(
-            "MCD.TO", "McDonald's CDR", "Cboe Canada", "CAD",
+            "MCD-C", "McDonald's CDR", "TSX", "CAD",
         )
         val first = LocalDate.parse("2026-10-01")
         val last = LocalDate.parse("2026-10-07")
