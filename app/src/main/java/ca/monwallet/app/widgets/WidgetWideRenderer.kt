@@ -185,9 +185,8 @@ internal object WidgetWideRenderer {
         val chartVisible = chartSeries.size >= 2
         views.setViewVisibility(R.id.widget_chart, if (chartVisible) View.VISIBLE else View.GONE)
         if (chartVisible) {
-            val up = (result?.day?.signum() ?: 0) >= 0
             views.setImageViewBitmap(R.id.widget_chart,
-                WidgetChartData.bitmap(chartSeries, up, width = 720, height = 220))
+                WidgetChartData.bitmap(chartSeries, width = 720, height = 220))
         }
 
         views.removeAllViews(R.id.widget_rows)
