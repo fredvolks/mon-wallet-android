@@ -38,6 +38,8 @@
     <string name="google_migration_skip">Plus tard</string>
     <string name="finance_load_failed">Impossible de charger les données financières.</string>
     <string name="finance_no_coverage">Aucune donnée financière disponible pour cet instrument avec les sources autorisées actuelles.</string>
+    <string name="finance_official_reports">Consulter gratuitement les rapports officiels sur SEDAR+</string>
+    <string name="watchlist_remove_item">Retirer de cette Watchlist</string>
     <string name="finance_open_external">Consulter sur %1$s</string>
     <string name="finance_updated_at">Dernière mise à jour : %1$s</string>
     <string name="finance_annual">Annuel</string>
