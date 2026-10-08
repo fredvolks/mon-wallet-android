@@ -62,6 +62,10 @@ interface MarketDataProvider {
     suspend fun news(s: Security): List<News>
 }
 
+/** Yahoo uses ZMCD.NE for the Canadian McDonald's CDR; keep the app's original holding symbol. */
+internal fun yahooDataSymbol(symbol: String): String =
+    if (symbol.equals("MCD.NE", ignoreCase = true)) "ZMCD.NE" else symbol
+
 class Yahoo : MarketDataProvider {
     override val name = "Yahoo Finance · non officiel"
 
@@ -76,7 +80,7 @@ class Yahoo : MarketDataProvider {
     private suspend fun chart(s: Security, range: String, interval: String,
         includePrePost: Boolean = false) =
         get(
-                "/v8/finance/chart/" + java.net.URLEncoder.encode(s.symbol, "UTF-8"),
+                "/v8/finance/chart/" + java.net.URLEncoder.encode(yahooDataSymbol(s.symbol), "UTF-8"),
                 mapOf("range" to range, "interval" to interval,
                     "includePrePost" to includePrePost.toString()),
             )
@@ -129,7 +133,7 @@ class Yahoo : MarketDataProvider {
             "interval" to "1d",
             "includePrePost" to "false",
         )
-        val c = get("/v8/finance/chart/" + java.net.URLEncoder.encode(s.symbol, "UTF-8"), params)
+        val c = get("/v8/finance/chart/" + java.net.URLEncoder.encode(yahooDataSymbol(s.symbol), "UTF-8"), params)
             .getJSONObject("chart").optJSONArray("result")?.optJSONObject(0)
             ?: error("Cours historiques indisponibles pour ${s.symbol}.")
         return historyPoints(s, c)
