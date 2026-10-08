@@ -1,0 +1,12 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="210dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="100dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="3"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/wallet_widget_lockscreen_initial"
+    android:initialKeyguardLayout="@layout/wallet_widget_lockscreen_initial"
+    android:widgetCategory="home_screen|keyguard"/>
