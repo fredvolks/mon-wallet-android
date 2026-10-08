@@ -2,12 +2,18 @@ name: Signed release
 on:
   push:
     tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version, for example 0.2.19'
+        required: true
+        type: string
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions: {contents: write}
     env:
-      TAG: ${{ github.ref_name }}
+      TAG: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.release_version) || github.ref_name }}
       MONWALLET_STORE_FILE: ${{ github.workspace }}/monwallet-release.jks
       MONWALLET_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       MONWALLET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -21,9 +27,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '17'}
-      # ubuntu-latest includes Android SDK Platform 35 and Build Tools 35.0.0.
       - uses: gradle/actions/setup-gradle@v4
-      - name: Check tag and restore key
+      - name: Check version and restore signing key
         id: version
         shell: bash
         run: |
@@ -38,6 +43,16 @@ jobs:
           test -n "$KEYSTORE_B64" && test -n "$MONWALLET_STORE_PASSWORD" && test -n "$MONWALLET_KEY_ALIAS" && test -n "$MONWALLET_KEY_PASSWORD"
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$MONWALLET_STORE_FILE"
           chmod 600 "$MONWALLET_STORE_FILE"
+      - name: Create tag for manually requested release
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+            echo "Tag $TAG already exists" >&2
+            exit 1
+          fi
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "$TAG"
       - name: Test and build signed APK and AAB
         run: ./gradlew :app:testDebugUnitTest :app:assembleRelease :app:bundleRelease -PversionCode=${{ steps.version.outputs.code }} -PversionName=${{ steps.version.outputs.name }} --no-build-cache --no-daemon
       - name: Verify and package
