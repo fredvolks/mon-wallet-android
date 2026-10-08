@@ -70,6 +70,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val reportHistoryStatus by vm.services.reportHistoryStatus.collectAsState()
     val snapshots by produceState(emptyList<PortfolioDailySnapshot>(), w.transactions, w.prices, selected) {
         value = withContext(Dispatchers.Default) { runCatching {
             ReportEngine.history(w, selected)
@@ -132,6 +133,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
                 vm.run { vm.services.repo.setting("reports_range", range.name) }
             }
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Green)
+            if (reportHistoryStatus.isNotBlank()) Caption(reportHistoryStatus)
         }
         when (tab) {
             0 -> {

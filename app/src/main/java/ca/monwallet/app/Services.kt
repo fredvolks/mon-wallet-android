@@ -57,6 +57,31 @@ internal fun reportHistoryRefreshDue(force: Boolean, lastSuccessfulRefresh: Long
     force || lastSuccessfulRefresh == null ||
         nowMillis - lastSuccessfulRefresh >= 6 * 60 * 60_000L
 
+internal fun reportHistoryHasCoverage(points: List<Point>, first: LocalDate, today: LocalDate): Boolean {
+    val dates = points.mapNotNull { runCatching { LocalDate.parse(it.date) }.getOrNull() }
+        .filter { it >= first && it <= today }.distinct().sorted()
+    if (dates.isEmpty()) return false
+    val firstClose = dates.first()
+    val latestClose = dates.last()
+    if (firstClose > first.plusDays(7) || latestClose < today.minusDays(7)) return false
+    val weekdays = generateSequence(firstClose) { date ->
+        if (date < latestClose) date.plusDays(1) else null
+    }.count { it <= latestClose && it.dayOfWeek.value <= 5 }
+    val minimum = maxOf(2, kotlin.math.ceil(weekdays * 0.60).toInt())
+    return dates.size >= minimum
+}
+
+internal fun reportHistoryFallbackRange(range: String): String? = when (range) {
+    "1mo" -> "3mo"
+    "3mo" -> "6mo"
+    "6mo" -> "1y"
+    "1y" -> "2y"
+    "2y" -> "5y"
+    "5y" -> "10y"
+    "10y" -> "max"
+    else -> null
+}
+
 internal fun reportHistoryRange(first: LocalDate, today: LocalDate): String =
     when (ChronoUnit.DAYS.between(first, today).coerceAtLeast(0L)) {
         in 0..25 -> "1mo"
@@ -87,6 +112,8 @@ class Services(val context: Context) {
     private val quoteLocks = ConcurrentHashMap<String, Mutex>()
     private val recentQuotes = ConcurrentHashMap<String, Quote>()
     private val reportHistoryRefresh = ConcurrentHashMap<String, Long>()
+    private val reportHistoryAttempt = ConcurrentHashMap<String, Long>()
+    val reportHistoryStatus = MutableStateFlow("")
 
     /** Fetch real daily closes for Reports. Cached endpoints alone cannot prove that
      * every session between the first trade and the latest close is present. Retain cached
@@ -94,41 +121,83 @@ class Services(val context: Context) {
     suspend fun refreshReportHistory(portfolioId: String?, force: Boolean = false) {
         val wallet = repo.current()
         val transactions = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
-        val ids = transactions
-            .mapNotNull { it.securityId }.toSet()
+        val ids = transactions.mapNotNull { it.securityId }.toSet()
         val benchmarks = (Catalog.markets.filter { it.symbol in
             setOf("^GSPC", "^IXIC", "^GSPTSE", "CAD=X") } +
             Catalog.stocks.filter { it.symbol == "XEQT.TO" })
         val securities = (wallet.securities.filter { it.id in ids } + benchmarks).distinctBy { it.id }
         val today = LocalDate.now()
         val portfolioStart = transactions.minOfOrNull { LocalDate.parse(it.date) } ?: today
-        val gate = Semaphore(3)
-        supervisorScope {
+        val gate = Semaphore(2)
+        reportHistoryStatus.value = "Chargement des clôtures historiques…"
+        data class FetchResult(val security: Security, val points: Int, val covered: Boolean,
+            val error: String?)
+        val fetched = supervisorScope {
             securities.map { security -> async {
                 gate.withPermit {
                     val related = transactions.filter { it.securityId == security.id }
-                    val firstNeeded = related.minOfOrNull { LocalDate.parse(it.date) }
-                        ?: portfolioStart
+                    val firstNeeded = related.minOfOrNull { LocalDate.parse(it.date) } ?: portfolioStart
                     val range = reportHistoryRange(firstNeeded, today)
                     val key = "${security.id}:$range:${related.hashCode()}"
                     val now = System.currentTimeMillis()
-                    val lastSuccessfulRefresh = reportHistoryRefresh[key]
-                    if (!reportHistoryRefreshDue(force, lastSuccessfulRefresh, now))
-                        return@withPermit
+                    val cached = wallet.prices.filter { it.securityId == security.id }
+                    val cachedCovered = related.isEmpty() ||
+                        reportHistoryHasCoverage(cached, firstNeeded, today)
+                    if (!reportHistoryRefreshDue(force, reportHistoryRefresh[key], now) ||
+                        (!force && now - (reportHistoryAttempt[key] ?: 0L) < 90_000L))
+                        return@withPermit FetchResult(security, cached.size, cachedCovered, null)
+                    reportHistoryAttempt[key] = now
+                    var points = cached
+                    var failure: String? = null
                     try {
-                        val fresh = market.history(security, range, "1d")
-                        if (fresh.isNotEmpty()) {
-                            // Repository merges closes with any longer history already cached.
-                            repo.points(security.id, fresh)
-                            reportHistoryRefresh[key] = now
+                        try {
+                            val fresh = market.history(security, range, "1d")
+                            points = (points + fresh).distinctBy { it.date }.sortedBy { it.date }
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            failure = error.message?.take(90) ?: error::class.java.simpleName
                         }
+                        var covered = related.isEmpty() || reportHistoryHasCoverage(points, firstNeeded, today)
+                        if (!covered) {
+                            val fallback = reportHistoryFallbackRange(range)
+                            if (fallback != null) {
+                                try {
+                                    val retry = market.history(security, fallback, "1d")
+                                    points = (points + retry).distinctBy { it.date }.sortedBy { it.date }
+                                    covered = reportHistoryHasCoverage(points, firstNeeded, today)
+                                    if (covered) failure = null
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (error: Exception) {
+                                    failure = error.message?.take(90) ?: error::class.java.simpleName
+                                }
+                            }
+                        }
+                        if (points.isNotEmpty()) repo.points(security.id, points)
+                        if (covered && points.isNotEmpty()) reportHistoryRefresh[key] = now
+                        return@withPermit FetchResult(security, points.size, covered,
+                            if (covered) null else failure ?: "historique partiel")
                     } catch (cancelled: CancellationException) {
                         throw cancelled
-                    } catch (_: Exception) {
-                        // Failed requests remain retryable; never replace a real close.
+                    } catch (error: Exception) {
+                        FetchResult(security, points.size, false,
+                            error.message?.take(90) ?: error::class.java.simpleName)
                     }
                 }
             } }.awaitAll()
+        }
+        val required = fetched.filter { it.security.id in ids }
+        val good = required.count { it.covered && it.points > 0 }
+        val totalPoints = required.sumOf { it.points }
+        val incomplete = required.filterNot { it.covered && it.points > 0 }
+            .map { it.security.symbol + (it.error?.let { e -> " ($e)" } ?: "") }
+        reportHistoryStatus.value = if (required.isEmpty()) {
+            "Aucun titre à recalculer pour ce portefeuille."
+        } else if (incomplete.isEmpty()) {
+            "Clôtures historiques reçues : $good/${required.size} titres · $totalPoints clôtures."
+        } else {
+            "Historique incomplet : $good/${required.size} titres · $totalPoints clôtures. À vérifier : ${incomplete.joinToString()}"
         }
     }
 
