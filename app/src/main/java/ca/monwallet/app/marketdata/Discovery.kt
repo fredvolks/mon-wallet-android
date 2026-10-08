@@ -248,7 +248,8 @@ class Discovery(private val s: Services) {
      */
     private suspend fun screenSelection(f: Filters, period: PerformancePeriod,
         onProgress: (String) -> Unit): List<DiscoveryRow> {
-        val candidates = (Catalog.stocks + s.repo.current().securities)
+        // Prefer sector-tagged entries from the curated free universe over untagged catalog duplicates.
+        val candidates = (SectorUniverse.stocks + Catalog.stocks + s.repo.current().securities)
             .distinctBy { it.id }.filter { selectionEligible(it, f) }
         val gate = Semaphore(2)
         val completed = java.util.concurrent.atomic.AtomicInteger()
