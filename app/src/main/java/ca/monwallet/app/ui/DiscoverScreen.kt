@@ -55,6 +55,7 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
         busy = true
         try {
             val activeFilters = if (tab == 3) Filters(sector = selectedSector,
+                cap = BigDecimal.ZERO, volume = BigDecimal.ZERO, price = BigDecimal("5"),
                 columns = columns) else filters.copy(columns = columns)
             val found = vm.services.discovery.screen(activeFilters, period) {
                 status = it
