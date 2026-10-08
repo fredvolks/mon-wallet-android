@@ -186,8 +186,10 @@ class Services(val context: Context) {
                         // Retry directly against the free Yahoo chart source before accepting gaps.
                         if (!covered) {
                             try {
-                                val yahooRange = reportHistoryFallbackRange(range) ?: range
-                                val yahooPoints = Yahoo().history(security, yahooRange, "1d")
+                                // Ask Yahoo for exact Unix bounds per ticker. Range presets can return
+                                // truncated history for an individual symbol such as BABA.
+                                val yahooPoints = Yahoo().historyBetween(
+                                    security, firstNeeded.minusDays(7), today)
                                 points = (points + yahooPoints).distinctBy { it.date }.sortedBy { it.date }
                                 covered = !requiredForReports ||
                                     reportHistoryHasCoverage(points, firstNeeded, today)

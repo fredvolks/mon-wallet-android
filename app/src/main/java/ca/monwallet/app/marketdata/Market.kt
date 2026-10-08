@@ -99,8 +99,7 @@ class Yahoo : MarketDataProvider {
         runCatching { ZoneId.of(m.optString("exchangeTimezoneName", "America/Toronto")) }
             .getOrDefault(ZoneId.of("America/Toronto"))
 
-    override suspend fun history(s: Security, range: String, interval: String): List<Point> {
-        val c = chart(s, range, interval)
+    private fun historyPoints(s: Security, c: JSONObject): List<Point> {
         val times = c.optJSONArray("timestamp") ?: return emptyList()
         val quote = c.getJSONObject("indicators").getJSONArray("quote").getJSONObject(0)
         val closes = quote.getJSONArray("close")
@@ -110,18 +109,30 @@ class Yahoo : MarketDataProvider {
         val z = zone(c.getJSONObject("meta"))
         return (0 until times.length()).mapNotNull { i ->
             if (closes.isNull(i)) null
-            else
-                closes.get(i).toString().toBigDecimalOrNull()?.let { v ->
-                    val time = times.getLong(i) * 1000
-                    Point(
-                        s.id,
-                        Instant.ofEpochMilli(time).atZone(z).toLocalDate().toString(),
-                        v,
-                        time,
-                        at("open", i), at("high", i), at("low", i), at("volume", i),
-                    )
-                }
+            else closes.get(i).toString().toBigDecimalOrNull()?.let { v ->
+                val time = times.getLong(i) * 1000
+                Point(s.id, Instant.ofEpochMilli(time).atZone(z).toLocalDate().toString(),
+                    v, time, at("open", i), at("high", i), at("low", i), at("volume", i))
+            }
         }
+    }
+
+    override suspend fun history(s: Security, range: String, interval: String): List<Point> =
+        historyPoints(s, chart(s, range, interval))
+
+    /** Exact Unix date bounds avoid truncated range-based chart responses for report backfills. */
+    suspend fun historyBetween(s: Security, first: LocalDate, last: LocalDate): List<Point> {
+        require(!last.isBefore(first)) { "La date de fin précède le début." }
+        val params = mapOf(
+            "period1" to first.atStartOfDay(ZoneOffset.UTC).toEpochSecond().toString(),
+            "period2" to last.plusDays(1).atStartOfDay(ZoneOffset.UTC).toEpochSecond().toString(),
+            "interval" to "1d",
+            "includePrePost" to "false",
+        )
+        val c = get("/v8/finance/chart/" + java.net.URLEncoder.encode(s.symbol, "UTF-8"), params)
+            .getJSONObject("chart").optJSONArray("result")?.optJSONObject(0)
+            ?: error("Cours historiques indisponibles pour ${s.symbol}.")
+        return historyPoints(s, c)
     }
 
     override suspend fun search(q: String): List<Security> {
