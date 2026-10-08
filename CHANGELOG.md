@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.31 — 2026-10-08 (rendement du jour et after-hours côte à côte)
+
+- Widget 4×2 : conserve le rendement de la séance régulière et affiche le rendement après clôture à côté, avec le symbole after-hours; même traitement pour le pré-marché.
+- Test de régression : vérifie que les deux pourcentages restent visibles et dans le bon ordre sur TSM.
+
+
 ## Mon Wallet v0.2.30 — 2026-10-08 (rendement hebdomadaire du calendrier)
 
 - Rapports → Calendrier affiche le rendement composé et le P&L en dollars de chaque semaine visible du mois.

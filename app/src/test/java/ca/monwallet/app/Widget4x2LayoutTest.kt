@@ -36,6 +36,14 @@ class Widget4x2LayoutTest {
         assertTrue(pre.indexOf("☀") > pre.indexOf("-2,03"))
     }
 
+    @Test fun afterHoursReturnIsShownBesideTheRegularSessionReturn() {
+        val summary = WidgetWideRenderer.titleSummary("TSM", "459,05", BigDecimal("0.23"),
+            true, true, MarketSession.AFTER_HOURS, 4, 8, BigDecimal("-0.12")).toString()
+        assertTrue(summary.contains("+0,23 %"))
+        assertTrue(summary.contains("☾ -0,12 %"))
+        assertTrue(summary.indexOf("+0,23 %") < summary.indexOf("☾ -0,12 %"))
+    }
+
     @Test fun previewCanInstallBesideTheExistingRelease() {
         assertEquals("ca.monwallet.app.preview2", BuildConfig.APPLICATION_ID)
     }

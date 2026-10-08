@@ -64,7 +64,8 @@ internal object WidgetIndexMode {
 internal object WidgetWideRenderer {
     internal fun titleSummary(label: String, priceText: String, dayPercent: java.math.BigDecimal?,
         showPrice: Boolean, showPercent: Boolean, session: MarketSession?,
-        tickerChars: Int = 5, priceChars: Int = 10): SpannableStringBuilder {
+        tickerChars: Int = 5, priceChars: Int = 10,
+        extendedPercent: java.math.BigDecimal? = null): SpannableStringBuilder {
         val summary = SpannableStringBuilder()
         // Keep every value at the same monospace character offset, even with PRE/AH.
         summary.append(label.take(tickerChars).padEnd(tickerChars)).append(" ")
@@ -83,6 +84,7 @@ internal object WidgetWideRenderer {
         if (session in setOf(MarketSession.PRE_MARKET, MarketSession.AFTER_HOURS)) {
             val start = summary.length
             summary.append(if (session == MarketSession.PRE_MARKET) " ☀" else " ☾")
+            if (extendedPercent != null) summary.append(" ").append(percent(extendedPercent))
             summary.setSpan(ForegroundColorSpan(if (session == MarketSession.PRE_MARKET)
                 Color.rgb(90, 183, 255) else Color.rgb(181, 150, 241)),
                 start, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -196,7 +198,8 @@ internal object WidgetWideRenderer {
             WidgetTitleLayout.Density.ULTRA -> R.layout.wallet_widget_wide_row_ultra
         }
         data class TitleQuote(val id: String, val label: String, val price: String,
-            val change: java.math.BigDecimal?, val session: MarketSession?)
+            val dayPercent: java.math.BigDecimal?, val session: MarketSession?,
+            val extendedPercent: java.math.BigDecimal?)
         val quoteDetails = titles.mapNotNull { holding ->
             val security = wallet.security(holding.securityId) ?: return@mapNotNull null
             val q = wallet.quotes[security.id]
@@ -216,17 +219,17 @@ internal object WidgetWideRenderer {
             val showPrice = config.price && !config.hideAmounts
             TitleQuote(security.id, if (config.ticker) security.ticker else security.name,
                 if (showPrice) number(extraPrice ?: q?.price) else "",
-                if (extraPrice != null) extraPercent else q?.percent,
-                session.takeIf { extraPrice != null })
+                q?.percent, session.takeIf { extraPrice != null },
+                extraPercent.takeIf { extraPrice != null })
         }
         // Reserve only as many characters as this widget's selected titles need.
         // Ten fixed price characters made the type needlessly tiny on a real 4x2.
         val tickerChars = (quoteDetails.maxOfOrNull { it.label.length } ?: 4).coerceIn(4, 5)
         val priceChars = (quoteDetails.maxOfOrNull { it.price.length } ?: 6).coerceAtLeast(6)
         val summaries = quoteDetails.associate { detail ->
-            detail.id to titleSummary(detail.label, detail.price, detail.change,
+            detail.id to titleSummary(detail.label, detail.price, detail.dayPercent,
                 config.price && !config.hideAmounts, config.titleDayPercent, detail.session,
-                tickerChars, priceChars)
+                tickerChars, priceChars, detail.extendedPercent)
         }
         // One text size for every title keeps the monospace price/% columns aligned.
         // Account for the actual 4x2 width, the divider, and the larger logos.
