@@ -12,5 +12,6 @@ internal data class ChartPeriodReturn(
 internal fun chartPeriodReturn(current: BigDecimal?, start: BigDecimal?): ChartPeriodReturn? {
     if (current == null || start == null || start.signum() == 0) return null
     val amount = current - start
-    return ChartPeriodReturn(amount, amount.pct(start))
+    val percent = amount.pct(start) ?: return null
+    return ChartPeriodReturn(amount, percent)
 }
