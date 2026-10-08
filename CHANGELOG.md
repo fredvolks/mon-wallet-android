@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.29 — 2026-10-08 (historique du CDR McDonald’s)
+
+- Le fournisseur Yahoo traduit le symbole interne MCD.NE vers le symbole coté ZMCD.NE pour récupérer les clôtures CAD du CDR, sans changer le ticker ni les transactions du portefeuille.
+- Le prix et l’historique du titre utilisent la même correspondance.
+- Teste la correspondance du CDR et vérifie que les autres symboles restent inchangés.
+
+
 ## Mon Wallet v0.2.28 — 2026-10-08 (calendrier : couverture des séances récentes)
 
 - Le calendrier vérifie les clôtures récentes séparément de l’historique total; plusieurs années de données ne peuvent plus masquer des séances manquantes dans le mois affiché.
