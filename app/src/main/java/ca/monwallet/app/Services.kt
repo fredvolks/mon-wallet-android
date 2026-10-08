@@ -180,6 +180,9 @@ class Services(val context: Context) {
                             if (covered) null else failure ?: "historique partiel")
                     } catch (cancelled: CancellationException) {
                         throw cancelled
+                    } catch (error: Exception) {
+                        FetchResult(security, points.size, false,
+                            error.message?.take(90) ?: error::class.java.simpleName)
                     }
                 }
             } }.awaitAll()
