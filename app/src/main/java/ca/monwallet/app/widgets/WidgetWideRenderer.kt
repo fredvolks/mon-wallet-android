@@ -34,6 +34,31 @@ import ca.monwallet.app.ui.percent
 import ca.monwallet.app.ui.signed
 import java.util.concurrent.TimeUnit
 import java.time.LocalDate
+import java.time.Duration
+import java.time.ZoneId
+import java.time.ZonedDateTime
+
+internal object WidgetIndexMode {
+    private val eastern = ZoneId.of("America/Toronto")
+    private val futureSymbols = listOf("ES=F", "NQ=F", "YM=F")
+
+    fun isOvernightWindow(now: ZonedDateTime): Boolean {
+        val time = now.withZoneSameInstant(eastern).toLocalTime()
+        return time >= java.time.LocalTime.of(16, 0) ||
+            time < java.time.LocalTime.of(9, 30)
+    }
+
+    fun useFutures(wallet: Wallet, now: ZonedDateTime = ZonedDateTime.now(eastern)): Boolean {
+        if (!isOvernightWindow(now)) return false
+        val nowMs = now.toInstant().toEpochMilli()
+        return futureSymbols.all { symbol ->
+            val security = Catalog.markets.firstOrNull { it.symbol == symbol } ?: return@all false
+            val quote = wallet.quotes[security.id] ?: return@all false
+            val age = nowMs - quote.timestamp
+            age in 0..Duration.ofHours(2).toMillis() && quote.percent != null
+        }
+    }
+}
 
 /** RemoteViews restricted to the 4x2 provider. No placeholder prices or sample holdings. */
 internal object WidgetWideRenderer {
@@ -124,14 +149,24 @@ internal object WidgetWideRenderer {
         views.setTextViewText(R.id.widget_extras, "")
         views.setViewVisibility(R.id.widget_extras, View.GONE)
 
-        // These are cached provider quotes, including the completed session after close.
-        // Never infer 0% when a feed has not supplied an index quote.
-        listOf("^GSPC" to R.id.widget_sp500, "^IXIC" to R.id.widget_nasdaq,
-            "^DJI" to R.id.widget_dow).forEach { (symbol, viewId) ->
+        // Use fresh index futures overnight, and cash indices if any future quote is stale.
+        val useFutures = WidgetIndexMode.useFutures(wallet)
+        val indexRows = listOf(
+            Triple(R.id.widget_sp500_label, R.id.widget_sp500, if (useFutures) "ES=F" else "^GSPC"),
+            Triple(R.id.widget_nasdaq_label, R.id.widget_nasdaq, if (useFutures) "NQ=F" else "^IXIC"),
+            Triple(R.id.widget_dow_label, R.id.widget_dow, if (useFutures) "YM=F" else "^DJI"),
+        )
+        indexRows.forEachIndexed { index, (labelId, valueId, symbol) ->
             val security = Catalog.markets.firstOrNull { it.symbol == symbol }
             val change = security?.let { wallet.quotes[it.id]?.percent }
-            views.setTextViewText(viewId, if (hidden) "" else percent(change))
-            views.setTextColor(viewId, tone(change?.signum()))
+            val label = when (index) {
+                0 -> if (useFutures) "S&P FUT" else "S&P 500"
+                1 -> if (useFutures) "NAS100 FUT" else "NASDAQ"
+                else -> if (useFutures) "DOW FUT" else "DOW JONES"
+            }
+            views.setTextViewText(labelId, if (hidden) "" else label)
+            views.setTextViewText(valueId, if (hidden) "" else percent(change))
+            views.setTextColor(valueId, tone(change?.signum()))
         }
         views.setViewVisibility(R.id.widget_indices, if (hidden) View.GONE else View.VISIBLE)
 

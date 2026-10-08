@@ -87,8 +87,11 @@ class Yahoo : MarketDataProvider {
     override suspend fun quote(s: Security): Quote {
         val us = supportsUsExtendedHours(s)
         // A 5-minute chart includes actual extended-session prints. Daily bars do not.
-        val c = if (us) chart(s, "1d", "5m", includePrePost = true)
-            else chart(s, "5d", "1d")
+        val c = when {
+            us -> chart(s, "1d", "5m", includePrePost = true)
+            s.type.uppercase() == "FUTURE" -> chart(s, "1d", "5m", includePrePost = true)
+            else -> chart(s, "5d", "1d")
+        }
         return YahooQuoteMapper.map(s, c, Instant.now().epochSecond, name, us)
     }
 
@@ -211,6 +214,17 @@ internal object YahooQuoteMapper {
 
     private data class Print(val price: BigDecimal, val timestamp: Long)
 
+    private fun latestChartPrint(c: JSONObject): Print? {
+        val times = c.optJSONArray("timestamp") ?: return null
+        val closes = c.optJSONObject("indicators")?.optJSONArray("quote")?.optJSONObject(0)
+            ?.optJSONArray("close") ?: return null
+        for (i in minOf(times.length(), closes.length()) - 1 downTo 0) {
+            val price = closes.opt(i)?.toString()?.toBigDecimalOrNull()
+            if (price != null && price.signum() > 0) return Print(price, times.optLong(i))
+        }
+        return null
+    }
+
     private fun latestPrint(c: JSONObject, window: JSONObject?): Print? {
         val times = c.optJSONArray("timestamp") ?: return null
         val closes = c.optJSONObject("indicators")?.optJSONArray("quote")?.optJSONObject(0)
@@ -231,8 +245,10 @@ internal object YahooQuoteMapper {
         require(currency == s.currency) {
             "Le fournisseur retourne $currency. Vérifie le marché sélectionné."
         }
-        val time =
-            m.number("regularMarketTime")?.toLong()?.times(1000) ?: error("Date du cours absente.")
+        val futurePrint = if (s.type.uppercase() == "FUTURE") latestChartPrint(c) else null
+        val time = futurePrint?.timestamp?.times(1000)
+            ?: m.number("regularMarketTime")?.toLong()?.times(1000)
+            ?: error("Date du cours absente.")
         val date = Instant.ofEpochMilli(time).atZone(zone(m)).toLocalDate().toString()
         val times = c.optJSONArray("timestamp")
         val closes =
@@ -276,7 +292,7 @@ internal object YahooQuoteMapper {
         }
         val pre = marketPrint("PRE_MARKET", preWindow)
         val post = marketPrint("AFTER_HOURS", postWindow)
-        val regular = m.number("regularMarketPrice") ?: error("Prix absent.")
+        val regular = futurePrint?.price ?: m.number("regularMarketPrice") ?: error("Prix absent.")
         // A provider's change fields refer to its own price. Never attach them to a
         // different, newer chart candle.
         fun providerChange(print: Print?, prefix: String) =
@@ -499,7 +515,17 @@ class Router(private val settings: SecureSettings) : MarketDataProvider {
     override val name
         get() = provider().name
 
-    override suspend fun quote(s: Security) = provider().quote(s)
+    override suspend fun quote(s: Security): Quote {
+        val selected = provider()
+        if (selected is Yahoo) return selected.quote(s)
+        return try {
+            selected.quote(s)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            if (s.type.uppercase() == "FUTURE") yahoo.quote(s) else throw error
+        }
+    }
 
     override suspend fun history(s: Security, range: String, interval: String): List<Point> {
         val selected = provider()

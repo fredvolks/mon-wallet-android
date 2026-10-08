@@ -161,7 +161,13 @@ fun TransactionDialog(
         stringResource(if (edit == null) R.string.transaction_add else R.string.transaction_edit),
         onClose,
     ) {
-        Choice(stringResource(R.string.ui_type_3deb7), names[type]!!, names.values.toList()) { type = names.keys.toList()[it] }
+        if (edit == null) {
+            Choice(stringResource(R.string.ui_type_3deb7), names[type]!!, names.values.toList()) {
+                type = names.keys.toList()[it]
+            }
+        } else {
+            Caption(stringResource(R.string.transaction_edit_in_place))
+        }
         Choice(
             stringResource(R.string.ui_portefeuille_c2303),
             w.portfolios.find { it.id == chosen }?.name ?: stringResource(R.string.ui_choisir_b030d),
@@ -264,7 +270,12 @@ fun TransactionDialog(
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(stringResource(if (saving) R.string.saving else if (type == TxType.SELL) R.string.sell_shares else if (edit == null) R.string.add else R.string.ui_enregistrer_f7c8b))
+            Text(stringResource(
+                if (saving) R.string.saving
+                else if (edit != null) R.string.ui_enregistrer_f7c8b
+                else if (type == TxType.SELL) R.string.sell_shares
+                else R.string.add
+            ))
         }
         Caption(
             stringResource(R.string.ui_les_ventes_conservent_les_achats_historiques__97c24)

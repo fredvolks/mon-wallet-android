@@ -351,7 +351,11 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                         (if (h?.average != null) " · Prix moyen ${money(h.average, t.currency)}"
                         else "")
                 )
-                if (sec != null) s.refresh(listOf(sec), true)
+                if (sec != null) {
+                    s.refresh(listOf(sec), true)
+                    // A corrected historic entry must invalidate and rebuild its calendar closes.
+                    s.refreshReportHistory(t.portfolioId, force = true)
+                }
             }
             if (
                 t.type == TxType.BUY &&

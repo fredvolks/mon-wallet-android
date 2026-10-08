@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.20 — 2026-10-08 (P&L quotidien, édition et widget)
+
+- Widget : le P&L conserve la dernière performance de séance disponible quand les marchés ferment. Les portefeuilles avec des séances décalées additionnent les variations calculables sans inventer de cours manquant; une clôture historique complète un cours précédent absent du fournisseur.
+- Widget 4×2 : de 16 h à 9 h 30 (heure de Toronto), affiche les futures S&P 500, Nasdaq 100 et Dow Jones si les trois cours datent de moins de deux heures; sinon, affiche les indices au comptant.
+- Positions : modifier une entrée conserve son identifiant et son type, avec quantité, prix et date modifiables sans créer d’achat ou de vente. Les clôtures historiques sont actualisées après modification pour reconstruire le calendrier depuis l’entrée corrigée.
+- Données financières : couleurs vert/orange/rouge selon des seuils généraux de rentabilité, croissance, rendement des capitaux et frais de FNB. Les montants absolus et valorisations nécessitant un contexte sectoriel restent neutres.
+
 ## Mon Wallet v0.2.19 — 2026-10-08 (marchés, navigation et préférences)
 
 - Marchés : ajout d’un onglet Futures avec S&P 500 E-mini, NASDAQ 100 E-mini, Dow Jones E-mini et Russell 2000 E-mini. Les cours proviennent du fournisseur configuré et restent soumis à sa fraîcheur réelle.

@@ -500,4 +500,6 @@
     <string name="widget_logo">Logo du titre</string>
     <string name="widget_edit">Modifier</string>
     <string name="profile_widget_number">Widget %1$d</string>
+    <string name="financial_rating_help">Lecture indicative : vert = favorable, orange = à surveiller, rouge = défavorable. Les valeurs absolues restent neutres quand le secteur est nécessaire pour les juger.</string>
+    <string name="transaction_edit_in_place">Modification de l’entrée existante : aucun nouvel achat ni aucune nouvelle vente ne sera créé.</string>
 </resources>

@@ -310,10 +310,24 @@ data class Wallet(
 
     fun result(portfolio: String? = null, now: Long = System.currentTimeMillis()): Result {
         val entries = transactions.filter { portfolio == null || it.portfolioId == portfolio }
-        val usd = securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] }
-        val regular = Engine.calculate(entries, quotes, usd)
+        val datedQuotes = quotes.mapValues { (securityId, quote) ->
+            if (quote.previous != null) quote
+            else {
+                val close = runCatching {
+                    val session = LocalDate.parse(quote.sessionDate)
+                    prices.asSequence()
+                        .filter { it.securityId == securityId && it.date < quote.sessionDate }
+                        .maxByOrNull { it.date }
+                        ?.takeIf { java.time.temporal.ChronoUnit.DAYS.between(
+                            LocalDate.parse(it.date), session) in 0..7 }
+                }.getOrNull()
+                if (close == null) quote else quote.copy(previous = close.close)
+            }
+        }
+        val usd = securities.find { it.symbol == "CAD=X" }?.let { datedQuotes[it.id] }
+        val regular = Engine.calculate(entries, datedQuotes, usd)
         if (settings["portfolio_extended"] == "REGULAR") return regular
-        val adjusted = quotes.mapValues { (securityId, quote) ->
+        val adjusted = datedQuotes.mapValues { (securityId, quote) ->
             val normalized = securities.find { it.id == securityId }
                 ?.takeIf { supportsUsExtendedHours(it) }
                 ?.let { NormalizedQuote.from(quote, now) }
@@ -325,7 +339,7 @@ data class Wallet(
             if (extended != null && quote.currency == "USD") quote.copy(price = extended)
             else quote
         }
-        if (adjusted == quotes) return regular
+        if (adjusted == datedQuotes) return regular
         val estimated = Engine.calculate(entries, adjusted, usd)
         val byId = regular.holdings.associateBy { it.securityId }
         // Today's P&L retains the regular-session reference; only valuation uses

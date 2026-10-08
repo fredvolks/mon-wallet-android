@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
@@ -394,14 +395,29 @@ fun DetailScreen(
                             "Dette long terme",
                             "Dette court terme",
                         )
+                if (metrics.any { fundamentals?.metrics?.containsKey(it) == true }) item {
+                    Caption(stringResource(R.string.financial_rating_help))
+                }
                 items(metrics.filter { fundamentals?.metrics?.containsKey(it) == true }) { label ->
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        val period = fundamentals?.annual?.get(label)?.lastOrNull()?.first
+                        val annual = fundamentals?.annual?.get(label).orEmpty()
+                        val period = annual.lastOrNull()?.first
+                        val raw = fundamentals?.metrics?.get(label).orEmpty()
+                        val rating = FinancialMetricRatings.rate(label, raw, annual.map { it.second })
                         Caption(if (period != null) "$label · $period" else label)
-                        Text(financialValue(label, fundamentals?.metrics?.get(label).orEmpty(), security.currency), fontSize = 14.sp)
+                        Text(
+                            financialValue(label, raw, security.currency),
+                            color = when (rating) {
+                                FinancialMetricRating.FAVORABLE -> Green
+                                FinancialMetricRating.WATCH -> Color(0xFFFFB74D)
+                                FinancialMetricRating.UNFAVORABLE -> Red
+                                FinancialMetricRating.CONTEXT -> Color(0xFFCFD8DC)
+                            },
+                            fontSize = 14.sp,
+                        )
                     }
                     HorizontalDivider(color = Border)
                 }

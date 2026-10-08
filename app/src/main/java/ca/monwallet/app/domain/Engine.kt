@@ -121,10 +121,16 @@ object Engine {
     ): Result {
         if (tx.map { it.portfolioId }.distinct().size > 1) {
             val combined = combine(tx.groupBy { it.portfolioId }.values.map { calculate(it, quotes, usd) })
-            val sessions = tx.mapNotNull { it.securityId }.distinct().mapNotNull { quotes[it]?.sessionDate }.distinct()
-            val latestSession = sessions.singleOrNull()
-            return if (sessions.size > 1 || (latestSession != null && tx.any { it.date > latestSession }))
-                combined.copy(day = null, dayBase = null) else combined
+            val sessions = tx.mapNotNull { it.securityId }.distinct()
+                .mapNotNull { quotes[it]?.sessionDate }.distinct()
+            val latestSession = sessions.maxOrNull()
+            val lateTrade = tx.any { transaction ->
+                val quote = transaction.securityId?.let(quotes::get)
+                if (transaction.securityId != null)
+                    quote?.let { transaction.date > it.sessionDate } == true
+                else latestSession?.let { transaction.date > it } == true
+            }
+            if (lateTrade) combined.copy(day = null, dayBase = null) else combined
         }
         val l = ledger(tx)
         val holdings =
@@ -183,7 +189,12 @@ object Engine {
             quote != null && quote.previous != null && quote.sessionDate == session &&
                 (quote.currency == "CAD" || (usd?.sessionDate == session && usd.previous != null))
         }
-        val noLateTrades = tx.none { it.date > session }
+        val noLateTrades = tx.none { transaction ->
+            val quote = transaction.securityId?.let(quotes::get)
+            if (transaction.securityId != null)
+                quote?.let { transaction.date > it.sessionDate } == true
+            else transaction.date > session
+        }
         val before = ledger(tx.filter { it.date < session })
         val end = ledger(tx.filter { it.date <= session })
         val opening = held.fold(ZERO) { a, h ->
@@ -199,9 +210,29 @@ object Engine {
         val withdrawals = tx.filter { it.date == session && it.type == TxType.WITHDRAWAL }
             .fold(ZERO) { a, t -> a + t.price * t.fxRate }
         val contributions = end.capital - before.capital + withdrawals
-        val day = if (allPrices && noLateTrades && sessions.size <= 1)
+        val alignedDay = if (allPrices && noLateTrades && sessions.size <= 1)
             closing - opening - (end.capital - before.capital) else null
-        val dayBase = day?.let { opening + contributions }
+        val latestSession = sessions.maxOrNull()
+        val completePerSecurityDays = held.all { it.day != null && it.dayBase != null }
+        val mixedDay = if (sessions.size > 1 && noLateTrades && completePerSecurityDays) {
+            val securityPnl = held.fold(ZERO) { sum, holding -> sum + holding.day!! }
+            val cashOnlyPnl = tx.filter { transaction ->
+                transaction.date == latestSession &&
+                    (transaction.type == TxType.FEE ||
+                        (transaction.type == TxType.DIVIDEND && transaction.securityId == null))
+            }.fold(ZERO) { sum, transaction ->
+                sum + if (transaction.type == TxType.FEE) -transaction.cad else transaction.cad
+            }
+            securityPnl + cashOnlyPnl
+        } else null
+        val day = alignedDay ?: mixedDay
+        val dayBase = when {
+            alignedDay != null -> opening + contributions
+            mixedDay != null -> before.cash + held.fold(ZERO) { sum, holding ->
+                sum + holding.dayBase!!
+            }
+            else -> null
+        }
         return Result(
             holdings,
             l.capital,

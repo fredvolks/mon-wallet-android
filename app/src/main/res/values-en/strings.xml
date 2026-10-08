@@ -499,4 +499,6 @@
     <string name="widget_logo">Holding logo</string>
     <string name="widget_edit">Edit</string>
     <string name="profile_widget_number">Widget %1$d</string>
+    <string name="financial_rating_help">Indicative reading: green = favorable, orange = watch, red = unfavorable. Absolute values stay neutral when sector context is needed.</string>
+    <string name="transaction_edit_in_place">Editing this existing entry; no new buy or sell will be created.</string>
 </resources>
