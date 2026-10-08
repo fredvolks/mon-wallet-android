@@ -73,65 +73,28 @@ class Yahoo : MarketDataProvider {
                 .build()
         )
 
-    private suspend fun chart(s: Security, range: String, interval: String) =
+    private suspend fun chart(s: Security, range: String, interval: String,
+        includePrePost: Boolean = false) =
         get(
                 "/v8/finance/chart/" + java.net.URLEncoder.encode(s.symbol, "UTF-8"),
-                mapOf("range" to range, "interval" to interval),
+                mapOf("range" to range, "interval" to interval,
+                    "includePrePost" to includePrePost.toString()),
             )
             .getJSONObject("chart")
             .optJSONArray("result")
             ?.optJSONObject(0) ?: error("Cours indisponible pour ${s.symbol}.")
 
+    override suspend fun quote(s: Security): Quote {
+        val us = supportsUsExtendedHours(s)
+        // A 5-minute chart includes actual extended-session prints. Daily bars do not.
+        val c = if (us) chart(s, "1d", "5m", includePrePost = true)
+            else chart(s, "5d", "1d")
+        return YahooQuoteMapper.map(s, c, Instant.now().epochSecond, name, us)
+    }
+
     private fun zone(m: JSONObject) =
         runCatching { ZoneId.of(m.optString("exchangeTimezoneName", "America/Toronto")) }
             .getOrDefault(ZoneId.of("America/Toronto"))
-
-    override suspend fun quote(s: Security): Quote {
-        val c = chart(s, "5d", "1d")
-        val m = c.getJSONObject("meta")
-        val currency = m.text("currency") ?: error("Devise absente.")
-        require(currency == s.currency) {
-            "Le fournisseur retourne $currency. Vérifie le marché sélectionné."
-        }
-        val time =
-            m.number("regularMarketTime")?.toLong()?.times(1000) ?: error("Date du cours absente.")
-        val date = Instant.ofEpochMilli(time).atZone(zone(m)).toLocalDate().toString()
-        val times = c.optJSONArray("timestamp")
-        val closes =
-            c.optJSONObject("indicators")
-                ?.optJSONArray("quote")
-                ?.optJSONObject(0)
-                ?.optJSONArray("close")
-        val previous =
-            if (times != null && closes != null)
-                (0 until times.length())
-                    .lastOrNull {
-                        Instant.ofEpochSecond(times.getLong(it))
-                            .atZone(zone(m))
-                            .toLocalDate()
-                            .toString() < date
-                    }
-                    ?.let {
-                        if (closes.isNull(it)) null
-                        else closes.get(it).toString().toBigDecimalOrNull()
-                    }
-            else null
-        val period = m.optJSONObject("currentTradingPeriod")?.optJSONObject("regular")
-        val now = Instant.now().epochSecond
-        return Quote(
-            s.id,
-            m.number("regularMarketPrice") ?: error("Prix absent."),
-            previous ?: m.number("previousClose"),
-            currency,
-            time,
-            date,
-            name,
-            marketOpen = period?.let { now >= it.optLong("start") && now < it.optLong("end") },
-            volume = m.number("regularMarketVolume"),
-            high52 = m.number("fiftyTwoWeekHigh"),
-            low52 = m.number("fiftyTwoWeekLow"),
-        )
-    }
 
     override suspend fun history(s: Security, range: String, interval: String): List<Point> {
         val c = chart(s, range, interval)
@@ -196,11 +159,14 @@ class Yahoo : MarketDataProvider {
             } ?: emptyList()
     }
 
-    override suspend fun news(s: Security) =
-        get("/v1/finance/search", mapOf("q" to s.symbol, "quotesCount" to "0", "newsCount" to "10"))
+    private suspend fun searchNews(query: String, symbol: String, strict: Boolean): List<News> =
+        get("/v1/finance/search", mapOf("q" to query, "quotesCount" to "0", "newsCount" to "10"))
             .optJSONArray("news")
             ?.objects()
             ?.mapNotNull { o ->
+                // The issuer-name fallback must never attribute a similarly named
+                // company or a generic search result to this security.
+                if (strict && !YahooNewsMatcher.identifies(o, symbol)) return@mapNotNull null
                 val link =
                     o.text("link")?.takeIf { it.startsWith("https://") } ?: return@mapNotNull null
                 News(
@@ -210,6 +176,143 @@ class Yahoo : MarketDataProvider {
                     o.optLong("providerPublishTime") * 1000,
                 )
             } ?: emptyList()
+
+    override suspend fun news(s: Security): List<News> {
+        val direct = searchNews(s.symbol, s.symbol, strict = false)
+        if (direct.isNotEmpty() || s.currency != "CAD" || s.name.isBlank() ||
+            s.name.equals(s.symbol, ignoreCase = true)) return direct
+        return searchNews(s.name, s.symbol, strict = true)
+    }
+}
+
+internal object YahooNewsMatcher {
+    fun identifies(article: JSONObject, symbol: String): Boolean {
+        val related = article.optJSONArray("relatedTickers") ?: return false
+        return (0 until related.length()).any { related.optString(it).equals(symbol, true) }
+    }
+}
+
+/** Only exchange-identified US shares can have a Yahoo extended-session line. */
+fun supportsUsExtendedHours(s: Security): Boolean =
+    s.currency == "USD" && s.type in setOf("STOCK", "ETF") &&
+        s.exchange.uppercase() in setOf("NASDAQ", "NYSE", "AMEX", "NYSEARCA", "NMS", "NYQ",
+            "ASE", "NCM", "NGM", "NASDAQGS", "NASDAQGM", "NASDAQCM") &&
+        listOf(".TO", ".V", ".NE", ".CN").none { s.symbol.uppercase().endsWith(it) }
+
+internal object YahooQuoteMapper {
+    private fun zone(m: JSONObject) =
+        runCatching { ZoneId.of(m.optString("exchangeTimezoneName", "America/New_York")) }
+            .getOrDefault(ZoneId.of("America/New_York"))
+
+    private fun within(time: Long, window: JSONObject?): Boolean {
+        if (window == null || !window.has("start") || !window.has("end")) return false
+        return time >= window.optLong("start") && time < window.optLong("end")
+    }
+
+    private data class Print(val price: BigDecimal, val timestamp: Long)
+
+    private fun latestPrint(c: JSONObject, window: JSONObject?): Print? {
+        val times = c.optJSONArray("timestamp") ?: return null
+        val closes = c.optJSONObject("indicators")?.optJSONArray("quote")?.optJSONObject(0)
+            ?.optJSONArray("close") ?: return null
+        for (i in minOf(times.length(), closes.length()) - 1 downTo 0) {
+            val time = times.optLong(i)
+            val price = closes.opt(i)?.toString()?.toBigDecimalOrNull()
+            if (within(time, window) && price != null && price.signum() > 0)
+                return Print(price, time)
+        }
+        return null
+    }
+
+    fun map(s: Security, c: JSONObject, now: Long, source: String,
+        extendedEligible: Boolean = supportsUsExtendedHours(s)): Quote {
+        val m = c.getJSONObject("meta")
+        val currency = m.text("currency") ?: error("Devise absente.")
+        require(currency == s.currency) {
+            "Le fournisseur retourne $currency. Vérifie le marché sélectionné."
+        }
+        val time =
+            m.number("regularMarketTime")?.toLong()?.times(1000) ?: error("Date du cours absente.")
+        val date = Instant.ofEpochMilli(time).atZone(zone(m)).toLocalDate().toString()
+        val times = c.optJSONArray("timestamp")
+        val closes =
+            c.optJSONObject("indicators")
+                ?.optJSONArray("quote")
+                ?.optJSONObject(0)
+                ?.optJSONArray("close")
+        val previous =
+            if (!extendedEligible && times != null && closes != null)
+                (0 until times.length())
+                    .lastOrNull {
+                        Instant.ofEpochSecond(times.getLong(it))
+                            .atZone(zone(m))
+                            .toLocalDate()
+                            .toString() < date
+                    }
+                    ?.let {
+                        if (closes.isNull(it)) null
+                        else closes.get(it).toString().toBigDecimalOrNull()
+                    }
+            else null
+        val periods = m.optJSONObject("currentTradingPeriod")
+        val period = periods?.optJSONObject("regular")
+        val session = when {
+            within(now, periods?.optJSONObject("pre")) -> "PRE_MARKET"
+            within(now, period) -> "REGULAR"
+            within(now, periods?.optJSONObject("post")) -> "AFTER_HOURS"
+            else -> "CLOSED"
+        }
+        val preWindow = periods?.optJSONObject("pre")
+        val postWindow = periods?.optJSONObject("post")
+        fun marketPrint(kind: String, window: JSONObject?): Print? {
+            if (!extendedEligible || session != kind) return null
+            val prefix = if (kind == "PRE_MARKET") "pre" else "post"
+            val metaTime = m.number(prefix + "MarketTime")?.toLong()
+            val metaPrice = m.number(prefix + "MarketPrice")
+            val metaPrint = if (metaTime != null && within(metaTime, window) &&
+                metaPrice != null && metaPrice.signum() > 0) Print(metaPrice, metaTime) else null
+            val barPrint = latestPrint(c, window)
+            return listOfNotNull(metaPrint, barPrint).maxByOrNull { it.timestamp }
+        }
+        val pre = marketPrint("PRE_MARKET", preWindow)
+        val post = marketPrint("AFTER_HOURS", postWindow)
+        val regular = m.number("regularMarketPrice") ?: error("Prix absent.")
+        // A provider's change fields refer to its own price. Never attach them to a
+        // different, newer chart candle.
+        fun providerChange(print: Print?, prefix: String) =
+            print?.takeIf { it.timestamp == m.number(prefix + "MarketTime")?.toLong() &&
+                m.number(prefix + "MarketPrice")?.let { price -> it.price.compareTo(price) == 0 } == true }
+                ?.let { m.number(prefix + "MarketChange") }
+        fun providerPercent(print: Print?, prefix: String) =
+            print?.takeIf { it.timestamp == m.number(prefix + "MarketTime")?.toLong() &&
+                m.number(prefix + "MarketPrice")?.let { price -> it.price.compareTo(price) == 0 } == true }
+                ?.let { m.number(prefix + "MarketChangePercent") }
+        return Quote(
+            s.id,
+            regular,
+            previous ?: m.number("previousClose") ?: m.number("chartPreviousClose"),
+            currency,
+            time,
+            date,
+            source,
+            marketOpen = period?.let { within(now, it) },
+            volume = m.number("regularMarketVolume"),
+            averageVolume = m.number("averageDailyVolume3Month")
+                ?: m.number("averageDailyVolume10Day"),
+            high52 = m.number("fiftyTwoWeekHigh"),
+            low52 = m.number("fiftyTwoWeekLow"),
+            delay = m.number("exchangeDataDelayedBy")?.toInt()?.takeIf { it > 0 },
+            preMarketPrice = pre?.price,
+            preMarketTimestamp = pre?.timestamp?.times(1000),
+            preMarketChange = providerChange(pre, "pre"),
+            preMarketChangePercent = providerPercent(pre, "pre"),
+            afterHoursPrice = post?.price,
+            afterHoursTimestamp = post?.timestamp?.times(1000),
+            afterHoursChange = providerChange(post, "post"),
+            afterHoursChangePercent = providerPercent(post, "post"),
+            marketSession = session,
+        )
+    }
 }
 
 class Twelve(private val key: String) : MarketDataProvider {
@@ -231,24 +334,19 @@ class Twelve(private val key: String) : MarketDataProvider {
         }
 
     override suspend fun quote(s: Security): Quote {
-        val j = get("quote", mapOf("symbol" to symbol(s), "exchange" to s.exchange))
-        val currency = j.text("currency") ?: error("Devise absente.")
-        require(currency == s.currency)
-        val time = j.number("timestamp")?.toLong()?.times(1000) ?: error("Date absente.")
-        return Quote(
-            s.id,
-            j.number("close") ?: error("Prix absent."),
-            j.number("previous_close"),
-            currency,
-            time,
-            j.optString("datetime").take(10),
-            name,
-            marketOpen = j.optBoolean("is_market_open"),
-            volume = j.number("volume"),
-            high52 = j.optJSONObject("fifty_two_week")?.number("high"),
-            low52 = j.optJSONObject("fifty_two_week")?.number("low"),
-            averageVolume = j.number("average_volume"),
-        )
+        val params = mapOf("symbol" to symbol(s), "exchange" to s.exchange)
+        val now = System.currentTimeMillis()
+        // The user's Twelve Data subscription may not include extended hours.
+        // One optional prepost request is attempted only during a US session;
+        // a rejected request still leaves the regular quote available.
+        val candidate = if (supportsUsExtendedHours(s) &&
+            TwelveQuoteMapper.isExtendedWindow(now))
+            runCatching { get("quote", params + ("prepost" to "true")) }.getOrNull()
+        else null
+        val extended = candidate?.takeIf { TwelveQuoteMapper.hasCurrentExtendedPrint(s, it, now) }
+        val j = if (candidate == null || candidate.optBoolean("is_extended_hours"))
+            get("quote", params) else candidate
+        return TwelveQuoteMapper.map(s, j, extended, now, name)
     }
 
     override suspend fun history(s: Security, range: String, interval: String): List<Point> {
@@ -315,6 +413,72 @@ class Twelve(private val key: String) : MarketDataProvider {
     override suspend fun news(s: Security) = Yahoo().news(s)
 }
 
+internal object TwelveQuoteMapper {
+    private val newYork = ZoneId.of("America/New_York")
+
+    private fun session(time: Long): String? {
+        val local = Instant.ofEpochMilli(time).atZone(newYork)
+        if (local.dayOfWeek in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)) return null
+        val clock = local.toLocalTime()
+        return when {
+            clock >= LocalTime.of(7, 0) && clock < LocalTime.of(9, 30) -> "PRE_MARKET"
+            clock >= LocalTime.of(16, 0) && clock < LocalTime.of(20, 0) -> "AFTER_HOURS"
+            else -> null
+        }
+    }
+
+    fun isExtendedWindow(now: Long) = session(now) != null
+
+    fun hasCurrentExtendedPrint(s: Security, j: JSONObject, now: Long): Boolean {
+        val timestamp = j.number("timestamp")?.toLong()?.times(1000) ?: return false
+        return supportsUsExtendedHours(s) && j.optBoolean("is_extended_hours") &&
+            j.text("currency") == s.currency && j.number("close")?.signum() == 1 &&
+            session(timestamp) != null && session(timestamp) == session(now) &&
+            Instant.ofEpochMilli(timestamp).atZone(newYork).toLocalDate() ==
+                Instant.ofEpochMilli(now).atZone(newYork).toLocalDate()
+    }
+
+    fun map(s: Security, j: JSONObject, extended: JSONObject?, now: Long, source: String): Quote {
+        val currency = j.text("currency") ?: error("Devise absente.")
+        require(currency == s.currency)
+        val time = j.number("timestamp")?.toLong()?.times(1000) ?: error("Date absente.")
+        val regular = j.number("close") ?: error("Prix absent.")
+        val extra = extended?.takeIf { hasCurrentExtendedPrint(s, it, now) }
+        val pre = extra?.takeIf { session(now) == "PRE_MARKET" }
+        val post = extra?.takeIf { session(now) == "AFTER_HOURS" }
+        // Twelve's percentage can use a different previous_close than the
+        // regular quote. Only preserve it if the references actually match.
+        val sameReference = extra?.number("previous_close")?.compareTo(regular) == 0
+        val delta = extra?.number("close")?.minus(regular)
+        val change = if (sameReference) extra?.number("change") ?: delta else delta
+        val percent = if (sameReference) extra?.number("percent_change") else null
+        return Quote(
+            s.id,
+            regular,
+            j.number("previous_close"),
+            currency,
+            time,
+            j.optString("datetime").take(10),
+            source,
+            marketOpen = j.optBoolean("is_market_open"),
+            volume = j.number("volume"),
+            high52 = j.optJSONObject("fifty_two_week")?.number("high"),
+            low52 = j.optJSONObject("fifty_two_week")?.number("low"),
+            averageVolume = j.number("average_volume"),
+            preMarketPrice = pre?.number("close"),
+            preMarketTimestamp = pre?.number("timestamp")?.toLong()?.times(1000),
+            preMarketChange = if (pre != null) change else null,
+            preMarketChangePercent = if (pre != null) percent else null,
+            afterHoursPrice = post?.number("close"),
+            afterHoursTimestamp = post?.number("timestamp")?.toLong()?.times(1000),
+            afterHoursChange = if (post != null) change else null,
+            afterHoursChangePercent = if (post != null) percent else null,
+            marketSession = if (pre != null) "PRE_MARKET" else if (post != null)
+                "AFTER_HOURS" else if (j.optBoolean("is_market_open")) "REGULAR" else "CLOSED",
+        )
+    }
+}
+
 class Router(private val settings: SecureSettings) : MarketDataProvider {
     private val yahoo = Yahoo()
     private val sec = SecFilingsProvider()
@@ -337,8 +501,20 @@ class Router(private val settings: SecureSettings) : MarketDataProvider {
 
     override suspend fun quote(s: Security) = provider().quote(s)
 
-    override suspend fun history(s: Security, range: String, interval: String) =
-        provider().history(s, range, interval)
+    override suspend fun history(s: Security, range: String, interval: String): List<Point> {
+        val selected = provider()
+        if (selected is Yahoo) return selected.history(s, range, interval)
+        // Twelve Data coverage varies by exchange and plan. A genuine Yahoo close
+        // can fill an unsupported market without relabelling it as Twelve Data.
+        return try {
+            val primary = selected.history(s, range, interval)
+            if (primary.isEmpty()) yahoo.history(s, range, interval) else primary
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            yahoo.history(s, range, interval)
+        }
+    }
 
     override suspend fun search(q: String) = provider().search(q)
 

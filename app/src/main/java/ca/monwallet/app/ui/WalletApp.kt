@@ -15,9 +15,16 @@ import androidx.compose.ui.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.*
 import ca.monwallet.app.R
+import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LockScreen(unlock: () -> Unit) {
@@ -36,6 +43,7 @@ fun LockScreen(unlock: () -> Unit) {
 
 @Composable
 fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
+    widgetSection: Pair<String, Int>?,
     biometric: (() -> Unit) -> Unit) {
     val vm: WalletViewModel = viewModel()
     val s = vm.services
@@ -48,6 +56,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
     val nav = rememberNavController()
     val backstack by nav.currentBackStackEntryAsState()
     val route = backstack?.destination?.route ?: "portfolio"
+    val lifecycleOwner = LocalLifecycleOwner.current
     val snack = remember { SnackbarHostState() }
     var portfolio by remember { mutableStateOf<String?>(null) }
     var txOpen by remember { mutableStateOf(false) }
@@ -84,6 +93,40 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
         txOpen = true
     }
     LaunchedEffect(Unit) { vm.messages.collect { snack.showSnackbar(it) } }
+    LaunchedEffect(s, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            s.foregroundSecurities.collectLatest { visible ->
+                while (isActive && visible.isNotEmpty()) {
+                    val attempted = s.refreshForeground(visible)
+                    val quotes = s.repo.state.value.quotes
+                    val active = visible.any { security ->
+                        quotes[security.id]?.let { q -> q.marketOpen == true ||
+                            q.marketSession == "PRE_MARKET" || q.marketSession == "AFTER_HOURS" } == true
+                    }
+                    // An initial full refresh may still be running; retry promptly.
+                    // The foreground loop is cancelled when the app is paused.
+                    delay(if (!attempted) 5_000L else if (active) 30_000L else 180_000L)
+                }
+            }
+        }
+    }
+    LaunchedEffect(route, w.transactions, portfolio, selectedSecurity) {
+        when (route) {
+            "portfolio" -> {
+                // Prioritize positions still held; old fully sold transactions must not
+                // consume the foreground quote budget before visible holdings.
+                val ids = runCatching { w.result(portfolio).holdings
+                    .filter { it.quantity > ZERO }.map { it.securityId }.toSet() }
+                    .getOrDefault(emptySet())
+                s.foregroundSecurities.value = w.securities.filter { it.id in ids }.take(20)
+            }
+            "detail/{id}" -> s.foregroundSecurities.value = listOfNotNull(
+                w.security(backstack?.arguments?.getString("id")) ?: selectedSecurity)
+            "markets" -> s.foregroundSecurities.value = Catalog.markets.take(12)
+            "discover", "watchlist" -> Unit // Each screen chooses its own visible symbols.
+            else -> s.foregroundSecurities.value = emptyList()
+        }
+    }
     LaunchedEffect(initialized, prefs["onboarded"], user) {
         if (initialized && (prefs["onboarded"] == "true" || user != null)) vm.refresh()
     }
@@ -102,12 +145,19 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             }
         }
     }
+    LaunchedEffect(widgetSection) {
+        if (widgetSection?.first == "markets")
+            nav.navigate("markets") { launchSingleTop = true; popUpTo("portfolio") }
+        if (widgetSection?.first == "reports")
+            nav.navigate("reports") { launchSingleTop = true; popUpTo("portfolio") }
+    }
     val tabs =
         listOf(
             "portfolio" to R.string.nav_portfolio,
             "markets" to R.string.nav_markets,
             "watchlist" to R.string.nav_watchlist,
             "discover" to R.string.nav_discover,
+            "news" to R.string.nav_news,
             "profile" to R.string.nav_profile,
         )
     val icons =
@@ -116,6 +166,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             Icons.Outlined.ShowChart,
             Icons.Outlined.StarOutline,
             Icons.Outlined.Explore,
+            Icons.Outlined.Article,
             Icons.Outlined.PersonOutline,
         )
     val onboarded = prefs["onboarded"] == "true" || user != null
@@ -212,7 +263,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             else
                 Column {
                     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    if (route in listOf("portfolio", "markets", "watchlist"))
+                    if (route in listOf("portfolio", "markets"))
                         Caption(marketStatus, Modifier.padding(horizontal = 18.dp, vertical = 3.dp))
                     NavHost(
                         navController = nav,
@@ -237,7 +288,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                                 vm.run("Transaction supprimée") { s.repo.remove(id) }
                             }
                         }
-                        composable("reports") { ReportsScreen(w) }
+                        composable("reports") { ReportsScreen(w, vm, portfolio) }
                         composable("markets") { MarketsScreen(w, vm) { detail(it) } }
                         composable("watchlist") {
                             WatchlistScreen(w, vm, { detail(it) }, { buy(it) }, { alert = it }) {
@@ -247,6 +298,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                             }
                         }
                         composable("discover") { DiscoverScreen(vm) { detail(it) } }
+                        composable("news") { NewsScreen(w, vm) { detail(it) } }
                         composable("profile") { ProfileScreen(w, vm, biometric) }
                         composable("detail/{id}") { entry ->
                             val id = entry.arguments?.getString("id")

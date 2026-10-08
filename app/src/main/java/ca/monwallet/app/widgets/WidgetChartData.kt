@@ -31,8 +31,9 @@ internal object WidgetChartData {
         }
         val day = intraday(wallet, portfolio, cached)
         if (day.size >= 2) return day
-        if (wallet.prices.isEmpty()) return emptyList()
-        return choose(day, history(wallet, portfolio, 7L), history(wallet, portfolio, 31L))
+        // The 4x2 labels this plot intraday. Weekly or monthly history must not
+        // masquerade as the last trading session when its intraday cache is empty.
+        return emptyList()
     }
 
     private fun history(wallet: Wallet, portfolio: String?, days: Long): List<Float> {

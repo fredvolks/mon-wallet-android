@@ -21,14 +21,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.work.*
 import ca.monwallet.app.MonWallet
 import ca.monwallet.app.R
+import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.*
+import ca.monwallet.app.marketdata.MarketSession
+import ca.monwallet.app.marketdata.NormalizedQuote
+import ca.monwallet.app.marketdata.supportsUsExtendedHours
 import ca.monwallet.app.ui.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 class WidgetConfiguration : ComponentActivity() {
@@ -37,8 +43,14 @@ class WidgetConfiguration : ComponentActivity() {
         setResult(RESULT_CANCELED)
         val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
         if (id < 0) { finish(); return }
-        val wide = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)
-            ?.provider?.className?.endsWith("Widget4x2") == true
+        val providerKind = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)
+            ?.provider?.className.orEmpty()
+        val wide = providerKind.endsWith("Widget4x2")
+        val widgetSize = WidgetDimensions.current(this,
+            AppWidgetManager.getInstance(this).getAppWidgetOptions(id),
+            if (providerKind.endsWith("4x3")) 250 to 240
+            else if (providerKind.endsWith("2x3")) 130 to 180 else 250 to 150)
+        val widgetHeight = widgetSize.second
         val services = (application as MonWallet).services
         setContent {
             WalletTheme {
@@ -64,7 +76,16 @@ class WidgetConfiguration : ComponentActivity() {
                         .padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         Text(stringResource(R.string.widget_configure),
                             style = MaterialTheme.typography.headlineSmall)
-                        if (wide) WidgetWidePreview(wallet, key, result, config, cached)
+                        if (wide) {
+                            WidgetWidePreview(wallet, key, result, config, cached,
+                                widgetSize.first, widgetHeight)
+                            val scale = resources.displayMetrics.density
+                            Text("Taille signalée par le lanceur : ${widgetSize.first} × " +
+                                "$widgetHeight dp (environ " +
+                                "${(widgetSize.first * scale).roundToInt()} × " +
+                                "${(widgetHeight * scale).roundToInt()} px de contenu)",
+                                color = Muted, style = MaterialTheme.typography.labelSmall)
+                        }
                         else Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(12.dp)) {
                                 Text(stringResource(R.string.widget_preview), color = Muted)
@@ -78,7 +99,9 @@ class WidgetConfiguration : ComponentActivity() {
                                     percent(result?.dayPercent).takeIf { config.dayPercent }
                                 ).joinToString("  "), color = tint(result?.day))
                                 if (config.showTitles && config.style in setOf("Mixte", "Titres"))
-                                    result?.let { config.titles(it) }?.take(3)?.forEach { h ->
+                                    result?.let { config.titles(it) }?.take(
+                                        WidgetTitleLayout.plan(config, providerKind, widgetHeight,
+                                            result?.let { config.titles(it).size } ?: 0).visible)?.forEach { h ->
                                         Text(wallet.security(h.securityId)?.ticker.orEmpty() + "  " +
                                             percent(h.dayPercent) + "  " + percent(h.percent))
                                     }
@@ -94,29 +117,51 @@ class WidgetConfiguration : ComponentActivity() {
                             }
                         }
                         WidgetSection(stringResource(R.string.widget_section_appearance))
-                        ((if (wide) listOf("Mixte premium" to R.string.widget_style_mixed_premium)
+                        ((if (wide) listOf("Daily + Titres" to R.string.widget_style_daily_titles)
                             else emptyList()) +
                             listOf("Résumé" to R.string.widget_style_summary, "Titres" to R.string.widget_style_titles,
                             "Graphique" to R.string.widget_style_chart, "Mixte" to R.string.widget_style_mixed,
                             "Ultra compact" to R.string.widget_style_compact)).forEach { (style, label) ->
                             WidgetChoice(stringResource(label), config.style == style) {
-                                config = if (style == "Mixte premium") config.copy(
+                                config = if (style == "Daily + Titres") config.copy(
                                     style = style, chart = true, showTitles = true, totalPercent = true,
                                     titleDayPercent = true, titleTotalPercent = false, price = true,
                                     showUpdated = true)
                                 else config.copy(style = style)
                             }
                         }
-                        WidgetSection(stringResource(R.string.widget_section_returns))
-                        WidgetSwitch(stringResource(R.string.widget_total_percent), config.totalPercent) { config = config.copy(totalPercent = it) }
+                        WidgetSection("DAILY")
+                        if (wide) {
+                            WidgetSwitch("Afficher Aujourd’hui", config.showDailyLabel) {
+                                config = config.copy(showDailyLabel = it)
+                            }
+                            WidgetSwitch("Mettre Daily en valeur", config.dailyHero) {
+                                config = config.copy(dailyHero = it)
+                            }
+                        }
+                        if (!wide) {
+                            WidgetSwitch(stringResource(R.string.widget_total_percent), config.totalPercent) { config = config.copy(totalPercent = it) }
+                        }
                         WidgetSwitch(stringResource(R.string.widget_day_percent), config.dayPercent) { config = config.copy(dayPercent = it) }
                         WidgetSwitch(stringResource(R.string.widget_day_amount), config.dayAmount) { config = config.copy(dayAmount = it) }
-                        WidgetSwitch(stringResource(R.string.widget_gain_amount), config.totalAmount) { config = config.copy(totalAmount = it) }
-                        WidgetSwitch(stringResource(R.string.widget_current_value), config.value) { config = config.copy(value = it) }
-                        WidgetSwitch(stringResource(R.string.widget_capital), config.invested) { config = config.copy(invested = it) }
+                        WidgetSection("TOTAL")
+                        if (wide) WidgetSwitch(stringResource(R.string.widget_total_percent), config.totalPercent) {
+                            config = config.copy(totalPercent = it)
+                        }
+                        if (!wide) {
+                            WidgetSwitch(stringResource(R.string.widget_gain_amount), config.totalAmount) { config = config.copy(totalAmount = it) }
+                            WidgetSwitch(stringResource(R.string.widget_current_value), config.value) { config = config.copy(value = it) }
+                            WidgetSwitch(stringResource(R.string.widget_capital), config.invested) { config = config.copy(invested = it) }
+                        }
                         WidgetSection(stringResource(R.string.widget_section_titles))
                         WidgetSwitch(stringResource(R.string.widget_show_titles), config.showTitles) { config = config.copy(showTitles = it) }
                         if (config.showTitles) {
+                            Choice(stringResource(R.string.widget_title_count),
+                                if (config.titleCount == 0) stringResource(R.string.widget_title_count_auto)
+                                else config.titleCount.toString(),
+                                listOf(stringResource(R.string.widget_title_count_auto)) + (1..6).map(Int::toString)) {
+                                config = config.copy(titleCount = it)
+                            }
                             WidgetChoice(stringResource(R.string.widget_automatic), !config.custom) { config = config.copy(custom = false) }
                             WidgetChoice(stringResource(R.string.widget_custom), config.custom) {
                                 config = config.copy(custom = true, titleIds = config.titleIds.ifEmpty { held.map { it.securityId } })
@@ -131,6 +176,14 @@ class WidgetConfiguration : ComponentActivity() {
                                 WidgetChoice(stringResource(label), config.sort == sort) { config = config.copy(sort = sort) }
                             }
                             else {
+                                val selectedHeld = config.titleIds.count { id -> held.any { it.securityId == id } }
+                                val limit = WidgetTitleLayout.plan(config,
+                                    providerKind, widgetHeight, selectedHeld).limit
+                                if (selectedHeld > limit)
+                                    Text(stringResource(R.string.widget_title_count_hint, limit), color = Muted,
+                                        style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.widget_drag_hint), color = Muted,
+                                    style = MaterialTheme.typography.bodySmall)
                                 Row {
                                     TextButton(onClick = { config = config.copy(titleIds = held.map { it.securityId }) }) {
                                         Text(stringResource(R.string.widget_select_all))
@@ -139,31 +192,43 @@ class WidgetConfiguration : ComponentActivity() {
                                         Text(stringResource(R.string.widget_select_none))
                                     }
                                 }
-                                held.forEach { h ->
+                                val chosen = config.titleIds.mapNotNull { id ->
+                                    held.firstOrNull { it.securityId == id }
+                                }
+                                (chosen + held.filter { h -> h.securityId !in config.titleIds }).forEach { h ->
                                     val security = wallet.security(h.securityId) ?: return@forEach
-                                    var distance by remember(security.id) { mutableFloatStateOf(0f) }
-                                    Row(Modifier.fillMaxWidth().heightIn(min = 42.dp)
-                                        .pointerInput(security.id) {
-                                            detectDragGesturesAfterLongPress(onDragEnd = { distance = 0f }) { change, drag ->
-                                                change.consume()
-                                                distance += drag.y
-                                                val order = current.titleIds
-                                                val index = order.indexOf(security.id)
-                                                val target = if (distance > 26.dp.toPx()) index + 1
-                                                    else if (distance < -26.dp.toPx()) index - 1 else index
-                                                if (index >= 0 && target in order.indices && target != index) {
-                                                    config = current.copy(titleIds = order.toMutableList().apply {
-                                                        add(target, removeAt(index))
-                                                    })
-                                                    distance = 0f
+                                    key(security.id) {
+                                        var distance by remember { mutableFloatStateOf(0f) }
+                                        Row(Modifier.fillMaxWidth().heightIn(min = 42.dp)
+                                            .pointerInput(security.id, held.map { it.securityId }) {
+                                                detectDragGesturesAfterLongPress(
+                                                    onDragEnd = { distance = 0f },
+                                                    onDragCancel = { distance = 0f }) { change, drag ->
+                                                    change.consume()
+                                                    distance += drag.y
+                                                    val order = current.titleIds
+                                                    val activeIds = held.map { it.securityId }.toSet()
+                                                    val active = order.filter { it in activeIds }
+                                                    val index = active.indexOf(security.id)
+                                                    val target = if (distance > 26.dp.toPx()) index + 1
+                                                        else if (distance < -26.dp.toPx()) index - 1 else index
+                                                    if (index >= 0 && target in active.indices && target != index) {
+                                                        val moved = active.toMutableList().apply {
+                                                            add(target, removeAt(index))
+                                                        }.iterator()
+                                                        config = current.copy(titleIds = order.map {
+                                                            if (it in activeIds) moved.next() else it
+                                                        })
+                                                        distance = 0f
+                                                    }
                                                 }
-                                            }
-                                        }, verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(security.id in config.titleIds, onCheckedChange = { yes ->
-                                            config = config.copy(titleIds = if (yes) config.titleIds + security.id
-                                                else config.titleIds - security.id)
-                                        })
-                                        Text(security.ticker)
+                                            }, verticalAlignment = Alignment.CenterVertically) {
+                                            Checkbox(security.id in config.titleIds, onCheckedChange = { yes ->
+                                                config = config.copy(titleIds = if (yes) config.titleIds + security.id
+                                                    else config.titleIds - security.id)
+                                            })
+                                            Text((if (security.id in config.titleIds) "☰  " else "") + security.ticker)
+                                        }
                                     }
                                 }
                             }
@@ -175,6 +240,9 @@ class WidgetConfiguration : ComponentActivity() {
                             WidgetSwitch(stringResource(R.string.widget_title_price), config.price) { config = config.copy(price = it) }
                             WidgetSwitch(stringResource(R.string.widget_title_value), config.titleValue) { config = config.copy(titleValue = it) }
                             WidgetSwitch(stringResource(R.string.widget_title_weight), config.weight) { config = config.copy(weight = it) }
+                            if (wide) WidgetSwitch("Pre-market / After-hours", config.showExtended) {
+                                config = config.copy(showExtended = it)
+                            }
                         }
                         WidgetSection(stringResource(R.string.widget_section_chart))
                         WidgetSwitch(stringResource(R.string.widget_show_chart), config.chart) { config = config.copy(chart = it) }
@@ -219,14 +287,15 @@ class WidgetConfiguration : ComponentActivity() {
 
 @Composable
 private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
-    config: WidgetSettings, cached: List<Point>) {
+    config: WidgetSettings, cached: List<Point>, widthDp: Int, heightDp: Int) {
     val portfolio = key.takeUnless { it == "all" }
     val title = wallet.portfolios.find { it.id == key }?.name
-        ?: stringResource(R.string.all_portfolios)
-    val holdings = if (config.showTitles && config.style !in setOf("Résumé", "Graphique", "Ultra compact"))
-        result?.let { config.titles(it).take(3) }.orEmpty() else emptyList()
-    val series = remember(wallet, key, config.chart, config.period, cached) {
-        if (config.chart) WidgetChartData.values(wallet, portfolio, config.period, cached)
+        ?: if (portfolio == null) stringResource(R.string.all_portfolios) else "Portefeuille supprimé"
+    val ordered = result?.let { config.titles(it) }.orEmpty()
+    val plan = WidgetTitleLayout.plan(config, "4x2", heightDp, ordered.size)
+    val holdings = ordered.take(plan.visible)
+    val series = remember(wallet, key, plan.chart, config.period, cached) {
+        if (plan.chart) WidgetChartData.values(wallet, portfolio, config.period, cached)
         else emptyList()
     }
     val totalTint = when (result?.percent?.signum()) {
@@ -239,70 +308,121 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
         null, 0 -> Muted
         else -> Green
     }
-    Column(Modifier.fillMaxWidth()
+    Column(Modifier.widthIn(max = widthDp.dp).height(heightDp.dp)
         .background(Color(0xFF061722), RoundedCornerShape(22.dp))
         .border(1.dp, Color(0xFF19747B), RoundedCornerShape(22.dp))
-        .padding(horizontal = 12.dp, vertical = 9.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        .padding(horizontal = 9.dp, vertical = 4.dp)) {
+        Row(Modifier.fillMaxWidth().height(23.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(title, Modifier.weight(1f), color = Color.White, fontSize = 16.sp)
-            Text("⚙  ↻", color = Color.White, fontSize = 17.sp)
+            Text("↻   ⚙", color = Color.White, fontSize = 17.sp)
         }
-        Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(0.45f)) {
-                if (config.totalPercent) {
-                    Text(percent(result?.percent), color = totalTint, fontSize = 28.sp,
-                        lineHeight = 29.sp, maxLines = 1)
-                    Text(stringResource(R.string.widget_return_total), color = Muted, fontSize = 8.sp)
+        Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(0.45f).fillMaxHeight()) {
+                Column(Modifier.fillMaxWidth().weight(1f)
+                    .background(if (result?.day?.signum() == -1) Color(0xFF38202B)
+                        else Color(0xFF123927), RoundedCornerShape(15.dp))
+                    .padding(start = 7.dp, end = 4.dp),
+                    verticalArrangement = Arrangement.Center) {
+                    val today = result?.holdings?.filter { it.quantity > ZERO }
+                        ?.all { wallet.quotes[it.securityId]?.sessionDate == java.time.LocalDate.now().toString() } == true
+                    if (config.showDailyLabel) Text(if (today || result?.day == null) stringResource(R.string.widget_today)
+                        else "Dernière séance", color = Muted, fontSize = 9.sp, maxLines = 1)
+                    if (config.dayAmount && !config.hideAmounts)
+                        Text(if (result?.day == null) "Données indisponibles" else signed(result.day),
+                            color = dayTint, fontSize = if (result?.day == null) 15.sp
+                                else if (config.dailyHero) 26.sp else 21.sp,
+                            lineHeight = if (config.dailyHero) 28.sp else 23.sp,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (config.dayPercent && result?.dayPercent != null)
+                        Text(percent(result.dayPercent), color = dayTint,
+                            fontSize = if (config.dailyHero) 22.sp else 17.sp,
+                            maxLines = 1)
+                    if (series.size >= 2 && plan.chart) {
+                        val lineColor = if (series.last() < series.first()) Red else Green
+                        Canvas(Modifier.fillMaxWidth().height(11.dp)) {
+                            val low = series.minOrNull() ?: 0f
+                            val span = ((series.maxOrNull() ?: low) - low).takeIf { it > 0 } ?: 1f
+                            series.zipWithNext().forEachIndexed { i, pair ->
+                                fun point(index: Int, value: Float) =
+                                    Offset(index * size.width / (series.size - 1),
+                                        size.height - 2f - (value - low) / span * (size.height - 4f))
+                                drawLine(lineColor, point(i, pair.first), point(i + 1, pair.second),
+                                    strokeWidth = 2.dp.toPx())
+                            }
+                        }
+                    }
                 }
-                Text(stringResource(R.string.widget_today),
-                    Modifier.padding(top = 6.dp), color = Muted, fontSize = 8.sp)
-                val daily = listOfNotNull(
-                    signed(result?.day).takeIf { config.dayAmount && !config.hideAmounts },
-                    percent(result?.dayPercent).takeIf { config.dayPercent }
-                ).joinToString("  ")
-                if (daily.isNotEmpty()) Text(daily, Modifier.padding(top = 3.dp)
-                    .background(Color(0xFF123927), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
-                    color = dayTint, fontSize = 11.sp, maxLines = 1)
+                if (config.totalPercent) Row(Modifier.fillMaxWidth().height(23.dp).padding(top = 2.dp)
+                    .background(Color(0xFF102530), RoundedCornerShape(13.dp))
+                    .padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.widget_return_total), Modifier.weight(1f),
+                        color = Muted, fontSize = 8.sp, maxLines = 1)
+                    Text(percent(result?.percent), color = totalTint, fontSize = 16.sp,
+                        maxLines = 1)
+                }
+                Row(Modifier.fillMaxWidth().height(24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    listOf("^GSPC" to "S&P 500", "^IXIC" to "NASDAQ",
+                        "^DJI" to "DOW JONES").forEach { (symbol, label) ->
+                        val market = Catalog.markets.firstOrNull { it.symbol == symbol }
+                        val value = market?.let { wallet.quotes[it.id]?.percent }
+                        Column(Modifier.weight(1f)) {
+                            Text(label, color = Muted, fontSize = 7.sp, maxLines = 1)
+                            Text(percent(value), color = when (value?.signum()) {
+                                -1 -> Red; 1 -> Green; else -> Muted
+                            }, fontSize = 10.sp, maxLines = 1)
+                        }
+                    }
+                }
             }
             Spacer(Modifier.width(5.dp))
-            Spacer(Modifier.width(1.dp).height(74.dp).background(Color(0xFF25424E)))
-            Column(Modifier.weight(0.55f).padding(start = 6.dp)) {
+            Spacer(Modifier.width(1.dp).fillMaxHeight().background(Color(0xFF25424E)))
+            Column(Modifier.weight(0.55f).fillMaxHeight().padding(start = 6.dp),
+                verticalArrangement = Arrangement.Center) {
                 holdings.forEach { h ->
                     val security = wallet.security(h.securityId) ?: return@forEach
-                    Row(Modifier.fillMaxWidth().height(24.dp),
+                    val font = if (plan.density == WidgetTitleLayout.Density.ULTRA) 9.sp
+                        else if (plan.density == WidgetTitleLayout.Density.COMPACT) 10.sp else 11.sp
+                    val logo = if (plan.density == WidgetTitleLayout.Density.ULTRA) 16.dp
+                        else if (plan.density == WidgetTitleLayout.Density.COMPACT) 18.dp else 22.dp
+                    val q = wallet.quotes[security.id]
+                    val normalized = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) }
+                        ?.let { NormalizedQuote.from(it) }
+                    val extraPrice = when (normalized?.marketSession) {
+                        MarketSession.PRE_MARKET -> normalized.preMarketPrice
+                        MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
+                        else -> null
+                    }
+                    val change = when (normalized?.marketSession) {
+                        MarketSession.PRE_MARKET -> normalized.preMarketChangePercent
+                        MarketSession.AFTER_HOURS -> normalized.afterHoursChangePercent
+                        else -> null
+                    }
+                    val shownPercent = if (extraPrice == null) q?.percent else change
+                    Row(Modifier.fillMaxWidth().height(plan.density.rowHeight.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        if (config.logo) Logo(security, 20.dp)
-                        Text(security.ticker, Modifier.weight(1f).padding(start = 3.dp),
-                            fontSize = 9.sp, maxLines = 1)
+                        if (config.logo) Logo(security, logo)
+                        Text(if (config.ticker) security.ticker else security.name,
+                            Modifier.weight(1f).padding(start = 3.dp),
+                            fontSize = font, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (extraPrice != null) Text(if (normalized?.marketSession == MarketSession.PRE_MARKET)
+                            "☀" else "☾", color = Blue, fontSize = 9.sp)
                         if (config.price && !config.hideAmounts)
-                            Text(money(wallet.quotes[security.id]?.price, security.currency),
-                                fontSize = 8.sp, maxLines = 1)
+                            Text(number(extraPrice ?: q?.price),
+                                Modifier.weight(1.9f), fontSize = font, maxLines = 1,
+                                overflow = TextOverflow.Ellipsis)
                         if (config.titleDayPercent)
-                            Text(percent(h.dayPercent), Modifier.padding(start = 4.dp),
-                                color = if (h.dayPercent?.signum() == -1) Red else Green,
-                                fontSize = 8.sp, maxLines = 1)
+                            Text(percent(shownPercent), Modifier.weight(1.35f).padding(start = 2.dp),
+                                color = if (shownPercent?.signum() == -1) Red else Green,
+                                fontSize = font, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 if (holdings.isEmpty() && config.showTitles)
                     Text(stringResource(R.string.widget_no_holdings), color = Muted, fontSize = 9.sp)
             }
         }
-        if (series.size >= 2 && config.style in setOf("Mixte", "Mixte premium", "Graphique")) {
-            val lineColor = if (series.last() < series.first()) Red else Green
-            Canvas(Modifier.fillMaxWidth().height(22.dp)) {
-                val low = series.minOrNull() ?: 0f
-                val span = ((series.maxOrNull() ?: low) - low).takeIf { it > 0 } ?: 1f
-                series.zipWithNext().forEachIndexed { i, pair ->
-                    fun point(index: Int, value: Float) =
-                        Offset(index * size.width / (series.size - 1),
-                            size.height - 2f - (value - low) / span * (size.height - 4f))
-                    drawLine(lineColor, point(i, pair.first), point(i + 1, pair.second),
-                        strokeWidth = 2.dp.toPx())
-                }
-            }
-        }
-        if (config.showUpdated) {
+        if (plan.footer) {
             val heldIds = result?.holdings?.filter { it.quantity > ZERO }
                 ?.map { it.securityId }?.toSet().orEmpty()
             val fetched = wallet.quotes.values.filter { it.securityId in heldIds }
@@ -310,8 +430,10 @@ private fun WidgetWidePreview(wallet: Wallet, key: String, result: Result?,
             val minutes = fetched?.let {
                 TimeUnit.MILLISECONDS.toMinutes((System.currentTimeMillis() - it).coerceAtLeast(0L))
             }
-            Text(minutes?.let { stringResource(R.string.widget_updated_short, "${it} min") }
-                ?: stringResource(R.string.widget_no_quote), color = Muted, fontSize = 8.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Text(minutes?.let { stringResource(R.string.widget_updated_short, "${it} min") }
+                    ?: stringResource(R.string.widget_no_quote), color = Muted, fontSize = 8.sp)
+            }
         }
     }
 }

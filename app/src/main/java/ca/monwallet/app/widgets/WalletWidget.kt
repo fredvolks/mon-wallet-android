@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.os.Bundle
+import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
@@ -121,14 +122,29 @@ open class WalletWidget : AppWidgetProvider() {
                     (s.secure.get("biometric") == "true" &&
                         s.secure.get("hide_widgets") != "false") || owner != s.repo.owner.value || !valid
                 val result = if (hidden) null else runCatching { wallet.result(portfolio) }.getOrNull()
+                val options = manager.getAppWidgetOptions(id)
+                val widgetSize = WidgetDimensions.current(c, options,
+                    if (kind.endsWith("4x3")) 250 to 240
+                    else if (kind.endsWith("2x3")) 130 to 180 else 250 to 150)
+                val widgetHeight = widgetSize.second
+                val titlePlan = WidgetTitleLayout.plan(config, kind, widgetHeight,
+                    result?.let { config.titles(it).size } ?: 0)
                 if (kind.endsWith("4x2")) {
                     val points = cache.filter { it.kind == "intraday" }.flatMap {
                         runCatching {
                             s.repo.gson.fromJson(it.payload, Array<Point>::class.java).toList()
                         }.getOrDefault(emptyList())
                     }.sortedBy { it.timestamp }
-                    manager.updateAppWidget(id, WidgetWideRenderer.render(c, id, info, config,
-                        wallet, portfolio, result, hidden, points))
+                    val sizes = WidgetDimensions.exactSizes(options)
+                    val rendered = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                        sizes.isNotEmpty()) {
+                        RemoteViews(sizes.associateWith { size ->
+                            WidgetWideRenderer.render(c, id, info, config, wallet, portfolio,
+                                result, hidden, points, size.width.toInt() to size.height.toInt())
+                        })
+                    } else WidgetWideRenderer.render(c, id, info, config, wallet,
+                        portfolio, result, hidden, points, widgetSize)
+                    manager.updateAppWidget(id, rendered)
                     continue
                 }
                 val views = RemoteViews(c.packageName, R.layout.wallet_widget)
@@ -179,14 +195,9 @@ open class WalletWidget : AppWidgetProvider() {
                 views.setTextColor(R.id.widget_amount, color)
                 views.setTextColor(R.id.widget_percent, color)
                 views.removeAllViews(R.id.widget_rows)
-                if (!hidden && big && config.showTitles && config.style !in setOf("Résumé", "Ultra compact")) {
-                    val limit = when {
-                        kind.endsWith("4x3") -> if (manager.getAppWidgetOptions(id)
-                            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180) >= 230) 6 else 3
-                        kind.endsWith("2x3") -> 2
-                        else -> 3
-                    }
-                    result?.let { config.titles(it) }?.take(limit)?.forEach { h ->
+                val canShowRows = (big || kind.endsWith("2x2")) && titlePlan.visible > 0
+                if (!hidden && canShowRows) {
+                    result?.let { config.titles(it) }?.take(titlePlan.visible)?.forEach { h ->
                         val security = wallet.security(h.securityId) ?: return@forEach
                         val row = RemoteViews(c.packageName, R.layout.wallet_widget_row)
                         row.setTextViewText(R.id.widget_row_ticker,
@@ -215,7 +226,7 @@ open class WalletWidget : AppWidgetProvider() {
                 }
                 views.setViewVisibility(
                     R.id.widget_rows,
-                    if (big && !hidden && config.showTitles &&
+                    if (canShowRows && !hidden && config.showTitles &&
                         config.style !in setOf("Résumé", "Ultra compact")) View.VISIBLE else View.GONE,
                 )
                 val points: List<Point> =

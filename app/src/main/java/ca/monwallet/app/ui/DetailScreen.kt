@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.*
 import ca.monwallet.app.database.Cache
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.Finnhub
-import ca.monwallet.app.marketdata.ResearchSection
-import ca.monwallet.app.marketdata.SeekingAlphaResearch
-import ca.monwallet.app.marketdata.FinancialSymbolResolver
 import ca.monwallet.app.marketdata.NoFinancialCoverage
+import ca.monwallet.app.marketdata.NormalizedQuote
+import ca.monwallet.app.marketdata.MarketSession
+import ca.monwallet.app.marketdata.quoteFreshnessLabel
 import kotlinx.coroutines.*
 
 @Composable
@@ -69,7 +69,7 @@ fun DetailScreen(
         status = null
         prices = emptyList()
         try {
-            runCatching { s.repo.quote(s.market.quote(security)) }
+            runCatching { s.refreshQuote(security) }
             prices = s.market.history(security, codes[range], if (range == 0) "5m" else "1d")
             if (range >= 6) s.repo.points(security.id, prices)
         } catch (e: CancellationException) {
@@ -190,16 +190,35 @@ fun DetailScreen(
                 color = tint(q?.change),
                 fontSize = 17.sp,
             )
+            val normalized = q?.takeIf { security.currency == "USD" }?.let { NormalizedQuote.from(it) }
+            val extendedPrice = when (normalized?.marketSession) {
+                MarketSession.PRE_MARKET -> normalized.preMarketPrice
+                MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
+                else -> null
+            }
+            if (extendedPrice != null && normalized != null) {
+                val delta = if (normalized.marketSession == MarketSession.PRE_MARKET)
+                    normalized.preMarketChange else normalized.afterHoursChange
+                val changePercent = if (normalized.marketSession == MarketSession.PRE_MARKET)
+                    normalized.preMarketChangePercent else normalized.afterHoursChangePercent
+                val timestamp = if (normalized.marketSession == MarketSession.PRE_MARKET)
+                    normalized.preMarketTimestamp else normalized.afterHoursTimestamp
+                Caption((if (normalized.marketSession == MarketSession.PRE_MARKET) "☀ Pre-market" else "☾ After-hours") +
+                    " · ${money(extendedPrice,security.currency)} · ${signed(delta,security.currency)} (${percent(changePercent)})" +
+                    (timestamp?.let { " · ${time(it)}" } ?: ""))
+            }
             Caption(
-                when (q?.marketOpen) {
-                    true -> "Marché ouvert"
-                    false -> "Marché fermé"
-                    null -> "État du marché indisponible"
+                when (normalized?.marketSession) {
+                    MarketSession.PRE_MARKET -> "PRE"
+                    MarketSession.REGULAR -> "OUVERT"
+                    MarketSession.AFTER_HOURS -> "AFTER"
+                    MarketSession.CLOSED -> "FERMÉ"
+                    null -> if (q?.marketOpen == true) "Marché ouvert" else "État du marché indisponible"
                 }
             )
             Caption(
                 q?.let {
-                    "${it.source} · ${if(it.delay==0)"Temps réel"else if(it.delay!=null)"Délai ${it.delay} min"else"Délai non garanti"}\nDernier cours : ${time(it.timestamp)}"
+                    "${it.source} · ${quoteFreshnessLabel(it)}\nDernier cours : ${time(it.timestamp)}"
                 } ?: "Donnée indisponible"
             )
             Chips(ranges, range) { range = it }
@@ -329,17 +348,6 @@ fun DetailScreen(
                     if (!financeLoading && fundamentals == null && (financeNoData || financeError == null))
                         Caption(stringResource(R.string.finance_no_coverage))
                     fundamentals?.asOf?.let { Caption(stringResource(R.string.finance_as_of, it)) }
-                    FinancialSymbolResolver.external(security)?.let { (provider, url) ->
-                        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
-                            Text(stringResource(R.string.finance_open_external, provider))
-                        }
-                    }
-                    SeekingAlphaResearch.url(security, ResearchSection.FINANCIALS)?.let { url ->
-                        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
-                            Text(stringResource(R.string.research_seeking_alpha))
-                        }
-                        Caption(stringResource(R.string.research_external_note))
-                    }
                 }
                 val metrics =
                     if (security.type == "ETF")
@@ -409,7 +417,14 @@ fun DetailScreen(
                         modifier = Modifier.height(100.dp),
                         labels = true,
                     )
-                    Caption(sorted.joinToString(" · ") { it.first })
+                    sorted.asReversed().forEach { (period, value) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween) {
+                            Caption(period)
+                            Text(financialValue(name, value.toPlainString(), security.currency),
+                                fontSize = 12.sp)
+                        }
+                    }
                 }
                 item {
                     fundamentals?.let {
@@ -464,12 +479,6 @@ fun DetailScreen(
                     Caption(
                         stringResource(R.string.ui_ces_opinions_appartiennent_aux_analystes_cite_0affe)
                     )
-                    SeekingAlphaResearch.url(security, ResearchSection.ANALYSTS)?.let { url ->
-                        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
-                            Text(stringResource(R.string.research_seeking_alpha))
-                        }
-                        Caption(stringResource(R.string.research_external_note))
-                    }
                 }
             }
             3 -> {

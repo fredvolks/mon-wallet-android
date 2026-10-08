@@ -1,5 +1,8 @@
 package ca.monwallet.app.domain
 
+import ca.monwallet.app.marketdata.MarketSession
+import ca.monwallet.app.marketdata.NormalizedQuote
+import ca.monwallet.app.marketdata.supportsUsExtendedHours
 import java.math.BigDecimal
 import java.math.MathContext
 import java.time.LocalDate
@@ -82,6 +85,7 @@ object OfficialDomains {
         "BLDP|NASDAQ|USD|STOCK" to "ballard.com",
         "PHOS.CN|CSE|CAD|STOCK" to "firstphosphate.com",
         "XEQT.TO|TSX|CAD|ETF" to "ishares.com",
+        "VFV.TO|TSX|CAD|ETF" to "vanguard.ca",
     )
     fun forIdentity(symbol: String, exchange: String, currency: String, type: String): String? {
         val market = when (exchange.uppercase().replace(" ", "")) {
@@ -153,6 +157,7 @@ data class AlertEvent(
     val channel: String,
     val timestamp: Long = System.currentTimeMillis(),
     val eventKey: String = id,
+    val sourceUrl: String? = null,
 )
 
 data class Setting(val id: String, val value: String)
@@ -172,6 +177,15 @@ data class Quote(
     val low52: BigDecimal? = null,
     val averageVolume: BigDecimal? = null,
     val fetchedAt: Long = System.currentTimeMillis(),
+    val preMarketPrice: BigDecimal? = null,
+    val preMarketTimestamp: Long? = null,
+    val afterHoursPrice: BigDecimal? = null,
+    val afterHoursTimestamp: Long? = null,
+    val marketSession: String = "CLOSED",
+    val preMarketChange: BigDecimal? = null,
+    val preMarketChangePercent: BigDecimal? = null,
+    val afterHoursChange: BigDecimal? = null,
+    val afterHoursChangePercent: BigDecimal? = null,
 ) {
     val change
         get() = previous?.let { price - it }
@@ -294,10 +308,32 @@ data class Wallet(
 ) {
     fun security(id: String?) = securities.find { it.id == id }
 
-    fun result(portfolio: String? = null) =
-        Engine.calculate(
-            transactions.filter { portfolio == null || it.portfolioId == portfolio },
-            quotes,
-            securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] },
-        )
+    fun result(portfolio: String? = null, now: Long = System.currentTimeMillis()): Result {
+        val entries = transactions.filter { portfolio == null || it.portfolioId == portfolio }
+        val usd = securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] }
+        val regular = Engine.calculate(entries, quotes, usd)
+        if (settings["portfolio_extended"] == "REGULAR") return regular
+        val adjusted = quotes.mapValues { (securityId, quote) ->
+            val normalized = securities.find { it.id == securityId }
+                ?.takeIf { supportsUsExtendedHours(it) }
+                ?.let { NormalizedQuote.from(quote, now) }
+            val extended = when (normalized?.marketSession) {
+                MarketSession.PRE_MARKET -> normalized.preMarketPrice
+                MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
+                else -> null
+            }
+            if (extended != null && quote.currency == "USD") quote.copy(price = extended)
+            else quote
+        }
+        if (adjusted == quotes) return regular
+        val estimated = Engine.calculate(entries, adjusted, usd)
+        val byId = regular.holdings.associateBy { it.securityId }
+        // Today's P&L retains the regular-session reference; only valuation uses
+        // extended hours, and only when the provider supplied a current quote.
+        return estimated.copy(day = regular.day, dayBase = regular.dayBase,
+            holdings = estimated.holdings.map { holding ->
+                holding.copy(day = byId[holding.securityId]?.day,
+                    dayBase = byId[holding.securityId]?.dayBase)
+            })
+    }
 }

@@ -1,4 +1,5 @@
 <resources>
+    <string name="widget_style_daily_titles">Daily + Titres</string>
     <string name="app_name">Mon Wallet</string>
     <string name="portfolio_tracker">PORTFOLIO TRACKER</string>
     <string name="brand_first">Mon</string>
@@ -65,6 +66,7 @@
     <string name="nav_markets">Marchés</string>
     <string name="nav_watchlist">Watchlist</string>
     <string name="nav_discover">Découvrir</string>
+    <string name="nav_news">News</string>
     <string name="nav_profile">Profil</string>
     <string name="nav_history">Historique</string>
     <string name="nav_reports">Rapports</string>
@@ -432,6 +434,11 @@
     <string name="widget_section_appearance">APPARENCE</string>
     <string name="widget_section_returns">RENDEMENT</string>
     <string name="widget_section_titles">TITRES</string>
+    <string name="widget_title_count">Nombre de titres affichés</string>
+    <string name="widget_title_count_auto">Auto</string>
+    <string name="widget_title_count_hint">%1$d titres seront visibles dans ce widget. Les autres restent sélectionnés.</string>
+    <string name="widget_drag_hint">Maintenez un titre sélectionné puis glissez-le pour changer l’ordre.</string>
+    <string name="widget_core_metrics">Le rendement total et la variation du jour restent toujours visibles en 4×2.</string>
     <string name="widget_section_chart">GRAPHIQUE</string>
     <string name="widget_section_privacy">CONFIDENTIALITÉ</string>
     <string name="widget_section_refresh">RAFRAÎCHISSEMENT</string>
