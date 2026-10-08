@@ -120,6 +120,22 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                 tab = it
                 if (it == 3) { mode = "momentum"; sort = "period"; descending = true }
             }
+            if (tab != 3) Surface(
+                onClick = { tab = 3; mode = "momentum"; sort = "period"; descending = true },
+                modifier = Modifier.fillMaxWidth(),
+                color = Panel,
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Secteurs par industrie", color = Green, fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp)
+                        Text("11 secteurs · jusqu’à 30 actions chacun", color = Muted, fontSize = 10.sp)
+                    }
+                    Text("›", color = Green, fontSize = 20.sp)
+                }
+            }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             Text(status, fontSize = 10.sp, color = Muted)
         }
