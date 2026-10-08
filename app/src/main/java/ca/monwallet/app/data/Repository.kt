@@ -42,7 +42,7 @@ class Repository(val db: Database, val scope: CoroutineScope) {
                             runCatching {
                                 val id = c.getDeclaredField("id").apply { isAccessible = true }
                                     .get(value) as? String
-                                id == row.id && id.isNotBlank()
+                                id?.let { it == row.id && it.isNotBlank() } == true
                             }.getOrDefault(false)
                         }
                 }
