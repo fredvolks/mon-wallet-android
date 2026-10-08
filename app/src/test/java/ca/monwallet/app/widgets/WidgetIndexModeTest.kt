@@ -45,9 +45,9 @@ class WidgetIndexModeTest {
         val pieces = listOf(10f to -5f, -5f to -4f, -4f to 8f)
             .flatMap { (start, end) -> WidgetChartData.segmentPieces(start, end) }
 
-        assertEquals(listOf(1, -1, -1, 1), pieces.map { it.sign })
+        assertEquals(listOf(1, -1, -1, -1, 1), pieces.map { it.sign })
         assertEquals(2f / 3f, pieces[0].endFraction, 0.0001f)
-        assertEquals(1f / 3f, pieces[2].startFraction, 0.0001f)
+        assertEquals(1f / 3f, pieces[4].startFraction, 0.0001f)
     }
 
     @Test fun chartSegmentsStayGreenAboveZeroAndRedBelowZero() {
