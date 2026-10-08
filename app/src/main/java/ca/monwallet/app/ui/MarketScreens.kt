@@ -139,7 +139,9 @@ fun WatchlistScreen(
     var showName by remember { mutableStateOf(prefs.getBoolean("show_name", false)) }
     var showExtended by remember { mutableStateOf(prefs.getBoolean("show_extended", true)) }
     var sortKey by remember(list?.id) { mutableStateOf(prefs.getString("sort:" + list?.id, "manual") ?: "manual") }
-    var descending by remember { mutableStateOf(true) }
+    var descending by remember(list?.id) {
+        mutableStateOf(prefs.getBoolean("descending:" + list?.id, true))
+    }
     val horizontal = rememberScrollState()
     val items = w.items.filter { it.watchlistId == list?.id }.sortedBy { it.order }
     val securities = items.mapNotNull { w.security(it.securityId) }
@@ -427,7 +429,8 @@ fun WatchlistScreen(
                     TextButton(onClick = {
                         if (sortKey == key) descending = !descending
                         else { sortKey = key; descending = true }
-                        prefs.edit().putString("sort:" + list?.id, sortKey).apply()
+                        prefs.edit().putString("sort:" + list?.id, sortKey)
+                            .putBoolean("descending:" + list?.id, descending).apply()
                         sortDialog = false
                     }) { Text((if (sortKey == key) "✓ " else "") + when (key) {
                         "manual" -> "Manuel"; "pre" -> "Pre %"; "after" -> "After %"
@@ -836,6 +839,7 @@ fun MarketsScreen(w: Wallet, vm: WalletViewModel, onDetail: (Security) -> Unit) 
                     2 -> it.type == "FX"
                     3 -> it.type == "COMMODITY"
                     4 -> it.type == "CRYPTO"
+                    5 -> it.type == "FUTURE" || it.type == "COMMODITY"
                     else -> true
                 }
             }
@@ -845,7 +849,7 @@ fun MarketsScreen(w: Wallet, vm: WalletViewModel, onDetail: (Security) -> Unit) 
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Chips(listOf("Aperçu", "Indices", "Devises", "Matières", "Crypto"), selected) {
+            Chips(listOf("Aperçu", "Indices", "Devises", "Matières", "Crypto", "Futures"), selected) {
                 selected = it
             }
         }

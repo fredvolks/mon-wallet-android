@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.19 — 2026-10-08 (marchés, navigation et préférences)
+
+- Marchés : ajout d’un onglet Futures avec S&P 500 E-mini, NASDAQ 100 E-mini, Dow Jones E-mini et Russell 2000 E-mini. Les cours proviennent du fournisseur configuré et restent soumis à sa fraîcheur réelle.
+- Widgets : bouton d’actualisation agrandi pour être plus facile à toucher sur les formats 2×2 et 4×2.
+- Navigation : chaque onglet de la barre inférieure revient à son écran principal lorsqu’on le sélectionne; une fiche titre ouverte dans un onglet ne reste pas affichée après le changement d’onglet.
+- Tri : l’application mémorise le sens du tri des Watchlists, le tri de Découvrir et le tri de l’historique des transactions. Le tri compact du portefeuille était déjà enregistré.
+
 ## Mon Wallet v0.2.18 — 2026-10-07 (dimensions réelles du widget 4×2)
 
 - Le widget utilise les dimensions exactes annoncées par Android 12+ pour chaque taille du lanceur, y compris après redimensionnement; sur les anciens lanceurs, la hauteur portrait provient de `MAX_HEIGHT` plutôt que de la hauteur minimale paysage.

@@ -2,7 +2,7 @@
  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
   <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Mon portefeuille" android:textColor="#9CCDFF" android:textSize="12sp" android:textStyle="bold" android:maxLines="1"/>
   <TextView android:id="@+id/widget_configure" android:layout_width="28dp" android:layout_height="28dp" android:gravity="center" android:text="⚙" android:textColor="#FFFFFF" android:contentDescription="Configurer"/>
-  <TextView android:id="@+id/widget_refresh" android:layout_width="28dp" android:layout_height="28dp" android:gravity="center" android:text="↻" android:textColor="#FFFFFF" android:textSize="20sp" android:contentDescription="Actualiser"/>
+  <TextView android:id="@+id/widget_refresh" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="↻" android:textColor="#FFFFFF" android:textSize="24sp" android:contentDescription="Actualiser"/>
  </LinearLayout>
  <LinearLayout android:id="@+id/widget_total_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
   <TextView android:id="@+id/widget_total_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#93A7B7" android:textSize="9sp"/>
@@ -16,3 +16,4 @@
  <LinearLayout android:id="@+id/widget_rows" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
  <TextView android:id="@+id/widget_footer" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#718898" android:textSize="8sp" android:maxLines="1"/>
 </LinearLayout>
+

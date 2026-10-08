@@ -221,9 +221,11 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                             selected = route == name,
                             onClick = {
                                 nav.navigate(name) {
-                                    popUpTo("portfolio") { saveState = true }
+                                    // Each bottom tab is a top-level destination. Returning to a
+                                    // tab always opens its root screen, never a stale detail page.
+                                    popUpTo("portfolio") { saveState = false }
                                     launchSingleTop = true
-                                    restoreState = true
+                                    restoreState = false
                                 }
                             },
                             icon = { Icon(icons[i], label, Modifier.size(22.dp)) },

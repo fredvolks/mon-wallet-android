@@ -61,3 +61,4 @@ class WidgetAndFinancialRoutingTest {
         assertEquals("Résumé", WidgetSettings.load(c, 102).style)
     }
 }
+

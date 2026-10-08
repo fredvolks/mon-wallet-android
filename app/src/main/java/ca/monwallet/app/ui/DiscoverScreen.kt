@@ -41,8 +41,8 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     var status by remember { mutableStateOf("Chargement du classement…") }
     var busy by remember { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
-    var sort by remember { mutableStateOf("momentum") }
-    var descending by remember { mutableStateOf(true) }
+    var sort by remember { mutableStateOf(prefs.getString("sort", "momentum") ?: "momentum") }
+    var descending by remember { mutableStateOf(prefs.getBoolean("sort_descending", true)) }
     var showColumns by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
     val wallet by vm.wallet.collectAsState()
@@ -75,6 +75,9 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
         } finally {
             busy = false
         }
+    }
+    LaunchedEffect(sort, descending) {
+        prefs.edit().putString("sort", sort).putBoolean("sort_descending", descending).apply()
     }
     DisposableEffect(Unit) {
         onDispose { vm.services.foregroundSecurities.value = emptyList() }

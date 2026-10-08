@@ -56,6 +56,11 @@ class Widget4x2LayoutTest {
                 .filter { it in setOf("^GSPC", "^IXIC", "^DJI") }.toSet())
     }
 
+    @Test fun indexFuturesAreAvailableInMarketsCatalog() {
+        val futures = Catalog.markets.filter { it.type == "FUTURE" }.map { it.symbol }.toSet()
+        assertTrue(futures.containsAll(setOf("ES=F", "NQ=F", "YM=F", "RTY=F")))
+    }
+
     @Test fun fourByTwoKeepsDailyHeroAndTotalBesideFiveTitles() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val inflater = LayoutInflater.from(context)

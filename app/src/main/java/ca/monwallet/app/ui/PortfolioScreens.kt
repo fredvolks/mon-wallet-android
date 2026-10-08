@@ -658,10 +658,12 @@ private fun SmallSparkline(values: List<java.math.BigDecimal>, color: androidx.c
 
 @Composable
 fun HistoryScreen(w: Wallet, onEdit: (Transaction) -> Unit, onDelete: (String) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val historyPrefs = remember { context.getSharedPreferences("history_options", 0) }
     var filter by remember { mutableIntStateOf(0) }
     var portfolio by remember { mutableStateOf<String?>(null) }
     var query by remember { mutableStateOf("") }
-    var sort by remember { mutableIntStateOf(0) }
+    var sort by remember { mutableIntStateOf(historyPrefs.getInt("sort", 0).coerceIn(0, 4)) }
     var from by remember { mutableStateOf("") }
     var until by remember { mutableStateOf("") }
     var advanced by remember { mutableStateOf(false) }
@@ -732,7 +734,10 @@ fun HistoryScreen(w: Wallet, onEdit: (Transaction) -> Unit, onDelete: (String) -
                     R.string.sort_recent, R.string.sort_old, R.string.sort_ticker,
                     R.string.sort_amount, R.string.sort_price,
                 ).map { stringResource(it) }
-                Choice(stringResource(R.string.ui_trier_a7e4c), sorts[sort], sorts) { sort = it }
+                Choice(stringResource(R.string.ui_trier_a7e4c), sorts[sort], sorts) {
+                    sort = it
+                    historyPrefs.edit().putInt("sort", it).apply()
+                }
                 TextEntry(stringResource(R.string.ui_du_aaaa_mm_jj_d7352), from, { from = it })
                 TextEntry(stringResource(R.string.ui_au_aaaa_mm_jj_dac26), until, { until = it })
             }
