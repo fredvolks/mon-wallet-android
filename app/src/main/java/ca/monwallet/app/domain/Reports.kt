@@ -3,6 +3,7 @@ package ca.monwallet.app.domain
 import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 /** Reports use dated closes only. A live quote never rewrites an older day's value. */
@@ -40,6 +41,51 @@ enum class ReportRange(val label: String) {
 }
 
 data class ReportContribution(val securityId: String, val pnl: BigDecimal)
+
+data class WeeklyReport(
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val performance: BigDecimal?,
+    val gain: BigDecimal?,
+    val complete: Boolean,
+    val availableDays: Int,
+)
+
+/** Groups a calendar month by the same Sunday-to-Saturday rows shown in Reports. */
+fun weeklyReports(history: List<PortfolioDailySnapshot>, month: YearMonth,
+    today: LocalDate = LocalDate.now()): List<WeeklyReport> {
+    val monthStart = month.atDay(1)
+    val monthEnd = month.atEndOfMonth()
+    val leadingDays = monthStart.dayOfWeek.value % 7 // Sunday is column zero.
+    val gridStart = monthStart.minusDays(leadingDays.toLong())
+    val rowCount = (leadingDays + month.lengthOfMonth() + 6) / 7
+    return (0 until rowCount).map { row ->
+        val rowStart = gridStart.plusDays(row * 7L)
+        val rowEnd = minOf(rowStart.plusDays(6), monthEnd)
+        val effectiveEnd = minOf(rowEnd, today)
+        val days = if (rowStart <= effectiveEnd) history.filter {
+            it.date >= rowStart && it.date <= effectiveEnd
+        } else emptyList()
+        val sessions = days.filter { it.hasMarketClose }
+        val available = sessions.count {
+            it.dailyReturn != null && it.dailyPnl != null && it.closingValue != null
+        }
+        val complete = sessions.isNotEmpty() && sessions.all {
+            it.dailyReturn != null && it.dailyPnl != null && it.closingValue != null
+        }
+        val performance = if (complete) {
+            val factor = sessions.fold(ONE) { value, day ->
+                value * (ONE + day.dailyReturn!!.divide(BigDecimal(100), MC))
+            }
+            (factor - ONE) * BigDecimal(100)
+        } else null
+        val gain = if (complete) sessions.fold(ZERO) { value, day ->
+            value + day.dailyPnl!!
+        } else null
+        WeeklyReport(rowStart.coerceAtLeast(monthStart), rowEnd, performance, gain,
+            complete, available)
+    }
+}
 data class ReportSummary(
     val range: ReportRange,
     val base: PortfolioDailySnapshot?,

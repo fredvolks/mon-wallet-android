@@ -450,6 +450,31 @@ private fun ReportCalendar(wallet: Wallet, history: List<PortfolioDailySnapshot>
         }
         val monthSnapshots = history.filter { it.date.year == month.year && it.date.month == month.month }
         val returnCount = monthSnapshots.count { it.dailyReturn != null }
+        val weeks = weeklyReports(history, month)
+        Spacer(Modifier.height(10.dp))
+        Text("Rendement par semaine", fontWeight = FontWeight.SemiBold)
+        weeks.forEachIndexed { index, week ->
+            val inProgress = week.startDate <= LocalDate.now() && week.endDate >= LocalDate.now()
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(Modifier.weight(1f)) {
+                    Text("Semaine ${index + 1}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Caption("${date(week.startDate.toString())} – ${date(week.endDate.toString())}" +
+                        if (inProgress) " · en cours" else "")
+                }
+                when {
+                    week.complete -> Column(horizontalAlignment = Alignment.End) {
+                        Text(percent(week.performance), color = tint(week.performance),
+                            fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(signed(week.gain), color = tint(week.gain), fontSize = 11.sp)
+                    }
+                    week.startDate.isAfter(LocalDate.now()) -> Caption("À venir")
+                    week.availableDays > 0 -> Caption("Historique incomplet")
+                    else -> Caption("Aucune clôture")
+                }
+            }
+        }
         Caption("$returnCount rendement(s) quotidien(s) disponible(s) en $month.")
         val firstTrade = transactions.filter { it.type in setOf(TxType.BUY, TxType.SELL) }
             .minOfOrNull { it.date }

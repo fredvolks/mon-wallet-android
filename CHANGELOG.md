@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.30 — 2026-10-08 (rendement hebdomadaire du calendrier)
+
+- Rapports → Calendrier affiche le rendement composé et le P&L en dollars de chaque semaine visible du mois.
+- Les semaines suivent les rangées du calendrier (dimanche à samedi); les semaines incomplètes n'inventent pas de rendement et la semaine courante est indiquée.
+- Tests sur les semaines partielles, les clôtures absentes, le rendement composé et l'addition du P&L quotidien.
+
+
 ## Mon Wallet v0.2.29 — 2026-10-08 (historique du CDR McDonald’s)
 
 - Le fournisseur Yahoo traduit MCD-C et les anciens symboles MCD.NE/MCDS vers MCD.TO après le changement CIBC d’août 2026, sans modifier les transactions du portefeuille.

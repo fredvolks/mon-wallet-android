@@ -235,6 +235,65 @@ class ReportEngineTest {
         assertNull(ReportEngine.xirr(emptyList(), end, bd("1100")))
     }
 
+    private fun snapshot(date: String, dailyReturn: String?, dailyPnl: String?,
+        closingValue: String? = "100", hasMarketClose: Boolean = true) =
+        PortfolioDailySnapshot(
+            date = LocalDate.parse(date),
+            openingValue = closingValue?.let(::bd),
+            closingValue = closingValue?.let(::bd),
+            netExternalFlow = ZERO,
+            dailyPnl = dailyPnl?.let(::bd),
+            dailyReturn = dailyReturn?.let(::bd),
+            capitalInvested = ZERO,
+            cash = ZERO,
+            realizedPnl = ZERO,
+            unrealizedPnl = ZERO,
+            dividends = ZERO,
+            positions = emptyMap(),
+            hasMarketClose = hasMarketClose,
+        )
+
+    @Test fun weeklyReturnsFollowCalendarRowsAndCompoundDailyReturns() {
+        val result = weeklyReports(listOf(
+            snapshot("2026-10-01", "1", "10"),
+            snapshot("2026-10-02", "2", "20"),
+            snapshot("2026-10-05", "-1", "-5"),
+            snapshot("2026-10-08", "3", "15"),
+            snapshot("2026-10-10", null, null, hasMarketClose = false),
+        ), java.time.YearMonth.of(2026, 10), LocalDate.parse("2026-10-08"))
+
+        assertEquals(5, result.size)
+        assertEquals(LocalDate.parse("2026-10-01"), result[0].startDate)
+        assertEquals(LocalDate.parse("2026-10-03"), result[0].endDate)
+        assertTrue(result[0].complete)
+        approx("3.02", result[0].performance)
+        approx("30", result[0].gain)
+
+        assertEquals(LocalDate.parse("2026-10-04"), result[1].startDate)
+        assertEquals(LocalDate.parse("2026-10-10"), result[1].endDate)
+        assertTrue(result[1].complete)
+        approx("1.97", result[1].performance)
+        approx("10", result[1].gain)
+
+        assertFalse(result[2].complete)
+        assertNull(result[2].performance)
+        assertEquals(0, result[2].availableDays)
+    }
+
+    @Test fun anyMissingConfirmedSessionMakesItsWeeklyReturnIncomplete() {
+        val result = weeklyReports(listOf(
+            snapshot("2026-10-05", "1", "10"),
+            snapshot("2026-10-06", null, null, closingValue = null),
+            snapshot("2026-10-07", "2", "20"),
+        ), java.time.YearMonth.of(2026, 10), LocalDate.parse("2026-10-08"))
+
+        val week = result[1]
+        assertFalse(week.complete)
+        assertNull(week.performance)
+        assertNull(week.gain)
+        assertEquals(2, week.availableDays)
+    }
+
     @Test fun oldClosesCannotHideMissingSessionsInTheCalendarMonth() {
         val first = LocalDate.parse("2026-08-01")
         val today = LocalDate.parse("2026-10-08")
