@@ -5,6 +5,7 @@ import org.junit.Test
 
 class YahooDataSymbolTest {
     @Test fun mapsCanadianMcDonaldsCdrAliasesToCurrentYahooListing() {
+        assertEquals("MCD.TO", yahooDataSymbol("MCD-C"))
         assertEquals("MCD.TO", yahooDataSymbol("MCD.NE"))
         assertEquals("MCD.TO", yahooDataSymbol("MCD.TO"))
         assertEquals("MCD.TO", yahooDataSymbol("MCDS.NE"))
