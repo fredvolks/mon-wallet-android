@@ -2,20 +2,26 @@ package ca.monwallet.app
 
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import ca.monwallet.app.domain.*
-import ca.monwallet.app.marketdata.Yahoo
 import java.math.BigDecimal
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Tests every holding visible in the user's portfolio against real closes and calendar P&L. */
+/** Seeds the visible holdings, then exercises Reports through the wallet's stored tickers. */
 @RunWith(AndroidJUnit4::class)
 class CalendarHistoryNetworkTest {
-    @Test fun everyOwnedHoldingProducesCalendarClosePnl() = runBlocking {
+    @Test fun everyWalletTickerReturnsCalendarClosesAndPnl() = runBlocking {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val services = (context.applicationContext as MonWallet).services
+        withTimeout(30_000) { services.initialized.first { it } }
+
         val holdings = listOf(
             Security.of("XEQT.TO", "XEQT", "TSX", "CAD", "ETF"),
             Security.of("TSM", "TSM", "NYSE", "USD"),
@@ -28,69 +34,69 @@ class CalendarHistoryNetworkTest {
         )
         val fx = Security.of("CAD=X", "USD/CAD", "FX", "CAD", "FX")
         val first = LocalDate.parse("2026-10-01")
-        val last = LocalDate.parse("2026-10-07")
-        val expectedSessions = setOf(
-            "2026-10-01", "2026-10-02", "2026-10-05", "2026-10-06", "2026-10-07",
-        )
-        val yahoo = Yahoo()
-        val historyBySecurity = linkedMapOf<String, List<Point>>()
-
-        for (security in holdings + fx) {
-            val points = withTimeout(45_000) {
-                yahoo.historyBetween(security, first, last)
-            }
-            Log.i("CalendarHistoryNetworkTest",
-                "${security.symbol}: ${points.size} closes: ${points.map { it.date }}")
-            assertTrue("${security.symbol}: no real historical closes returned", points.isNotEmpty())
-            assertTrue("${security.symbol}: missing the Oct 1 starting close",
-                points.any { it.date == first.toString() })
-            historyBySecurity[security.id] = points
-        }
-
-        assertEquals("Each holding must have a dated close for every market session",
-            expectedSessions, historyBySecurity.values.first().filter {
-                it.date in expectedSessions
-            }.map { it.date }.toSet())
-        val fxPoints = historyBySecurity.getValue(fx.id)
-        val firstFx = requireNotNull(fxPoints.singleOrNull { it.date == first.toString() }) {
-            "CAD=X: missing Oct 1 exchange rate"
-        }.close
+        val portfolio = Portfolio(id = "calendar-emulator-${System.currentTimeMillis()}",
+            name = "Calendar emulator")
+        services.repo.put("portfolio", portfolio.id, portfolio)
+        holdings.forEach { services.repo.put("security", it.id, it) }
         val transactions = holdings.map { security ->
-            val close = requireNotNull(historyBySecurity.getValue(security.id)
-                .singleOrNull { it.date == first.toString() }) {
-                "${security.symbol}: missing Oct 1 purchase valuation"
-            }.close
             Transaction(
-                portfolioId = "calendar-emulator",
+                portfolioId = portfolio.id,
                 securityId = security.id,
                 type = TxType.BUY,
                 quantity = BigDecimal.ONE,
-                price = close,
+                // The test checks history coverage and non-null daily P&L; real dated
+                // closes are fetched from each ticker stored in this wallet below.
+                price = BigDecimal.ONE,
                 currency = security.currency,
-                fxRate = if (security.currency == "USD") firstFx else BigDecimal.ONE,
+                fxRate = if (security.currency == "USD") BigDecimal("1.35") else BigDecimal.ONE,
                 date = first.toString(),
             )
         }
-        val wallet = Wallet(
-            securities = holdings + fx,
-            transactions = transactions,
-            prices = historyBySecurity.values.flatten(),
-        )
-        val history = ReportEngine.history(wallet)
+        transactions.forEach { services.repo.put("transaction", it.id, it) }
+
+        services.refreshReportHistory(portfolio.id, force = true)
+        val wallet = services.repo.current()
+        val walletTransactions = wallet.transactions.filter { it.portfolioId == portfolio.id }
+        val walletIds = walletTransactions.mapNotNull { it.securityId }.toSet()
+        val walletHoldings = wallet.securities.filter { it.id in walletIds }
+        assertEquals("Calendar must use all eight tickers stored in this wallet",
+            holdings.map { it.id }.toSet(), walletHoldings.map { it.id }.toSet())
+        assertEquals(holdings.map { it.symbol }.toSet(), walletHoldings.map { it.symbol }.toSet())
+
+        val today = LocalDate.now()
+        val perTicker = walletHoldings.associate { security ->
+            val points = wallet.prices.filter { it.securityId == security.id }
+            Log.i("CalendarHistoryNetworkTest",
+                "${security.symbol}: ${points.size} stored closes")
+            assertTrue("${security.symbol}: no real closes saved by Reports history refresh",
+                points.isNotEmpty())
+            assertTrue("${security.symbol}: calendar history coverage is incomplete",
+                reportHistoryHasCoverage(points, first, today))
+            security.id to points
+        }
+        val fxPoints = wallet.prices.filter { it.securityId == fx.id }
+        assertTrue("USD holdings require real historical CAD/USD closes",
+            reportHistoryHasCoverage(fxPoints, first, today))
+
+        val history = ReportEngine.history(wallet, portfolio.id)
         val summary = ReportEngine.summary(
-            wallet, history, ReportRange.MONTH, LocalDate.parse("2026-10-08"),
+            wallet, history, ReportRange.MONTH, today, portfolio.id,
         )
-        val days = summary.days.filter { it.date in first..last }
+        val firstFiveSessions = setOf(
+            "2026-10-01", "2026-10-02", "2026-10-05", "2026-10-06", "2026-10-07",
+        )
+        val days = summary.days.filter { it.date.toString() in firstFiveSessions }
         assertEquals("Calendar must reconstruct Oct 1–7 market sessions",
-            expectedSessions, days.map { it.date.toString() }.toSet())
-        assertTrue("Every market session needs a portfolio close",
+            firstFiveSessions, days.map { it.date.toString() }.toSet())
+        assertTrue("Each session needs a portfolio close",
             days.all { it.hasMarketClose && it.closingValue != null })
-        assertTrue("Every market session needs P&L in dollars",
+        assertTrue("Each session needs P&L in dollars",
             days.all { it.dailyPnl != null })
-        assertTrue("Every market session needs P&L percent",
+        assertTrue("Each session needs P&L percent",
             days.all { it.dailyReturn != null })
-        assertTrue("Calendar needs all eight holding valuations on every market session",
-            days.all { it.positions.keys.containsAll(holdings.map { security -> security.id }) })
-        assertTrue("The full portfolio calendar period should be complete", summary.complete)
+        assertTrue("Each session needs all eight wallet holdings valued",
+            days.all { it.positions.keys.containsAll(walletHoldings.map { s -> s.id }) })
+        assertEquals(8, perTicker.size)
+        assertTrue("Wallet calendar report should be complete", summary.complete)
     }
 }
