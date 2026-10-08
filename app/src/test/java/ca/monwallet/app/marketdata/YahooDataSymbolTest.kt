@@ -4,11 +4,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class YahooDataSymbolTest {
-    @Test fun mapsCanadianMcDonaldsCdrToYahooListing() {
-        assertEquals("ZMCD.NE", yahooDataSymbol("MCD.NE"))
-        assertEquals("ZMCD.NE", yahooDataSymbol("MCD.TO"))
-        assertEquals("ZMCD.NE", yahooDataSymbol("mcd.ne"))
-        assertEquals("ZMCD.NE", yahooDataSymbol("mcd.to"))
+    @Test fun mapsCanadianMcDonaldsCdrAliasesToCurrentYahooListing() {
+        assertEquals("MCD.TO", yahooDataSymbol("MCD.NE"))
+        assertEquals("MCD.TO", yahooDataSymbol("MCD.TO"))
+        assertEquals("MCD.TO", yahooDataSymbol("MCDS.NE"))
+        assertEquals("MCD.TO", yahooDataSymbol("MCDS.TO"))
+        assertEquals("MCD.TO", yahooDataSymbol("mcd.ne"))
     }
 
     @Test fun leavesOtherYahooSymbolsUnchanged() {
