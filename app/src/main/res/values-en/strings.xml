@@ -70,6 +70,8 @@
     <string name="nav_news">News</string>
     <string name="nav_profile">Profile</string>
     <string name="nav_history">History</string>
+    <string name="portfolio_transaction_history">Transactions · edit</string>
+    <string name="transaction_edit_action">Edit</string>
     <string name="nav_reports">Reports</string>
     <string name="nav_security_detail">Security details</string>
     <string name="profile_guest">Guest mode</string>
