@@ -116,12 +116,9 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 12.dp),
         contentPadding = PaddingValues(bottom = 70.dp)) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { Chips(listOf("Top performance", "Filtres", "Idées", "Secteurs"), tab) {
-                    tab = it
-                    if (it == 3) { mode = "momentum"; sort = "period"; descending = true }
-                } }
-                if (tab == 0 || tab == 3) TextButton(onClick = { refresh++ }, enabled = !busy) { Text("↻") }
+            Chips(listOf("Top performance", "Filtres", "Idées", "Secteurs"), tab) {
+                tab = it
+                if (it == 3) { mode = "momentum"; sort = "period"; descending = true }
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             Text(status, fontSize = 10.sp, color = Muted)
