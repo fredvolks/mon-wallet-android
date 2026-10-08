@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.22 — 2026-10-08 (historique complet du calendrier)
+
+- Calendrier : le rafraîchissement ne considère plus deux clôtures isolées comme un historique complet; il recharge les clôtures nécessaires depuis la première transaction.
+- Rapports : le bouton « Recharger les clôtures historiques » reste visible même si quelques journées ont déjà un rendement, pour corriger un calendrier partiel.
+- Calendrier : la date de la première transaction est indiquée sous le compte des rendements quotidiens.
+
 ## Mon Wallet v0.2.21 — 2026-10-08 (rapports canadiens et Watchlists)
 
 - Finances : lorsqu’aucun fournisseur autorisé ne couvre une action canadienne, accès en un toucher aux rapports officiels gratuits sur SEDAR+. La recherche du titre se fait sur le site officiel; Mon Wallet ne récupère ni ne stocke les documents SEDAR+.

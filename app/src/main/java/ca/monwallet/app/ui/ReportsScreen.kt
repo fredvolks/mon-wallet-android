@@ -449,15 +449,19 @@ private fun ReportCalendar(wallet: Wallet, history: List<PortfolioDailySnapshot>
         val monthSnapshots = history.filter { it.date.year == month.year && it.date.month == month.month }
         val returnCount = monthSnapshots.count { it.dailyReturn != null }
         Caption("$returnCount rendement(s) quotidien(s) disponible(s) en $month.")
+        val firstTrade = transactions.filter { it.type in setOf(TxType.BUY, TxType.SELL) }
+            .minOfOrNull { it.date }
+        if (firstTrade != null)
+            Caption("Historique des transactions depuis le ${date(firstTrade)}.")
         if (returnCount == 0) {
             Caption(if (history.isEmpty())
                 "Aucune clôture historique chargée pour ce portefeuille."
             else "Aucune clôture complète n’est disponible pour ce mois.")
-            TextButton(onClick = onRefresh, enabled = !refreshing) {
-                Text(if (refreshing) "Chargement des clôtures…" else "Recharger les clôtures")
-            }
         } else {
             Caption("Sélectionne une journée pour voir le P&L, la valeur et les transactions.")
+        }
+        TextButton(onClick = onRefresh, enabled = !refreshing) {
+            Text(if (refreshing) "Chargement des clôtures…" else "Recharger les clôtures historiques")
         }
         Caption("Les jours sans clôture confirmée n’affichent aucun rendement.")
     }
