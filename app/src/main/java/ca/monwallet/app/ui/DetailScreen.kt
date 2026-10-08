@@ -196,27 +196,54 @@ fun DetailScreen(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Text(money(q?.price, security.currency), fontSize = 36.sp, fontWeight = FontWeight.Bold)
-            Text(
-                "${chartReturn?.amount?.let { signed(it, security.currency) } ?: "—"}  (${chartReturn?.percent?.let(::percent) ?: "—"})",
-                color = tint(chartReturn?.amount),
-                fontSize = 17.sp,
-            )
             val normalized = q?.takeIf { security.currency == "USD" }?.let { NormalizedQuote.from(it) }
             val extendedPrice = when (normalized?.marketSession) {
                 MarketSession.PRE_MARKET -> normalized.preMarketPrice
                 MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
                 else -> null
             }
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    money(q?.price, security.currency),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+                if (extendedPrice != null && normalized != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Text("☾", color = Color(0xFFAC9CDA), fontSize = 16.sp)
+                        Text(
+                            money(extendedPrice, security.currency),
+                            color = Color(0xFFAC9CDA),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                    }
+                }
+            }
+            Text(
+                "${chartReturn?.amount?.let { signed(it, security.currency) } ?: "—"}  (${chartReturn?.percent?.let(::percent) ?: "—"})",
+                color = tint(chartReturn?.amount),
+                fontSize = 17.sp,
+            )
             if (extendedPrice != null && normalized != null) {
-                val delta = if (normalized.marketSession == MarketSession.PRE_MARKET)
-                    normalized.preMarketChange else normalized.afterHoursChange
-                val changePercent = if (normalized.marketSession == MarketSession.PRE_MARKET)
-                    normalized.preMarketChangePercent else normalized.afterHoursChangePercent
-                val timestamp = if (normalized.marketSession == MarketSession.PRE_MARKET)
-                    normalized.preMarketTimestamp else normalized.afterHoursTimestamp
-                Caption((if (normalized.marketSession == MarketSession.PRE_MARKET) "☀ Pre-market" else "☾ After-hours") +
-                    " · ${money(extendedPrice,security.currency)} · ${signed(delta,security.currency)} (${percent(changePercent)})" +
+                val preMarket = normalized.marketSession == MarketSession.PRE_MARKET
+                val delta = if (preMarket) normalized.preMarketChange else normalized.afterHoursChange
+                val changePercent = if (preMarket) normalized.preMarketChangePercent else normalized.afterHoursChangePercent
+                val timestamp = if (preMarket) normalized.preMarketTimestamp else normalized.afterHoursTimestamp
+                Caption((if (preMarket) "Pre-market" else "After-hours") +
+                    " · ${signed(delta, security.currency)} (${percent(changePercent)})" +
                     (timestamp?.let { " · ${time(it)}" } ?: ""))
             }
             Caption(
