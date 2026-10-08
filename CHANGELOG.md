@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.28 — 2026-10-08 (calendrier : couverture des séances récentes)
+
+- Le calendrier vérifie les clôtures récentes séparément de l’historique total; plusieurs années de données ne peuvent plus masquer des séances manquantes dans le mois affiché.
+- Une couverture récente incomplète déclenche une nouvelle récupération des clôtures.
+- Test de régression ajouté pour le cas observé : milliers de clôtures anciennes et une seule clôture récente.
+
+
 ## Mon Wallet v0.2.24 — 2026-10-08 (calendrier USD/CAD et secteurs Découvrir)
 
 - Calendrier : exige et signale les clôtures historiques USD/CAD nécessaires aux titres américains; un achat fait aujourd’hui n’est pas déclaré incomplet si son cours daté est présent.

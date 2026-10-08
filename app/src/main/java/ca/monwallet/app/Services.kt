@@ -67,11 +67,17 @@ internal fun reportHistoryHasCoverage(points: List<Point>, first: LocalDate, tod
     val weekdays = generateSequence(firstClose) { date ->
         if (date < latestClose) date.plusDays(1) else null
     }.count { it <= latestClose && it.dayOfWeek.value <= 5 }
-    // On the purchase date itself, one dated quote is enough to value the new position.
-    // 60% allowed several missing sessions per symbol. The calendar then had no
-    // common dated closes across the whole portfolio even when every symbol passed.
+    // Check both the full lifetime and the recent calendar window. A large old
+    // history must not hide missing closes this week (the calendar needs daily data).
     val minimum = if (first == today) 1 else maxOf(2, kotlin.math.ceil(weekdays * 0.80).toInt())
-    return dates.size >= minimum
+    val recentStart = maxOf(first, today.minusDays(14))
+    val recentWeekdays = generateSequence(recentStart) { date ->
+        if (date < latestClose) date.plusDays(1) else null
+    }.count { it <= latestClose && it.dayOfWeek.value <= 5 }
+    val recentCloses = dates.count { it >= recentStart && it <= latestClose }
+    val recentMinimum = if (first == today) 1 else
+        maxOf(1, kotlin.math.ceil(recentWeekdays * 0.80).toInt())
+    return dates.size >= minimum && recentCloses >= recentMinimum
 }
 
 internal fun reportHistoryFallbackRange(range: String): String? = when (range) {
