@@ -65,8 +65,9 @@ interface MarketDataProvider {
 
 /** CIBC changed its McDonald's CDR ticker to MCD in 2026; Yahoo lists the current TSX symbol as MCD.TO. */
 internal fun yahooDataSymbol(symbol: String): String =
-    if (symbol.uppercase() in setOf("MCD.NE", "MCD.TO", "MCDS.NE", "MCDS.TO"))
-        "MCD.TO" else symbol
+    if (symbol.uppercase() in setOf(
+            "MCD-C", "MCD.NE", "MCD.TO", "MCDS.NE", "MCDS.TO",
+        )) "MCD.TO" else symbol
 
 class Yahoo : MarketDataProvider {
     override val name = "Yahoo Finance · non officiel"
