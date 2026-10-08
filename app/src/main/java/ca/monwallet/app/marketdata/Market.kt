@@ -63,10 +63,10 @@ interface MarketDataProvider {
     suspend fun news(s: Security): List<News>
 }
 
-/** Yahoo uses ZMCD.NE for the Canadian McDonald's CDR; keep the app's original holding symbol. */
+/** CIBC changed its McDonald's CDR ticker to MCD in 2026; Yahoo lists the current TSX symbol as MCD.TO. */
 internal fun yahooDataSymbol(symbol: String): String =
-    if (symbol.equals("MCD.NE", ignoreCase = true) ||
-        symbol.equals("MCD.TO", ignoreCase = true)) "ZMCD.NE" else symbol
+    if (symbol.uppercase() in setOf("MCD.NE", "MCD.TO", "MCDS.NE", "MCDS.TO"))
+        "MCD.TO" else symbol
 
 class Yahoo : MarketDataProvider {
     override val name = "Yahoo Finance · non officiel"
