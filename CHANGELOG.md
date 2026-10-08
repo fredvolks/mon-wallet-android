@@ -1,5 +1,10 @@
 # Versions
 
+## Mon Wallet v0.2.38 — 2026-10-08 (cours after-hours dans la fiche titre)
+
+- Fiche titre : affiche le cours après clôture à côté du cours régulier, avec la lune et le mauve de la Watchlist.
+- La variation after-hours et son heure restent indiquées sous les deux cours.
+
 ## Mon Wallet v0.2.37 — 2026-10-08 (rendement par période et prix sur le graphique)
 
 - Fiche titre : la variation affichée suit la période sélectionnée dans le graphique, calculée entre le premier cours affiché et le cours actuel; 1J conserve la variation quotidienne.
