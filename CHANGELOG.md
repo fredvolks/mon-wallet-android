@@ -1,5 +1,10 @@
 # Versions
 
+## Mon Wallet v0.2.39 — 2026-10-08 (P&L quotidien après la fermeture)
+
+- Portefeuille et widget conservent le P&L de la séance régulière après la fermeture, en reprenant la clôture précédente de l’historique si la cotation ne la fournit pas.
+- Le cours after-hours reste utilisé uniquement pour la valeur estimée et n’altère pas le P&L quotidien.
+
 ## Mon Wallet v0.2.38 — 2026-10-08 (cours after-hours dans la fiche titre)
 
 - Fiche titre : affiche le cours après clôture à côté du cours régulier, avec la lune et le mauve de la Watchlist.
