@@ -764,6 +764,11 @@ fun HistoryScreen(w: Wallet, onEdit: (Transaction) -> Unit, onDelete: (String) -
                         Caption(
                             "${transactionLabel(t.type)} · ${number(t.quantity,6)} × ${money(t.price,t.currency)}"
                         )
+                        TextButton(onClick = { onEdit(t) }, contentPadding = PaddingValues(0.dp)) {
+                            Icon(Icons.Outlined.Edit, null, Modifier.size(15.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.transaction_edit_action), fontSize = 12.sp)
+                        }
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(money(t.total, t.currency), fontSize = 14.sp)
