@@ -64,7 +64,8 @@ interface MarketDataProvider {
 
 /** Yahoo uses ZMCD.NE for the Canadian McDonald's CDR; keep the app's original holding symbol. */
 internal fun yahooDataSymbol(symbol: String): String =
-    if (symbol.equals("MCD.NE", ignoreCase = true)) "ZMCD.NE" else symbol
+    if (symbol.equals("MCD.NE", ignoreCase = true) ||
+        symbol.equals("MCD.TO", ignoreCase = true)) "ZMCD.NE" else symbol
 
 class Yahoo : MarketDataProvider {
     override val name = "Yahoo Finance · non officiel"
