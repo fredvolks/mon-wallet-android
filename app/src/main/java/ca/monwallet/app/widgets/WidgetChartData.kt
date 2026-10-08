@@ -3,10 +3,8 @@ package ca.monwallet.app.widgets
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.Shader
 import ca.monwallet.app.domain.Engine
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Wallet
