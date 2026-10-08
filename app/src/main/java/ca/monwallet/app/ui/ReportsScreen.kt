@@ -161,7 +161,9 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
             2 -> {
                 item { ReportCalendar(w, snapshots,
                     w.transactions.filter { selected == null || it.portfolioId == selected },
-                    month, { month = it; vm.run { vm.services.repo.setting("reports_month", month.toString()) } }) }
+                    month, { month = it; vm.run { vm.services.repo.setting("reports_month", month.toString()) } },
+                    refreshing = loading,
+                    onRefresh = { vm.run { vm.services.refreshReportHistory(selected, true) } }) }
                 item { ReportMonthYear(snapshots) }
             }
             3 -> item { ReportAllocation(w, selected, current) }
@@ -390,7 +392,7 @@ private fun ReportMonthYear(history: List<PortfolioDailySnapshot>) {
 
 @Composable
 private fun ReportCalendar(wallet: Wallet, history: List<PortfolioDailySnapshot>, transactions: List<Transaction>,
-    month: YearMonth, onMonth: (YearMonth) -> Unit) {
+    month: YearMonth, onMonth: (YearMonth) -> Unit, refreshing: Boolean, onRefresh: () -> Unit) {
     var day by remember { mutableStateOf<PortfolioDailySnapshot?>(null) }
     var yearMenu by remember { mutableStateOf(false) }
     val byDate = history.associateBy { it.date }
@@ -444,7 +446,20 @@ private fun ReportCalendar(wallet: Wallet, history: List<PortfolioDailySnapshot>
                 }
             }
         }
-        Caption("Les jours sans cours confirmé n’affichent aucun rendement.")
+        val monthSnapshots = history.filter { it.date.year == month.year && it.date.month == month.month }
+        val returnCount = monthSnapshots.count { it.dailyReturn != null }
+        Caption("$returnCount rendement(s) quotidien(s) disponible(s) en $month.")
+        if (returnCount == 0) {
+            Caption(if (history.isEmpty())
+                "Aucune clôture historique chargée pour ce portefeuille."
+            else "Aucune clôture complète n’est disponible pour ce mois.")
+            TextButton(onClick = onRefresh, enabled = !refreshing) {
+                Text(if (refreshing) "Chargement des clôtures…" else "Recharger les clôtures")
+            }
+        } else {
+            Caption("Sélectionne une journée pour voir le P&L, la valeur et les transactions.")
+        }
+        Caption("Les jours sans clôture confirmée n’affichent aucun rendement.")
     }
     day?.let { selected ->
         ModalBottomSheet(onDismissRequest = { day = null }, containerColor = Panel) {
