@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.29 — 2026-10-08 (historique du CDR McDonald’s)
+
+- Le fournisseur Yahoo traduit MCD-C et les anciens symboles MCD.NE/MCDS vers MCD.TO après le changement CIBC d’août 2026, sans modifier les transactions du portefeuille.
+- Le prix et l’historique utilisent la même correspondance; les requêtes historiques vides réessaient la période de cours standard.
+- Teste la migration du CDR, les clôtures réelles et le calcul P&L du calendrier.
+
+
 ## Mon Wallet v0.2.28 — 2026-10-08 (calendrier : couverture des séances récentes)
 
 - Le calendrier vérifie les clôtures récentes séparément de l’historique total; plusieurs années de données ne peuvent plus masquer des séances manquantes dans le mois affiché.

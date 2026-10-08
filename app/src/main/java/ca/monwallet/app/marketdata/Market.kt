@@ -6,6 +6,7 @@ import ca.monwallet.app.data.SecureSettings
 import ca.monwallet.app.domain.*
 import java.math.BigDecimal
 import java.time.*
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -62,6 +63,12 @@ interface MarketDataProvider {
     suspend fun news(s: Security): List<News>
 }
 
+/** CIBC changed its McDonald's CDR ticker to MCD in 2026; Yahoo lists the current TSX symbol as MCD.TO. */
+internal fun yahooDataSymbol(symbol: String): String =
+    if (symbol.uppercase() in setOf(
+            "MCD-C", "MCD.NE", "MCD.TO", "MCDS.NE", "MCDS.TO",
+        )) "MCD.TO" else symbol
+
 class Yahoo : MarketDataProvider {
     override val name = "Yahoo Finance · non officiel"
 
@@ -76,7 +83,7 @@ class Yahoo : MarketDataProvider {
     private suspend fun chart(s: Security, range: String, interval: String,
         includePrePost: Boolean = false) =
         get(
-                "/v8/finance/chart/" + java.net.URLEncoder.encode(s.symbol, "UTF-8"),
+                "/v8/finance/chart/" + java.net.URLEncoder.encode(yahooDataSymbol(s.symbol), "UTF-8"),
                 mapOf("range" to range, "interval" to interval,
                     "includePrePost" to includePrePost.toString()),
             )
@@ -129,10 +136,27 @@ class Yahoo : MarketDataProvider {
             "interval" to "1d",
             "includePrePost" to "false",
         )
-        val c = get("/v8/finance/chart/" + java.net.URLEncoder.encode(s.symbol, "UTF-8"), params)
+        val c = get("/v8/finance/chart/" + java.net.URLEncoder.encode(yahooDataSymbol(s.symbol), "UTF-8"), params)
             .getJSONObject("chart").optJSONArray("result")?.optJSONObject(0)
             ?: error("Cours historiques indisponibles pour ${s.symbol}.")
-        return historyPoints(s, c)
+        val exact = historyPoints(s, c)
+        if (exact.isNotEmpty()) return exact
+        // Yahoo occasionally returns an empty period-bounded chart for CDRs even
+        // though the same listing has daily bars in its regular range endpoint.
+        // Retry that endpoint, then retain only the requested calendar interval.
+        val days = ChronoUnit.DAYS.between(first, last)
+        val fallbackRange = when {
+            days <= 31 -> "1mo"
+            days <= 90 -> "3mo"
+            days <= 183 -> "6mo"
+            days <= 365 -> "1y"
+            days <= 1825 -> "5y"
+            else -> "max"
+        }
+        return history(s, fallbackRange, "1d").filter {
+            val date = LocalDate.parse(it.date)
+            date >= first && date <= last
+        }
     }
 
     override suspend fun search(q: String): List<Security> {
