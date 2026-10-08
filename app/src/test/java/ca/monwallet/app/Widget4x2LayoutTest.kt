@@ -3,6 +3,7 @@ package ca.monwallet.app
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
+import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
@@ -67,6 +68,17 @@ class Widget4x2LayoutTest {
     @Test fun indexFuturesAreAvailableInMarketsCatalog() {
         val futures = Catalog.markets.filter { it.type == "FUTURE" }.map { it.symbol }.toSet()
         assertTrue(futures.containsAll(setOf("ES=F", "NQ=F", "YM=F", "RTY=F")))
+    }
+
+    @Test fun dailyPnlAmountAndPercentAreCenteredInTheHero() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val widget = LayoutInflater.from(context).inflate(R.layout.wallet_widget_wide, null)
+        val amount = widget.findViewById<TextView>(R.id.widget_amount)
+        val percent = widget.findViewById<TextView>(R.id.widget_percent)
+        assertEquals(Gravity.CENTER_HORIZONTAL,
+            amount.gravity and Gravity.HORIZONTAL_GRAVITY_MASK)
+        assertEquals(Gravity.CENTER_HORIZONTAL,
+            percent.gravity and Gravity.HORIZONTAL_GRAVITY_MASK)
     }
 
     @Test fun fourByTwoKeepsDailyHeroAndTotalBesideFiveTitles() {

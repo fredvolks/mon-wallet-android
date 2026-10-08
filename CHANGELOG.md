@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.32 — 2026-10-08 (P&L quotidien centré dans le widget)
+
+- Widget 4×2 : centre le montant et le pourcentage du P&L quotidien dans le panneau Daily.
+- Test de layout ajouté pour vérifier le centrage horizontal des deux valeurs.
+
+
 ## Mon Wallet v0.2.31 — 2026-10-08 (rendement du jour et after-hours côte à côte)
 
 - Widget 4×2 : conserve le rendement de la séance régulière et affiche le rendement après clôture à côté, avec le symbole after-hours; même traitement pour le pré-marché.
