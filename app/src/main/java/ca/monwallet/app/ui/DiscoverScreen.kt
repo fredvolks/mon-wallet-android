@@ -28,6 +28,8 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     val prefs = remember { context.getSharedPreferences("discover_options", 0) }
     val gson = remember { Gson() }
     var tab by remember { mutableIntStateOf(0) }
+    var selectedSector by remember { mutableStateOf(
+        prefs.getString("sector", "Technology") ?: "Technology") }
     var period by remember { mutableStateOf(runCatching {
         PerformancePeriod.valueOf(prefs.getString("period", "M3") ?: "M3")
     }.getOrDefault(PerformancePeriod.M3)) }
@@ -46,13 +48,16 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     var showColumns by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
     val wallet by vm.wallet.collectAsState()
-    LaunchedEffect(period, filters, columns, mode, refresh, tab) {
+    LaunchedEffect(period, filters, columns, mode, refresh, tab, selectedSector) {
         prefs.edit().putString("period", period.name).putString("filters", gson.toJson(filters))
             .putString("columns", columns.joinToString("|")).apply()
-        if (tab != 0) return@LaunchedEffect
+        if (tab != 0 && tab != 3) return@LaunchedEffect
         busy = true
         try {
-            val found = vm.services.discovery.screen(filters.copy(columns = columns), period) {
+            val activeFilters = if (tab == 3) Filters(sector = selectedSector,
+                cap = BigDecimal.ZERO, volume = BigDecimal.ZERO, price = BigDecimal("5"),
+                columns = columns) else filters.copy(columns = columns)
+            val found = vm.services.discovery.screen(activeFilters, period) {
                 status = it
             }
             rows = if (mode == "analyst" || columns.any { it in analystColumns })
@@ -60,11 +65,13 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                     onProgress = { status = it }, applyFilters = mode == "analyst")
             else found
             status = rows.size.toString() + " titres · " +
-                (if (vm.services.secure.get("fmp_key").isNullOrBlank())
+                (if (tab == 3 && vm.services.secure.get("fmp_key").isNullOrBlank())
+                    "sélection gratuite de grandes actions liquides · "
+                else if (vm.services.secure.get("fmp_key").isNullOrBlank())
                     "sélection limitée (catalogue et titres suivis) · "
                 else "échantillon FMP de 50 par bourse · ") +
                 if (mode == "analyst") "couverture analystes US selon disponibilité" else "cours non garantis temps réel"
-            if (rows.isEmpty() && vm.services.secure.get("fmp_key").isNullOrBlank() &&
+            if (rows.isEmpty() && vm.services.secure.get("fmp_key").isNullOrBlank() && tab == 0 &&
                 filters.cap > BigDecimal.ZERO && filters.exchange.split(',').all {
                     it.trim() in setOf("TSX", "TSXV") })
                 status = "Capitalisation canadienne indisponible avec les sources configurées. Une source autorisée est nécessaire pour filtrer par capitalisation; choisir « Toutes » affiche les titres dont les historiques et volumes sont disponibles."
@@ -110,8 +117,11 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
         contentPadding = PaddingValues(bottom = 70.dp)) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { Chips(listOf("Top performance", "Filtres", "Idées"), tab) { tab = it } }
-                if (tab == 0) TextButton(onClick = { refresh++ }, enabled = !busy) { Text("↻") }
+                Box(Modifier.weight(1f)) { Chips(listOf("Top performance", "Filtres", "Idées", "Secteurs"), tab) {
+                    tab = it
+                    if (it == 3) { mode = "momentum"; sort = "period"; descending = true }
+                } }
+                if (tab == 0 || tab == 3) TextButton(onClick = { refresh++ }, enabled = !busy) { Text("↻") }
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             Text(status, fontSize = 10.sp, color = Muted)
@@ -153,6 +163,26 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                 }
             }
             else -> {
+                if (tab == 3) item {
+                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("MEILLEURES ACTIONS PAR SECTEUR", fontSize = 11.sp,
+                            color = Muted, fontWeight = FontWeight.SemiBold)
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            SectorUniverse.labels.forEach { (key, label) ->
+                                FilterChip(selected = selectedSector == key, onClick = {
+                                    selectedSector = key
+                                    prefs.edit().putString("sector", key).apply()
+                                    sort = "period"; descending = true
+                                }, label = { Text(label, fontSize = 11.sp) },
+                                    modifier = Modifier.height(34.dp))
+                            }
+                        }
+                        Text("Jusqu’à 30 titres, classés par rendement sur la période choisie. " +
+                            "La sélection gratuite couvre les grandes actions liquides.",
+                            fontSize = 10.sp, color = Muted)
+                    }
+                }
                 item {
                     PeriodPills(period) { period = it }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -165,7 +195,8 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                         else { sort = key; descending = true }
                     }
                 }
-                itemsIndexed(sorted, key = { _, row -> row.security.id }) { index, row ->
+                itemsIndexed(if (tab == 3) sorted.take(30) else sorted,
+                    key = { _, row -> row.security.id }) { index, row ->
                     val quote = wallet.quotes[row.security.id]
                     DiscoverLine(index + 1, row, quote, columns, period, scroll) {
                         vm.run {

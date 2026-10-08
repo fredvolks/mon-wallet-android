@@ -67,7 +67,8 @@ internal fun reportHistoryHasCoverage(points: List<Point>, first: LocalDate, tod
     val weekdays = generateSequence(firstClose) { date ->
         if (date < latestClose) date.plusDays(1) else null
     }.count { it <= latestClose && it.dayOfWeek.value <= 5 }
-    val minimum = maxOf(2, kotlin.math.ceil(weekdays * 0.60).toInt())
+    // On the purchase date itself, one dated quote is enough to value the new position.
+    val minimum = if (first == today) 1 else maxOf(2, kotlin.math.ceil(weekdays * 0.60).toInt())
     return dates.size >= minimum
 }
 
@@ -122,6 +123,10 @@ class Services(val context: Context) {
         val wallet = repo.current()
         val transactions = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
         val ids = transactions.mapNotNull { it.securityId }.toSet()
+        val usdIds = transactions.mapNotNull { tx ->
+            tx.securityId?.takeIf { wallet.security(it)?.currency == "USD" }
+        }.toSet()
+        val needsFxHistory = usdIds.isNotEmpty()
         val benchmarks = (Catalog.markets.filter { it.symbol in
             setOf("^GSPC", "^IXIC", "^GSPTSE", "CAD=X") } +
             Catalog.stocks.filter { it.symbol == "XEQT.TO" })
@@ -136,12 +141,15 @@ class Services(val context: Context) {
             securities.map { security -> async {
                 gate.withPermit {
                     val related = transactions.filter { it.securityId == security.id }
-                    val firstNeeded = related.minOfOrNull { LocalDate.parse(it.date) } ?: portfolioStart
+                    val isFx = security.symbol == "CAD=X" && needsFxHistory
+                    val relevantTransactions = if (isFx) transactions.filter { it.securityId in usdIds } else related
+                    val firstNeeded = relevantTransactions.minOfOrNull { LocalDate.parse(it.date) } ?: portfolioStart
+                    val requiredForReports = security.id in ids || isFx
                     val range = reportHistoryRange(firstNeeded, today)
-                    val key = "${security.id}:$range:${related.hashCode()}"
+                    val key = "${security.id}:$range:${relevantTransactions.hashCode()}"
                     val now = System.currentTimeMillis()
                     val cached = wallet.prices.filter { it.securityId == security.id }
-                    val cachedCovered = related.isEmpty() ||
+                    val cachedCovered = !requiredForReports ||
                         reportHistoryHasCoverage(cached, firstNeeded, today)
                     if (!reportHistoryRefreshDue(force, reportHistoryRefresh[key], now) ||
                         (!force && now - (reportHistoryAttempt[key] ?: 0L) < 90_000L))
@@ -158,7 +166,7 @@ class Services(val context: Context) {
                         } catch (error: Exception) {
                             failure = error.message?.take(90) ?: error::class.java.simpleName
                         }
-                        var covered = related.isEmpty() || reportHistoryHasCoverage(points, firstNeeded, today)
+                        var covered = !requiredForReports || reportHistoryHasCoverage(points, firstNeeded, today)
                         if (!covered) {
                             val fallback = reportHistoryFallbackRange(range)
                             if (fallback != null) {
@@ -174,6 +182,22 @@ class Services(val context: Context) {
                                 }
                             }
                         }
+                        // The selected provider may return a non-empty but truncated series.
+                        // Retry directly against the free Yahoo chart source before accepting gaps.
+                        if (!covered) {
+                            try {
+                                val yahooRange = reportHistoryFallbackRange(range) ?: range
+                                val yahooPoints = Yahoo().history(security, yahooRange, "1d")
+                                points = (points + yahooPoints).distinctBy { it.date }.sortedBy { it.date }
+                                covered = !requiredForReports ||
+                                    reportHistoryHasCoverage(points, firstNeeded, today)
+                                if (covered) failure = null
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (error: Exception) {
+                                failure = error.message?.take(90) ?: error::class.java.simpleName
+                            }
+                        }
                         if (points.isNotEmpty()) repo.points(security.id, points)
                         if (covered && points.isNotEmpty()) reportHistoryRefresh[key] = now
                         return@withPermit FetchResult(security, points.size, covered,
@@ -187,11 +211,13 @@ class Services(val context: Context) {
                 }
             } }.awaitAll()
         }
-        val required = fetched.filter { it.security.id in ids }
+        val required = fetched.filter { it.security.id in ids ||
+            (needsFxHistory && it.security.symbol == "CAD=X") }
         val good = required.count { it.covered && it.points > 0 }
         val totalPoints = required.sumOf { it.points }
         val incomplete = required.filterNot { it.covered && it.points > 0 }
-            .map { it.security.symbol + (it.error?.let { e -> " ($e)" } ?: "") }
+            .map { (if (it.security.symbol == "CAD=X") "USD/CAD" else it.security.symbol) +
+                (it.error?.let { e -> " ($e)" } ?: "") }
         reportHistoryStatus.value = if (required.isEmpty()) {
             "Aucun titre à recalculer pour ce portefeuille."
         } else if (incomplete.isEmpty()) {

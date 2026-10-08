@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.24 — 2026-10-08 (calendrier USD/CAD et secteurs Découvrir)
+
+- Calendrier : exige et signale les clôtures historiques USD/CAD nécessaires aux titres américains; un achat fait aujourd’hui n’est pas déclaré incomplet si son cours daté est présent.
+- Découvrir : ajoute 11 secteurs et jusqu’à 30 grandes actions liquides par secteur, classées selon la période de rendement choisie; fonctionne avec les sources gratuites configurées.
+- Tests : couvre les achats du jour et la couverture de l’historique requis.
+
 ## Mon Wallet v0.2.23 — 2026-10-08 (rechargement vérifiable des clôtures)
 
 - Calendrier : les historiques qui ne couvrent qu’une seule journée déclenchent automatiquement une nouvelle tentative avec une période plus large.
