@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.23 — 2026-10-08 (rechargement vérifiable des clôtures)
+
+- Calendrier : les historiques qui ne couvrent qu’une seule journée déclenchent automatiquement une nouvelle tentative avec une période plus large.
+- Données : un historique partiel n’est plus considéré comme chargé avec succès; les nouvelles tentatives sont limitées pour éviter les appels répétés.
+- Rapports : affiche clairement les titres et le nombre de clôtures reçues, ou ceux dont l’historique reste incomplet.
+- Tests : couverture de la détection des historiques clairsemés et du passage à une période plus large.
+
 ## Mon Wallet v0.2.22 — 2026-10-08 (historique complet du calendrier)
 
 - Calendrier : le rafraîchissement ne considère plus deux clôtures isolées comme un historique complet; il recharge les clôtures nécessaires depuis la première transaction.

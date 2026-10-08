@@ -105,6 +105,20 @@ class ReportEngineTest {
         approx("1100", ReportEngine.history(revised).last().closingValue)
     }
 
+    @Test fun onePointHistoryIsNotMarkedCompleteAndWiderRetryCanCoverTheMonth() {
+        val first = LocalDate.parse("2026-10-01")
+        val today = LocalDate.parse("2026-10-08")
+        val sparse = listOf(point(cad, "2026-10-08", "100"))
+        assertFalse(reportHistoryHasCoverage(sparse, first, today))
+        assertEquals("3mo", reportHistoryFallbackRange("1mo"))
+        val closes = listOf(
+            point(cad, "2026-10-01", "100"), point(cad, "2026-10-02", "101"),
+            point(cad, "2026-10-05", "102"), point(cad, "2026-10-06", "103"),
+            point(cad, "2026-10-07", "104"), point(cad, "2026-10-08", "105"),
+        )
+        assertTrue(reportHistoryHasCoverage(closes, first, today))
+    }
+
     @Test fun reportHistoryRefreshUsesSuccessfulFetchAgeForThrottle() {
         assertTrue(reportHistoryRefreshDue(force = false, lastSuccessfulRefresh = null, nowMillis = 1_000L))
         assertFalse(reportHistoryRefreshDue(force = false, lastSuccessfulRefresh = 1_000L,
