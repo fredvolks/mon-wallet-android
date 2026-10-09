@@ -1,5 +1,13 @@
 # Versions
 
+## Mon Wallet v0.2.41 — 2026-10-09 (P&L quotidien après fermeture avec FX en cache)
+
+- Le P&L quotidien des titres américains reste disponible en CAD lorsque la clôture USD/CAD n’est pas datée de la même séance; le dernier taux courant connu sert de repli.
+- Le calcul par titre et le total du portefeuille utilisent le même taux de repli, au lieu d’afficher « — » pour une séance FX décalée.
+- Test de régression couvrant le rendement d’un titre américain et le P&L agrégé avec un taux FX d’une autre date.
+
+# Versions
+
 ## Mon Wallet v0.2.40 — 2026-10-09 (P&L quotidien avec taux FX en cache)
 
 - Le P&L quotidien en CAD reste calculable après la fermeture même si le taux FX n’a pas de clôture datée de la même séance.
