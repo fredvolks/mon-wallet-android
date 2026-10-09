@@ -3,10 +3,8 @@ package ca.monwallet.app.widgets
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.Shader
 import ca.monwallet.app.domain.Engine
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Wallet
@@ -73,36 +71,71 @@ internal object WidgetChartData {
         }
     }
 
-    fun bitmap(values: List<Float>, positive: Boolean, width: Int = 720, height: Int = 55): Bitmap {
+    internal data class SegmentPiece(val startFraction: Float, val endFraction: Float, val sign: Int)
+
+    /** Splits each plotted interval where daily P&L crosses zero. */
+    internal fun segmentPieces(start: Float, end: Float): List<SegmentPiece> {
+        if (!start.isFinite() || !end.isFinite()) return emptyList()
+        val startSign = start.compareTo(0f)
+        val endSign = end.compareTo(0f)
+        if (startSign * endSign < 0) {
+            val crossing = kotlin.math.abs(start) /
+                (kotlin.math.abs(start) + kotlin.math.abs(end))
+            return listOf(
+                SegmentPiece(0f, crossing, startSign),
+                SegmentPiece(crossing, 1f, endSign),
+            )
+        }
+        val sign = if (startSign != 0) startSign else endSign
+        return listOf(SegmentPiece(0f, 1f, sign))
+    }
+
+    fun bitmap(values: List<Float>, width: Int = 720, height: Int = 55): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         if (values.size < 2) return bitmap
-        val color = if (positive) Color.rgb(79, 239, 142) else Color.rgb(255, 93, 117)
-        val min = values.minOrNull() ?: return bitmap
-        val range = ((values.maxOrNull() ?: min) - min).takeIf { it > 0 } ?: 1f
-        val baseline = height - 2f
-        val path = Path()
-        values.forEachIndexed { i, value ->
-            val x = 2f + i * (width - 4f) / (values.size - 1)
-            val y = height - 5f - (value - min) / range * (height - 12f)
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
+        val min = minOf(values.minOrNull() ?: 0f, 0f)
+        val max = maxOf(values.maxOrNull() ?: 0f, 0f)
+        val range = (max - min).takeIf { it > 0f } ?: 1f
+        val top = 4f
+        val bottom = height - 4f
+        fun y(value: Float) = bottom - ((value - min) / range) * (bottom - top)
+        val zeroY = y(0f)
         val canvas = Canvas(bitmap)
-        val fill = Path(path).apply {
-            lineTo(width - 2f, baseline)
-            lineTo(2f, baseline)
-            close()
+
+        values.zipWithNext().forEachIndexed { index, (start, end) ->
+            if (!start.isFinite() || !end.isFinite()) return@forEachIndexed
+            val x1 = 2f + index * (width - 4f) / (values.size - 1)
+            val x2 = 2f + (index + 1) * (width - 4f) / (values.size - 1)
+            val y1 = y(start)
+            val y2 = y(end)
+            segmentPieces(start, end).forEach { piece ->
+                if (piece.sign == 0) return@forEach
+                val px1 = x1 + (x2 - x1) * piece.startFraction
+                val px2 = x1 + (x2 - x1) * piece.endFraction
+                val py1 = y1 + (y2 - y1) * piece.startFraction
+                val py2 = y1 + (y2 - y1) * piece.endFraction
+                val color = if (piece.sign > 0) Color.rgb(79, 239, 142)
+                    else Color.rgb(255, 93, 117)
+
+                val fill = Path().apply {
+                    moveTo(px1, py1)
+                    lineTo(px2, py2)
+                    lineTo(px2, zeroY)
+                    lineTo(px1, zeroY)
+                    close()
+                }
+                canvas.drawPath(fill, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    this.color = Color.argb(35, Color.red(color), Color.green(color), Color.blue(color))
+                    style = Paint.Style.FILL
+                })
+                canvas.drawLine(px1, py1, px2, py2, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    this.color = color
+                    style = Paint.Style.STROKE
+                    strokeWidth = 2.6f
+                    strokeCap = Paint.Cap.ROUND
+                })
+            }
         }
-        val area = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            shader = LinearGradient(0f, 0f, 0f, height.toFloat(),
-                Color.argb(65, Color.red(color), Color.green(color), Color.blue(color)),
-                Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        }
-        canvas.drawPath(fill, area)
-        canvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = color
-            style = Paint.Style.STROKE
-            strokeWidth = 2.6f
-        })
         return bitmap
     }
 }

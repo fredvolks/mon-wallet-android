@@ -81,6 +81,7 @@ open class WalletWidget : AppWidgetProvider() {
                 Widget2x3::class.java,
                 Widget4x2::class.java,
                 Widget4x3::class.java,
+                WidgetLockScreen::class.java,
             )
 
         fun ids(c: Context): List<Int> {
@@ -114,14 +115,25 @@ open class WalletWidget : AppWidgetProvider() {
                 val big = kind.endsWith("3") || kind.endsWith("4x2")
                 val config = WidgetSettings.load(c, id)
                 val owner = prefs.getString("owner:$id", null)
+                val widgetOwner = if (kind.endsWith("WidgetLockScreen") && owner == null) {
+                    s.repo.owner.value.also {
+                        prefs.edit().putString("owner:$id", it).apply()
+                    }
+                } else owner
                 val configured = if (config.portfolio == "all" && wallet.portfolios.size == 1)
                     wallet.portfolios.first().id else config.portfolio
                 val portfolio = configured.takeUnless { it == "all" }
                 val valid = portfolio == null || wallet.portfolios.any { it.id == portfolio }
                 val hidden =
                     (s.secure.get("biometric") == "true" &&
-                        s.secure.get("hide_widgets") != "false") || owner != s.repo.owner.value || !valid
+                        s.secure.get("hide_widgets") != "false") || widgetOwner != s.repo.owner.value || !valid
                 val result = if (hidden) null else runCatching { wallet.result(portfolio) }.getOrNull()
+                if (kind.endsWith("WidgetLockScreen")) {
+                    manager.updateAppWidget(id, WalletLockScreenRenderer.render(
+                        c, id, wallet, portfolio, result, hidden
+                    ))
+                    continue
+                }
                 val options = manager.getAppWidgetOptions(id)
                 val widgetSize = WidgetDimensions.current(c, options,
                     if (kind.endsWith("4x3")) 250 to 240
@@ -387,3 +399,7 @@ class Widget2x3 : WalletWidget()
 class Widget4x2 : WalletWidget()
 
 class Widget4x3 : WalletWidget()
+
+
+/** Compact provider exposed to Samsung LockStar and Android keyguard widget hosts. */
+class WidgetLockScreen : WalletWidget()

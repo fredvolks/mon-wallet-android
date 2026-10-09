@@ -321,11 +321,12 @@ class EngineTest {
         equal("150", Engine.calculate(transactions, quotes).day)
     }
 
-    @Test fun staleFxDoesNotProduceDailyReturn() {
+    @Test fun staleFxKeepsDailyReturnUsingCurrentFxAsFallback() {
         val r=Engine.calculate(listOf(tx("10","100",currency="USD",fx="1.30")),
             mapOf("XEQT" to quote("110","100","USD")),
             Quote("FX",d("1.40"),d("1.35"),"CAD",0,"2026-10-01","Test"))
-        assertNull(r.day)
+        equal("140",r.day)
+        equal("10",r.dayPercent)
     }
 
     @Test fun cumulativeDayRejectsCashFlowsAfterLastMarketSession() {

@@ -178,14 +178,15 @@ internal object WidgetWideRenderer {
         val minHeight = size.second
         val ordered = if (hidden || result == null) emptyList() else config.titles(result)
         val plan = WidgetTitleLayout.plan(config, "4x2", minHeight, ordered.size)
-        val chartSeries = if (hidden || !plan.chart || result == null) emptyList()
-            else WidgetChartData.values(wallet, portfolio, config.period, cached)
-        val chartVisible = chartSeries.size >= 2 &&
-            config.style in setOf("Mixte", "Mixte premium", "Daily + Titres", "Graphique")
+        // Keep the real intraday portfolio P&L curve behind the daily figures only.
+        // It stays inside the Daily panel; the stock rows keep their own clear background.
+        val chartSeries = if (hidden || !config.chart || result == null) emptyList()
+            else WidgetChartData.values(wallet, portfolio, "Jour", cached)
+        val chartVisible = chartSeries.size >= 2
         views.setViewVisibility(R.id.widget_chart, if (chartVisible) View.VISIBLE else View.GONE)
         if (chartVisible) {
-            val up = chartSeries.last() >= chartSeries.first()
-            views.setImageViewBitmap(R.id.widget_chart, WidgetChartData.bitmap(chartSeries, up))
+            views.setImageViewBitmap(R.id.widget_chart,
+                WidgetChartData.bitmap(chartSeries, width = 720, height = 220))
         }
 
         views.removeAllViews(R.id.widget_rows)

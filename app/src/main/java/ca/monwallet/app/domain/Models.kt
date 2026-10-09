@@ -311,18 +311,19 @@ data class Wallet(
     fun result(portfolio: String? = null, now: Long = System.currentTimeMillis()): Result {
         val entries = transactions.filter { portfolio == null || it.portfolioId == portfolio }
         val datedQuotes = quotes.mapValues { (securityId, quote) ->
-            if (quote.previous != null) quote
-            else {
-                val close = runCatching {
-                    val session = LocalDate.parse(quote.sessionDate)
-                    prices.asSequence()
-                        .filter { it.securityId == securityId && it.date < quote.sessionDate }
-                        .maxByOrNull { it.date }
-                        ?.takeIf { java.time.temporal.ChronoUnit.DAYS.between(
-                            LocalDate.parse(it.date), session) in 0..7 }
-                }.getOrNull()
-                if (close == null) quote else quote.copy(previous = close.close)
-            }
+            val cachedClose = runCatching {
+                val session = LocalDate.parse(quote.sessionDate)
+                prices.asSequence()
+                    .filter { it.securityId == securityId && it.date < quote.sessionDate }
+                    .maxByOrNull { it.date }
+                    ?.takeIf { java.time.temporal.ChronoUnit.DAYS.between(
+                        LocalDate.parse(it.date), session) in 0..7 }
+            }.getOrNull()?.close
+            // Some feeds omit the regular-session previous close after hours.
+            // Keep the provider's value when present and use stored daily history
+            // only as a fallback, so the daily P&L remains available after close.
+            if (quote.previous == null && cachedClose != null) quote.copy(previous = cachedClose)
+            else quote
         }
         val usd = securities.find { it.symbol == "CAD=X" }?.let { datedQuotes[it.id] }
         val regular = Engine.calculate(entries, datedQuotes, usd)
