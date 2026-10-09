@@ -139,7 +139,8 @@ object Engine {
                 val fx =
                     if (q?.currency == "CAD") ONE
                     else if (q?.currency == "USD") usd?.price else null
-                val prevFx = if (q?.currency == "CAD") ONE else usd?.takeIf { it.sessionDate == q?.sessionDate }?.previous
+                val prevFx = if (q?.currency == "CAD") ONE else
+                    usd?.takeIf { it.sessionDate == q?.sessionDate }?.previous ?: usd?.price
                 val value =
                     if (lot.q.signum() == 0) ZERO
                     else q?.let { p -> fx?.let { lot.q * p.price * it } }
@@ -187,7 +188,7 @@ object Engine {
         val allPrices = held.all { h ->
             val quote = quotes[h.securityId]
             quote != null && quote.previous != null && quote.sessionDate == session &&
-                (quote.currency == "CAD" || (usd?.sessionDate == session && usd.previous != null))
+                (quote.currency == "CAD" || usd != null)
         }
         val noLateTrades = tx.none { transaction ->
             val quote = transaction.securityId?.let(quotes::get)
@@ -200,7 +201,7 @@ object Engine {
         val opening = held.fold(ZERO) { a, h ->
             val q = quotes[h.securityId]
             val units = before.lots[h.securityId]?.q ?: ZERO
-            a + units * (q?.previous ?: ZERO) * (if (q?.currency == "CAD") ONE else usd?.previous ?: ZERO)
+            a + units * (q?.previous ?: ZERO) * (if (q?.currency == "CAD") ONE else usd?.previous ?: usd?.price ?: ZERO)
         } + before.cash
         val closing = held.fold(ZERO) { a, h ->
             val q = quotes[h.securityId]
