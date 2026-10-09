@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.40 — 2026-10-09 (P&L quotidien avec taux FX en cache)
+
+- Le P&L quotidien en CAD reste calculable après la fermeture même si le taux FX n’a pas de clôture datée de la même séance.
+- En l’absence de clôture FX alignée, utilise le dernier taux courant connu comme approximation et conserve le P&L plutôt que d’afficher « — ».
+- Test de régression sur un titre américain et un taux FX d’une autre date.
+
 ## Mon Wallet v0.2.39 — 2026-10-08 (P&L quotidien après la fermeture)
 
 - Portefeuille et widget conservent le P&L de la séance régulière après la fermeture, en reprenant la clôture précédente de l’historique si la cotation ne la fournit pas.
