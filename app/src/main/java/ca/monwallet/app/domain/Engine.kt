@@ -201,7 +201,8 @@ object Engine {
         val opening = held.fold(ZERO) { a, h ->
             val q = quotes[h.securityId]
             val units = before.lots[h.securityId]?.q ?: ZERO
-            a + units * (q?.previous ?: ZERO) * (if (q?.currency == "CAD") ONE else usd?.previous ?: usd?.price ?: ZERO)
+            a + units * (q?.previous ?: ZERO) * (if (q?.currency == "CAD") ONE else
+                usd?.takeIf { it.sessionDate == session }?.previous ?: usd?.price ?: ZERO)
         } + before.cash
         val closing = held.fold(ZERO) { a, h ->
             val q = quotes[h.securityId]
