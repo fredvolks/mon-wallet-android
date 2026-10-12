@@ -17,10 +17,10 @@ object MarketHoliday {
         val exchange = security.exchange.uppercase().replace(" ", "")
         val symbol = security.symbol.uppercase()
         return when {
-            exchange in setOf("TSX", "TOR", "TORONTO", "TSE") ||
+            exchange in setOf("TSX", "TSXV", "TOR", "TORONTO", "TSE", "NEO", "NEOE", "CBOE CANADA") ||
                 (security.currency == "CAD" && (symbol.endsWith(".TO") || symbol.endsWith(".NE"))) ->
                 ExchangeCalendar.TSX
-            exchange in setOf("CSE", "CNQ", "CNSX") || symbol.endsWith(".CN") ->
+            exchange in setOf("CSE", "CNQ", "CNSX", "VENTURE") || symbol.endsWith(".CN") ->
                 ExchangeCalendar.CSE
             exchange in setOf("NYSE", "NYQ", "NASDAQ", "NASDAQGS", "NASDAQGM", "NASDAQCM", "NMS", "NCM", "NGM") ||
                 security.currency == "USD" -> ExchangeCalendar.US_EQUITIES
@@ -29,9 +29,10 @@ object MarketHoliday {
     }
 
     fun isHoliday(security: Security, date: LocalDate): Boolean = when (calendar(security)) {
-        ExchangeCalendar.TSX -> date in canadianHolidays(date.year)
-        ExchangeCalendar.CSE -> date in canadianHolidays(date.year)
-        ExchangeCalendar.US_EQUITIES -> date in usHolidays(date.year)
+        ExchangeCalendar.TSX, ExchangeCalendar.CSE ->
+            date in canadianHolidays(date.year) || date in canadianHolidays(date.year + 1)
+        ExchangeCalendar.US_EQUITIES ->
+            date in usHolidays(date.year) || date in usHolidays(date.year + 1)
         ExchangeCalendar.NONE -> false
     }
 
