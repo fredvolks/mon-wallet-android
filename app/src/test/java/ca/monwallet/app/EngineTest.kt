@@ -329,11 +329,11 @@ class EngineTest {
         equal("10",r.dayPercent)
     }
 
-    @Test fun cumulativeDayRejectsCashFlowsAfterLastMarketSession() {
+    @Test fun laterCashFlowDoesNotEraseLastAvailableMarketSessionPnl() {
         val r=Engine.calculate(listOf(
             tx("10","100",account="CELI"),
             tx("0","500","2026-10-03",TxType.DEPOSIT,account="REER",security=null)),
             mapOf("XEQT" to quote("110","100",day="2026-10-02")))
-        assertNull(r.day)
+        equal("100", r.day)
     }
 }
