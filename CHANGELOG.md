@@ -1,5 +1,11 @@
 # Versions
 
+## Mon Wallet v0.2.46 — 2026-10-12 (pourcentage quotidien calculé sur le wallet complet)
+
+- Les titres dont la bourse est fermée pour congé restent exclus du P&L quotidien en dollars.
+- Leur dernière valeur connue reste incluse dans la base totale utilisée pour calculer le pourcentage du wallet.
+- Le widget affiche donc le rendement quotidien sur la valeur du portefeuille complet.
+
 ## Mon Wallet v0.2.44 — 2026-10-12 (congés boursiers et P&L quotidien)
 
 - Ajoute un indicateur de congé boursier à côté des titres concernés dans Mes titres et la Watchlist, selon leur place canadienne ou américaine.
