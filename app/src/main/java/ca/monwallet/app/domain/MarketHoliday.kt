@@ -46,19 +46,9 @@ object MarketHoliday {
         return isHoliday(security, today)
     }
 
-    /** True only when this title is on an exchange holiday and its quote is from an earlier session. */
-    fun excludesDailyPnl(security: Security, quote: Quote?, now: Long = System.currentTimeMillis()): Boolean {
-        quote ?: return false
-        if (!isHolidayToday(security, now)) return false
-        val zone = when (calendar(security)) {
-            ExchangeCalendar.TSX, ExchangeCalendar.CSE -> toronto
-            ExchangeCalendar.US_EQUITIES -> newYork
-            ExchangeCalendar.NONE -> return false
-        }
-        val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-        val sessionDate = runCatching { LocalDate.parse(quote.sessionDate) }.getOrNull() ?: return false
-        return sessionDate < today
-    }
+    /** A holiday title never contributes to the daily portfolio P&L, even with a cached quote. */
+    fun excludesDailyPnl(security: Security, now: Long = System.currentTimeMillis()): Boolean =
+        isHolidayToday(security, now)
 
     private fun canadianHolidays(year: Int): Set<LocalDate> {
         val dates = mutableSetOf(
