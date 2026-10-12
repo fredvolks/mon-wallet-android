@@ -178,27 +178,6 @@ object Engine {
         }
         val sessions = held.mapNotNull { quotes[it.securityId]?.sessionDate }.distinct()
         val session = sessions.singleOrNull() ?: LocalDate.now().toString()
-        val allPrices = held.all { h ->
-            val quote = quotes[h.securityId]
-            quote != null && quote.previous != null && quote.sessionDate == session &&
-                (quote.currency == "CAD" || usd != null)
-        }
-        val before = ledger(tx.filter { it.date < session })
-        val end = ledger(tx.filter { it.date <= session })
-        val opening = held.fold(ZERO) { a, h ->
-            val q = quotes[h.securityId]
-            val units = before.lots[h.securityId]?.q ?: ZERO
-            a + units * (q?.previous ?: ZERO) * (if (q?.currency == "CAD") ONE else
-                usd?.takeIf { it.sessionDate == session }?.previous ?: usd?.price ?: ZERO)
-        } + before.cash
-        val closing = held.fold(ZERO) { a, h ->
-            val q = quotes[h.securityId]
-            val units = end.lots[h.securityId]?.q ?: ZERO
-            a + units * (q?.price ?: ZERO) * (if (q?.currency == "CAD") ONE else usd?.price ?: ZERO)
-        } + end.cash
-        val withdrawals = tx.filter { it.date == session && it.type == TxType.WITHDRAWAL }
-            .fold(ZERO) { a, t -> a + t.price * t.fxRate }
-        val contributions = end.capital - before.capital + withdrawals
         val latestSession = sessions.maxOrNull()
         val dailyHeld = held.filter { it.securityId !in excludeDailyPnlFor }
         val dailyPrices = dailyHeld.all { holding ->
