@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.42 — 2026-10-12 (mise à jour intégrée en un toucher)
+
+- Profil → Mises à jour utilise par défaut le manifeste officiel de la dernière release; aucune URL à saisir.
+- Un seul bouton vérifie la version, télécharge l’APK signé, vérifie son SHA-256, son identifiant et son certificat, puis ouvre l’installateur Android.
+- L’APK reste en cache pour reprendre l’installation si Android demande d’abord l’autorisation « Installer des applications inconnues ». La confirmation finale reste faite dans Android.
+
+
 ## Mon Wallet v0.2.41 — 2026-10-09 (P&L quotidien après fermeture avec FX en cache)
 
 - Le P&L quotidien des titres américains reste disponible en CAD lorsque la clôture USD/CAD n’est pas datée de la même séance; le dernier taux courant connu sert de repli.
