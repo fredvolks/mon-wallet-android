@@ -426,6 +426,7 @@ private fun PortfolioTableRow(w: Wallet, s: Security, h: Holding, result: Result
                 Spacer(Modifier.width(4.dp))
                 Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
+                MarketHolidayIcon(s, Modifier.padding(start = 2.dp))
             }
         }, value = { key ->
             if (key == "sparkline") {
@@ -524,7 +525,10 @@ fun HoldingRow(w: Wallet, s: Security, h: Holding, compact: Boolean,
             Logo(s)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(s.ticker, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.ticker, fontWeight = FontWeight.Bold)
+                    MarketHolidayIcon(s, Modifier.padding(start = 3.dp))
+                }
                 Caption(stringResource(R.string.shares_currency, number(h.quantity, 6), s.currency))
             }
             Chart(
@@ -612,8 +616,11 @@ private fun CompactHoldingRow(w: Wallet, s: Security, h: Holding,
             Logo(s, 42.dp)
             Spacer(Modifier.width(8.dp))
             Column {
-                Text(s.ticker, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.ticker, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    MarketHolidayIcon(s, Modifier.padding(start = 3.dp))
+                }
                 Text(compactQuantity(s, h.quantity) + if (showWeight) " · " +
                     percent(h.value?.let { v -> portfolioValue?.let { v.pct(it) } }) else "",
                     color = Muted, fontSize = 10.sp, maxLines = 1,
