@@ -43,7 +43,8 @@ class MarketHolidayTest {
             quotes = quotes)
         val result = wallet.result(now = now)
         assertEquals(0, d("50").compareTo(result.day!!))
-        assertEquals(0, d("400").compareTo(result.dayBase!!))
+        assertEquals(0, d("1500").compareTo(result.dayBase!!))
+        assertEquals(3.3333, result.dayPercent!!.toDouble(), 0.01)
         assertNull(result.holdings.single { it.securityId == canadian.id }.day)
         assertEquals(0, d("50").compareTo(
             result.holdings.single { it.securityId == american.id }.day))
@@ -59,6 +60,8 @@ class MarketHolidayTest {
             quotes = mapOf(canadian.id to quote))
         val result = wallet.result(now = now)
         assertEquals(0, BigDecimal.ZERO.compareTo(result.day))
+        assertEquals(0, d("1100").compareTo(result.dayBase!!))
+        assertEquals(0.0, result.dayPercent!!.toDouble(), 0.001)
         assertNull(result.holdings.single().day)
     }
 }
