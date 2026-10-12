@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import ca.monwallet.app.domain.Engine
+import ca.monwallet.app.domain.MarketHoliday
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Wallet
 import ca.monwallet.app.domain.ZERO
@@ -46,8 +47,11 @@ internal object WidgetChartData {
 
     private fun intraday(wallet: Wallet, portfolio: String?, cached: List<Point>): List<Float> {
         val tx = wallet.transactions.filter { portfolio == null || it.portfolioId == portfolio }
+        val excluded = wallet.securities.filter { MarketHoliday.isHolidayToday(it) }
+            .map { it.id }.toSet()
         val held = wallet.result(portfolio).holdings
-            .filter { it.quantity > ZERO }.map { it.securityId }.toSet()
+            .filter { it.quantity > ZERO && it.securityId !in excluded }
+            .map { it.securityId }.toSet()
         if (held.isEmpty()) return emptyList()
         val session = wallet.quotes.values.filter { it.securityId in held }
             .minOfOrNull { it.sessionDate } ?: return emptyList()
@@ -66,7 +70,7 @@ internal object WidgetChartData {
                     .copy(price = point.close, timestamp = point.timestamp)
             }
             // Keep the existing FX quote; no inferred exchange rate is introduced.
-            runCatching { Engine.calculate(tx, quotes, fx?.let { quotes[it.id] }).day?.toFloat() }
+            runCatching { Engine.calculate(tx, quotes, fx?.let { quotes[it.id] }, excluded).day?.toFloat() }
                 .getOrNull()?.takeIf { it.isFinite() }
         }
     }
