@@ -217,12 +217,33 @@ object Engine {
             securityPnl + cashOnlyPnl
         } else null
         val day = alignedDay ?: mixedDay
-        val dayBase = when {
+        val dailyBaseBeforeExcluded = when {
             alignedDay != null -> alignedDayBase
-            mixedDay != null -> dailyHeld.fold(ZERO) { sum, holding ->
-                sum + holding.dayBase!!
+            mixedDay != null -> {
+                val beforeDaily = ledger(tx.filter { it.date < session })
+                val endDaily = ledger(tx.filter { it.date <= session })
+                dailyHeld.fold(ZERO) { sum, holding -> sum + holding.dayBase!! } +
+                    beforeDaily.cash + (endDaily.capital - beforeDaily.capital)
             }
             else -> null
+        }
+        // Holiday markets contribute no daily movement, but their last known
+        // value remains part of the whole-wallet denominator for daily percent.
+        var excludedDailyBase: BigDecimal? = ZERO
+        held.filter { it.securityId in excludeDailyPnlFor }.forEach { holding ->
+            val quote = quotes[holding.securityId]
+            val fx = when (quote?.currency) {
+                "CAD" -> ONE
+                "USD" -> usd?.price
+                else -> null
+            }
+            val value = quote?.let { fx?.let { rate -> holding.quantity * it.price * rate } }
+            excludedDailyBase = excludedDailyBase?.let { base ->
+                value?.let { base + it }
+            }
+        }
+        val dayBase = dailyBaseBeforeExcluded?.let { base ->
+            excludedDailyBase?.let { base + it }
         }
         return Result(
             holdings,
