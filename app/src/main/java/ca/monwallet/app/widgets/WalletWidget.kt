@@ -173,7 +173,9 @@ open class WalletWidget : AppWidgetProvider() {
                     if (config.totalPercent) View.VISIBLE else View.GONE)
                 val tx =
                     wallet.transactions.filter { portfolio == null || it.portfolioId == portfolio }
-                val held = tx.mapNotNull { it.securityId }.toSet()
+                val excluded = wallet.securities.filter { MarketHoliday.isHolidayToday(it) }
+                    .map { it.id }.toSet()
+                val held = tx.mapNotNull { it.securityId }.toSet() - excluded
                 val session =
                     wallet.quotes.values
                         .filter { it.securityId in held }
@@ -309,6 +311,7 @@ open class WalletWidget : AppWidgetProvider() {
                                                 wallet.securities
                                                     .find { it.symbol == "CAD=X" }
                                                     ?.let { quotes[it.id] },
+                                                excluded,
                                             )
                                             .day
                                             ?.toFloat()
