@@ -206,6 +206,7 @@ object Engine {
             quote != null && quote.previous != null &&
                 (quote.currency == "CAD" || usd != null)
         }
+        var alignedDayBase: BigDecimal? = null
         val alignedDay = if (dailyHeld.isNotEmpty() && dailyPrices && dailyHeld.mapNotNull {
                 quotes[it.securityId]?.sessionDate
             }.distinct().size <= 1) {
@@ -223,6 +224,7 @@ object Engine {
                 acc + units * quote.price * (if (quote.currency == "CAD") ONE else usd?.price ?: ZERO)
             } + endDaily.cash
             val flow = endDaily.capital - beforeDaily.capital
+            alignedDayBase = base + flow
             close - base - flow
         } else null
         val completePerSecurityDays = dailyHeld.isNotEmpty() &&
@@ -240,7 +242,7 @@ object Engine {
         } else null
         val day = alignedDay ?: mixedDay
         val dayBase = when {
-            alignedDay != null -> opening + contributions
+            alignedDay != null -> alignedDayBase
             mixedDay != null -> dailyHeld.fold(ZERO) { sum, holding ->
                 sum + holding.dayBase!!
             }
