@@ -57,7 +57,8 @@ class MarketHolidayTest {
             "2026-10-12", "test")
         val wallet = Wallet(securities = listOf(canadian), transactions = tx,
             quotes = mapOf(canadian.id to quote))
-        assertNull(wallet.result(now = now).day)
-        assertNull(wallet.result(now = now).holdings.single().day)
+        val result = wallet.result(now = now)
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.day))
+        assertNull(result.holdings.single().day)
     }
 }
