@@ -21,7 +21,7 @@ class MarketHolidayTest {
         assertFalse(MarketHoliday.isHolidayToday(american, now))
     }
 
-    @Test fun excludesOnlyStaleMarketHolidayQuoteFromDailyPortfolioPnl() {
+    @Test fun excludesCanadianHolidayFromDailyPortfolioPnl() {
         val canadian = Security.of("XEQT.TO", "XEQT", "TSX", "CAD", "ETF")
         val american = Security.of("TSM", "TSMC", "NYSE", "USD")
         val fx = Security.of("CAD=X", "USD/CAD", "FX", "CAD", "FX")
@@ -49,7 +49,7 @@ class MarketHolidayTest {
             result.holdings.single { it.securityId == american.id }.day))
     }
 
-    @Test fun currentCanadianQuoteStillContributesOnExchangeHolidayDate() {
+    @Test fun canadianHolidayExcludesTitleEvenIfProviderHasSameDayQuote() {
         val canadian = Security.of("XEQT.TO", "XEQT", "TSX", "CAD", "ETF")
         val tx = listOf(Transaction(portfolioId = "p", securityId = canadian.id,
             quantity = d("10"), price = d("100"), date = "2026-10-01"))
@@ -57,6 +57,7 @@ class MarketHolidayTest {
             "2026-10-12", "test")
         val wallet = Wallet(securities = listOf(canadian), transactions = tx,
             quotes = mapOf(canadian.id to quote))
-        assertEquals(0, d("100").compareTo(wallet.result(now = now).day!!))
+        assertNull(wallet.result(now = now).day)
+        assertNull(wallet.result(now = now).holdings.single().day)
     }
 }
