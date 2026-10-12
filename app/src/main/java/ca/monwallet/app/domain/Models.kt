@@ -326,7 +326,17 @@ data class Wallet(
             else quote
         }
         val usd = securities.find { it.symbol == "CAD=X" }?.let { datedQuotes[it.id] }
-        val regular = Engine.calculate(entries, datedQuotes, usd)
+        val holidayIds = securities.filter { security ->
+            MarketHoliday.excludesDailyPnl(security, datedQuotes[security.id], now)
+        }.map { it.id }.toSet()
+        val regular = Engine.calculate(entries, datedQuotes, usd, holidayIds).let { result ->
+            if (holidayIds.isEmpty()) result else result.copy(
+                holdings = result.holdings.map { holding ->
+                    if (holding.securityId in holidayIds) holding.copy(day = null, dayBase = null)
+                    else holding
+                }
+            )
+        }
         if (settings["portfolio_extended"] == "REGULAR") return regular
         val adjusted = datedQuotes.mapValues { (securityId, quote) ->
             val normalized = securities.find { it.id == securityId }
@@ -341,7 +351,7 @@ data class Wallet(
             else quote
         }
         if (adjusted == datedQuotes) return regular
-        val estimated = Engine.calculate(entries, adjusted, usd)
+        val estimated = Engine.calculate(entries, adjusted, usd, holidayIds)
         val byId = regular.holdings.associateBy { it.securityId }
         // Today's P&L retains the regular-session reference; only valuation uses
         // extended hours, and only when the provider supplied a current quote.
