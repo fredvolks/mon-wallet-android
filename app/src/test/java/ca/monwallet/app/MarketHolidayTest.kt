@@ -24,6 +24,7 @@ class MarketHolidayTest {
     @Test fun excludesOnlyStaleMarketHolidayQuoteFromDailyPortfolioPnl() {
         val canadian = Security.of("XEQT.TO", "XEQT", "TSX", "CAD", "ETF")
         val american = Security.of("TSM", "TSMC", "NYSE", "USD")
+        val fx = Security.of("CAD=X", "USD/CAD", "FX", "CAD", "FX")
         val tx = listOf(
             Transaction(portfolioId = "p", securityId = canadian.id, quantity = d("10"),
                 price = d("100"), date = "2026-10-01"),
@@ -35,8 +36,10 @@ class MarketHolidayTest {
                 "2026-10-09", "test"),
             american.id to Quote(american.id, d("45"), d("40"), "USD", 0,
                 "2026-10-12", "test"),
+            fx.id to Quote(fx.id, d("1.35"), d("1.35"), "CAD", 0,
+                "2026-10-12", "test"),
         )
-        val wallet = Wallet(securities = listOf(canadian, american), transactions = tx,
+        val wallet = Wallet(securities = listOf(canadian, american, fx), transactions = tx,
             quotes = quotes)
         val result = wallet.result(now = now)
         assertEquals(0, d("50").compareTo(result.day))
