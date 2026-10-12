@@ -17,7 +17,7 @@ object MarketHoliday {
         val exchange = security.exchange.uppercase().replace(" ", "")
         val symbol = security.symbol.uppercase()
         return when {
-            exchange in setOf("TSX", "TSXV", "TOR", "TORONTO", "TSE", "NEO", "NEOE", "CBOE CANADA") ||
+            exchange in setOf("TSX", "TSXV", "TOR", "TORONTO", "TSE", "NEO", "NEOE", "CBOECANADA") ||
                 (security.currency == "CAD" && (symbol.endsWith(".TO") || symbol.endsWith(".NE"))) ->
                 ExchangeCalendar.TSX
             exchange in setOf("CSE", "CNQ", "CNSX", "VENTURE") || symbol.endsWith(".CN") ->
