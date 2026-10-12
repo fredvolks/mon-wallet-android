@@ -1,5 +1,13 @@
 # Versions
 
+## Mon Wallet v0.2.43 — 2026-10-12 (congés boursiers et P&L quotidien)
+
+- Ajoute un indicateur de congé boursier à côté des titres concernés dans Mes titres et la Watchlist, selon leur place canadienne ou américaine.
+- Le P&L quotidien masque la variation des titres dont la place est fermée pour congé; les titres dont la place est ouverte continuent de compter.
+- Le P&L du jour est calculé sur les titres actifs seulement et indique combien de titres en congé sont exclus.
+- Le P&L de la dernière séance reste disponible après une transaction ou un dépôt ultérieur.
+- Tests de régression pour l’Action de grâce canadienne, le marché américain ouvert et le calcul quotidien sélectif.
+
 ## Mon Wallet v0.2.42 — 2026-10-12 (mise à jour intégrée en un toucher)
 
 - Profil → Mises à jour utilise par défaut le manifeste officiel de la dernière release; aucune URL à saisir.
