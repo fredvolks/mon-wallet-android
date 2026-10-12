@@ -118,9 +118,12 @@ object Engine {
         tx: List<Transaction>,
         quotes: Map<String, Quote> = emptyMap(),
         usd: Quote? = null,
+        excludeDailyPnlFor: Set<String> = emptySet(),
     ): Result {
         if (tx.map { it.portfolioId }.distinct().size > 1) {
-            return combine(tx.groupBy { it.portfolioId }.values.map { calculate(it, quotes, usd) })
+            return combine(tx.groupBy { it.portfolioId }.values.map {
+                calculate(it, quotes, usd, excludeDailyPnlFor)
+            })
         }
         val l = ledger(tx)
         val holdings =
@@ -197,16 +200,13 @@ object Engine {
             .fold(ZERO) { a, t -> a + t.price * t.fxRate }
         val contributions = end.capital - before.capital + withdrawals
         val latestSession = sessions.maxOrNull()
-        val dailyHeld = held.filter { holding ->
-            val security = securityFor(tx, quotes, holding.securityId)
-            !MarketHoliday.excludesDailyPnl(security, quotes[holding.securityId])
-        }
+        val dailyHeld = held.filter { it.securityId !in excludeDailyPnlFor }
         val dailyPrices = dailyHeld.all { holding ->
             val quote = quotes[holding.securityId]
             quote != null && quote.previous != null &&
                 (quote.currency == "CAD" || usd != null)
         }
-        val alignedDay = if (dailyPrices && dailyHeld.mapNotNull {
+        val alignedDay = if (dailyHeld.isNotEmpty() && dailyPrices && dailyHeld.mapNotNull {
                 quotes[it.securityId]?.sessionDate
             }.distinct().size <= 1) {
             val beforeDaily = ledger(tx.filter { it.date < session })
