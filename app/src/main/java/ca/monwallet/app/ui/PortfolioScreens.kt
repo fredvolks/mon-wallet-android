@@ -110,7 +110,7 @@ fun PortfolioScreen(
     val owned = result?.holdings?.filter { it.quantity > ZERO }.orEmpty()
     val holidayCount = owned.count { holding ->
         val security = w.security(holding.securityId)
-        security != null && MarketHoliday.excludesDailyPnl(security, w.quotes[holding.securityId])
+        security != null && MarketHoliday.excludesDailyPnl(security)
     }
     val extendedSession = if (w.settings["portfolio_extended"] != "REGULAR")
         owned.mapNotNull { h -> w.security(h.securityId)?.let { activeExtended(w, it)?.session } }
