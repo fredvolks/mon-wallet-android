@@ -1,6 +1,6 @@
 # Versions
 
-## Mon Wallet v0.2.43 — 2026-10-12 (congés boursiers et P&L quotidien)
+## Mon Wallet v0.2.44 — 2026-10-12 (congés boursiers et P&L quotidien)
 
 - Ajoute un indicateur de congé boursier à côté des titres concernés dans Mes titres et la Watchlist, selon leur place canadienne ou américaine.
 - Le P&L quotidien masque la variation des titres dont la place est fermée pour congé; les titres dont la place est ouverte continuent de compter.
