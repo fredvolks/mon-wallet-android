@@ -176,19 +176,16 @@ object Engine {
                     t.date == quotes[h.securityId]?.sessionDate
             }
         }
-        val sessions = held.mapNotNull { quotes[it.securityId]?.sessionDate }.distinct()
-        val session = sessions.singleOrNull() ?: LocalDate.now().toString()
-        val latestSession = sessions.maxOrNull()
         val dailyHeld = held.filter { it.securityId !in excludeDailyPnlFor }
+        val dailySessions = dailyHeld.mapNotNull { quotes[it.securityId]?.sessionDate }.distinct()
+        val session = dailySessions.maxOrNull() ?: LocalDate.now().toString()
         val dailyPrices = dailyHeld.all { holding ->
             val quote = quotes[holding.securityId]
             quote != null && quote.previous != null &&
                 (quote.currency == "CAD" || usd != null)
         }
         var alignedDayBase: BigDecimal? = null
-        val alignedDay = if (dailyHeld.isNotEmpty() && dailyPrices && dailyHeld.mapNotNull {
-                quotes[it.securityId]?.sessionDate
-            }.distinct().size <= 1) {
+        val alignedDay = if (dailyPrices && dailySessions.size <= 1) {
             val beforeDaily = ledger(tx.filter { it.date < session })
             val endDaily = ledger(tx.filter { it.date <= session })
             val base = dailyHeld.fold(ZERO) { acc, holding ->
@@ -211,7 +208,7 @@ object Engine {
         val mixedDay = if (dailyHeld.isNotEmpty() && completePerSecurityDays) {
             val securityPnl = dailyHeld.fold(ZERO) { sum, holding -> sum + holding.day!! }
             val cashOnlyPnl = tx.filter { transaction ->
-                transaction.date == latestSession &&
+                transaction.date == session &&
                     (transaction.type == TxType.FEE ||
                         (transaction.type == TxType.DIVIDEND && transaction.securityId == null))
             }.fold(ZERO) { sum, transaction ->
