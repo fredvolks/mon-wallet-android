@@ -4,6 +4,7 @@ import ca.monwallet.app.data.Csv
 import ca.monwallet.app.domain.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.Instant
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -215,7 +216,7 @@ class EngineTest {
                 0, "2026-10-08", "Test")),
             prices = listOf(Point("XEQT", "2026-10-07", d("100"), 0)),
         )
-        equal("100", wallet.result().day)
+        equal("100", wallet.result(now = Instant.parse("2026-10-08T20:00:00Z").toEpochMilli()).day)
     }
 
     @Test
