@@ -327,7 +327,7 @@ data class Wallet(
         }
         val usd = securities.find { it.symbol == "CAD=X" }?.let { datedQuotes[it.id] }
         val holidayIds = securities.filter { security ->
-            MarketHoliday.excludesDailyPnl(security, datedQuotes[security.id], now)
+            MarketHoliday.excludesDailyPnl(security, now)
         }.map { it.id }.toSet()
         val regular = Engine.calculate(entries, datedQuotes, usd, holidayIds).let { result ->
             if (holidayIds.isEmpty()) result else result.copy(
