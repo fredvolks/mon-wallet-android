@@ -36,7 +36,7 @@ class MarketHolidayTest {
                 "2026-10-09", "test"),
             american.id to Quote(american.id, d("45"), d("40"), "USD", 0,
                 "2026-10-12", "test"),
-            fx.id to Quote(fx.id, d("1.35"), d("1.35"), "CAD", 0,
+            fx.id to Quote(fx.id, d("1"), d("1"), "CAD", 0,
                 "2026-10-12", "test"),
         )
         val wallet = Wallet(securities = listOf(canadian, american, fx), transactions = tx,
