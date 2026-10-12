@@ -84,5 +84,9 @@ class SecureSettings(private val context: Context) {
         get() = url.startsWith("https://") && apiKey.isNotBlank()
 
     val updateUrl
-        get() = get("update_url") ?: BuildConfig.UPDATE_MANIFEST_URL
+        get() =
+            get("update_url")
+                ?.takeIf { it.startsWith("https://") }
+                ?: BuildConfig.UPDATE_MANIFEST_URL.takeIf { it.startsWith("https://") }
+                ?: "https://github.com/fredvolks/mon-wallet-android/releases/latest/download/version.json"
 }
