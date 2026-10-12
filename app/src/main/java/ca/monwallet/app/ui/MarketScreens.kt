@@ -54,6 +54,7 @@ fun QuoteRow(w: Wallet, s: Security, onClick: () -> Unit, menu: (@Composable () 
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(s.ticker, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                MarketHolidayIcon(s, Modifier.padding(start = 3.dp))
                 if (w.alerts.any { it.securityId == s.id && it.enabled })
                     Icon(
                         Icons.Outlined.Notifications,
@@ -710,8 +711,11 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
                 Logo(s, 20.dp)
                 Spacer(Modifier.width(4.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        MarketHolidayIcon(s, Modifier.padding(start = 2.dp))
+                    }
                     if (showName) Text(s.name, fontSize = 9.sp, color = Muted,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
