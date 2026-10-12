@@ -108,6 +108,10 @@ fun PortfolioScreen(
         }.toString()
     val visible = snapshots.filter { it.date >= cutoff }
     val owned = result?.holdings?.filter { it.quantity > ZERO }.orEmpty()
+    val holidayCount = owned.count { holding ->
+        val security = w.security(holding.securityId)
+        security != null && MarketHoliday.excludesDailyPnl(security, w.quotes[holding.securityId])
+    }
     val extendedSession = if (w.settings["portfolio_extended"] != "REGULAR")
         owned.mapNotNull { h -> w.security(h.securityId)?.let { activeExtended(w, it)?.session } }
             .distinct().singleOrNull() else null
@@ -194,6 +198,7 @@ fun PortfolioScreen(
                             fontWeight = FontWeight.SemiBold)
                         Text("Profit portefeuille  ${percent(result?.percent)}",
                             fontSize = 11.sp, color = tint(result?.pnl))
+                        if (holidayCount > 0) Caption("$holidayCount titre(s) en congé exclus du P&L")
                     }
                 }
             } else CardBlock {
@@ -235,6 +240,7 @@ fun PortfolioScreen(
                     Metric(stringResource(R.string.ui_jour_a2cf1), percent(result?.dayPercent), tint(result?.day))
                     Metric(stringResource(R.string.ui_encaisse_d0263), money(result?.cash))
                 }
+                if (holidayCount > 0) Caption("$holidayCount titre(s) en congé exclus du P&L quotidien")
             }
         }
         item {
