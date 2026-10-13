@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.2.0
+      TAG: des-a-deux-v0.2.1
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -30,7 +30,7 @@ jobs:
           yes | "$SDKMGR" --licenses >/dev/null || true
           "$SDKMGR" --install 'platforms;android-35' 'build-tools;35.0.0'
       - name: Assemble release APK
-        run: gradle :app:assembleRelease --no-daemon --stacktrace
+        run: gradle :app:testDebugUnitTest :app:assembleRelease --no-daemon --stacktrace
       - name: Sign and verify APK
         run: |
           set -euo pipefail
@@ -49,15 +49,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/Des-a-Deux-v0.2.0.apk "$RUNNER_TEMP/aligned.apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.2.0.apk
-          sha256sum dist/Des-a-Deux-v0.2.0.apk
+            --out dist/Des-a-Deux-v0.2.1.apk "$RUNNER_TEMP/aligned.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.2.1.apk
+          sha256sum dist/Des-a-Deux-v0.2.1.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Des-a-Deux-v0.2.0
-          path: dist/Des-a-Deux-v0.2.0.apk
+          name: Des-a-Deux-v0.2.1
+          path: dist/Des-a-Deux-v0.2.1.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
         env:
@@ -65,9 +65,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/Des-a-Deux-v0.2.0.apk --clobber
+            gh release upload "$TAG" dist/Des-a-Deux-v0.2.1.apk --clobber
           else
-            gh release create "$TAG" dist/Des-a-Deux-v0.2.0.apk \
-              --target "$GITHUB_SHA" --title "Dés à Deux v0.2.0" \
-              --notes "Nouveaux dés 3D animés, soirée D6, défi D20, reset hebdomadaire et mises à jour intégrées."
+            gh release create "$TAG" dist/Des-a-Deux-v0.2.1.apk \
+              --target "$GITHUB_SHA" --title "Dés à Deux v0.2.1" \
+              --notes "Correction de la barre de navigation Android, deux D6 indépendants (Fred et Émilie), progression donner/recevoir et mise à jour signée."
           fi
