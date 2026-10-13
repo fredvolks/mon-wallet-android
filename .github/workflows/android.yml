@@ -65,7 +65,7 @@ jobs:
           assert Path('app/src/test/java/ca/desadeux/jeu/GoogleNonceTest.java').is_file()
           assert 'LoveRollNativeAuth' in native
           assert 'setDomStorageEnabled(true)' in native
-          assert 'android:theme="@style/LoveRollConnectedTheme"' in manifest
+          assert 'android:theme="@style/LoveRollConnectedTheme"' in Path('app/src/main/AndroidManifest.xml').read_text()
           assert Path('app/src/main/res/values/styles.xml').is_file()
           colors=Path('app/src/main/res/values/styles.xml').read_text()
           assert 'Theme.Material.NoActionBar' in colors
