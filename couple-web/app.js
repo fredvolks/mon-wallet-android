@@ -11,7 +11,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
- diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null};
+ diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 const kinds={weekly:'Dé hebdomadaire',monthly_activity:'Sortie du mois',
  monthly_host:'Qui invite',monthly_restaurant:'Type de restaurant'};
@@ -81,7 +81,7 @@ function frame(body,title='DÉS À DEUX',subtitle='Un jeu intime, juste pour vou
 }
 function nav(){
  const tabs=[['home','⌂','Accueil'],['session','🎲','Soirée'],['special','✦','Défi spécial'],
- ['advent','🎁','Avent'],['journal','♡','Journal']];
+ ['advent','🎁','Avent'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner">'+tabs.map(([key,icon,label])=>
  '<button data-action="tab:'+key+'" class="'+(state.tab===key?'active':'')+'"><span>'+icon+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
@@ -115,8 +115,8 @@ function render(){
  else if(state.tab==='session')renderSession();
  else if(state.tab==='special')renderSpecial();
  else if(state.tab==='advent')renderAdvent();
- else if(state.tab==='journal')renderJournal();
- else if(state.tab==='feedback')renderFeedback();
+ else if(state.tab==='journal')renderJournal().catch(fail);
+ else if(state.tab==='feedback')renderFeedback().catch(fail);
  else if(state.tab==='settings')renderSettings();
 }
 async function reload(){
@@ -134,7 +134,8 @@ async function reload(){
  state.couple=couple[0]||null;
  const profilesAll=await query('couple_profiles');
  state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter'}));
- if(members.length===2){await refreshShared();subscribe();}
+ if(members.length===2)await refreshShared();
+ subscribe();
  render();
 }
 async function refreshShared(){
@@ -164,6 +165,11 @@ function subscribe(){
  if(!state.coupleId)return;
  if(state.channel)client.removeChannel(state.channel);
  let channel=client.channel('shared-couple-'+state.coupleId);
+ channel=channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'couple_members',
+  filter:'couple_id=eq.'+state.coupleId},async()=>{
+   try{await reload();notify('♡ Votre partenaire a accepté le match !');}catch(e){fail(e);}
+ });
+ if(state.members.length<2){state.channel=channel.subscribe();return;}
  for(const table of ['couple_rolls','couple_sessions','couple_challenges',
   'couple_advent','couple_feedback','couple_intimacy','couple_events'])
   channel=channel.on('postgres_changes',{event:'*',schema:'public',table,
@@ -249,7 +255,18 @@ function renderSession(){
    }else if(otherActive){body+='<p>Défi proposé à '+safe(p.name)+
     ' : '+safe(ideas[otherActive.category][otherActive.face-1])+'</p>';}
   }
-  body+=button('finish-session','Terminer la soirée', 'class="subtle"');
+  const myTarget=mine?.face||0,otherTarget=theirs?.face||0;
+  const mineCompleted=state.challenges.filter(x=>x.recipient===state.user.id&&x.status==='completed').length;
+  const theirCompleted=state.challenges.filter(x=>x.recipient===p.user_id&&x.status==='completed').length;
+  const canFinish=myTarget>0&&otherTarget>0&&mineCompleted>=myTarget&&theirCompleted>=otherTarget;
+  if(canFinish)body+=button('finish-session','✓ Terminer et compter la soirée');
+  else body+='<p>La soirée sera comptée seulement quand les défis des deux personnes seront terminés.</p>';
+  if(state.confirmCancel){
+   body+='<div class="card"><h3>Arrêter sans compter ?</h3>'+
+    '<p>La soirée sera fermée sans modifier la progression hebdomadaire.</p>'+
+    '<div class="actions">'+button('confirm-cancel','Oui, arrêter')+
+    button('dismiss-cancel','Continuer','class="subtle"')+'</div></div>';
+  }else body+=button('cancel-session','Arrêter sans la compter','class="subtle"');
  }
  body+='</section>';frame(body,'VOTRE SOIRÉE',s?'Étapes partagées et défis personnalisés':'Un nouveau moment à deux');
 }
@@ -326,7 +343,7 @@ async function decryptJson(ciphertext){
 }
 function ratingChoice(idName){return '<div class="chipline">'+[1,2,3,4,5].map(v=>
  '<label class="pill"><input type="radio" name="'+idName+'" value="'+v+'" style="width:auto;display:inline;min-height:0;margin:0" '+
- (v===4?'checked':'')+'> '+v+'★</label>').join('')+'</div>';}
+ ''+'> '+v+'★</label>').join('')+'</div>';}
 async function renderJournal(){
  const now=today(),yr=now.slice(0,4),currentMo=month(),mo=state.calendarMonth||currentMo,ws=week();
  const dates=state.journal.map(x=>x.happened_on);
@@ -435,6 +452,9 @@ function renderSettings(){
   safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
   '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
   button('profile','Mettre à jour mon nom')+'</section>'+
+  '<section class="card"><h3>♡ Notre journal commun</h3><p>Calendrier des relations et statistiques partagées, chiffrées.</p>'+
+  button('tab:journal','Ouvrir le calendrier et les statistiques')+'<div class="muted-line"></div>'+
+  button('tab:feedback','Nos questionnaires de soirées','class="subtle"')+'</section>'+
   '<section class="card"><h3>🔐 Vie privée</h3><p>Les entrées et questionnaires sont chiffrés dans votre navigateur avant envoi au serveur. Les dates et événements de tirage restent des métadonnées partagées.</p>'+
   button('lock','Verrouiller le journal','class="subtle"')+'</section>'+
   '<section class="card"><h3>Invitations et partenaire</h3><p>Votre match : '+
@@ -487,7 +507,7 @@ async function handle(action,element){
   if(!CONFIG.siteUrl)throw Error('L’adresse publique HTTPS doit être configurée pour envoyer des invitations.');
   const token=randomInviteToken(),digest=await hashToken(token);
   await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
-  const url=new URL(CONFIG.siteUrl);url.searchParams.set('invite',token);
+  const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
   const text='Je t’invite à rejoindre notre espace Dés à Deux ♡\n\n'+url.toString()+
    '\n\nConnecte-toi avec le même courriel que celui qui reçoit cette invitation.';
   const mail='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Invitation Dés à Deux')+
@@ -502,7 +522,7 @@ async function handle(action,element){
   await rpc('accept_pair_invite',{p_token_hash:await hashToken(token)});
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
- if(verb==='tab'){state.tab=parts[0];render();return;}
+ if(verb==='tab'){state.tab=parts[0];state.confirmCancel=false;render();return;}
  if(verb==='roll'){
   const kind=parts[0];
   const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}));
@@ -530,8 +550,15 @@ async function handle(action,element){
   await refreshAndShow();return;}
  if(verb==='finish-session'){
   if(!state.session)return;
-  await rpc('finish_couple_session',{p_session:state.session.id});
+  await rpc('finish_couple_session',{p_session:state.session.id,p_count:true});
   state.chosenSession=state.session.id;state.tab='feedback';await refreshAndShow();return;
+ }
+ if(verb==='cancel-session'){state.confirmCancel=true;render();return;}
+ if(verb==='dismiss-cancel'){state.confirmCancel=false;render();return;}
+ if(verb==='confirm-cancel'){
+  if(!state.session)return;
+  await rpc('finish_couple_session',{p_session:state.session.id,p_count:false});
+  state.confirmCancel=false;state.tab='home';await refreshAndShow();return;
  }
  if(verb==='advent'){
   const day=Number(parts[0]);state.selectedDay=day;
@@ -588,9 +615,16 @@ async function handle(action,element){
  }
 }
 async function start(){
- const invite=new URL(location.href).searchParams.get('invite');
- if(invite){sessionStorage.setItem('pendingInvite',invite);
-  history.replaceState(null,'',location.pathname);}
+ const currentUrl=new URL(location.href);
+ const fragment=new URLSearchParams(currentUrl.hash.replace(/^#/, ''));
+ const invite=fragment.get('invite')||currentUrl.searchParams.get('invite');
+ if(invite){
+  if(!/^[0-9a-f]{64}$/i.test(invite))throw Error('Ce lien d’invitation est invalide.');
+  sessionStorage.setItem('pendingInvite',invite);
+  fragment.delete('invite');currentUrl.searchParams.delete('invite');
+  currentUrl.hash=fragment.toString();
+  history.replaceState(null,'',currentUrl.pathname+currentUrl.search+currentUrl.hash);
+ }
  if(!client){render();return;}
  const {data,error}=await client.auth.getUser();
  if(error)console.warn(error.message);
@@ -605,4 +639,9 @@ async function start(){
   if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;render();}
  });
 }
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden&&state.user&&state.coupleId){
+  reload().catch(fail);
+ }
+});
 start().catch(fail);

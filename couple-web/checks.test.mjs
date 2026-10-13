@@ -56,3 +56,42 @@ test('WebGL dice do not determine official random results',()=>{
  assert.match(app,/roll_couple_once/);
  assert.match(app,/data-dice-sides/);
 });
+
+test('A partner cannot flood the other with simultaneous challenges',()=>{
+ assert.match(sql,/status in \('proposed','accepted'\)/);
+ assert.match(sql,/Tous les défis de votre partenaire sont terminés/);
+ assert.match(sql,/for update;\s*select user_id into target/s);
+});
+test('Cancelled evenings never consume a weekly game and completion needs both D6 targets',()=>{
+ assert.match(sql,/counted boolean not null default false/);
+ assert.match(sql,/and counted=true/);
+ assert.match(sql,/finish_couple_session\(p_session uuid,p_count boolean default true\)/);
+ assert.match(sql,/if done<target then raise exception/);
+ assert.match(app,/p_count:true/);
+ assert.match(app,/p_count:false/);
+ assert.match(app,/confirm-cancel/);
+});
+test('Feedback can only be submitted after a completed or cancelled session',()=>{
+ assert.match(sql,/couple_feedback\.couple_id and s.finished_at is not null/);
+});
+test('Invitation secret belongs in the URL fragment and is removed from address bar',()=>{
+ assert.match(app,/url.hash='invite='\+token/);
+ assert.match(app,/currentUrl.hash=fragment.toString\(\)/);
+ assert.match(app,/history.replaceState/);
+ assert.doesNotMatch(app,/url.searchParams.set\('invite',token\)/);
+});
+test('No default opinion: every rating requires an actual user choice',()=>{
+ assert.doesNotMatch(app,/\(v===4\?'checked':''\)/);
+ assert.match(app,/if\(!\(rating>=1&&rating<=5\)\)/);
+});
+
+test('A member waiting for their match is notified when the partner accepts',()=>{
+ assert.match(app,/event:'INSERT',schema:'public',table:'couple_members'/);
+ assert.match(app,/Votre partenaire a accepté le match/);
+ assert.match(app,/if\(state.members.length<2\)\{state.channel=channel.subscribe\(\);return;\}/);
+});
+test('The five bottom tabs keep Settings, with shared Journal inside',()=>{
+ assert.match(app,/\['settings','⚙','Réglages'\]/);
+ assert.match(app,/Ouvrir le calendrier et les statistiques/);
+ assert.match(app,/Nos questionnaires de soirées/);
+});

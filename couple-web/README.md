@@ -36,3 +36,20 @@ Le mode web relié au cloud et l'APK natif actuel sont deux modes distincts : le
 - Aucun stockage tiers ne reçoit la phrase secrète.
 - Les membres voient les questionnaires de l'autre après déverrouillage avec la phrase commune ; un partenaire ne peut pas écrire/modifier sous l'identité de l'autre.
 - La suppression du compte, les consentements de partage et l'export/migration nécessitent encore une finition avant usage réel sur des données sensibles.
+
+## Corrections de fiabilité du mode connecté (code prêt pour déploiement)
+- Le même dé hebdomadaire et les trois étapes du défi spécial sont verrouillés atomiquement pour les deux comptes.
+- Chaque D6 personnel est tiré par **l'identité authentifiée correspondante**.
+- Un nouveau D20 ne peut pas être proposé à une personne tant que son défi précédent est en attente; le serveur respecte sa limite D6 de défis terminés.
+- « Terminer et compter » exige que chacun ait terminé son nombre prévu de défis. « Arrêter sans compter » ferme la session sans épuiser le quota hebdomadaire.
+- Les questionnaires sont liés à une soirée terminée, par `session_id` et compte authentifié.
+- Les invitations utilisent désormais le **fragment** de l'adresse (non transmis comme paramètre de requête HTTP) et le retirent immédiatement de la barre d'adresse. Le destinataire doit néanmoins utiliser le courriel vérifié invité et le lien d'invitation reste un secret à ne pas transférer.
+- Une souscription temps réel est active même pour une personne seule en attente d'acceptation du match, puis lors des tirages et actions du couple tant que l'application est ouverte.
+- Le menu web comprend Accueil, Soirée, Défi spécial, Avent, Réglages. Le journal et les questionnaires sont accessibles depuis Réglages.
+
+## Vérifications et limites de la mise en service
+Les tests de structure JavaScript + SQL exécutés sur GitHub ne remplacent **pas** des tests de migration en base, ni des essais d'authentification de bout en bout à deux personnes.
+Il faut un projet cloud dédié avec coût confirmé, puis tester les règles RLS et transactions avec trois comptes (deux partenaires et un tiers non autorisé) avant stockage de données intimes.
+Les notifications temps réel de premier plan sont prévues; les notifications push quand le navigateur iPhone est fermé nécessitent encore un service de push et des autorisations.
+L'invitation est préparée dans l'application de courriel (envoi manuel) jusqu'à l'installation d'un fournisseur de courriel transactionnel.
+L'APK natif v0.7.0 n'est pas encore relié au mode web. La PWA est prévue pour les deux appareils une fois hébergée, avec migration volontaire des anciennes données.

@@ -46,6 +46,7 @@ create table public.couple_sessions (
  couple_id uuid not null references public.couples(id) on delete cascade,
  opened_by uuid not null references auth.users(id),
  started_at timestamptz not null default now(),
+ counted boolean not null default false,
  finished_at timestamptz
 );
 create unique index single_active_couple_session on public.couple_sessions(couple_id)
@@ -169,7 +170,7 @@ create policy intimacy_author_delete on public.couple_intimacy for delete to aut
 create policy feedback_author_insert on public.couple_feedback for insert to authenticated
  with check (author_id=(select auth.uid()) and couple_private.is_member(couple_id)
  and exists(select 1 from public.couple_sessions s
-  where s.id=session_id and s.couple_id=couple_feedback.couple_id));
+  where s.id=session_id and s.couple_id=couple_feedback.couple_id and s.finished_at is not null));
 create policy feedback_author_update on public.couple_feedback for update to authenticated
  using (author_id=(select auth.uid()) and couple_private.is_member(couple_id))
  with check (author_id=(select auth.uid()) and couple_private.is_member(couple_id));
@@ -309,7 +310,8 @@ begin
       and key=to_char(start_week,'YYYY-MM-DD');
    if limit_week is null then raise exception 'Brassez d’abord le dé de la semaine'; end if;
    select count(*) into already from public.couple_sessions
-    where couple_id=p_couple and (started_at at time zone 'America/Toronto')::date>=start_week;
+    where couple_id=p_couple and counted=true
+      and (started_at at time zone 'America/Toronto')::date>=start_week;
    if already>=limit_week then raise exception 'Rituel de la semaine déjà complété'; end if;
   end;
   insert into public.couple_sessions(couple_id,opened_by)
@@ -352,6 +354,16 @@ begin
    and user_id=auth.uid()) or not exists(select 1 from public.couple_personal_rolls
    where session_id=p_session and user_id=target) then
     raise exception 'Chaque partenaire doit d’abord brasser son D6'; end if;
+ -- One pending proposal at a time. Lock on the session above serializes writers.
+ if exists(select 1 from public.couple_challenges where session_id=p_session
+   and recipient=target and status in ('proposed','accepted')) then
+   raise exception 'Votre partenaire doit accepter, passer ou terminer son défi précédent';end if;
+ -- Never create a challenge after the recipient completed their official D6 target.
+ if (select count(*) from public.couple_challenges where session_id=p_session
+      and recipient=target and status='completed') >=
+    (select face from public.couple_personal_rolls
+      where session_id=p_session and user_id=target) then
+   raise exception 'Tous les défis de votre partenaire sont terminés';end if;
  for i in 1..3 loop
   v_cat:= (array['SENSUEL','COQUIN','SEXUEL'])[i];
   if (select count(*) from public.couple_challenges where session_id=p_session
@@ -390,15 +402,30 @@ begin
  if c.status not in ('proposed','accepted') then raise exception 'Défi déjà terminé';end if;
  update public.couple_challenges set status=p_status where id=p_id;
 end; $$;
-create or replace function public.finish_couple_session(p_session uuid)
+create or replace function public.finish_couple_session(p_session uuid,p_count boolean default true)
 returns void language plpgsql security definer set search_path='' as $$
-declare c uuid;
+declare c uuid; member uuid; target int; done int;
 begin
- select couple_id into c from public.couple_sessions where id=p_session and finished_at is null for update;
- if c is null or not couple_private.is_member(c) then raise exception 'Soirée inaccessible'; end if;
- update public.couple_sessions set finished_at=now() where id=p_session;
+ select couple_id into c from public.couple_sessions
+  where id=p_session and finished_at is null for update;
+ if c is null or not couple_private.is_member(c) then
+  raise exception 'Soirée inaccessible'; end if;
+ if p_count then
+  if (select count(*) from public.couple_members where couple_id=c)<>2 then
+   raise exception 'Votre partenaire doit être connecté'; end if;
+  for member in select user_id from public.couple_members where couple_id=c loop
+   select face into target from public.couple_personal_rolls
+    where session_id=p_session and user_id=member;
+   if target is null then raise exception 'Les deux D6 sont nécessaires';end if;
+   select count(*) into done from public.couple_challenges
+    where session_id=p_session and recipient=member and status='completed';
+   if done<target then raise exception 'Il reste des défis à terminer';end if;
+  end loop;
+ end if;
+ update public.couple_sessions set finished_at=now(), counted=p_count where id=p_session;
  insert into public.couple_events(couple_id,event_type,actor_id,title)
- values(c,'session',auth.uid(),'Soirée terminée');
+ values(c,'session',auth.uid(),
+   case when p_count then 'Soirée terminée et comptée' else 'Soirée arrêtée sans la compter' end);
 end; $$;
 
 create or replace function public.open_advent_day(p_couple uuid,p_day int)
@@ -442,13 +469,13 @@ revoke execute on function public.save_my_profile(text),public.create_my_couple(
  public.create_pair_invite(uuid,text,text),public.accept_pair_invite(text),
  public.roll_couple_once(uuid,text),public.ensure_couple_session(uuid),
  public.roll_my_evening_d6(uuid),public.draw_for_partner(uuid,text,boolean),
- public.answer_challenge(uuid,text),public.finish_couple_session(uuid),
+ public.answer_challenge(uuid,text),public.finish_couple_session(uuid,boolean),
  public.open_advent_day(uuid,int) from public,anon;
 grant execute on function public.save_my_profile(text),public.create_my_couple(),
  public.create_pair_invite(uuid,text,text),public.accept_pair_invite(text),
  public.roll_couple_once(uuid,text),public.ensure_couple_session(uuid),
  public.roll_my_evening_d6(uuid),public.draw_for_partner(uuid,text,boolean),
- public.answer_challenge(uuid,text),public.finish_couple_session(uuid),
+ public.answer_challenge(uuid,text),public.finish_couple_session(uuid,boolean),
  public.open_advent_day(uuid,int) to authenticated;
 
 -- Real-time can broadcast roll/session/feedback changes to signed-in members.
