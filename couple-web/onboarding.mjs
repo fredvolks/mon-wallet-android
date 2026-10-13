@@ -86,8 +86,10 @@ export function authHtml(){
  button('apple','Continuer avec Apple','subtle')+
  '<div class="login-divider">ou par courriel</div>'+
  '<label>Courriel<input id="signin-email" type="email" autocomplete="email" placeholder="vous@exemple.com"></label>'+
- button('email-login','Recevoir un lien sécurisé','subtle')+
- '<p class="tiny-note">Les connexions Google et Apple nécessitent leur activation auprès de leurs fournisseurs. Un lien par courriel est aussi proposé.</p>'+
+ button('email-login','Recevoir un courriel de connexion','subtle')+
+ '<label>Code à 6 chiffres (si présent dans le courriel)<input id="signin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></label>'+
+ button('verify-email-code','Me connecter avec mon code','subtle')+
+ '<p class="tiny-note">La connexion Google sur Android ouvre le sélecteur de comptes du téléphone. Pour recevoir un code plutôt qu’un lien, le modèle de courriel Supabase doit inclure le jeton à 6 chiffres.</p>'+
  button('show-landing','← Retour à la présentation','text-link')+'</div>';
 }
 function wellnessSelect(label,id,options,selected=''){
