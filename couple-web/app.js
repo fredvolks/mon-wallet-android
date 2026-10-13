@@ -238,7 +238,7 @@ function heroDice(face,sides,label){
   ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
   ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
  '<div><div class="eyebrow">D'+sides+' · '+safe(label)+'</div>'+
- '<p>'+(!face?'En attente du tirage officiel.':'Face gagnante : '+face)+
+ '<p>'+(!face?(isSharedCoupleReady(state.coupleId,state.members)?'En attente du tirage officiel.':'Prêt pour un essai.'):(isSharedCoupleReady(state.coupleId,state.members)?'Face gagnante : ':'Résultat de l’essai : ')+face)+
  '. Faites glisser le dé pour le tourner.</p></div></div>';
 }
 function statsRow(){return '<div class="stat-grid">'+[
@@ -263,13 +263,111 @@ function renderIdeas(){
  frame(ideaHtml()+'<section class="card">'+button('tab:home','← Retour à l’accueil','class="subtle"')+'</section>',
   'NOS IDÉES DE SOIRÉE','Complicité et intimité selon votre rythme');
 }
+function soloNote(){
+ return '<div class="solo-note">♡ '+safe(SOLO_MESSAGE)+'</div>';
+}
+function renderSoloSession(){
+ const demo=state.solo,category=demo.challengeCategory;
+ let body=soloNote()+
+  '<section class="card"><div class="eyebrow">Découvrir les soirées</div>'+
+  '<h2>Vos dés et vos défis</h2>'+
+  '<p>Essayez la mécanique des D6 et du D20 avant d’inviter quelqu’un. '+
+  'Aucun tirage ne sera enregistré comme une activité de couple.</p>'+
+  heroDice(demo.session,6,'D6 individuel · essai')+
+  button('solo-roll:session','🎲 Essayer le D6')+
+  '</section><section class="card"><div class="eyebrow">Défi à découvrir</div>'+
+  '<h3>Choisissez une ambiance</h3><div class="chipline">'+
+  EVENING_CATEGORIES.map(c=>'<button class="pill '+(category===c?'selected':'')+
+   '" data-action="solo-category:'+c+'">'+safe(names[c])+'</button>').join('')+
+  '</div><p>Vous pouvez essayer des défis pour découvrir leur contenu. '+
+  'Toute activité reste facultative et nécessite l’accord des personnes concernées.</p>'+
+  heroDice(demo.challenge,20,'D20 · défi d’essai')+
+  button('solo-roll:challenge','🎲 Découvrir un défi D20');
+ if(demo.challenge){
+  const card=eveningCard(category,demo.challenge);
+  body+='<div class="solo-result"><div class="eyebrow">'+safe(names[category])+
+   ' · N° '+demo.challenge+'</div><h3>'+safe(card.title)+'</h3>'+
+   '<p>'+safe(card.description)+'</p>'+timerWidget({id:'solo-'+category+'-'+demo.challenge},card.minutes)+'</div>';
+ }
+ body+='</section><section class="card">'+
+   button('start-couple','♡ Ajouter une personne pour jouer à deux','class="subtle"')+
+  '</section>';
+ frame(body,'VOTRE SOIRÉE','Découverte libre en mode solo');
+}
+function renderSoloSpecial(){
+ const demo=state.solo;
+ let body=soloNote()+
+ '<section class="card"><div class="eyebrow">✦ Activité du mois</div>'+
+ '<h2>Découvrez les idées de sorties</h2>'+
+ '<p>Un D20 sélectionne une sortie parmi les 20 activités de LoveRoll. '+
+ 'Les tirages ci-dessous sont des essais.</p>'+
+ heroDice(demo.special,20,'D20 · sortie')+
+ button('solo-roll:special','🎲 Essayer le D20 des sorties');
+ if(demo.special){
+  body+='<div class="solo-result"><h3>'+safe(outings[demo.special-1])+'</h3>'+
+  '<p>Cette idée est un aperçu que vous pourrez proposer plus tard.</p></div>'+
+  heroDice(demo.host,6,'D6 · qui organise ?')+
+  button('solo-roll:host','🎲 Découvrir le dé « qui invite ? »');
+  if(demo.host)body+='<p class="tag">Face '+demo.host+' · '+
+   (demo.host<=3?'Le premier partenaire organiserait':'Le deuxième partenaire organiserait')+'</p>';
+ }
+ body+='</section><section class="card"><h3>💘 Dates et événements spéciaux</h3>'+
+ '<p>Explorez les fêtes et les idées-surprises, même sans partenaire connecté.</p>'+
+ button('tab:occasions','Voir toutes les occasions')+'</section>';
+ frame(body,'DÉFI SPÉCIAL','Essayez les tirages sans créer d’activité partagée');
+}
+function renderSoloOccasions(){
+ const demo=state.solo;
+ let body=soloNote()+
+ '<section class="card"><div class="eyebrow">Vos occasions</div>'+
+ '<h2>Les événements et leurs surprises</h2>'+
+ '<p>Découvrez les célébrations proposées par LoveRoll. '+
+ 'Aucun historique de couple n’est créé dans ce mode.</p>'+
+ OCCASIONS.map(o=>'<div class="muted-line"><strong>'+safe(o.emoji)+' '+
+   safe(o.title)+'</strong><p>'+safe(o.description)+'</p></div>').join('')+
+ '</section><section class="card"><h3>Le dé des 20 surprises</h3>'+
+ heroDice(demo.occasion,20,'D20 · surprise')+
+ button('solo-roll:occasion','🎲 Découvrir une surprise');
+ if(demo.occasion){
+  const surprise=specialSurprise(demo.occasion);
+  body+='<div class="solo-result"><div class="eyebrow">'+safe(surprise.level)+
+    '</div><h3>'+safe(surprise.title)+'</h3><p>'+safe(surprise.detail)+'</p></div>';
+ }
+ body+='</section>'+button('tab:special','← Défi spécial','class="subtle"');
+ frame(body,'FÊTES ET ANNIVERSAIRES','Découvrir les occasions en solo');
+}
+function renderSoloAdvent(){
+ const day=state.solo.adventDay;
+ let body=soloNote()+
+ '<section class="card"><div class="eyebrow">🎁 Calendrier de l’Avent</div>'+
+ '<h2>25 surprises à découvrir</h2>'+
+ '<p>En solo, vous pouvez ouvrir chaque case pour visualiser les activités. '+
+ 'Les cases officielles du couple ne sont pas modifiées.</p>'+
+ '<div class="day-grid">'+
+ Array.from({length:25},(_,i)=>'<button class="'+(day===i+1?'solo-day-active':'')+
+   '" data-action="solo-advent:'+(i+1)+'" aria-label="Découvrir la case '+(i+1)+'">'+
+   (day===i+1?'♥ ':'🎁 ')+(i+1)+'</button>').join('')+
+ '</div>';
+ if(day)body+='<div class="solo-result"><div class="eyebrow">Case '+day+' / 25 · Essai</div>'+
+  '<h3>'+safe(advent[day-1])+'</h3><p>À proposer ou à adapter librement, sans obligation.</p></div>';
+ body+='</section>';
+ frame(body,'CALENDRIER DE L’AVENT','Toutes les cases visibles pour découvrir LoveRoll');
+}
 function renderSolo(){
- frame('<section class="card"><div class="eyebrow">Votre espace privé</div>'+
+ frame('<section class="card"><div class="eyebrow">♡ Découverte libre</div>'+
  '<h2>Bienvenue '+safe(state.profile.display_name)+' ♡</h2>'+
- '<p>Explorez LoveRoll à votre rythme. Vous pouvez inviter une personne plus tard, sans perdre votre calendrier personnel.</p>'+
- button('start-couple','♡ Ajouter un conjoint ou une conjointe')+
- button('tab:personal-journal','♥ Mon calendrier personnel','class="subtle"')+
- '</section>'+ideaPreview(),'VOTRE ESPACE','En solo pour le moment');
+ '<p>Découvrez toutes les fonctionnalités de LoveRoll sans avoir à ajouter de partenaire. '+
+ 'Les essais sont privés et ne modifient pas votre calendrier.</p>'+
+ '<div class="solo-shortcuts">'+
+ button('tab:session','🎲 Soirée et dés D6 / D20')+
+ button('tab:special','✦ Défis et sorties')+
+ button('tab:advent','🎁 Calendrier de l’Avent')+
+ button('tab:personal-journal','♥ Mon calendrier personnel')+
+ '</div></section>'+ideaPreview()+
+ '<section class="card"><h3>♡ Jouer à deux plus tard</h3>'+
+ '<p>Vous pourrez lier une personne depuis les réglages lorsque vous serez prêt.</p>'+
+ button('start-couple','Ajouter un conjoint ou une conjointe','class="subtle"')+
+ '</section>','VOTRE ESPACE','Toute l’application, même en solo');
 }
 function renderHome(){
  const name=state.profile.display_name,partner=other()?.name;
