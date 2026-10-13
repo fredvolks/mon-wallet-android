@@ -37,6 +37,7 @@ public final class MainActivity extends Activity {
  LinearLayout root,page,nav;
  ScrollView scroll;
  Dice3DView dice;
+ PremiumDice3DView gpuDice;
  String tab="home",player="Émilie";
  int adventSelected=1;
  Category selected=Category.COQUIN;
@@ -135,18 +136,39 @@ public final class MainActivity extends Activity {
   lp.rightMargin=dp(6);target.addView(v,lp);v.setOnClickListener(q->{if(!rolling)action.run();});
  }
  void showDice(int sides,int result){
-  FrameLayout frame=new FrameLayout(this);frame.setBackground(shape(0xFF220D24,0xFF180E22,26,0x335A3558));
-  LinearLayout.LayoutParams fl=new LinearLayout.LayoutParams(-1,dp(255));fl.bottomMargin=dp(14);page.addView(frame,fl);
-  dice=new Dice3DView(this);dice.setSides(sides);dice.setResult(result);
-  frame.addView(dice,new FrameLayout.LayoutParams(-1,-1));
-  TextView caption=text("GLISSE POUR TOURNER LE DÉ",10,0xFFD2A0BD,true);caption.setGravity(Gravity.CENTER);
-  FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(-1,dp(28),Gravity.BOTTOM);cp.bottomMargin=dp(5);
+  FrameLayout frame=new FrameLayout(this);
+  frame.setBackground(shape(0xFF220D24,0xFF180E22,26,0x335A3558));
+  LinearLayout.LayoutParams fl=new LinearLayout.LayoutParams(-1,dp(270));
+  fl.bottomMargin=dp(14);
+  page.addView(frame,fl);
+  dice=null;gpuDice=null;
+  if(sides==6&&PremiumDice3DView.supported(this)){
+   gpuDice=new PremiumDice3DView(this);
+   gpuDice.setResult(result);
+   frame.addView(gpuDice,new FrameLayout.LayoutParams(-1,-1));
+  }else{
+   // Fallback only for devices without OpenGL ES 2.0, or the existing D20.
+   dice=new Dice3DView(this);dice.setSides(sides);dice.setResult(result);
+   frame.addView(dice,new FrameLayout.LayoutParams(-1,-1));
+  }
+  TextView caption=text("GLISSE POUR TOURNER LE DÉ",10,0xFFFFC4DF,true);
+  caption.setGravity(Gravity.CENTER);
+  caption.setBackgroundColor(0x5516071A);
+  FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(-1,dp(29),Gravity.BOTTOM);
   frame.addView(caption,cp);
+  caption.setOnClickListener(v->{
+   Toast.makeText(this,"Brasse le dé avec le bouton pour obtenir un résultat officiel.",Toast.LENGTH_SHORT).show();
+  });
  }
  void roll(int value,Runnable end){
-  if(rolling||dice==null)return;rolling=true;
+  if(rolling||(dice==null&&gpuDice==null))return;
+  rolling=true;
   vibrate(36);
-  dice.roll(value,()->{rolling=false;vibrate(85);end.run();});
+  Runnable finished=()->{
+   rolling=false;vibrate(85);end.run();
+  };
+  if(gpuDice!=null)gpuDice.roll(value,finished);
+  else dice.roll(value,finished);
  }
  void vibrate(long ms){
   try{Vibrator v=(Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
@@ -154,6 +176,11 @@ public final class MainActivity extends Activity {
   }catch(Exception ignored){}
  }
  void draw(){
+  if(gpuDice!=null){
+   gpuDice.onPause();
+   gpuDice=null;
+  }
+  dice=null;
   root=vertical();root.setBackgroundColor(BG);
   scroll=new ScrollView(this);scroll.setFillViewport(false);
   scroll.setVerticalScrollBarEnabled(false);
@@ -577,6 +604,14 @@ public final class MainActivity extends Activity {
   card("Calendrier de l'Avent","25 cases secrètes qui s'ouvrent à partir de leur date en décembre; dernier samedi avant Noël : défi spécial à deux.");
   card("Intimité et respect","Les défis sont des invitations. Vous pouvez toujours passer. Les données de jeu restent sur ce téléphone.");
   gap(page,8);addText(page,"Dés à Deux · Version "+BuildConfig.VERSION_NAME,12,MUTED,false,0);
+ }
+ @Override protected void onPause(){
+  if(gpuDice!=null)gpuDice.onPause();
+  super.onPause();
+ }
+ @Override protected void onResume(){
+  super.onResume();
+  if(gpuDice!=null)gpuDice.onResume();
  }
  @Override public void onBackPressed(){
   if(!tab.equals("home")){tab="home";draw();}else super.onBackPressed();
