@@ -1,7 +1,11 @@
 name: Déployer LoveRoll Web sur GitHub Pages
-# GitHub Pages is an optional legacy deployment; LoveRoll now runs on Supabase Edge.
-# Run manually only after Pages is configured and the site URL is updated.
+# Supabase's free domain intentionally refuses to render HTML; deploy static frontend to Pages.
 on:
+  push:
+    branches: [des-a-deux-apk-20261013]
+    paths:
+      - 'couple-web/**'
+      - '.github/workflows/deploy-couple-web.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,7 +29,7 @@ jobs:
           node --check couple-web/app.js
           node --check couple-web/config.js
           node --test couple-web/checks.test.mjs
-      - name: Préparer Pages
+      - name: Activer Pages et préparer le site
         uses: actions/configure-pages@v5
         with:
           enablement: true

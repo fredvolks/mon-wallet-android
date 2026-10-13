@@ -116,3 +116,14 @@ https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/
 - Migration `couple-web/registration-onboarding.sql` appliquée au projet Supabase dédié. Les anciens RPC de création et d'acceptation de match et l'ancien éditeur de profil sont révoqués pour le rôle authentifié ; les nouvelles fonctions exigent un anniversaire de profil.
 - La plateforme Supabase ne fournit pas via notre connecteur la gestion des **Providers Google et Apple** ni les **Redirect URLs**. Ces autorisations sont à configurer dans le tableau de bord avant de pouvoir valider des connexions OAuth.
 - La PWA est hébergée dans Supabase Edge, pas GitHub Pages. Redéployer l'Edge Function après chaque mise à jour du site.
+
+
+## IMPORTANT — Hébergement HTML corrigé
+
+Supabase Edge en domaine gratuit **force text/html en text/plain** (comportement documenté). L'ancien chemin Edge affiche donc du HTML brut et ne peut PAS héberger la PWA. LoveRoll Web est publié via GitHub Pages; Supabase conserve seulement Auth et les données.
+
+Site Web : https://fredvolks.github.io/mon-wallet-android/
+
+L'ancienne adresse https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/ est remplacée par une redirection HTTP 302 vers la vraie page d'accueil, sans contenu HTML. Le projet ne nécessite pas de Supabase Pro.
+
+**Auth** : changer Site URL et Redirect URLs dans Supabase > Authentication > URL Configuration pour https://fredvolks.github.io/mon-wallet-android/. Google et Apple nécessitent leur configuration OAuth côté Supabase. Tant que ces étapes ne sont pas validées, ne pas présenter une inscription comme pleinement fonctionnelle.

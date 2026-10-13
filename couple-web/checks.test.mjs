@@ -104,7 +104,7 @@ test('Only the dedicated Supabase project and its publishable client key are con
  assert.match(cfg,/ejsrqfpkgwraorrznjpm\.supabase\.co/);
  assert.match(cfg,/sb_publishable_/);
  assert.doesNotMatch(cfg,/service_role|sb_secret_/);
- assert.match(cfg,/ejsrqfpkgwraorrznjpm\.supabase\.co\/functions\/v1\/loveroll-web/);
+ assert.match(cfg,/fredvolks\.github\.io\/mon-wallet-android/);
 });
 test('Email magic link fallback works in addition to Google and Apple login options',()=>{
  assert.match(authHtml(),/Continuer avec Google/);
