@@ -1436,6 +1436,8 @@ public final class MainActivity extends Activity {
   section("♡  Mon compte connecté");
   settingTile("LoveRoll Android + iPhone","Les noms et anniversaires sont renseignés lors de l’inscription. Vos données du mode hors ligne ne sont pas synchronisées.",
    "OUVRIR L'ESPACE CONNECTÉ",()->{tab="welcome";drawWelcome();});
+  settingTile("♡  Ajouter / retirer un partenaire","Gérez vos invitations et vos séparations depuis l’espace connecté. Le journal intime local reste intact.",
+   "GÉRER MON COUPLE CONNECTÉ",()->openConnectedLoveRoll());
   section("🎲  Le jeu");
   settingTile("♡  Bibliothèque des 40 défis","Sensuel · Sexuel, 20 défis par catégorie et durées.",
    "CONSULTER LES DÉFIS",()->{tab="library";draw();});

@@ -2,6 +2,8 @@ name: LoveRoll connected web checks
 on:
   push:
     branches: [des-a-deux-apk-20261013]
+  pull_request:
+    branches: [des-a-deux-apk-20261013]
   workflow_dispatch:
 jobs:
   web-tests:
@@ -14,6 +16,8 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check couple-web/app.js
+          node --check couple-web/onboarding.mjs
+          node --check couple-web/wellbeing.mjs
           node --check couple-web/config.js
       - name: Static security and logic contracts
         run: node --test couple-web/checks.test.mjs

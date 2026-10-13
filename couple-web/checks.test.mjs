@@ -89,7 +89,7 @@ test('No default opinion: every rating requires an actual user choice',()=>{
 });
 
 test('A member waiting for their match is notified when the partner accepts',()=>{
- assert.match(app,/event:'INSERT',schema:'public',table:'couple_members'/);
+ assert.match(app,/event:'\*',schema:'public',table:'couple_members'/);
  assert.match(app,/Votre partenaire a accepté le match/);
  assert.match(app,/if\(state.members.length<2\)\{state.channel=channel.subscribe\(\);return;\}/);
 });
@@ -281,7 +281,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v4/);
+ assert.match(sw,/loveroll-static-v5/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -298,4 +298,46 @@ test('Compact v2 keeps exactly six zones and all essential content',()=>{
  assert.match(h,/Chaque activité est facultative/);
  assert.match(h,/href="loveroll:\/\/offline"/);
  assert.doesNotMatch(h,/Pourquoi vous allez aimer/);
+});
+
+
+test('Two per-person wellbeing questions offer non-disclosing responses',async()=>{
+ const {RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS,guidanceFor,guidedIdeas}=await import('./wellbeing.mjs');
+ assert.equal(RELATIONSHIP_OPTIONS.length,5);
+ assert.equal(INTIMACY_OPTIONS.length,6);
+ assert.ok(RELATIONSHIP_OPTIONS.some(([v])=>v==='skip'));
+ assert.ok(INTIMACY_OPTIONS.some(([v])=>v==='skip'));
+ assert.equal(guidanceFor('difficult','fulfilled'),'gentle');
+ assert.equal(guidanceFor('great','sensitive'),'gentle');
+ assert.equal(guidanceFor('distant','different'),'reconnect');
+ assert.equal(guidanceFor('good','fulfilled'),'quality');
+ assert.equal(guidanceFor('great','fulfilled'),'playful');
+ assert.equal(guidedIdeas('gentle').ideas.length,3);
+ assert.match(profileHtml({user_metadata:{name:'Camille'}},null),/wellbeing-relationship/);
+ assert.match(profileHtml({user_metadata:{name:'Camille'}},null),/wellbeing-intimacy/);
+ assert.match(app,/save_my_wellbeing/);
+ assert.match(app,/get_love_guidance/);
+});
+test('Removing a partner retains their own diary and removes access at the server',()=>{
+ const sql=readFileSync(new URL('./partner-privacy-wellbeing.sql',import.meta.url),'utf8');
+ assert.match(sql,/create table if not exists public\.love_personal_intimacy/);
+ assert.match(sql,/user_id=\(select auth\.uid\(\)\)/);
+ assert.match(sql,/create or replace function public\.end_love_match/);
+ assert.match(sql,/delete from public\.couple_members where couple_id=p_couple/);
+ assert.doesNotMatch(sql,/delete from public\.couple_intimacy/);
+ assert.match(sql,/on conflict\s*\(user_id,source_event_id\) do nothing/);
+ assert.match(sql,/create or replace function public\.add_my_love_event/);
+ assert.match(app,/rpc\('end_love_match'/);
+ assert.match(app,/rpc\('add_my_love_event'/);
+ assert.match(app,/function renderPersonalJournal\(/);
+ assert.match(app,/state\.personalPass=null/);
+ assert.match(app,/data-action="personal-date/);
+});
+test('Optional partner linking, settings management and individualized tips',()=>{
+ assert.match(matchHtml('Camille',false),/skip-couple/);
+ assert.match(app,/function renderSolo\(/);
+ assert.match(app,/Retirer mon conjoint ou ma conjointe/);
+ assert.match(app,/Ajouter un conjoint ou une conjointe/);
+ assert.match(app,/function ideaHtml\(/);
+ assert.match(app,/Chacun peut dire non/);
 });
