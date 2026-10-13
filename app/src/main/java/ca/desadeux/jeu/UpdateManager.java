@@ -63,11 +63,10 @@ public final class UpdateManager {
     if(!url.startsWith("https://github.com/"+REPO+"/releases/download/"+PREFIX))
      throw new SecurityException("source de mise à jour inconnue");
     String finalVersion=version;
-    a.runOnUiThread(()->new AlertDialog.Builder(a)
-      .setTitle("♥ Nouvelle version "+finalVersion)
-      .setMessage("Une mise à jour de Dés à Deux est disponible. Voulez-vous la télécharger maintenant ?")
-      .setPositiveButton("Télécharger",(d,w)->download(a,url,expected))
-      .setNegativeButton("Plus tard",null).show());
+    a.runOnUiThread(()->PremiumDialog.choice(a,
+      "♥ Nouvelle version "+finalVersion,
+      "Une nouvelle version de Dés à Deux est disponible. Voulez-vous la télécharger maintenant ?",
+      "TÉLÉCHARGER",()->download(a,url,expected),"PLUS TARD",null));
    }catch(Exception e){if(!quiet)toast(a,"Vérification impossible : "+e.getMessage());}
    finally{working=false;}
   }).start();

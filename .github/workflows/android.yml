@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.6.1
+      TAG: des-a-deux-v0.7.0
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -46,6 +46,18 @@ jobs:
           assert 'SpecialDateData.draw()' in src
           assert 'BRASSER LE DÉ DU RESTAURANT' in src
           assert 'restaurant_variant_face' in src
+          assert 'BRASSER LE D6 : QUI INVITE ?' in src
+          assert 'void drawJournal()' in src
+          assert 'void drawFeedback()' in src
+          assert 'void drawFeedbackAnswer()' in src
+          assert 'void drawPrivacy()' in src
+          assert 'TERMINER ET DONNER NOTRE AVIS' in src
+          assert 'new PremiumD20View(this)' in src
+          assert 'PremiumDialog.info(this' in src
+          assert 'new AlertDialog.Builder(this).setTitle("✦ Nos 20 sorties")' not in src
+          assert Path('app/src/main/java/ca/desadeux/jeu/PrivateJournal.java').is_file()
+          assert Path('app/src/main/java/ca/desadeux/jeu/JournalStats.java').is_file()
+          assert Path('app/src/main/java/ca/desadeux/jeu/PremiumDialog.java').is_file()
           manifest=Path('app/src/main/AndroidManifest.xml').read_text()
           assert '@drawable/ic_desadeux' in manifest
           assert Path('app/src/main/res/drawable-nodpi/ic_desadeux.webp').is_file()
@@ -76,15 +88,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/Des-a-Deux-v0.6.1.apk "$RUNNER_TEMP/aligned.apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.6.1.apk
-          sha256sum dist/Des-a-Deux-v0.6.1.apk
+            --out dist/Des-a-Deux-v0.7.0.apk "$RUNNER_TEMP/aligned.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.7.0.apk
+          sha256sum dist/Des-a-Deux-v0.7.0.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Des-a-Deux-v0.6.1
-          path: dist/Des-a-Deux-v0.6.1.apk
+          name: Des-a-Deux-v0.7.0
+          path: dist/Des-a-Deux-v0.7.0.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
         env:
@@ -92,9 +104,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/Des-a-Deux-v0.6.1.apk --clobber
+            gh release upload "$TAG" dist/Des-a-Deux-v0.7.0.apk --clobber
           else
-            gh release create "$TAG" dist/Des-a-Deux-v0.6.1.apk \
-              --target "$GITHUB_SHA" --title "Dés à Deux v0.6.1" \
-              --notes "Nouvelle icône du dé rose premium et second tirage D6 à 50/50 pour restaurant connu ou nouvelle adresse, sans modifier le tirage mensuel."
+            gh release create "$TAG" dist/Des-a-Deux-v0.7.0.apk \
+              --target "$GITHUB_SHA" --title "Dés à Deux v0.7.0" \
+              --notes "Journal intime local chiffré AES-256-GCM, calendrier et stats de relations, avis indépendants de fin de soirée, réglages réorganisés, tirage Qui invite et toutes les fenêtres en style sombre."
           fi

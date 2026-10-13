@@ -17,6 +17,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
+import org.json.JSONObject;
+import org.json.JSONArray;
+import java.util.List;
+import java.util.UUID;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -35,6 +40,11 @@ public final class MainActivity extends Activity {
  static final int PINK=0xFFFF4F9B,PALE=0xFFFFDDED,WHITE=0xFFFFF5FA,MUTED=0xFFBBA7B8;
  static final int GREEN=0xFF6BE0A7;
  SharedPreferences prefs;
+ PrivateJournal journal;
+ LocalDate journalMonth=LocalDate.now(ZoneId.of("America/Montreal")).withDayOfMonth(1);
+ LocalDate selectedJournalDate=LocalDate.now(ZoneId.of("America/Montreal"));
+ String feedbackPerson="Fred";
+ int feedbackRating=0,orgasmChoice=-1,likedChoice=-1,nextChoice=-1,goodChoice=-1,weakChoice=-1;
  LinearLayout root,page,nav;
  ScrollView scroll;
  Dice3DView dice;
@@ -53,6 +63,7 @@ public final class MainActivity extends Activity {
   getWindow().setStatusBarColor(Color.TRANSPARENT);
   getWindow().setNavigationBarColor(Color.TRANSPARENT);
   prefs=getSharedPreferences("des_a_deux_game",MODE_PRIVATE);
+  journal=new PrivateJournal(this);
   if(!GameLogic.monday().equals(prefs.getString("week",""))){
    prefs.edit().putString("week",GameLogic.monday()).putInt("goal",-1).putInt("done",0)
     .putBoolean("active",false).putBoolean("pending",false)
@@ -254,6 +265,13 @@ public final class MainActivity extends Activity {
    case "advent":drawAdvent();break;
    case "special":drawSpecial();break;
    case "settings":drawSettings();break;
+   case "journal":drawJournal();break;
+   case "intimacy":drawIntimacyEditor();break;
+   case "feedback":drawFeedback();break;
+   case "feedback_answer":drawFeedbackAnswer();break;
+   case "privacy":drawPrivacy();break;
+   case "rules":drawRules();break;
+   case "updater":drawUpdater();break;
    default:drawHome();break;
   }
   drawNav();
@@ -261,7 +279,7 @@ public final class MainActivity extends Activity {
  void drawNav(){
   for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"special","✦","Défi spécial"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}}){
    LinearLayout col=vertical();col.setGravity(Gravity.CENTER);
-   boolean active=tab.equals(item[0])||(item[0].equals("settings")&&tab.equals("library"));
+   boolean active=tab.equals(item[0])||(item[0].equals("settings")&&java.util.Arrays.asList("library","journal","intimacy","feedback","feedback_answer","privacy","rules","updater").contains(tab));
    TextView icon=text(item[1],item[0].equals("advent")?22:24,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
    TextView name=text(item[2],item[0].equals("special")?10:11,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);
@@ -329,10 +347,8 @@ public final class MainActivity extends Activity {
   long history=seenMask(receiver);
   ChallengePicker.Pick next=ChallengePicker.draw(selected,randomMode,history);
   if(next==null){
-   new AlertDialog.Builder(this)
-    .setTitle("60 défis déjà proposés à "+receiver)
-    .setMessage("Aucun défi inédit ne reste pour cette personne ce soir. Vous pouvez terminer ou recommencer la soirée.")
-    .setPositiveButton("Compris",null).show();
+   PremiumDialog.info(this,"60 défis proposés à "+receiver,
+    "Aucun défi inédit ne reste pour cette personne ce soir. Vous pouvez terminer ou recommencer la soirée.");
    return;
   }
   prefs.edit().putLong(seenKey(receiver),ChallengePicker.mark(history,next.category,next.face))
@@ -542,9 +558,16 @@ public final class MainActivity extends Activity {
   }else{
    LinearLayout finish=card("♥  Tous les défis sont réalisés",
     "Vous avez complété les défis prévus pour vous deux.");
-   addButton(finish,"TERMINER ET COMPTER LA SOIRÉE",true,()->{
-    prefs.edit().putInt("done",prefs.getInt("done",0)+1).apply();
-    resetEvening();tab="home";draw();
+   addButton(finish,"TERMINER ET DONNER NOTRE AVIS",true,()->{
+    String session=PrivateJournal.newId();
+    boolean saved=prefs.edit().putInt("done",prefs.getInt("done",0)+1)
+     .putString("last_feedback_session",session)
+     .putString("last_feedback_date",LocalDate.now(ZoneId.of("America/Montreal")).toString())
+     .commit();
+    if(!saved){Toast.makeText(this,"Impossible d'enregistrer la soirée.",Toast.LENGTH_LONG).show();return;}
+    resetEvening();
+    feedbackPerson="Fred";feedbackRating=0;likedChoice=-1;nextChoice=-1;
+    tab="feedback";draw();
    });
   }
   addButton(page,"Arrêter la soirée sans la compter",false,()->confirmResetEvening());
@@ -552,10 +575,9 @@ public final class MainActivity extends Activity {
     11,MUTED,false,0);
  }
  void confirmResetEvening(){
-  new AlertDialog.Builder(this).setTitle("Recommencer cette soirée ?")
-   .setMessage("Les dés et la progression de la soirée seront remis à zéro. Le dé hebdomadaire restera inchangé.")
-   .setPositiveButton("Recommencer",(d,w)->{resetEvening();draw();})
-   .setNegativeButton("Annuler",null).show();
+  PremiumDialog.confirm(this,"Recommencer cette soirée ?",
+   "Les dés et la progression de la soirée seront remis à zéro. Le dé hebdomadaire restera inchangé.",
+   "RECOMMENCER",()->{resetEvening();draw();});
  }
  String categoryName(Category c){
   switch(c){case COQUIN:return "Coquin";case SEXUEL:return "Sexuel";default:return "Sensuel";}
@@ -574,130 +596,123 @@ public final class MainActivity extends Activity {
   for(int i=0;i<20;i++)sb.append(i+1).append(".  ")
     .append(SpecialDateData.ACTIVITIES[i][0]).append("\n");
   sb.append("\nLa personne qui invite est tirée à 50/50. Pour une sortie au restaurant, vous brassez un D6 supplémentaire pour choisir resto connu ou nouveau.");
-  new AlertDialog.Builder(this).setTitle("✦ Nos 20 sorties").setMessage(sb.toString())
-   .setPositiveButton("Compris",null).show();
+  PremiumDialog.info(this,"✦ Nos 20 sorties",sb.toString());
  }
  void drawSpecial(){
   LocalDate now=LocalDate.now(SpecialDateData.ZONE);
   String prefix=specialPrefix(now);
   SpecialDateData.Draw saved=specialSaved(now);
-  heading("✦  Défi spécial","Une vraie sortie en amoureux, une fois par mois");
+  int hostD6=saved==null?0:prefs.getInt(prefix+"host_face",0);
+  boolean restaurant=saved!=null&&SpecialDateData.isRestaurant(saved.face);
+  int restoD6=restaurant?prefs.getInt(prefix+"restaurant_variant_face",0):0;
+  heading("✦  Défi spécial","Un rendez-vous surprise en amoureux, une fois par mois");
   addText(page,"RENDEZ-VOUS DE "+SpecialDateData.monthLabel(now).toUpperCase(java.util.Locale.CANADA_FRENCH),
     12,PINK,true,7);
-  boolean restaurant=saved!=null&&SpecialDateData.isRestaurant(saved.face);
-  int restaurantD6=restaurant?prefs.getInt(prefix+"restaurant_variant_face",0):0;
-  if(restaurant){
-   addText(page,"🎲 D20 : "+SpecialDateData.title(saved)+" · Face "+saved.face,13,PINK,true,6);
-   showDice(6,restaurantD6>0?restaurantD6:1);
-  }else{
-   showDice(20,saved==null?20:saved.face);
-  }
+  if(saved==null)showDice(20,20);
+  else if(hostD6==0||restaurant&&restoD6==0)showDice(6,hostD6==0?1:restoD6>0?restoD6:1);
+  else showDice(20,saved.face);
   if(saved==null){
    LinearLayout intro=card("♡  Votre rendez-vous mensuel",
-    "20 activités adaptées à votre vie de parents, dans la région de Québec.");
-   addText(intro,"🎲 Sortie : 1 chance sur 20 par activité",13,PALE,true,5);
-   addText(intro,"♥ Fred invite / Émilie invite : 50 % / 50 %",13,PALE,true,5);
-   addText(intro,"✦ Restaurant : second D6 (1–3 connu, 4–6 nouveau)",13,PALE,true,4);
-   addText(intro,"Autres sorties : variante A/B à 50 % / 50 %",12,MUTED,false,4);
-   addText(intro,"Gardienne à prévoir : environ 2 à 6 heures selon la sortie. Aucune réservation faite automatiquement.",12,MUTED,false,5);
+    "20 idées de sortie autour de Québec, adaptées à vos horaires de parents.");
+   addText(intro,"① D20 : activité du mois, 1 chance sur 20",13,PALE,true,5);
+   addText(intro,"② D6 : qui invite et paie ? Fred ou Émilie, 50/50",13,PALE,true,5);
+   addText(intro,"③ Si restaurant : D6 connu ou nouveau, 50/50",13,PALE,true,5);
+   addText(intro,"Prévoir 2 à 6 heures de gardienne selon la sortie. Rien n'est réservé automatiquement.",12,MUTED,false,7);
    addButton(intro,"🎲  BRASSER LE D20 DU MOIS",true,()->{
     if(!SpecialDateData.monthKeyNow().equals(SpecialDateData.monthKey(now))){draw();return;}
     if(specialSaved(LocalDate.now(SpecialDateData.ZONE))!=null)return;
     SpecialDateData.Draw pick=SpecialDateData.draw();
-    // Commit all draws together before starting the animation. No re-roll on restart.
-    boolean stored=prefs.edit().putInt(prefix+"face",pick.face)
-      .putBoolean(prefix+"fred",pick.fredInvites)
+    boolean ok=prefs.edit().putInt(prefix+"face",pick.face)
+      .putBoolean(prefix+"fred",false)
       .putBoolean(prefix+"optionB",pick.optionB)
-      .putInt(prefix+"restaurant_variant_face",0)
-      .putString(prefix+"date",now.toString())
-      .putBoolean(prefix+"done",false).commit();
-    if(!stored){
-     Toast.makeText(this,"Tirage non enregistré. Réessaie.",Toast.LENGTH_LONG).show();
-     return;
-    }
+      .putInt(prefix+"host_face",0).putInt(prefix+"restaurant_variant_face",0)
+      .putString(prefix+"date",now.toString()).putBoolean(prefix+"done",false).commit();
+    if(!ok){Toast.makeText(this,"Impossible d'enregistrer le tirage.",Toast.LENGTH_LONG).show();return;}
     roll(pick.face,()->{
-     draw();
-     showResultDialog("✦",SpecialDateData.title(pick),
-       SpecialDateData.inviter(pick)+" invite "+SpecialDateData.invited(pick)+
-       (SpecialDateData.isRestaurant(pick.face)?
-         " !\nBrassez maintenant le D6 pour choisir RESTO CONNU ou NOUVEAU RESTO (50/50).":
-         " !\n"+SpecialDateData.label(pick)+" · "+SpecialDateData.option(pick,now)),
-       "DÉCOUVRIR NOTRE SORTIE");
+     draw();showResultDialog("✦",SpecialDateData.title(pick),
+       "Votre activité est choisie. Brassez maintenant le D6 pour décider qui invite à 50/50.",
+       "CHOISIR QUI INVITE");
     });
    });
   }else{
-   LinearLayout result=card("✦  "+SpecialDateData.title(saved)+"  ·  FACE "+saved.face,null);
-   addText(result,"♥  QUI INVITE : "+SpecialDateData.inviter(saved).toUpperCase(java.util.Locale.CANADA_FRENCH),
-      16,PINK,true,5);
-   addText(result,"♡  QUI EST INVITÉ(E) : "+SpecialDateData.invited(saved).toUpperCase(java.util.Locale.CANADA_FRENCH),
-      15,WHITE,true,8);
-   if(restaurant){
-    if(restaurantD6==0){
-     addText(result,"🎲 RESTO CONNU OU NOUVEAU RESTO ?",16,PINK,true,7);
-     addText(result,"Un second D6 décidera à 50/50 : 1, 2, 3 = connu · 4, 5, 6 = nouveau.",13,PALE,false,7);
+   LinearLayout result=card("✦  "+SpecialDateData.title(saved)+" · D20 FACE "+saved.face,null);
+   if(hostD6==0){
+    addText(result,"♡  ÉTAPE 2 · QUI INVITE ?",16,PINK,true,7);
+    addText(result,"1–3 : Fred invite · 4–6 : Émilie invite",14,PALE,true,7);
+    addText(result,"La personne choisie organise la sortie et prend en charge l'invitation, selon votre budget commun.",12,MUTED,false,8);
+    addButton(result,"🎲  BRASSER LE D6 : QUI INVITE ?",true,()->{
+     if(!SpecialDateData.monthKeyNow().equals(SpecialDateData.monthKey(now))){draw();return;}
+     if(prefs.getInt(prefix+"host_face",0)>0)return;
+     int n=GameLogic.d6();boolean fred=n<=3;
+     if(!prefs.edit().putInt(prefix+"host_face",n).putBoolean(prefix+"fred",fred).commit()){
+      Toast.makeText(this,"Tirage non enregistré.",Toast.LENGTH_LONG).show();return;
+     }
+     roll(n,()->{
+      draw();
+      showResultDialog("♥",fred?"FRED INVITE ÉMILIE":"ÉMILIE INVITE FRED",
+       "D6 : "+n+" · Invitation enregistrée pour ce mois. "+
+        (restaurant?"Brassez encore une fois pour choisir le type de restaurant.":"Votre sortie est prête à organiser."),
+       "CONTINUER");
+     });
+    });
+   }else{
+    addText(result,"♥  "+SpecialDateData.inviter(saved).toUpperCase(java.util.Locale.CANADA_FRENCH)+
+      " INVITE "+SpecialDateData.invited(saved).toUpperCase(java.util.Locale.CANADA_FRENCH)+
+      "  ·  D6 FACE "+hostD6,15,PINK,true,8);
+    if(restaurant&&restoD6==0){
+     addText(result,"♡  ÉTAPE 3 · RESTO CONNU OU NOUVEAU ?",15,PINK,true,5);
+     addText(result,"D6 : 1–3 resto connu · 4–6 nouveau resto (50/50).",13,PALE,false,8);
      addButton(result,"🎲  BRASSER LE DÉ DU RESTAURANT",true,()->{
       if(!SpecialDateData.monthKeyNow().equals(SpecialDateData.monthKey(now))){draw();return;}
-      if(prefs.getInt(prefix+"restaurant_variant_face",0)!=0)return;
-      int faceD6=GameLogic.d6();
-      boolean isNew=SpecialDateData.restaurantIsNew(faceD6);
-      boolean committed=prefs.edit()
-       .putInt(prefix+"restaurant_variant_face",faceD6)
-       .putBoolean(prefix+"optionB",isNew).commit();
-      if(!committed){
-       Toast.makeText(this,"Impossible d'enregistrer le résultat.",Toast.LENGTH_LONG).show();
-       return;
+      if(prefs.getInt(prefix+"restaurant_variant_face",0)>0)return;
+      int n=GameLogic.d6();boolean isNew=SpecialDateData.restaurantIsNew(n);
+      if(!prefs.edit().putInt(prefix+"restaurant_variant_face",n).putBoolean(prefix+"optionB",isNew).commit()){
+       Toast.makeText(this,"Tirage non enregistré.",Toast.LENGTH_LONG).show();return;
       }
-      roll(faceD6,()->{
-       draw();
-       showResultDialog("♥",SpecialDateData.restaurantChoiceLabel(faceD6),
-        "Dé du restaurant : "+faceD6+"\n"+SpecialDateData.option(
-          new SpecialDateData.Draw(saved.face,saved.fredInvites,isNew),now),
-        "C'EST NOTÉ !");
+      roll(n,()->{
+       draw();showResultDialog("♥",SpecialDateData.restaurantChoiceLabel(n),
+        "D6 : "+n+"\n"+SpecialDateData.option(
+          new SpecialDateData.Draw(saved.face,saved.fredInvites,isNew),now),"C'EST NOTÉ");
       });
      });
     }else{
-     addText(result,"🎯  "+SpecialDateData.restaurantChoiceLabel(restaurantD6)+
-       " · D6 FACE "+restaurantD6,16,PINK,true,6);
-     addText(result,SpecialDateData.option(saved,now),15,WHITE,true,8);
+     if(restaurant)addText(result,"🎯  "+SpecialDateData.restaurantChoiceLabel(restoD6)+
+       " · D6 FACE "+restoD6,15,PINK,true,6);
+     addText(result,SpecialDateData.option(saved,now),16,WHITE,true,7);
     }
-   }else{
-    addText(result,SpecialDateData.label(saved)+"  ·  "+SpecialDateData.option(saved,now),
-      16,WHITE,true,10);
+    if(!restaurant||restoD6>0){
+     addText(result,SpecialDateData.description(saved),13,PALE,false,7);
+     addText(result,"📍 "+SpecialDateData.location(saved)+" · Gardienne : "+SpecialDateData.childcare(saved),
+       12,MUTED,false,8);
+     if(prefs.getBoolean(prefix+"done",false)){
+      addText(result,"✓ Sortie réalisée",14,GREEN,true,5);
+      addButton(result,"↻  MARQUER COMME À ORGANISER",false,()->{
+       prefs.edit().putBoolean(prefix+"done",false).apply();draw();
+      });
+     }else{
+      addButton(result,"✓  SORTIE RÉALISÉE",true,()->{
+       prefs.edit().putBoolean(prefix+"done",true).apply();draw();
+      });
+     }
+    }
    }
-   addText(result,SpecialDateData.description(saved),13,PALE,false,10);
-   addText(result,"📍 "+SpecialDateData.location(saved)+"     ·     Gardienne : "+SpecialDateData.childcare(saved),
-      12,MUTED,false,5);
-   addText(result,"La personne qui invite propose et organise; le partage des frais reste votre choix.",12,MUTED,false,7);
-   if(restaurant&&restaurantD6==0){
-    addText(result,"La sortie sera validable une fois le deuxième dé brassé.",12,MUTED,false,5);
-   }else if(prefs.getBoolean(prefix+"done",false)){
-    addText(result,"✓  Votre rendez-vous du mois est réalisé !",15,GREEN,true,5);
-    addButton(result,"↻  MARQUER COMME À ORGANISER",false,()->{
-     prefs.edit().putBoolean(prefix+"done",false).apply();draw();
-    });
-   }else{
-    addButton(result,"✓  SORTIE RÉALISÉE",true,()->{
-     prefs.edit().putBoolean(prefix+"done",true).apply();draw();
-    });
-   }
-   addText(page,"🔒 Le D20 est verrouillé jusqu'au mois prochain. Même après un redémarrage, ce résultat reste enregistré.",
-     12,MUTED,false,10);
+   addText(page,"🔒 L'activité, la personne qui invite et le restaurant restent enregistrés jusqu'au mois prochain.",12,MUTED,false,8);
   }
-  addButton(page,"VOIR LES 20 IDÉES POSSIBLES",false,()->showSpecialCatalogue());
+  addButton(page,"CONSULTER LES 20 IDÉES",false,()->showSpecialCatalogue());
   StringBuilder history=new StringBuilder();
   for(int n=1;n<=12;n++){
    LocalDate previous=now.minusMonths(n);
    SpecialDateData.Draw d=specialSaved(previous);
    if(d==null)continue;
    history.append("•  ").append(SpecialDateData.monthLabel(previous))
-     .append(" : ").append(SpecialDateData.title(d))
-     .append(" — ").append(SpecialDateData.inviter(d))
-     .append(prefs.getBoolean(specialPrefix(previous)+"done",false)?" ✓":"")
-     .append("\n");
+    .append(" : ").append(SpecialDateData.title(d))
+    .append(prefs.getInt(specialPrefix(previous)+"host_face",0)>0?
+     " · "+SpecialDateData.inviter(d)+" invite":"")
+    .append(prefs.getBoolean(specialPrefix(previous)+"done",false)?" ✓":"").append("\n");
   }
   if(history.length()>0){
-   LinearLayout old=card("♡  Vos rendez-vous précédents",null);
-   addText(old,history.toString().trim(),12,PALE,false,0);
+   LinearLayout past=card("♡  Historique des sorties",null);
+   addText(past,history.toString().trim(),12,PALE,false,0);
   }
  }
  void drawLibrary(){
@@ -819,44 +834,318 @@ public final class MainActivity extends Activity {
   if(adventProgress()==25)
    card("♥  25 moments accomplis !","Le calendrier sera renouvelé en décembre prochain.");
  }
+
+ List<JournalStats.Entry> loadJournalStats(){
+  try{return journal.stats();}
+  catch(Exception e){throw new IllegalStateException("Impossible d'ouvrir le journal chiffré : "+e.getMessage(),e);}
+ }
+ void openJournal(){
+  journalMonth=LocalDate.now(ZoneId.of("America/Montreal")).withDayOfMonth(1);
+  selectedJournalDate=LocalDate.now(ZoneId.of("America/Montreal"));
+  tab="journal";draw();
+ }
+ void smallStatistic(LinearLayout row,String title,String value){
+  LinearLayout cell=vertical();cell.setGravity(Gravity.CENTER);
+  cell.setPadding(dp(5),dp(12),dp(5),dp(11));
+  cell.setBackground(shape(SURFACE,CARD2,14,0x55E870AA));
+  LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);cp.rightMargin=dp(5);
+  row.addView(cell,cp);
+  TextView main=text(value,23,WHITE,true);main.setGravity(Gravity.CENTER);
+  cell.addView(main);
+  TextView label=text(title,11,MUTED,false);label.setGravity(Gravity.CENTER);cell.addView(label);
+ }
+ void drawJournal(){
+  heading("♡  Notre journal","Calendrier intime et statistiques privées");
+  addText(page,"ENREGISTREMENT LOCAL CHIFFRÉ · AUCUN PARTAGE INTERNET",11,PINK,true,9);
+  List<JournalStats.Entry> entries;
+  try{entries=loadJournalStats();}
+  catch(Exception e){
+   card("🔒 Journal inaccessible",e.getMessage());
+   addButton(page,"RETOUR AUX RÉGLAGES",false,()->{tab="settings";draw();});return;
+  }
+  LocalDate today=LocalDate.now(ZoneId.of("America/Montreal"));
+  LinearLayout metrics=horizontal();page.addView(metrics);
+  smallStatistic(metrics,"Cette semaine",""+JournalStats.week(entries,today));
+  smallStatistic(metrics,"Ce mois",""+JournalStats.month(entries,today));
+  smallStatistic(metrics,"Cette année",""+JournalStats.year(entries,today));
+  gap(page,8);
+  LinearLayout rating=card("★  Note moyenne des soirées",null);
+  if(JournalStats.ratedCount(entries)>0)
+   addText(rating,String.format(java.util.Locale.CANADA_FRENCH,"%.1f / 5 étoiles  ·  %d réponses",JournalStats.meanRating(entries),JournalStats.ratedCount(entries)),18,PINK,true,2);
+  else addText(rating,"Aucun avis pour l'instant · note sur 5 après chaque soirée.",13,MUTED,false,2);
+  addText(page,"CALENDRIER DES MOMENTS INTIMES",13,PINK,true,8);
+  LinearLayout monthRow=horizontal();page.addView(monthRow);
+  chip(monthRow,"‹",false,()->{journalMonth=journalMonth.minusMonths(1);draw();},1);
+  TextView month=text(journalMonth.getMonth().getDisplayName(java.time.format.TextStyle.FULL,new java.util.Locale("fr","CA"))+
+   " "+journalMonth.getYear(),16,WHITE,true);
+  month.setGravity(Gravity.CENTER);monthRow.addView(month,new LinearLayout.LayoutParams(0,dp(38),3));
+  chip(monthRow,"›",false,()->{journalMonth=journalMonth.plusMonths(1);draw();},1);
+  gap(page,8);
+  LinearLayout days=vertical();
+  days.setPadding(dp(8),dp(8),dp(4),dp(8));
+  days.setBackground(shape(SURFACE,CARD2,18,0x55E870AA));
+  page.addView(days,new LinearLayout.LayoutParams(-1,-2));
+  LinearLayout headings=horizontal();days.addView(headings);
+  for(String dayName:new String[]{"L","M","M","J","V","S","D"}){
+   TextView label=text(dayName,12,MUTED,true);label.setGravity(Gravity.CENTER);
+   headings.addView(label,new LinearLayout.LayoutParams(0,dp(24),1));
+  }
+  int offset=journalMonth.getDayOfWeek().getValue()-1;
+  int length=journalMonth.lengthOfMonth();
+  int rows=(offset+length+6)/7;
+  for(int week=0;week<rows;week++){
+   LinearLayout line=horizontal();days.addView(line);
+   for(int i=0;i<7;i++){
+    int day=week*7+i-offset+1;
+    if(day<1||day>length){line.addView(new View(this),new LinearLayout.LayoutParams(0,dp(43),1));continue;}
+    LocalDate date=journalMonth.withDayOfMonth(day);
+    int count=JournalStats.dayCount(entries,date);
+    String label=(count>0?"♥\n":"")+day;
+    TextView cell=text(label,count>0?12:14,date.equals(selectedJournalDate)?WHITE:count>0?PINK:PALE,count>0);
+    cell.setGravity(Gravity.CENTER);
+    cell.setBackground(shape(date.equals(selectedJournalDate)?0xFF9D285F:0xFF311C33,
+     date.equals(selectedJournalDate)?0xFF7A2555:0xFF231428,10,
+     date.equals(selectedJournalDate)?PINK:0));
+    LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,dp(43),1);cp.rightMargin=dp(3);cp.bottomMargin=dp(4);
+    line.addView(cell,cp);
+    cell.setOnClickListener(v->{selectedJournalDate=date;draw();});
+   }
+  }
+  int selectedCount=JournalStats.dayCount(entries,selectedJournalDate);
+  LinearLayout chosen=card("♡  "+selectedJournalDate+"   ·   "+selectedCount+" relation"+(selectedCount>1?"s":""),null);
+  addText(chosen,"Les journées roses contiennent une entrée. Les jours vides ne signifient rien sur votre vie intime.",12,MUTED,false,5);
+  try{
+   JSONArray all=journal.all();
+   for(int i=all.length()-1;i>=0;i--){
+    JSONObject item=all.getJSONObject(i);
+    if(!item.optString("type").equals("relation")||!item.optString("date").equals(selectedJournalDate.toString()))continue;
+    addText(chosen,"♥  "+item.optString("orgasm","Non indiqué"),13,PALE,true,3);
+    addText(chosen,"Point fort : "+item.optString("good","—")+"  ·  À améliorer : "+item.optString("weak","—"),12,MUTED,false,3);
+    if(!item.optString("note","").isEmpty())addText(chosen,item.optString("note"),12,PALE,false,4);
+    final String id=item.optString("id");
+    addButton(chosen,"SUPPRIMER CETTE ENTRÉE",false,()->PremiumDialog.confirm(this,
+      "Supprimer cette relation ?","Cette action ne pourra pas être annulée.","SUPPRIMER",()->{
+       try{journal.remove(id);draw();}catch(Exception ex){journalError(ex);}
+      }));
+   }
+  }catch(Exception ex){addText(chosen,"Détails non disponibles : "+ex.getMessage(),12,PINK,false,0);}
+  addButton(page,"♥  AJOUTER UNE RELATION À CETTE DATE",true,()->{
+   orgasmChoice=-1;goodChoice=-1;weakChoice=-1;tab="intimacy";draw();
+  });
+  addButton(page,"★  QUESTIONNAIRES DE SOIRÉE",false,()->{tab="feedback";draw();});
+  addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->{tab="settings";draw();});
+ }
+ void journalError(Exception e){
+  PremiumDialog.info(this,"Impossible d'enregistrer",e.getMessage()==null?"Erreur inconnue":e.getMessage());
+ }
+ void drawIntimacyEditor(){
+  heading("♥  Nouvelle entrée","Journal intime · "+selectedJournalDate);
+  LinearLayout intro=card("Avec votre partenaire",null);
+  addText(intro,"Fred et Émilie · Saisie volontaire. Une entrée = une relation enregistrée.",13,PALE,false,5);
+  addText(page,"QUI A EU UN ORGASME ?",13,PINK,true,9);
+  String[] orgasm={"Fred","Émilie","Les deux","Aucun","Non précisé"};
+  for(int r=0;r<orgasm.length;r+=3){
+   LinearLayout line=horizontal();page.addView(line);
+   for(int i=r;i<Math.min(r+3,orgasm.length);i++){
+    final int idx=i;chip(line,orgasm[i],orgasmChoice==i,()->{orgasmChoice=idx;draw();},1);
+   }
+   gap(page,6);
+  }
+  addText(page,"POINT FORT DE CE MOMENT",13,PINK,true,8);
+  String[] positive={"Complicité","Tendresse","Communication","Plaisir","Nouveauté"};
+  for(int row=0;row<2;row++){
+   LinearLayout line=horizontal();page.addView(line);
+   for(int i=row*3;i<Math.min(row*3+3,positive.length);i++){
+    final int idx=i;chip(line,positive[i],goodChoice==i,()->{goodChoice=idx;draw();},1);
+   }
+   gap(page,6);
+  }
+  addText(page,"QU'EST-CE QU'ON POURRAIT AMÉLIORER ?",13,PINK,true,8);
+  String[] improve={"Rien","Plus de temps","Plus de douceur","Varier davantage","En parler"};
+  for(int row=0;row<2;row++){
+   LinearLayout line=horizontal();page.addView(line);
+   for(int i=row*3;i<Math.min(row*3+3,improve.length);i++){
+    final int idx=i;chip(line,improve[i],weakChoice==i,()->{weakChoice=idx;draw();},1);
+   }
+   gap(page,6);
+  }
+  EditText note=new EditText(this);note.setSingleLine(false);
+  note.setHint("Note facultative (privée sur ce téléphone)");
+  note.setHintTextColor(MUTED);note.setTextColor(WHITE);note.setTextSize(14);
+  note.setMinLines(2);note.setMaxLines(4);
+  note.setBackground(shape(SURFACE,CARD2,13,0x668C4F73));note.setPadding(dp(10),dp(6),dp(10),dp(6));
+  page.addView(note,new LinearLayout.LayoutParams(-1,dp(80)));
+  addButton(page,"ENREGISTRER CETTE RELATION",true,()->{
+   if(orgasmChoice<0||goodChoice<0||weakChoice<0){
+    Toast.makeText(this,"Choisis une réponse pour les trois questions.",Toast.LENGTH_SHORT).show();return;
+   }
+   try{
+    JSONObject event=new JSONObject();
+    event.put("id",PrivateJournal.newId());event.put("type","relation");
+    event.put("date",selectedJournalDate.toString());
+    event.put("partner","Fred et Émilie");
+    event.put("orgasm",orgasm[orgasmChoice]);event.put("good",positive[goodChoice]);
+    event.put("weak",improve[weakChoice]);
+    event.put("note",note.getText().toString().trim());
+    journal.upsert(event);journalMonth=selectedJournalDate.withDayOfMonth(1);tab="journal";draw();
+   }catch(Exception e){journalError(e);}
+  });
+  addButton(page,"ANNULER",false,()->{tab="journal";draw();});
+ }
+ void drawFeedback(){
+  String session=prefs.getString("last_feedback_session","");
+  heading("★  Notre avis sur la soirée","Trois questions rapides, une réponse chacun");
+  if(session.isEmpty()){
+   card("Aucune soirée récente à évaluer","Terminez une soirée de défis pour remplir vos questionnaires.");
+   addButton(page,"←  NOTRE JOURNAL",false,()->{tab="journal";draw();});return;
+  }
+  String date=prefs.getString("last_feedback_date","");
+  addText(page,"SOIRÉE DU "+date,12,PINK,true,8);
+  JSONArray responses;
+  try{responses=journal.all();}catch(Exception e){card("Journal inaccessible",e.getMessage());return;}
+  for(String person:new String[]{"Fred","Émilie"}){
+   boolean answered=false;
+   for(int i=0;i<responses.length();i++){
+    JSONObject x=responses.optJSONObject(i);
+    if(x!=null&&("survey_"+session+"_"+person).equals(x.optString("id")))answered=true;
+   }
+   LinearLayout profile=card(person+(answered?"   ✓ Réponse enregistrée":"   · À répondre"),null);
+   if(answered)addText(profile,"Sa réponse est sauvegardée dans le journal.",12,GREEN,false,0);
+   addButton(profile,(answered?"MODIFIER L'AVIS DE ":"RÉPONDRE POUR ")+person.toUpperCase(),!answered,()->{
+    feedbackPerson=person;feedbackRating=0;likedChoice=-1;nextChoice=-1;tab="feedback_answer";draw();
+   });
+  }
+  addText(page,"Chacun répond en son nom. Sur ce téléphone, il n'y a pas encore de compte personnel ni de confidentialité entre les réponses; l'accès iPhone nécessite la synchronisation sécurisée.",12,MUTED,false,12);
+  addButton(page,"♡  VOIR LE JOURNAL ET LES STATS",true,()->{tab="journal";draw();});
+  addButton(page,"←  ACCUEIL",false,()->{tab="home";draw();});
+ }
+ void drawFeedbackAnswer(){
+  heading("★  Avis d'après-soirée","Questionnaire de "+feedbackPerson+" · trois réponses");
+  addText(page,"1 · NOTE GÉNÉRALE DE LA SOIRÉE",13,PINK,true,7);
+  LinearLayout stars=horizontal();page.addView(stars);
+  for(int n=1;n<=5;n++){
+   final int idx=n;chip(stars,(feedbackRating>=n?"★":"☆")+n,feedbackRating==n,
+    ()->{feedbackRating=idx;draw();},1);
+  }
+  gap(page,13);
+  addText(page,"2 · CE QUE J'AI PRÉFÉRÉ",13,PINK,true,7);
+  String[] liked={"Complicité","Tendresse","Les défis","L'ambiance","Les surprises"};
+  for(int row=0;row<2;row++){
+   LinearLayout line=horizontal();page.addView(line);
+   for(int i=row*3;i<Math.min(row*3+3,liked.length);i++){
+    final int idx=i;chip(line,liked[i],likedChoice==i,()->{likedChoice=idx;draw();},1);
+   }
+   gap(page,6);
+  }
+  gap(page,8);
+  addText(page,"3 · POUR LA PROCHAINE FOIS",13,PINK,true,7);
+  String[] next={"Rien à changer","Plus de douceur","Plus de temps","Plus de surprises","Rythme différent"};
+  for(int row=0;row<2;row++){
+   LinearLayout line=horizontal();page.addView(line);
+   for(int i=row*3;i<Math.min(row*3+3,next.length);i++){
+    final int idx=i;chip(line,next[i],nextChoice==i,()->{nextChoice=idx;draw();},1);
+   }
+   gap(page,6);
+  }
+  addButton(page,"✓  ENREGISTRER MON AVIS",true,()->{
+   if(feedbackRating<1||likedChoice<0||nextChoice<0){
+    Toast.makeText(this,"Réponds aux trois questions.",Toast.LENGTH_SHORT).show();return;
+   }
+   try{
+    String session=prefs.getString("last_feedback_session","");
+    if(session.isEmpty())return;
+    JSONObject answer=new JSONObject();
+    answer.put("id","survey_"+session+"_"+feedbackPerson);
+    answer.put("type","survey");answer.put("session",session);
+    answer.put("who",feedbackPerson);answer.put("rating",feedbackRating);
+    answer.put("liked",liked[likedChoice]);answer.put("next",next[nextChoice]);
+    answer.put("date",prefs.getString("last_feedback_date",LocalDate.now().toString()));
+    journal.upsert(answer);tab="feedback";draw();
+   }catch(Exception e){journalError(e);}
+  });
+  addButton(page,"←  RETOUR AUX DEUX QUESTIONNAIRES",false,()->{tab="feedback";draw();});
+ }
+ void settingsBack(){tab="settings";draw();}
+ void settingTile(String title,String description,String action,Runnable click){
+  LinearLayout c=card(title,description);
+  addButton(c,action,false,click);
+ }
  void drawSettings(){
-  heading("⚙  Réglages","Personnalisez votre expérience");
-  section("Bibliothèque");
-  LinearLayout library=card("♡  Les 60 défis","Sensuel · Coquin · Sexuel — chaque défi avec son exemple.");
-  addButton(library,"CONSULTER ET GÉRER LES DÉFIS   →",true,()->{tab="library";draw();});
-  section("Mises à jour");
-  LinearLayout c=card("✦  Mises à jour automatiques","Vérification au lancement de l'application.");
-  CheckBox auto=new CheckBox(this);auto.setText("Rechercher automatiquement les nouveautés");
+  heading("⚙  Réglages","Votre espace à deux");
+  section("♡  Notre vie à deux");
+  LinearLayout journalCard=card("♥  Notre journal intime","Calendrier des relations, statistiques et moments enregistrés.");
+  try{
+   List<JournalStats.Entry> all=loadJournalStats();
+   LocalDate today=LocalDate.now(ZoneId.of("America/Montreal"));
+   addText(journalCard,"Cette semaine "+JournalStats.week(all)+"  ·  Ce mois "+JournalStats.month(all)+
+    "  ·  Cette année "+JournalStats.year(all),14,PALE,true,5);
+  }catch(Exception ex){addText(journalCard,"Journal temporairement inaccessible",12,PINK,false,5);}
+  addButton(journalCard,"OUVRIR MON CALENDRIER ET MES STATS   →",true,()->openJournal());
+  settingTile("★  Nos avis après les soirées","3 questions simples, une réponse de Fred et une d'Émilie.",
+   "REMPLIR LES QUESTIONNAIRES",()->{tab="feedback";draw();});
+  section("🎲  Le jeu");
+  settingTile("♡  Bibliothèque des 60 défis","Sensuel · Coquin · Sexuel, consignes et exemples.",
+   "CONSULTER LES DÉFIS",()->{tab="library";draw();});
+  settingTile("⚙  Règles et réinitialisation","Probabilités, dé hebdomadaire et règles des tirages.",
+   "VOIR LES RÈGLES",()->{tab="rules";draw();});
+  section("🔐  Application");
+  settingTile("↻  Mises à jour","Recherche automatique des nouvelles versions signées.",
+   "GÉRER LES MISES À JOUR",()->{tab="updater";draw();});
+  settingTile("🔒  Vie privée et données","Journal chiffré localement, suppression et futur accès iPhone.",
+   "CONFIDENTIALITÉ",()->{tab="privacy";draw();});
+  addText(page,"Dés à Deux  ·  v"+BuildConfig.VERSION_NAME,12,MUTED,false,5);
+ }
+ void drawRules(){
+  heading("🎲  Règles du jeu","Comment fonctionnent nos tirages");
+  card("Dé hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
+  card("D6 et D20","Un D6 pour les défis reçus par chaque personne. Catégorie choisie 70/15/15, mode aléatoire Sensuel 30 %, Coquin 30 %, Sexuel 40 %.");
+  card("Les défis ne se répètent pas","Une proposition, même passée, ne ressort pas pour la même personne pendant sa soirée.");
+  card("Calendrier de l'Avent","Les 25 cases s'ouvrent uniquement à leur date en décembre.");
+  section("↻  Réinitialisation");
+  LinearLayout reset=card("Rebrasser le dé hebdomadaire","Efface le résultat de la semaine et la progression en cours, pas le journal intime.");
+  addButton(reset,"RÉINITIALISER LA SEMAINE",false,()->PremiumDialog.confirm(this,"Réinitialiser la semaine ?",
+    "Le tirage et la progression de la semaine seront remis à zéro. Le journal chiffré restera intact.",
+    "RÉINITIALISER",()->{
+      prefs.edit().putInt("goal",-1).putInt("done",0)
+       .putBoolean("active",false).putBoolean("pending",false).putBoolean("accepted",false)
+       .putInt("fred_target",-1).putInt("emilie_target",-1)
+       .putInt("fred_completed",0).putInt("emilie_completed",0)
+       .putLong("fred_seen",0L).putLong("emilie_seen",0L).apply();
+      tab="home";draw();
+    }));
+  addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->settingsBack());
+ }
+ void drawUpdater(){
+  heading("↻  Mises à jour","Gardez Dés à Deux à jour");
+  LinearLayout c=card("✦  Recherche automatique","Une vérification est effectuée au lancement.");
+  CheckBox auto=new CheckBox(this);auto.setText("Rechercher les nouvelles versions");
   auto.setTextColor(PALE);auto.setButtonTintList(ColorStateList.valueOf(PINK));
   auto.setChecked(prefs.getBoolean("auto_update",true));
   auto.setOnCheckedChangeListener((v,b)->prefs.edit().putBoolean("auto_update",b).apply());
   c.addView(auto);
-  addText(c,"Source : GitHub Releases · Dés à Deux",12,MUTED,false,4);
   String last=prefs.getString("last_success","");
-  addText(c,last.isEmpty()?"Dernière vérification : aucune":"Dernière vérification réussie : "+last,12,GREEN,false,9);
-  addButton(c,"↻   RECHERCHER UNE MISE À JOUR",true,()->UpdateManager.check(this,false));
-  addText(c,"Téléchargement dans l'app; installation confirmée par Android. Une même signature est nécessaire pour conserver les données.",12,MUTED,false,0);
-  section("Dé hebdomadaire");
-  LinearLayout weekly=card("🎲  Réinitialiser le dé de la semaine","Permet un nouveau tirage, même avant lundi. Remet aussi le compteur de soirées à zéro.");
-  addButton(weekly,"↻   RÉINITIALISER LE DÉ HEBDOMADAIRE",false,()->{
-   new AlertDialog.Builder(this).setTitle("Réinitialiser le dé ?")
-    .setMessage("Le résultat et la progression de cette semaine seront effacés. Confirmer ?")
-    .setPositiveButton("Réinitialiser",(d,w)->{
-     prefs.edit().putInt("goal",-1).putInt("done",0)
-      .putBoolean("active",false).putBoolean("pending",false)
-      .putInt("fred_target",-1).putInt("emilie_target",-1)
-      .putInt("fred_completed",0).putInt("emilie_completed",0)
-      .putLong("fred_seen",0L).putLong("emilie_seen",0L).apply();
-     tab="home";draw();
-    }).setNegativeButton("Annuler",null).show();
-  });
-  section("Règles du jeu");
-  card("Répartition hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
-  card("Quatre tirages en 3D","Semaine : D6 pondéré · Soirée : un D6 chacun · D20 sélection 70/15/15, aléatoire 30/30/40.");
-  card("Défis sans répétition","Toute carte proposée, même passée, ne peut pas ressortir pour la même personne pendant la soirée.");
-  card("Calendrier de l'Avent","25 cases secrètes qui s'ouvrent à partir de leur date en décembre; dernier samedi avant Noël : défi spécial à deux.");
-  card("Intimité et respect","Les défis sont des invitations. Vous pouvez toujours passer. Les données de jeu restent sur ce téléphone.");
-  gap(page,8);addText(page,"Dés à Deux · Version "+BuildConfig.VERSION_NAME,12,MUTED,false,0);
+  addText(c,last.isEmpty()?"Aucune vérification enregistrée":"Dernière vérification : "+last,12,MUTED,false,4);
+  addText(c,"Source : GitHub Releases · signature Android conservée.",12,MUTED,false,9);
+  addButton(c,"RECHERCHER UNE MISE À JOUR",true,()->UpdateManager.check(this,false));
+  addText(c,"Android demandera toujours une confirmation avant l'installation.",12,MUTED,false,0);
+  addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->settingsBack());
+ }
+ void drawPrivacy(){
+  heading("🔒  Vie privée","Vos données, vos choix");
+  card("Chiffré sur cet appareil","Le journal intime est enregistré avec AES-256-GCM et une clé Android Keystore, sans téléchargement sur un serveur.");
+  card("Partage avec iPhone","Non disponible dans cette version. Les deux questionnaires peuvent être remplis séparément sur ce téléphone, mais les réponses ne sont pas des comptes authentifiés.");
+  card("À savoir","Une sauvegarde ou désinstallation peut rendre les données locales irrécupérables. Aucune synchronisation en ligne n'est activée.");
+  section("Supprimer mes données");
+  LinearLayout erase=card("Effacer tout le journal intime","Supprime les relations enregistrées et les questionnaires. N'efface pas les dés, les défis ni le calendrier de l'Avent.");
+  addButton(erase,"EFFACER DÉFINITIVEMENT LE JOURNAL",false,()->PremiumDialog.confirm(this,
+   "Effacer toutes les données intimes ?",
+   "Cette action supprimera définitivement toutes les relations et les évaluations des soirées enregistrées sur ce téléphone. Aucune copie en ligne n'existe.",
+   "OUI, TOUT EFFACER",()->{
+    try{journal.eraseAll();prefs.edit().remove("last_feedback_session").remove("last_feedback_date").apply();
+     settingsBack();
+    }catch(Exception e){journalError(e);}
+   }));
+  addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->settingsBack());
  }
  @Override protected void onPause(){
   if(gpuDice!=null)gpuDice.onPause();
