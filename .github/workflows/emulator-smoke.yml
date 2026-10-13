@@ -1,4 +1,4 @@
-name: GPU dice Android emulator smoke test
+name: LoveRoll compact Android landing S25 emulator check
 on:
   push:
     branches: [des-a-deux-apk-20261013]
@@ -22,51 +22,59 @@ jobs:
           "$SDKMGR" --install 'platforms;android-35' 'build-tools;35.0.0'
       - name: Build debug APK for emulator
         run: gradle :app:assembleDebug --no-daemon
-      - name: Launch and interact with OpenGL 3D die
+      - name: Measure compact native landing on S25 Ultra representative density
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           target: google_apis
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_7
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
           script: |
             set -eu
+            adb shell wm size 1440x3120
+            adb shell wm density 560
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n ca.desadeux.jeu/.MainActivity
-            sleep 9
+            sleep 8
             mkdir -p qa
-            adb exec-out screencap -p > qa/initial.png
-            adb shell pidof ca.desadeux.jeu
+            adb exec-out screencap -p > qa/loveroll-compact-s25-android.png
             adb shell uiautomator dump /sdcard/window.xml >/dev/null || true
-            adb shell cat /sdcard/window.xml > qa/window.xml || true
+            adb shell cat /sdcard/window.xml > qa/window.xml
             python3 - <<'PY'
-            import re,subprocess,xml.etree.ElementTree as E,os,time
-            xml=open('qa/window.xml',encoding='utf-8').read()
-            root=E.fromstring(xml)
-            targets=[n for n in root.iter('node') if 'BRASSER LE DÉ HEBDOMADAIRE' in n.attrib.get('text','')]
-            if not targets:
-              raise RuntimeError('weekly roll button missing from UI')
-            bounds=targets[0].attrib['bounds']
-            x1,y1,x2,y2=map(int,re.findall(r'\d+',bounds))
-            x,y=(x1+x2)//2,(y1+y2)//2
-            subprocess.run(['adb','shell','input','tap',str(x),str(y)],check=True)
-            time.sleep(4)
-            subprocess.run(['adb','exec-out','screencap','-p'],stdout=open('qa/after_roll.png','wb'),check=True)
-            pid=subprocess.check_output(['adb','shell','pidof','ca.desadeux.jeu'],text=True).strip()
-            if not pid:raise RuntimeError('app process died after 3D animation')
+            import re,xml.etree.ElementTree as ET,subprocess,time
+            root=ET.parse('qa/window.xml').getroot()
+            nodes=list(root.iter('node'))
+            texts=[n.attrib.get('text','') for n in nodes]
+            print('Visible Android nodes:', texts)
+            def locate(needle):
+              hits=[n for n in nodes if needle in n.attrib.get('text','')]
+              if not hits:raise AssertionError('missing visible native label: '+needle)
+              return hits[0]
+            for required in ['LoveRoll','Votre aventure à deux','CRÉER MON COMPTE',
+               'ME CONNECTER','Dés à deux','Votre match','Calendrier','Espace privé',
+               "Plus qu'un jeu",'Retrouver mes anciennes données','Réservé aux adultes']:
+              locate(required)
+            assert len([t for t in texts if 'CRÉER MON COMPTE' in t])==1
+            assert len([t for t in texts if 'ME CONNECTER' in t])==1
+            screen=int(subprocess.check_output(['adb','shell','wm','size'],text=True)
+                       .strip().split('Physical size:')[-1].strip().split('x')[-1])
+            legal=locate('Réservé aux adultes')
+            x1,y1,x2,y2=map(int,re.findall(r'\d+',legal.attrib['bounds']))
+            if y2>screen-50 or y2<=0:raise AssertionError(
+               'legal notice below the visible Android screen: '+str(y2)+' vs '+str(screen))
+            assert subprocess.check_output(['adb','shell','pidof','ca.desadeux.jeu'],text=True).strip()
             PY
             adb logcat -d -v brief -s AndroidRuntime:E > qa/runtime_errors.txt
-            if grep -E 'FATAL EXCEPTION|java.lang.IllegalStateException.*3D shader' qa/runtime_errors.txt; then
+            if grep -E 'FATAL EXCEPTION' qa/runtime_errors.txt; then
               cat qa/runtime_errors.txt
               exit 1
             fi
-            test "$(stat -c%s qa/initial.png)" -gt 15000
-            test "$(stat -c%s qa/after_roll.png)" -gt 15000
+            test "$(stat -c%s qa/loveroll-compact-s25-android.png)" -gt 15000
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: gpu-dice-emulator-smoke
+          name: LoveRoll-S25-native-landing-capture
           path: qa/
           if-no-files-found: warn

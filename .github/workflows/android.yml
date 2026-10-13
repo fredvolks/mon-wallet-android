@@ -48,7 +48,7 @@ jobs:
           assert src.count('premiumWelcomeButton(hero,') == 2
           assert 'drawWelcome(){' in src
           assert 'R.drawable.loveroll_hero' in src
-          assert 'Plus qu\'un jeu, une histoire à écrire.' in src
+          assert 'Plus qu\'un jeu, votre histoire à deux.' in src
           assert 'class LoveRollWelcomeIcon' in Path('app/src/main/java/ca/desadeux/jeu/LoveRollWelcomeIcon.java').read_text()
           assert Path('app/src/main/res/drawable-nodpi/loveroll_hero.webp').is_file()
           assert 'static final String LOVEROLL_WEB="https://fredvolks.github.io/mon-wallet-android/"' in src
