@@ -1,5 +1,6 @@
-import { marketingHtml,authHtml,profileHtml,matchHtml,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown } from './evening-challenges.mjs';
+import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
@@ -14,7 +15,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],showAuth:false,diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:false,diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 let timerCtx=null;
 const challengeTimer={id:null,durationMs:0,remainingMs:0,deadline:0,running:false,notified:false,mode:'sound'};
@@ -63,7 +64,7 @@ async function query(table,options={}){
  const {data,error}=await q;if(error)throw error;return data;
 }
 function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
- const connected=!!state.coupleId;
+ const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
  root.innerHTML='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
@@ -109,9 +110,17 @@ function render(){
   frame(profileHtml(state.user,state.profile),'♡ MON PROFIL','Première connexion : inscription');
   return;
  }
+ if(!state.wellbeing){
+  frame(wellbeingHtml(),'♡ MON RESSENTI','Vos réponses sont personnelles');return;
+ }
  if(!state.coupleId){
-  frame(matchHtml(state.profile.display_name,!!sessionStorage.getItem('pendingInvite')),
-   '♡ NOTRE MATCH','Deux comptes, un espace partagé');
+  if(sessionStorage.getItem('pendingInvite')||!localStorage.getItem('loveroll-skip-'+state.user.id)){
+   frame(matchHtml(state.profile.display_name,!!sessionStorage.getItem('pendingInvite')),
+    '♡ NOTRE MATCH','Inviter un partenaire reste facultatif');return;
+  }
+  if(state.tab==='settings')renderSettings();
+  else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
+  else renderSolo();
   return;
  }
  if(state.members.length<2){frame('<section class="card"><h2>Votre match</h2><p>Bonjour '+safe(state.profile.display_name)+
@@ -121,6 +130,7 @@ function render(){
  '<p class="muted">L’envoi s’ouvre dans votre application courriel. Votre partenaire doit confirmer l’envoi du courriel d’invitation.</p></section>');
  return;}
  if(state.tab==='home')renderHome();
+ else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
  else if(state.tab==='session')renderSession();
  else if(state.tab==='special')renderSpecial();
  else if(state.tab==='occasions')renderOccasions();
@@ -131,22 +141,37 @@ function render(){
 }
 async function reload(){
  if(!state.user)return;
- const profiles=await query('couple_profiles',{eq:{id:state.user.id}});
+ const [profiles,assessments,personal]=await Promise.all([
+  query('couple_profiles',{eq:{id:state.user.id}}),
+  query('love_wellbeing',{eq:{user_id:state.user.id}}),
+  query('love_personal_intimacy',{eq:{user_id:state.user.id}})
+ ]);
  state.profile=profiles[0]||null;
- if(!state.profile)return render();
+ state.wellbeing=assessments[0]||null;
+ state.personalJournal=personal;
  const membership=await query('couple_members',{eq:{user_id:state.user.id}});
+ const previousCouple=state.coupleId;
  state.coupleId=membership[0]?.couple_id||null;
- if(!state.coupleId)return render();
+ if(!state.coupleId){
+  if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
+  state.couple=null;state.members=[];state.weekly=null;state.monthly={};
+  state.session=null;state.sessions=[];state.events=[];state.journal=[];
+  state.feedback=[];state.advent=[];state.unlockKey=null;
+  state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
+  state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
+  render();return;
+ }
+ if(previousCouple&&previousCouple!==state.coupleId)state.unlockKey=null;
  const [couple,members]=await Promise.all([
- query('couples',{eq:{id:state.coupleId}}),
- query('couple_members',{eq:{couple_id:state.coupleId}})
+  query('couples',{eq:{id:state.coupleId}}),
+  query('couple_members',{eq:{couple_id:state.coupleId}})
  ]);
  state.couple=couple[0]||null;
  const profilesAll=await query('couple_profiles');
  state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter'}));
+ state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
  if(members.length===2)await refreshShared();
- subscribe();
- render();
+ subscribe();render();
 }
 async function refreshShared(){
  const c=state.coupleId;
@@ -179,9 +204,9 @@ function subscribe(){
  if(!state.coupleId)return;
  if(state.channel)client.removeChannel(state.channel);
  let channel=client.channel('shared-couple-'+state.coupleId);
- channel=channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'couple_members',
+ channel=channel.on('postgres_changes',{event:'*',schema:'public',table:'couple_members',
   filter:'couple_id=eq.'+state.coupleId},async()=>{
-   try{await reload();notify('♡ Votre partenaire a accepté le match !');}catch(e){fail(e);}
+   try{await reload();if(state.coupleId&&state.members.length===2)notify('♡ Votre partenaire a accepté le match !');}catch(e){fail(e);}
  });
  if(state.members.length<2){state.channel=channel.subscribe();return;}
  for(const table of ['couple_occasion_rolls','couple_occasion_settings','couple_rolls','couple_sessions','couple_challenges',
