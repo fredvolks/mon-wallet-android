@@ -10,6 +10,8 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import ca.monwallet.app.domain.*
+import ca.monwallet.app.domain.MarketHoliday
 import ca.monwallet.app.marketdata.OfficialLogoProvider
 import java.math.BigDecimal
 import java.text.NumberFormat
@@ -206,6 +209,18 @@ fun Badge(text: String) {
                 .padding(horizontal = 5.dp, vertical = 2.dp),
         maxLines = 1,
     )
+}
+
+@Composable
+fun MarketHolidayIcon(security: Security, modifier: Modifier = Modifier) {
+    if (MarketHoliday.isHolidayToday(security)) {
+        Icon(
+            Icons.Outlined.EventBusy,
+            contentDescription = "Marché fermé pour congé",
+            modifier = modifier.size(13.dp),
+            tint = Color(0xFFAC9CDA),
+        )
+    }
 }
 
 @Composable

@@ -4,6 +4,7 @@ import ca.monwallet.app.data.Csv
 import ca.monwallet.app.domain.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.Instant
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -215,7 +216,7 @@ class EngineTest {
                 0, "2026-10-08", "Test")),
             prices = listOf(Point("XEQT", "2026-10-07", d("100"), 0)),
         )
-        equal("100", wallet.result().day)
+        equal("100", wallet.result(now = Instant.parse("2026-10-08T20:00:00Z").toEpochMilli()).day)
     }
 
     @Test
@@ -321,18 +322,19 @@ class EngineTest {
         equal("150", Engine.calculate(transactions, quotes).day)
     }
 
-    @Test fun staleFxDoesNotProduceDailyReturn() {
+    @Test fun staleFxKeepsDailyReturnUsingCurrentFxAsFallback() {
         val r=Engine.calculate(listOf(tx("10","100",currency="USD",fx="1.30")),
             mapOf("XEQT" to quote("110","100","USD")),
             Quote("FX",d("1.40"),d("1.35"),"CAD",0,"2026-10-01","Test"))
-        assertNull(r.day)
+        equal("140",r.day)
+        equal("10",r.dayPercent)
     }
 
-    @Test fun cumulativeDayRejectsCashFlowsAfterLastMarketSession() {
+    @Test fun laterCashFlowDoesNotEraseLastAvailableMarketSessionPnl() {
         val r=Engine.calculate(listOf(
             tx("10","100",account="CELI"),
             tx("0","500","2026-10-03",TxType.DEPOSIT,account="REER",security=null)),
             mapOf("XEQT" to quote("110","100",day="2026-10-02")))
-        assertNull(r.day)
+        equal("100", r.day)
     }
 }

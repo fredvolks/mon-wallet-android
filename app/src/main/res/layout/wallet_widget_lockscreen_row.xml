@@ -1,0 +1,28 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="24dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp">
+    <TextView
+        android:id="@+id/widget_lock_ticker"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:maxLines="1"
+        android:text="TSM"
+        android:textColor="#E6F1F7"
+        android:textSize="13sp"
+        android:textStyle="bold"/>
+    <TextView
+        android:id="@+id/widget_lock_pnl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:maxLines="1"
+        android:text="+12,34 $"
+        android:textColor="#56F48D"
+        android:textSize="13sp"
+        android:textStyle="bold"/>
+</LinearLayout>

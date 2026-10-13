@@ -311,21 +311,37 @@ data class Wallet(
     fun result(portfolio: String? = null, now: Long = System.currentTimeMillis()): Result {
         val entries = transactions.filter { portfolio == null || it.portfolioId == portfolio }
         val datedQuotes = quotes.mapValues { (securityId, quote) ->
-            if (quote.previous != null) quote
-            else {
-                val close = runCatching {
-                    val session = LocalDate.parse(quote.sessionDate)
-                    prices.asSequence()
-                        .filter { it.securityId == securityId && it.date < quote.sessionDate }
-                        .maxByOrNull { it.date }
-                        ?.takeIf { java.time.temporal.ChronoUnit.DAYS.between(
-                            LocalDate.parse(it.date), session) in 0..7 }
-                }.getOrNull()
-                if (close == null) quote else quote.copy(previous = close.close)
-            }
+            val cachedClose = runCatching {
+                val session = LocalDate.parse(quote.sessionDate)
+                prices.asSequence()
+                    .filter { it.securityId == securityId && it.date < quote.sessionDate }
+                    .maxByOrNull { it.date }
+                    ?.takeIf { java.time.temporal.ChronoUnit.DAYS.between(
+                        LocalDate.parse(it.date), session) in 0..7 }
+            }.getOrNull()?.close
+            // Some feeds omit the regular-session previous close after hours.
+            // Keep the provider's value when present and use stored daily history
+            // only as a fallback, so the daily P&L remains available after close.
+            if (quote.previous == null && cachedClose != null) quote.copy(previous = cachedClose)
+            else quote
         }
         val usd = securities.find { it.symbol == "CAD=X" }?.let { datedQuotes[it.id] }
-        val regular = Engine.calculate(entries, datedQuotes, usd)
+        val holidayIds = securities.filter { security ->
+            MarketHoliday.excludesDailyPnl(security, now)
+        }.map { it.id }.toSet()
+        val regular = Engine.calculate(entries, datedQuotes, usd, holidayIds).let { result ->
+            if (holidayIds.isEmpty()) result else result.copy(
+                holdings = result.holdings.map { holding ->
+                    if (holding.securityId in holidayIds) holding.copy(
+                        day = ZERO,
+                        dayBase = holding.value?.takeIf { it.signum() > 0 }
+                            ?: holding.dayBase?.takeIf { it.signum() > 0 }
+                            ?: holding.costCad.takeIf { it.signum() > 0 }
+                            ?: ONE,
+                    ) else holding
+                }
+            )
+        }
         if (settings["portfolio_extended"] == "REGULAR") return regular
         val adjusted = datedQuotes.mapValues { (securityId, quote) ->
             val normalized = securities.find { it.id == securityId }
@@ -340,7 +356,7 @@ data class Wallet(
             else quote
         }
         if (adjusted == datedQuotes) return regular
-        val estimated = Engine.calculate(entries, adjusted, usd)
+        val estimated = Engine.calculate(entries, adjusted, usd, holidayIds)
         val byId = regular.holdings.associateBy { it.securityId }
         // Today's P&L retains the regular-session reference; only valuation uses
         // extended hours, and only when the provider supplied a current quote.

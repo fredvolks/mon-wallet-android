@@ -19,7 +19,7 @@ import org.json.JSONObject
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun TradingViewChartView(points: List<Point>, kind: String) {
+fun TradingViewChartView(points: List<Point>, kind: String, currency: String = "CAD") {
     val context = LocalContext.current
     var loaded by remember { mutableStateOf(false) }
     val view = remember(context) {
@@ -50,6 +50,7 @@ fun TradingViewChartView(points: List<Point>, kind: String) {
             .put("volume", point.volume?.toDouble()))
     }
     val payload = JSONObject().put("kind", kind).put("points", rows)
+        .put("currency", currency)
         .put("positive", points.lastOrNull()?.close?.let { last -> points.firstOrNull()?.close?.let { last >= it } } ?: true)
     AndroidView(factory = { view }, modifier = Modifier.fillMaxWidth().height(252.dp), update = {
         if (loaded && points.isNotEmpty()) it.evaluateJavascript("renderWalletChart(${payload})", null)

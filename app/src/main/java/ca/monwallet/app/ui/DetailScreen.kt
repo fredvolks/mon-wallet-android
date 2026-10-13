@@ -47,6 +47,7 @@ fun DetailScreen(
     var chartKind by remember { mutableIntStateOf(0) }
     var position by remember { mutableStateOf<String?>(null) }
     var prices by remember { mutableStateOf<List<Point>>(emptyList()) }
+    var pricesRange by remember { mutableIntStateOf(-1) }
     var fundamentals by remember { mutableStateOf<Fundamentals?>(null) }
     var analyst by remember { mutableStateOf<Analyst?>(null) }
     var financeLoading by remember { mutableStateOf(false) }
@@ -64,26 +65,30 @@ fun DetailScreen(
     var status by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<String?>(null) }
-    val ranges = listOf("1J", "1S", "1M", "3M", "6M", "1A", "5A", "Tout")
-    val codes = listOf("1d", "5d", "1mo", "3mo", "6mo", "1y", "5y", "max")
+    val ranges = listOf("1J", "1S", "1M", "3M", "6M", "YTD", "1A", "5A", "Tout")
+    val codes = listOf("1d", "5d", "1mo", "3mo", "6mo", "ytd", "1y", "5y", "max")
     LaunchedEffect(security.id, range) {
         loading = true
         status = null
         prices = emptyList()
+        pricesRange = -1
         try {
             runCatching { s.refreshQuote(security) }
             prices = s.market.history(security, codes[range], if (range == 0) "5m" else "1d")
-            if (range >= 6) s.repo.points(security.id, prices)
+            pricesRange = range
+            if (range >= 5) s.repo.points(security.id, prices)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             status = e.message
-            val days = listOf(1, 7, 31, 92, 184, 366, 1827, 50000)[range]
+            val today = java.time.LocalDate.now()
+            val start = if (range == 5) today.withDayOfYear(1) else
+                today.minusDays(listOf(1L, 7L, 31L, 92L, 184L, 0L, 366L, 1827L, 50000L)[range])
             prices =
                 w.prices.filter {
-                    it.securityId == security.id &&
-                        it.date >= java.time.LocalDate.now().minusDays(days.toLong()).toString()
+                    it.securityId == security.id && it.date >= start.toString()
                 }
+            pricesRange = range
         } finally {
             loading = false
         }
@@ -148,6 +153,11 @@ fun DetailScreen(
             }
         }
     }
+    val chartReturn = when {
+        range == 0 -> q?.change?.let { amount -> q.percent?.let { ChartPeriodReturn(amount, it) } }
+        pricesRange == range -> chartPeriodReturn(q?.price, prices.firstOrNull()?.close)
+        else -> null
+    }
     val result = runCatching { w.result(position) }.getOrNull()
     val holding = result?.holdings?.find { it.securityId == security.id }
     val own =
@@ -186,27 +196,54 @@ fun DetailScreen(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Text(money(q?.price, security.currency), fontSize = 36.sp, fontWeight = FontWeight.Bold)
-            Text(
-                "${signed(q?.change,security.currency)}  (${percent(q?.percent)})",
-                color = tint(q?.change),
-                fontSize = 17.sp,
-            )
             val normalized = q?.takeIf { security.currency == "USD" }?.let { NormalizedQuote.from(it) }
             val extendedPrice = when (normalized?.marketSession) {
                 MarketSession.PRE_MARKET -> normalized.preMarketPrice
                 MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
                 else -> null
             }
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    money(q?.price, security.currency),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+                if (extendedPrice != null && normalized != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Text("☾", color = Color(0xFFAC9CDA), fontSize = 16.sp)
+                        Text(
+                            money(extendedPrice, security.currency),
+                            color = Color(0xFFAC9CDA),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                    }
+                }
+            }
+            Text(
+                "${chartReturn?.amount?.let { signed(it, security.currency) } ?: "—"}  (${chartReturn?.percent?.let(::percent) ?: "—"})",
+                color = tint(chartReturn?.amount),
+                fontSize = 17.sp,
+            )
             if (extendedPrice != null && normalized != null) {
-                val delta = if (normalized.marketSession == MarketSession.PRE_MARKET)
-                    normalized.preMarketChange else normalized.afterHoursChange
-                val changePercent = if (normalized.marketSession == MarketSession.PRE_MARKET)
-                    normalized.preMarketChangePercent else normalized.afterHoursChangePercent
-                val timestamp = if (normalized.marketSession == MarketSession.PRE_MARKET)
-                    normalized.preMarketTimestamp else normalized.afterHoursTimestamp
-                Caption((if (normalized.marketSession == MarketSession.PRE_MARKET) "☀ Pre-market" else "☾ After-hours") +
-                    " · ${money(extendedPrice,security.currency)} · ${signed(delta,security.currency)} (${percent(changePercent)})" +
+                val preMarket = normalized.marketSession == MarketSession.PRE_MARKET
+                val delta = if (preMarket) normalized.preMarketChange else normalized.afterHoursChange
+                val changePercent = if (preMarket) normalized.preMarketChangePercent else normalized.afterHoursChangePercent
+                val timestamp = if (preMarket) normalized.preMarketTimestamp else normalized.afterHoursTimestamp
+                Caption((if (preMarket) "Pre-market" else "After-hours") +
+                    " · ${signed(delta, security.currency)} (${percent(changePercent)})" +
                     (timestamp?.let { " · ${time(it)}" } ?: ""))
             }
             Caption(
@@ -233,7 +270,9 @@ fun DetailScreen(
                 else -> true
             }
             if (!supported) Caption(stringResource(R.string.chart_data_unavailable))
-            else if (prices.isNotEmpty()) TradingViewChartView(prices, listOf("line", "area", "candles", "volume")[chartKind])
+            else if (prices.isNotEmpty()) TradingViewChartView(
+                prices, listOf("line", "area", "candles", "volume")[chartKind], security.currency,
+            )
             else Caption(stringResource(R.string.ui_historique_indisponible_fb840))
             if (prices.isNotEmpty())
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

@@ -27,30 +27,33 @@
         <LinearLayout android:layout_width="0dp" android:layout_weight="45"
             android:layout_height="match_parent" android:orientation="vertical"
             android:paddingBottom="1dp">
-            <LinearLayout android:id="@+id/widget_day_pill"
+            <FrameLayout android:id="@+id/widget_day_pill"
                 android:layout_width="match_parent" android:layout_height="0dp"
-                android:layout_weight="1" android:orientation="vertical"
-                android:gravity="center_vertical" android:paddingStart="7dp"
-                android:paddingEnd="4dp" android:background="@drawable/widget_pill_positive">
-                <TextView android:id="@+id/widget_day" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:includeFontPadding="false"
-                    android:textColor="#B9D2C8" android:textSize="10sp" android:maxLines="1"/>
-                <TextView android:id="@+id/widget_amount" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:gravity="center_horizontal"
-                    android:includeFontPadding="false" android:singleLine="true" android:textStyle="bold" android:textColor="#58F48B"
-                    android:textSize="26sp" android:autoSizeTextType="uniform"
-                    android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="26sp"
-                    android:autoSizeStepGranularity="1sp"/>
-                <TextView android:id="@+id/widget_percent" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:gravity="center_horizontal"
-                    android:includeFontPadding="false" android:singleLine="true" android:textStyle="bold" android:textColor="#58F48B"
-                    android:textSize="24sp" android:autoSizeTextType="uniform"
-                    android:autoSizeMinTextSize="16sp" android:autoSizeMaxTextSize="26sp"
-                    android:autoSizeStepGranularity="1sp"/>
+                android:layout_weight="1" android:background="@drawable/widget_pill_positive">
                 <ImageView android:id="@+id/widget_chart" android:layout_width="match_parent"
-                    android:layout_height="13dp" android:scaleType="fitXY"
+                    android:layout_height="match_parent" android:scaleType="fitXY"
                     android:visibility="gone" android:contentDescription="@string/widget_chart_description"/>
-            </LinearLayout>
+                <LinearLayout android:id="@+id/widget_day_content"
+                    android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center_vertical"
+                    android:paddingStart="7dp" android:paddingEnd="4dp">
+                    <TextView android:id="@+id/widget_day" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:includeFontPadding="false"
+                        android:textColor="#B9D2C8" android:textSize="10sp" android:maxLines="1"/>
+                    <TextView android:id="@+id/widget_amount" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:gravity="center_horizontal"
+                        android:includeFontPadding="false" android:singleLine="true" android:textStyle="bold" android:textColor="#58F48B"
+                        android:textSize="26sp" android:autoSizeTextType="uniform"
+                        android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="26sp"
+                        android:autoSizeStepGranularity="1sp"/>
+                    <TextView android:id="@+id/widget_percent" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:gravity="center_horizontal"
+                        android:includeFontPadding="false" android:singleLine="true" android:textStyle="bold" android:textColor="#58F48B"
+                        android:textSize="24sp" android:autoSizeTextType="uniform"
+                        android:autoSizeMinTextSize="16sp" android:autoSizeMaxTextSize="26sp"
+                        android:autoSizeStepGranularity="1sp"/>
+                </LinearLayout>
+            </FrameLayout>
             <LinearLayout android:id="@+id/widget_total_group"
                 android:layout_width="match_parent" android:layout_height="23dp"
                 android:layout_marginTop="2dp" android:gravity="center_vertical"
