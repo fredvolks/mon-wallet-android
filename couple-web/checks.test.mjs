@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
+import { drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE } from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
@@ -281,7 +282,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v6/);
+ assert.match(sw,/loveroll-static-v7/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -370,4 +371,42 @@ test('Wellbeing selectors use dark custom dialogs, not white Android select popu
  assert.ok(theme.includes('name="LoveRollConnectedTheme"'));
  assert.ok(theme.includes('parent="android:style/Theme.Material.NoActionBar"'));
  assert.ok(manifest.includes('android:theme="@style/LoveRollConnectedTheme"'));
+});
+
+test('Solo users can explore the full app without joining a couple',()=>{
+ assert.equal(isSharedCoupleReady(null,[]),false);
+ assert.equal(isSharedCoupleReady('demo',[{user_id:'only'}]),false);
+ assert.equal(isSharedCoupleReady('demo',[{user_id:'a'},{user_id:'b'}]),true);
+ assert.match(SOLO_MESSAGE,/Mode découverte/);
+ assert.match(app,/function renderSoloSession\\(\\)/);
+ assert.match(app,/function renderSoloSpecial\\(\\)/);
+ assert.match(app,/function renderSoloOccasions\\(\\)/);
+ assert.match(app,/function renderSoloAdvent\\(\\)/);
+ assert.match(app,/function renderPersonalJournal\\(\\)/);
+ assert.match(app,/state\\.tab==='session'\\)renderSoloSession\\(\\)/);
+ assert.match(app,/state\\.tab==='advent'\\)renderSoloAdvent\\(\\)/);
+ assert.match(app,/state\\.tab==='special'\\)renderSoloSpecial\\(\\)/);
+ assert.match(app,/state\\.tab==='settings'\\)renderSettings\\(\\)/);
+ assert.match(app,/tab:'session'/);
+ assert.match(app,/tab:'special'/);
+ assert.match(app,/tab:'advent'/);
+ assert.match(app,/tab:'personal-journal'/);
+ assert.doesNotMatch(app,/Ajoutez un partenaire pour utiliser les jeux partagés/);
+});
+test('Solo dice are functional but can never write shared couple data',()=>{
+ assert.equal(drawSoloFace(6,()=>0),1);
+ assert.equal(drawSoloFace(6,()=>0.999),6);
+ assert.equal(drawSoloFace(20,()=>0),1);
+ assert.equal(drawSoloFace(20,()=>0.999),20);
+ assert.throws(()=>drawSoloFace(8),/non pris en charge/);
+ assert.throws(()=>drawSoloFace(6,()=>1),/invalide/);
+ assert.match(app,/verb==='solo-roll'/);
+ assert.match(app,/verb==='solo-advent'/);
+ assert.match(app,/verb==='solo-category'/);
+ assert.match(app,/drawSoloFace\\(sizes\\[kind\\]\\)/);
+ assert.match(app,/!isSharedCoupleReady\\(state\\.coupleId,state\\.members\\)/);
+ assert.match(app,/Cette action nécessite deux comptes associés/);
+ assert.match(app,/Les démonstrations solo ne modifient pas les données du couple/);
+ const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ assert.match(sw,/solo-mode\\.mjs/);
 });
