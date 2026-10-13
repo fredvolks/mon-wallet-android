@@ -23,6 +23,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import ca.desadeux.jeu.GameLogic.Category;
 import androidx.core.view.ViewCompat;
@@ -245,17 +246,18 @@ public final class MainActivity extends Activity {
    case "game":drawGame();break;
    case "library":drawLibrary();break;
    case "advent":drawAdvent();break;
+   case "special":drawSpecial();break;
    case "settings":drawSettings();break;
    default:drawHome();break;
   }
   drawNav();
  }
  void drawNav(){
-  for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}}){
+  for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"special","✦","Défi spécial"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}}){
    LinearLayout col=vertical();col.setGravity(Gravity.CENTER);
    boolean active=tab.equals(item[0])||(item[0].equals("settings")&&tab.equals("library"));
    TextView icon=text(item[1],item[0].equals("advent")?22:24,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
-   TextView name=text(item[2],11,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
+   TextView name=text(item[2],item[0].equals("special")?10:11,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);
    nav.addView(col,lp);col.setOnClickListener(v->{if(rolling)return;tab=item[0];draw();});
   }
@@ -493,6 +495,102 @@ public final class MainActivity extends Activity {
  }
  String categoryName(Category c){
   switch(c){case COQUIN:return "Coquin";case SEXUEL:return "Sexuel";default:return "Sensuel";}
+ }
+
+ String specialPrefix(LocalDate date){return "special_"+SpecialDateData.monthKey(date)+"_";}
+ SpecialDateData.Draw specialSaved(LocalDate date){
+  String p=specialPrefix(date);
+  int face=prefs.getInt(p+"face",-1);
+  if(face<1||face>20)return null;
+  return new SpecialDateData.Draw(face,prefs.getBoolean(p+"fred",false),
+    prefs.getBoolean(p+"optionB",false));
+ }
+ void showSpecialCatalogue(){
+  StringBuilder sb=new StringBuilder("20 idées possibles à Québec :\n\n");
+  for(int i=0;i<20;i++)sb.append(i+1).append(".  ")
+    .append(SpecialDateData.ACTIVITIES[i][0]).append("\n");
+  sb.append("\nLa variante et la personne qui invite sont aussi tirées 50/50.");
+  new AlertDialog.Builder(this).setTitle("✦ Nos 20 sorties").setMessage(sb.toString())
+   .setPositiveButton("Compris",null).show();
+ }
+ void drawSpecial(){
+  LocalDate now=LocalDate.now(SpecialDateData.ZONE);
+  String prefix=specialPrefix(now);
+  SpecialDateData.Draw saved=specialSaved(now);
+  heading("✦  Défi spécial","Une vraie sortie en amoureux, une fois par mois");
+  addText(page,"RENDEZ-VOUS DE "+SpecialDateData.monthLabel(now).toUpperCase(java.util.Locale.CANADA_FRENCH),
+    12,PINK,true,7);
+  showDice(20,saved==null?20:saved.face);
+  if(saved==null){
+   LinearLayout intro=card("♡  Votre rendez-vous mensuel",
+    "20 activités adaptées à votre vie de parents, dans la région de Québec.");
+   addText(intro,"🎲 Sortie : 1 chance sur 20 par activité",13,PALE,true,5);
+   addText(intro,"♥ Fred invite / Émilie invite : 50 % / 50 %",13,PALE,true,5);
+   addText(intro,"✦ Variante A / B : 50 % / 50 %",13,PALE,true,4);
+   addText(intro,"Gardienne à prévoir : environ 2 à 6 heures selon la sortie. Aucune réservation faite automatiquement.",12,MUTED,false,5);
+   addButton(intro,"🎲  BRASSER LE D20 DU MOIS",true,()->{
+    if(!SpecialDateData.monthKeyNow().equals(SpecialDateData.monthKey(now))){draw();return;}
+    if(specialSaved(LocalDate.now(SpecialDateData.ZONE))!=null)return;
+    SpecialDateData.Draw pick=SpecialDateData.draw();
+    // Commit all draws together before starting the animation. No re-roll on restart.
+    boolean stored=prefs.edit().putInt(prefix+"face",pick.face)
+      .putBoolean(prefix+"fred",pick.fredInvites)
+      .putBoolean(prefix+"optionB",pick.optionB)
+      .putString(prefix+"date",now.toString())
+      .putBoolean(prefix+"done",false).commit();
+    if(!stored){
+     Toast.makeText(this,"Tirage non enregistré. Réessaie.",Toast.LENGTH_LONG).show();
+     return;
+    }
+    roll(pick.face,()->{
+     draw();
+     showResultDialog("✦",SpecialDateData.title(pick),
+       SpecialDateData.inviter(pick)+" invite "+SpecialDateData.invited(pick)+
+       " !\n"+SpecialDateData.label(pick)+" · "+SpecialDateData.option(pick,now),
+       "DÉCOUVRIR NOTRE SORTIE");
+    });
+   });
+  }else{
+   LinearLayout result=card("✦  "+SpecialDateData.title(saved)+"  ·  FACE "+saved.face,null);
+   addText(result,"♥  QUI INVITE : "+SpecialDateData.inviter(saved).toUpperCase(java.util.Locale.CANADA_FRENCH),
+      16,PINK,true,5);
+   addText(result,"♡  QUI EST INVITÉ(E) : "+SpecialDateData.invited(saved).toUpperCase(java.util.Locale.CANADA_FRENCH),
+      15,WHITE,true,8);
+   addText(result,SpecialDateData.label(saved)+"  ·  "+SpecialDateData.option(saved,now),
+      16,WHITE,true,10);
+   addText(result,SpecialDateData.description(saved),13,PALE,false,10);
+   addText(result,"📍 "+SpecialDateData.location(saved)+"     ·     Gardienne : "+SpecialDateData.childcare(saved),
+      12,MUTED,false,5);
+   addText(result,"La personne qui invite propose et organise; le partage des frais reste votre choix.",12,MUTED,false,7);
+   if(prefs.getBoolean(prefix+"done",false)){
+    addText(result,"✓  Votre rendez-vous du mois est réalisé !",15,GREEN,true,5);
+    addButton(result,"↻  MARQUER COMME À ORGANISER",false,()->{
+     prefs.edit().putBoolean(prefix+"done",false).apply();draw();
+    });
+   }else{
+    addButton(result,"✓  SORTIE RÉALISÉE",true,()->{
+     prefs.edit().putBoolean(prefix+"done",true).apply();draw();
+    });
+   }
+   addText(page,"🔒 Le D20 est verrouillé jusqu'au mois prochain. Même après un redémarrage, ce résultat reste enregistré.",
+     12,MUTED,false,10);
+  }
+  addButton(page,"VOIR LES 20 IDÉES POSSIBLES",false,()->showSpecialCatalogue());
+  StringBuilder history=new StringBuilder();
+  for(int n=1;n<=12;n++){
+   LocalDate previous=now.minusMonths(n);
+   SpecialDateData.Draw d=specialSaved(previous);
+   if(d==null)continue;
+   history.append("•  ").append(SpecialDateData.monthLabel(previous))
+     .append(" : ").append(SpecialDateData.title(d))
+     .append(" — ").append(SpecialDateData.inviter(d))
+     .append(prefs.getBoolean(specialPrefix(previous)+"done",false)?" ✓":"")
+     .append("\n");
+  }
+  if(history.length()>0){
+   LinearLayout old=card("♡  Vos rendez-vous précédents",null);
+   addText(old,history.toString().trim(),12,PALE,false,0);
+  }
  }
  void drawLibrary(){
   heading("♡  Les défis","Réglages  ›  Bibliothèque des 60 défis");
