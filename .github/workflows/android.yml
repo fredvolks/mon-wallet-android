@@ -1,4 +1,4 @@
-name: Build and release Des a Deux APK
+name: Build and release LoveRoll APK
 on:
   push:
     branches: [des-a-deux-apk-20261013]
@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.7.0
+      TAG: des-a-deux-v0.8.0
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -38,6 +38,9 @@ jobs:
           assert '{"library","♡","Défis"}' not in src
           assert 'CONSULTER LES DÉFIS' in src
           assert 'void drawSpecial()' in src
+          assert 'void drawOccasions()' in src
+          assert 'void drawOccasionDetail()' in src
+          assert 'LoveOccasions.SURPRISES' in src
           assert 'specialSaved(now)' in src
           assert 'new PremiumD20View(this)' in src
           assert 'Aléatoire : Sexuel 40 %' in src
@@ -59,6 +62,7 @@ jobs:
           assert Path('app/src/main/java/ca/desadeux/jeu/JournalStats.java').is_file()
           assert Path('app/src/main/java/ca/desadeux/jeu/PremiumDialog.java').is_file()
           manifest=Path('app/src/main/AndroidManifest.xml').read_text()
+          assert 'android:label="LoveRoll"' in manifest
           assert '@drawable/ic_desadeux' in manifest
           assert Path('app/src/main/res/drawable-nodpi/ic_desadeux.webp').is_file()
           assert 'tab="library";draw();' in src
@@ -88,15 +92,16 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/Des-a-Deux-v0.7.0.apk "$RUNNER_TEMP/aligned.apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.7.0.apk
-          sha256sum dist/Des-a-Deux-v0.7.0.apk
+            --out dist/LoveRoll-v0.8.0.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.8.0.apk
+          sha256sum dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Des-a-Deux-v0.7.0
-          path: dist/Des-a-Deux-v0.7.0.apk
+          name: LoveRoll-v0.8.0
+          path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
         env:
@@ -104,9 +109,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/Des-a-Deux-v0.7.0.apk --clobber
+            gh release upload "$TAG" dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk --clobber
           else
-            gh release create "$TAG" dist/Des-a-Deux-v0.7.0.apk \
-              --target "$GITHUB_SHA" --title "Dés à Deux v0.7.0" \
-              --notes "Journal intime local chiffré AES-256-GCM, calendrier et stats de relations, avis indépendants de fin de soirée, réglages réorganisés, tirage Qui invite et toutes les fenêtres en style sombre."
+            gh release create "$TAG" dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk \
+              --target "$GITHUB_SHA" --title "LoveRoll v0.8.0" \
+              --notes "LoveRoll v0.8.0 : nouveau nom, soirées événements et anniversaires, mêmes clés Android et données préservées."
           fi

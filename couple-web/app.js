@@ -1,3 +1,4 @@
+import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 
@@ -11,7 +12,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
- diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 const kinds={weekly:'Dé hebdomadaire',monthly_activity:'Sortie du mois',
  monthly_host:'Qui invite',monthly_restaurant:'Type de restaurant'};
@@ -55,7 +56,7 @@ async function query(table,options={}){
  if(options.order)q=q.order(options.order,{ascending:options.asc??false});
  const {data,error}=await q;if(error)throw error;return data;
 }
-function frame(body,title='DÉS À DEUX',subtitle='Un jeu intime, juste pour vous deux'){
+function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
  const connected=!!state.coupleId;
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
@@ -83,7 +84,7 @@ function nav(){
  const tabs=[['home','⌂','Accueil'],['session','🎲','Soirée'],['special','✦','Défi spécial'],
  ['advent','🎁','Avent'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner">'+tabs.map(([key,icon,label])=>
- '<button data-action="tab:'+key+'" class="'+(state.tab===key?'active':'')+'"><span>'+icon+
+ '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){document.querySelectorAll('[data-action]').forEach(el=>{
@@ -117,6 +118,7 @@ function render(){
  if(state.tab==='home')renderHome();
  else if(state.tab==='session')renderSession();
  else if(state.tab==='special')renderSpecial();
+ else if(state.tab==='occasions')renderOccasions();
  else if(state.tab==='advent')renderAdvent();
  else if(state.tab==='journal')renderJournal().catch(fail);
  else if(state.tab==='feedback')renderFeedback().catch(fail);
@@ -143,13 +145,17 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
  query('couple_events',{eq:{couple_id:c},order:'happened_at'}),
- query('couple_intimacy',{eq:{couple_id:c}})
+ query('couple_intimacy',{eq:{couple_id:c}}),
+ query('couple_occasion_settings',{eq:{couple_id:c}}),
+ query('couple_occasion_rolls',{eq:{couple_id:c}})
  ]);
+ state.occasionSettings=occasionSettings[0]||null;
+ state.occasionRolls=occasionRolls;
  state.weekly=rolls.find(r=>r.kind==='weekly'&&r.key===week());
  state.monthly={};
  for(const r of rolls.filter(r=>r.key===month()))state.monthly[r.kind]=r;
@@ -173,7 +179,7 @@ function subscribe(){
    try{await reload();notify('♡ Votre partenaire a accepté le match !');}catch(e){fail(e);}
  });
  if(state.members.length<2){state.channel=channel.subscribe();return;}
- for(const table of ['couple_rolls','couple_sessions','couple_challenges',
+ for(const table of ['couple_occasion_rolls','couple_occasion_settings','couple_rolls','couple_sessions','couple_challenges',
   'couple_advent','couple_feedback','couple_intimacy','couple_events'])
   channel=channel.on('postgres_changes',{event:'*',schema:'public',table,
    filter:'couple_id=eq.'+state.coupleId},async payload=>{
@@ -294,8 +300,60 @@ function renderSpecial(){
    }else body+='<p>Choisissez un lieu adapté à votre budget et à votre gardienne.</p>';
   }
  }
- body+='</section><section class="card"><p>Gardienne à prévoir, environ 2 à 6 heures. Réservations et frais restent à organiser entre vous.</p></section>';
+ body+='</section><section class="card"><h3>💘 Fêtes et anniversaires</h3>'+
+ '<p>Saint-Valentin, fête des Mères et des Pères, anniversaires personnels ou de couple : des surprises à deux.</p>'+
+ button('tab:occasions','🎲 Découvrir les événements spéciaux')+'</section>'+
+ '<section class="card"><p>Gardienne à prévoir, environ 2 à 6 heures. Réservations et frais restent à organiser entre vous.</p></section>';
  frame(body,'DÉFI SPÉCIAL','L’un ou l’autre brasse, jamais deux résultats différents');
+}
+
+function renderOccasions(){
+ const current=today(),year=Number(current.slice(0,4)),settings=state.occasionSettings||{};
+ const eligible=dueOccasions(current,settings,state.members),all=[];
+ for(const occ of OCCASIONS){
+  const owners=occ.key==='birthday'?state.members.map(m=>m.user_id):[null];
+  for(const owner of owners){
+   const upcoming=[year,year+1].map(y=>({year:y,date:occasionDate(occ.key,y,settings,owner)}))
+    .filter(x=>x.date);
+   const due=eligible.find(e=>e.key===occ.key&&e.actorId===owner);
+   const next=upcoming.find(e=>e.date>=current)||upcoming.at(-1);
+   all.push({...occ,actorId:owner,date:due?.date||next?.date||null,
+    year:due?.year||next?.year||year,daysLeft:due?.daysLeft??null});
+  }
+ }
+ let body='<section class="card"><h2>Nos événements spéciaux</h2>'+
+  '<p>20 surprises romantiques, coquines et audacieuses. Un D20 officiel puis un D6 pour qui prépare la surprise, une seule fois par occasion.</p>'+
+  '<p>Chaque idée est facultative : vous pouvez en discuter, la modifier ou la refuser.</p></section>';
+ for(const ev of all.sort((a,b)=>(a.daysLeft===null?1:0)-(b.daysLeft===null?1:0))){
+  const k=ev.key+(ev.actorId?':'+ev.actorId:'');
+  const prize=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='surprise');
+  const host=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='host');
+  const displayName=ev.actorId?person(ev.actorId):'';
+  body+='<section class="card"><div class="eyebrow">'+safe(ev.emoji)+' '+safe(ev.title)+
+    (displayName?' · '+safe(displayName):'')+'</div>';
+  body+='<p>'+safe(ev.date||'Date non définie')+
+    (ev.daysLeft!==null?' · '+(ev.daysLeft===0?"Aujourd’hui":ev.daysLeft>0?"Dans "+ev.daysLeft+" jours":"Il y a "+(-ev.daysLeft)+" jours"):'')+'</p>';
+  if(!ev.date)body+='<p>Ajoutez cette date dans Réglages pour activer le tirage.</p>';
+  else if(ev.daysLeft===null)body+='<p>Ouverture 14 jours avant la fête, fermeture 7 jours après. Cela laisse le temps de trouver une gardienne.</p>';
+  else if(!prize)body+=heroDice(null,20,'Dé de fête')+
+    button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 Brasser le D20 de la surprise');
+  else{
+   const idea=specialSurprise(prize.face);
+   body+=heroDice(prize.face,20,'Résultat officiel')+
+     '<h3>'+safe(idea.title)+'</h3><p>'+safe(idea.detail)+'</p>'+
+     '<p class="tag">'+safe(idea.level)+' · Tiré par '+safe(person(prize.actor))+'</p>';
+   if(!host)body+=button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':host',
+      '🎲 Brasser le D6 : qui organise ?');
+   else{
+    const giver=state.members[host.face<=3?0:1];
+    body+='<div class="result">♡ '+safe(giver?.name||'Partenaire')+' organise</div>'+
+     '<p>D6 face '+host.face+' · Ensemble, vous fixez vos limites, le budget et la gardienne.</p>';
+   }
+  }
+  body+='</section>';
+ }
+ body+='<section class="card">'+button('tab:settings','⚙ Définir nos dates')+'</section>';
+ frame(body,'FÊTES ET ANNIVERSAIRES','Un moment LoveRoll pensé pour chaque grande occasion');
 }
 function renderAdvent(){
  const now=today();const [year,mo,day]=now.split('-').map(Number),unlocked=mo===12?Math.min(day,25):0;
@@ -463,7 +521,14 @@ function renderSettings(){
   '<section class="card"><h3>Invitations et partenaire</h3><p>Votre match : '+
   safe(state.members.map(m=>m.name).join(' ♡ '))+
   '</p><p>Une invitation ne fonctionne que pour le courriel de connexion de votre partenaire.</p></section>'+
-  '<section class="card"><h3>Connexion iPhone</h3><p>Sur iPhone, ouvrez le site sécurisé dans Safari puis ajoutez-le à l’écran d’accueil. Les notifications de tirage apparaissent tant que l’application est ouverte.</p></section>',
+  '<section class="card"><h3>🎂 Dates importantes</h3>'+
+ '<p>La Saint-Valentin et les fêtes parentales sont automatiques. Les anniversaires sont configurés sans stocker l’année de naissance.</p>'+
+ '<label>Anniversaire de couple (MM-JJ)<input id="loveroll-anniversary" inputmode="numeric" maxlength="5" placeholder="MM-JJ" value="'+safe(state.occasionSettings?.anniversary_md||'')+'"></label>'+
+ button('save-occasion-date:anniversary','Enregistrer notre anniversaire','class="subtle"')+
+ '<label>Mon anniversaire (MM-JJ)<input id="loveroll-birthday" inputmode="numeric" maxlength="5" placeholder="MM-JJ" value="'+safe(state.occasionSettings?.birthday_by_user?.[state.user.id]||'')+'"></label>'+
+ button('save-occasion-date:birthday','Enregistrer mon anniversaire','class="subtle"')+
+ '</section>'+
+ '<section class="card"><h3>Connexion iPhone</h3><p>Sur iPhone, ouvrez le site sécurisé dans Safari puis ajoutez-le à l’écran d’accueil. Les notifications de tirage apparaissent tant que l’application est ouverte.</p></section>',
  'RÉGLAGES','Profil, confidentialité et connexion');
 }
 async function refreshAndShow(){await refreshShared();render();}
@@ -522,9 +587,9 @@ async function handle(action,element){
   const token=randomInviteToken(),digest=await hashToken(token);
   await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
   const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
-  const text='Je t’invite à rejoindre notre espace Dés à Deux ♡\n\n'+url.toString()+
+  const text='Je t’invite à rejoindre notre espace LoveRoll ♡\n\n'+url.toString()+
    '\n\nConnecte-toi avec le même courriel que celui qui reçoit cette invitation.';
-  const mail='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Invitation Dés à Deux')+
+  const mail='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Invitation LoveRoll')+
    '&body='+encodeURIComponent(text);
   window.location.href=mail;
   notify('Votre courriel est prêt : confirmez son envoi dans votre application de messagerie.');
@@ -537,6 +602,18 @@ async function handle(action,element){
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
  if(verb==='tab'){state.tab=parts[0];state.confirmCancel=false;render();return;}
+ if(verb==='save-occasion-date'){
+  const k=parts[0],d=id(k==='anniversary'?'loveroll-anniversary':'loveroll-birthday')?.value.trim();
+  if(d&&!/^\\d{2}-\\d{2}$/.test(d))throw Error('Saisissez MM-JJ, par exemple 02-14.');
+  await rpc('set_love_occasion_date',{p_couple:state.coupleId,p_kind:k,p_month_day:d||null});
+  await refreshAndShow();notify('Date enregistrée.');return;
+ }
+ if(verb==='occasion-roll'){
+  const [kind,owner,rollType]=parts;
+  const x=await animateRoll(()=>rpc('roll_love_occasion_once',{p_couple:state.coupleId,
+   p_kind:kind,p_owner:owner==='-'?null:owner,p_roll:rollType}));
+  notify('Résultat '+x.face+' · '+person(x.actor));return;
+ }
  if(verb==='roll'){
   const kind=parts[0];
   const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}));

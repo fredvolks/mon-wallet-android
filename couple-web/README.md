@@ -1,4 +1,4 @@
-# Dés à Deux — Mode couple connecté (Android + iPhone)
+# LoveRoll — Mode couple connecté (Android + iPhone)
 
 ## État exact
 Le code de l'application web multiappareil et son schéma Supabase sont préparés dans `couple-web/`.
@@ -13,7 +13,7 @@ Ce module connecté doit être provisionné dans un projet Supabase **dédié**,
 - Chaque partenaire se connecte avec son propre compte. La personne invitée doit utiliser **le courriel exact** auquel l'invitation était destinée, y compris si Apple masque son courriel via relais.
 
 ## Installer une fois le projet dédié provisionné
-1. ✅ Projet Supabase dédié `Dés à Deux` créé dans l'organisation `Fred forge` en région `ca-central-1` ; coût annoncé 0 $/mois.
+1. ✅ Projet Supabase dédié `LoveRoll` créé dans l'organisation `Fred forge` en région `ca-central-1` ; coût annoncé 0 $/mois.
 2. ✅ Schéma `schema.sql` installé par migration dans le projet dédié. ✅ Contrôle SQL : 12/12 tables sous RLS, aucun accès anonyme au journal, aucun `INSERT` direct des tirages avec le rôle authenticated. ⏳ Tester avec trois vrais comptes reste à faire.
 3. Configurer Google et Apple dans Auth > Providers et autoriser le domaine HTTPS du site et son callback.
 4. ✅ `config.js` contient uniquement l'URL publique du nouveau projet et sa clé **publishable**. Aucun secret admin/service-role n'est conservé dans le dépôt. L'URL HTTPS de GitHub Pages est prévue mais pas encore vérifiée.
@@ -55,7 +55,7 @@ L'invitation est préparée dans l'application de courriel (envoi manuel) jusqu'
 L'APK natif v0.7.0 n'est pas encore relié au mode web. La PWA est prévue pour les deux appareils une fois hébergée, avec migration volontaire des anciennes données.
 
 ## Configuration actuelle (2026-10-13)
-- Nouveau projet : [Dés à Deux — Supabase](https://supabase.com/dashboard/project/ejsrqfpkgwraorrznjpm), **séparé** de Mon Wallet.
+- Nouveau projet : [LoveRoll — Supabase](https://supabase.com/dashboard/project/ejsrqfpkgwraorrznjpm), **séparé** de Mon Wallet.
 - Région : Canada central. Coût de création annoncé : **0 $ par mois**. Les limites du plan gratuit demeurent applicables.
 - Le serveur de données et les fonctions de tirage sont installés. Les avertissements de l'analyseur Supabase concernant les fonctions `SECURITY DEFINER` exposées aux utilisateurs authentifiés sont intentionnels pour les tirages ; chaque RPC doit obligatoirement vérifier l'appartenance au couple et l'auteur, et être testé avec un 3e compte non membre. Voir [l'avertissement](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
 - Authentification courriel : l'UI contient maintenant `signInWithOtp` (lien courriel) comme option de secours ; dépend du quota de courriels Supabase et des URL de redirection.

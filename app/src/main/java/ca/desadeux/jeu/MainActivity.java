@@ -43,6 +43,7 @@ public final class MainActivity extends Activity {
  PrivateJournal journal;
  LocalDate journalMonth=LocalDate.now(ZoneId.of("America/Montreal")).withDayOfMonth(1);
  LocalDate selectedJournalDate=LocalDate.now(ZoneId.of("America/Montreal"));
+ int selectedLoveOccasion=0;
  String feedbackPerson="Fred";
  int feedbackRating=0,orgasmChoice=-1,likedChoice=-1,nextChoice=-1,goodChoice=-1,weakChoice=-1;
  LinearLayout root,page,nav;
@@ -264,6 +265,8 @@ public final class MainActivity extends Activity {
    case "library":drawLibrary();break;
    case "advent":drawAdvent();break;
    case "special":drawSpecial();break;
+   case "occasions":drawOccasions();break;
+   case "occasion_detail":drawOccasionDetail();break;
    case "settings":drawSettings();break;
    case "journal":drawJournal();break;
    case "intimacy":drawIntimacyEditor();break;
@@ -279,7 +282,7 @@ public final class MainActivity extends Activity {
  void drawNav(){
   for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"special","✦","Défi spécial"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}}){
    LinearLayout col=vertical();col.setGravity(Gravity.CENTER);
-   boolean active=tab.equals(item[0])||(item[0].equals("settings")&&java.util.Arrays.asList("library","journal","intimacy","feedback","feedback_answer","privacy","rules","updater").contains(tab));
+   boolean active=tab.equals(item[0])||(item[0].equals("special")&&(tab.equals("occasions")||tab.equals("occasion_detail")))||(item[0].equals("settings")&&java.util.Arrays.asList("library","journal","intimacy","feedback","feedback_answer","privacy","rules","updater").contains(tab));
    TextView icon=text(item[1],item[0].equals("advent")?22:24,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
    TextView name=text(item[2],item[0].equals("special")?10:11,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);
@@ -287,7 +290,7 @@ public final class MainActivity extends Activity {
   }
  }
  void drawHome(){
-  heading("♡  DÉS À DEUX","Un jeu intime, juste pour vous deux");
+  heading("♡  LOVEROLL","Un jeu intime, juste pour vous deux");
   addText(page,"LE RITUEL DE LA SEMAINE",12,PINK,true,6);
   int goal=prefs.getInt("goal",-1),done=prefs.getInt("done",0);
   showDice(6,goal>0?goal:1);
@@ -699,6 +702,9 @@ public final class MainActivity extends Activity {
    addText(page,"🔒 L'activité, la personne qui invite et le restaurant restent enregistrés jusqu'au mois prochain.",12,MUTED,false,8);
   }
   addButton(page,"CONSULTER LES 20 IDÉES",false,()->showSpecialCatalogue());
+  LinearLayout eventsCard=card("💘 Nos fêtes et anniversaires",
+   "Saint-Valentin, anniversaire de couple, fête des Mères, fête des Pères et anniversaires personnels.");
+  addButton(eventsCard,"🎲  ÉVÉNEMENTS SPÉCIAUX →",true,()->{tab="occasions";draw();});
   StringBuilder history=new StringBuilder();
   for(int n=1;n<=12;n++){
    LocalDate previous=now.minusMonths(n);
@@ -714,6 +720,74 @@ public final class MainActivity extends Activity {
    LinearLayout past=card("♡  Historique des sorties",null);
    addText(past,history.toString().trim(),12,PALE,false,0);
   }
+ }
+
+ String occasionMd(int index){
+  return prefs.getString("loveroll_occasion_md_"+LoveOccasions.dateKey(index),"");
+ }
+ String occasionPref(int index,int year){return "loveroll_occasion_"+LoveOccasions.dateKey(index)+"_"+year+"_";}
+ void drawOccasions(){
+  LocalDate now=LocalDate.now(SpecialDateData.ZONE);
+  heading("💘  Événements spéciaux","Des surprises pour vos grandes occasions");
+  addText(page,"Un D20 et un D6 par événement. Chaque surprise est facultative, vous fixez ensemble vos limites.",13,PALE,false,7);
+  for(int i=0;i<LoveOccasions.KEYS.length;i++){
+   final int idx=i;String md=occasionMd(i);
+   LocalDate next=LoveOccasions.date(i,now.getYear(),md);
+   int activeYear=LoveOccasions.activeYear(i,now,md);
+   if(next!=null&&next.isBefore(now)&&activeYear<0)next=LoveOccasions.date(i,now.getYear()+1,md);
+   LinearLayout c=card("♡  "+LoveOccasions.title(i),next==null?"Date à préciser dans Réglages":
+    "Prochaine fête : "+next+" · Tirage de 14 jours avant à 7 jours après.");
+   if(activeYear>=0){
+    addText(c,"✦ Le tirage est ouvert !",13,PINK,true,4);
+    addButton(c,"OUVRIR CETTE SURPRISE  →",true,()->{selectedLoveOccasion=idx;tab="occasion_detail";draw();});
+   }else if(next!=null)addText(c,"🔒 À découvrir bientôt",12,MUTED,false,2);
+   else addButton(c,"DÉFINIR LA DATE",false,()->{tab="settings";draw();});
+  }
+  addButton(page,"←  RETOUR AU DÉFI SPÉCIAL",false,()->{tab="special";draw();});
+ }
+ void drawOccasionDetail(){
+  LocalDate now=LocalDate.now(SpecialDateData.ZONE);
+  int i=selectedLoveOccasion,yr=LoveOccasions.activeYear(i,now,occasionMd(i));
+  if(yr<0){tab="occasions";draw();return;}
+  String prefix=occasionPref(i,yr);
+  int face=prefs.getInt(prefix+"face",0),host=prefs.getInt(prefix+"host",0);
+  heading("💘  "+LoveOccasions.title(i),"Une surprise à deux, comme vous l'aimez");
+  if(face==0)showDice(20,20);
+  else if(host==0)showDice(6,1);
+  else showDice(20,face);
+  LinearLayout card=card("✦  Votre surprise officielle",null);
+  if(face==0){
+   addText(card,"Un D20 choisit parmi 20 propositions sensuelles et romantiques.",13,PALE,false,7);
+   addButton(card,"🎲  BRASSER LE D20",true,()->{
+    if(LoveOccasions.activeYear(i,LocalDate.now(SpecialDateData.ZONE),occasionMd(i))!=yr){draw();return;}
+    if(prefs.getInt(prefix+"face",0)>0)return;
+    int picked=GameLogic.d20();
+    if(!prefs.edit().putInt(prefix+"face",picked).commit()){Toast.makeText(this,"Erreur d'enregistrement",Toast.LENGTH_LONG).show();return;}
+    roll(picked,()->{draw();showResultDialog("♡",LoveOccasions.SURPRISES[picked-1][0],
+      "Un D6 décidera ensuite qui prépare la surprise. Chacun peut adapter ou refuser une proposition.","CONTINUER");});
+   });
+  }else{
+   addText(card,LoveOccasions.SURPRISES[face-1][0],19,PINK,true,7);
+   addText(card,LoveOccasions.SURPRISES[face-1][1],14,PALE,false,8);
+   addText(card,"D20 FACE "+face,12,MUTED,true,5);
+   if(host==0){
+    addText(card,"🎲 D6 : 1 à 3 = premier partenaire · 4 à 6 = deuxième partenaire.",13,PALE,false,6);
+    addButton(card,"🎲  QUI ORGANISE CETTE SURPRISE ?",true,()->{
+     if(prefs.getInt(prefix+"host",0)>0)return;
+     int d6=LoveOccasions.d6();
+     if(!prefs.edit().putInt(prefix+"host",d6).commit()){Toast.makeText(this,"Erreur d'enregistrement",Toast.LENGTH_LONG).show();return;}
+     roll(d6,()->{draw();showResultDialog("♥","Surprise à organiser",
+       "Résultat D6 : "+d6+" · "+(d6<=3?"Premier partenaire":"Deuxième partenaire")+
+       " organise la surprise.","C'EST NOTÉ");});
+    });
+   }else{
+    addText(card,"♥  "+(host<=3?"Premier partenaire":"Deuxième partenaire")+
+      " organise · D6 FACE "+host,16,PINK,true,6);
+    addText(card,"Cette version Android conserve le tirage localement. Le nom et la synchronisation des comptes sont disponibles dans le futur espace web connecté.",12,MUTED,false,6);
+   }
+  }
+  addText(page,"Un tirage par occasion et par année. Rien n'est une obligation, et vous êtes libres de dire non.",12,MUTED,false,8);
+  addButton(page,"←  ÉVÉNEMENTS",false,()->{tab="occasions";draw();});
  }
  void drawLibrary(){
   heading("♡  Les défis","Réglages  ›  Bibliothèque des 60 défis");
@@ -1083,6 +1157,26 @@ public final class MainActivity extends Activity {
   addButton(journalCard,"OUVRIR MON CALENDRIER ET MES STATS   →",true,()->openJournal());
   settingTile("★  Nos avis après les soirées","3 questions simples, une réponse de Fred et une d'Émilie.",
    "REMPLIR LES QUESTIONNAIRES",()->{tab="feedback";draw();});
+  section("💘  Dates à célébrer");
+  LinearLayout celebration=card("Anniversaires et fêtes","Saint-Valentin et fêtes des parents sont automatiques. Pour les autres, entrez le mois et le jour (MM-JJ).");
+  for(int i:new int[]{1,4,5}){
+   final int idx=i;
+   addText(celebration,LoveOccasions.title(i),13,PALE,true,4);
+   EditText date=new EditText(this);date.setSingleLine(true);date.setTextColor(WHITE);
+   date.setHintTextColor(MUTED);date.setTextSize(15);
+   date.setHint("MM-JJ");date.setText(occasionMd(i));
+   date.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+   celebration.addView(date,new LinearLayout.LayoutParams(-1,dp(48)));
+   addButton(celebration,"ENREGISTRER CETTE DATE",false,()->{
+    String mmdd=date.getText().toString().trim();
+    if(!mmdd.isEmpty()&&LoveOccasions.date(idx,2024,mmdd)==null){
+     Toast.makeText(this,"Utilisez une date valide MM-JJ",Toast.LENGTH_SHORT).show();return;
+    }
+    prefs.edit().putString("loveroll_occasion_md_"+LoveOccasions.dateKey(idx),mmdd).apply();
+    Toast.makeText(this,"Date enregistrée",Toast.LENGTH_SHORT).show();
+   });
+  }
+  addButton(celebration,"VOIR LES ÉVÉNEMENTS SPÉCIAUX",true,()->{tab="occasions";draw();});
   section("🎲  Le jeu");
   settingTile("♡  Bibliothèque des 60 défis","Sensuel · Coquin · Sexuel, consignes et exemples.",
    "CONSULTER LES DÉFIS",()->{tab="library";draw();});
@@ -1093,7 +1187,7 @@ public final class MainActivity extends Activity {
    "GÉRER LES MISES À JOUR",()->{tab="updater";draw();});
   settingTile("🔒  Vie privée et données","Journal chiffré localement, suppression et futur accès iPhone.",
    "CONFIDENTIALITÉ",()->{tab="privacy";draw();});
-  addText(page,"Dés à Deux  ·  v"+BuildConfig.VERSION_NAME,12,MUTED,false,5);
+  addText(page,"LoveRoll  ·  v"+BuildConfig.VERSION_NAME,12,MUTED,false,5);
  }
  void drawRules(){
   heading("🎲  Règles du jeu","Comment fonctionnent nos tirages");
@@ -1116,7 +1210,7 @@ public final class MainActivity extends Activity {
   addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->settingsBack());
  }
  void drawUpdater(){
-  heading("↻  Mises à jour","Gardez Dés à Deux à jour");
+  heading("↻  Mises à jour","Gardez LoveRoll à jour");
   LinearLayout c=card("✦  Recherche automatique","Une vérification est effectuée au lancement.");
   CheckBox auto=new CheckBox(this);auto.setText("Rechercher les nouvelles versions");
   auto.setTextColor(PALE);auto.setButtonTintList(ColorStateList.valueOf(PINK));
@@ -1160,6 +1254,8 @@ public final class MainActivity extends Activity {
  @Override public void onBackPressed(){
   if(tab.equals("intimacy")){tab="journal";draw();}
   else if(tab.equals("feedback_answer")){tab="feedback";draw();}
+  else if(tab.equals("occasion_detail")){tab="occasions";draw();}
+  else if(tab.equals("occasions")){tab="special";draw();}
   else if(tab.equals("library")||tab.equals("journal")||tab.equals("feedback")
    ||tab.equals("privacy")||tab.equals("rules")||tab.equals("updater")){
    tab="settings";draw();

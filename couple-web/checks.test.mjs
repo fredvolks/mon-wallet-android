@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
+import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
 test('User names originate from the authenticated profile',()=>{
@@ -109,4 +110,47 @@ test('Email magic link fallback works in addition to Google and Apple login opti
  assert.match(app,/client\.auth\.signInWithOtp/);
  assert.match(app,/emailRedirectTo:redirectTo/);
  assert.match(app,/if\(verb==='email-login'\)/);
+});
+
+test('LoveRoll special events have twenty separate fully-worded surprises',()=>{
+ assert.equal(SPECIAL_SURPRISES.length,20);
+ assert.equal(new Set(SPECIAL_SURPRISES.map(x=>x.title)).size,20);
+ assert.ok(SPECIAL_SURPRISES.every(x=>x.title.length>6&&x.detail.length>36));
+ assert.equal(OCCASIONS.length,5);
+ for(let i=1;i<=20;i++)assert.equal(specialSurprise(i),SPECIAL_SURPRISES[i-1]);
+ assert.throws(()=>specialSurprise(0));
+ assert.throws(()=>specialSurprise(21));
+});
+test('2026 Canadian Mothers and Fathers days are calculated correctly',()=>{
+ assert.equal(nthSunday(2026,5,2),10);
+ assert.equal(nthSunday(2026,6,3),21);
+ assert.equal(occasionDate('mothers_day',2026,{},null),'2026-05-10');
+ assert.equal(occasionDate('fathers_day',2026,{},null),'2026-06-21');
+ assert.equal(occasionDate('valentine',2026,{},null),'2026-02-14');
+});
+test('Occasion setting dates originate from the couple rather than hardcoded names',()=>{
+ const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222';
+ const settings={anniversary_md:'10-20',birthday_by_user:{[a]:'02-29',[b]:'06-07'}};
+ assert.equal(occasionDate('anniversary',2026,settings,null),'2026-10-20');
+ assert.equal(occasionDate('birthday',2026,settings,a),'2026-02-28');
+ assert.equal(occasionDate('birthday',2028,settings,a),'2028-02-29');
+ assert.equal(occasionDate('birthday',2026,settings,b),'2026-06-07');
+ assert.equal(dueOccasions('2026-10-13',settings,[{user_id:a},{user_id:b}]).find(x=>x.key==='anniversary')?.date,'2026-10-20');
+ assert.equal(occasionDate('anniversary',2026,{anniversary_md:null},null),null);
+});
+test('Special events have server enforced unique draw and host sequencing',()=>{
+ const sql=readFileSync(new URL('./special-occasions.sql',import.meta.url),'utf8');
+ assert.match(sql,/primary key\(couple_id,event_year,occasion_key,roll_type\)/);
+ assert.match(sql,/perform 1 from public.couples where id=p_couple for update/);
+ assert.match(sql,/Brassez le D20 de la surprise avant le D6/);
+ assert.match(sql,/couple_private.is_member\(p_couple\)/);
+ assert.match(sql,/alter table public.couple_occasion_rolls enable row level security/);
+ assert.match(app,/roll_love_occasion_once/);
+ assert.match(app,/function renderOccasions\(\)/);
+ assert.match(app,/set_love_occasion_date/);
+});
+test('Brand LoveRoll is applied to PWA',()=>{
+ const manifest=readFileSync(new URL('./manifest.webmanifest',import.meta.url),'utf8');
+ assert.match(manifest,/"name": "LoveRoll"/);
+ assert.match(app,/LoveRoll/);
 });

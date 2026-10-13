@@ -54,9 +54,9 @@ public final class UpdateManager {
      }
     }
     prefs.edit().putString("last_success",today).apply();
-    if(best==null||asset==null){if(!quiet)toast(a,"Aucune version publiée pour Dés à Deux.");return;}
+    if(best==null||asset==null){if(!quiet)toast(a,"Aucune version publiée pour LoveRoll.");return;}
     if(compare(version,BuildConfig.VERSION_NAME)<=0){
-     if(!quiet)toast(a,"Dés à Deux est à jour (v"+BuildConfig.VERSION_NAME+").");return;
+     if(!quiet)toast(a,"LoveRoll est à jour (v"+BuildConfig.VERSION_NAME+").");return;
     }
     String url=asset.getString("browser_download_url");
     String expected=asset.optString("digest","").replace("sha256:","");
@@ -65,7 +65,7 @@ public final class UpdateManager {
     String finalVersion=version;
     a.runOnUiThread(()->PremiumDialog.choice(a,
       "♥ Nouvelle version "+finalVersion,
-      "Une nouvelle version de Dés à Deux est disponible. Voulez-vous la télécharger maintenant ?",
+      "Une nouvelle version de LoveRoll est disponible. Voulez-vous la télécharger maintenant ?",
       "TÉLÉCHARGER",()->download(a,url,expected),"PLUS TARD",null));
    }catch(Exception e){if(!quiet)toast(a,"Vérification impossible : "+e.getMessage());}
    finally{working=false;}
