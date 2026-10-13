@@ -495,10 +495,10 @@ function renderAdvent(){
 function isoDate(d){return new Date(d).toISOString().slice(0,10);}
 const weekStart=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()-(x.getUTCDay()+6)%7);return isoDate(x);};
 function formattedStars(r){return r?'★ '.repeat(r)+'☆ '.repeat(5-r):'Non noté';}
-async function createCipherKey(passphrase){
+async function createCipherKey(passphrase,salt=state.couple?.journal_salt){
  if(!passphrase||passphrase.trim().length<12)throw Error('Utilisez une phrase secrète de 12 caractères ou plus.');
  const base=await crypto.subtle.importKey('raw',enc.encode(passphrase),'PBKDF2',false,['deriveKey']);
- return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode(state.couple.journal_salt),
+ return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode(salt),
   iterations:240000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 }
 function encode64(buffer){return btoa(String.fromCharCode(...new Uint8Array(buffer)));}
@@ -510,16 +510,53 @@ async function encryptJson(object){
   enc.encode(JSON.stringify(object)));
  return JSON.stringify({v:1,iv:encode64(iv),payload:encode64(encrypted)});
 }
-async function decryptJson(ciphertext){
- if(!state.unlockKey)throw Error('Journal verrouillé');
+async function decryptJson(ciphertext,key=state.unlockKey){
+ if(!key)throw Error('Journal verrouillé');
  const sealed=JSON.parse(ciphertext);
  const clear=await crypto.subtle.decrypt({name:'AES-GCM',iv:decode64(sealed.iv)},
-  state.unlockKey,decode64(sealed.payload));
+  key,decode64(sealed.payload));
  return JSON.parse(dec.decode(clear));
 }
 function ratingChoice(idName){return '<div class="chipline">'+[1,2,3,4,5].map(v=>
  '<label class="pill"><input type="radio" name="'+idName+'" value="'+v+'" style="width:auto;display:inline;min-height:0;margin:0" '+
  ''+'> '+v+'★</label>').join('')+'</div>';}
+async function renderPersonalJournal(){
+ const items=state.personalJournal||[],mo=state.personalCalendarMonth||month(),day=state.personalSelectedDate||today();
+ const [y,m]=mo.split('-').map(Number),length=new Date(y,m,0).getDate();
+ const offset=(new Date(y,m-1,1).getDay()+6)%7;
+ let calendar='<div class="calendar">'+Array.from({length:offset},()=>'<span></span>').join('');
+ for(let n=1;n<=length;n++){
+  const d=mo+'-'+String(n).padStart(2,'0'),count=items.filter(x=>x.happened_on===d).length;
+  calendar+='<button class="'+(count?'marked':'')+'" data-action="personal-date:'+d+'">'+
+   (count?'♥ ':'')+n+'</button>';
+ }
+ calendar+='</div>';
+ let body='<section class="card"><h2>♥ Mon calendrier privé</h2>'+
+ '<p>'+items.length+' moment(s) enregistré(s) dans votre historique personnel. Le changement de partenaire n’efface aucune entrée.</p>'+
+ '<div class="actions">'+button('personal-month-prev','←','class="subtle"')+
+ '<button class="subtle" disabled>'+safe(mo)+'</button>'+
+ button('personal-month-next','→','class="subtle"')+'</div>'+calendar+'</section>';
+ if(!state.personalPass){
+  body+='<section class="card"><h3>🔒 Déverrouiller mes notes</h3>'+
+   '<p>Les anciennes notes utilisent leur phrase secrète d’origine, même si vous changez de partenaire. Les dates restent visibles.</p>'+
+   '<input id="personal-pass" type="password" minlength="12" autocomplete="off" placeholder="Votre phrase secrète">'+
+   button('unlock-personal','Déverrouiller mes notes')+'</section>';
+ }else{
+  body+='<section class="card"><h3>Mes notes</h3>'+
+   button('lock-personal','Verrouiller','class="subtle"');
+  for(const item of items.filter(x=>x.happened_on===day)){
+   let clear=null;
+   try{clear=await decryptJson(item.ciphertext,await createCipherKey(state.personalPass,item.journal_salt));}catch{}
+   body+='<div class="muted-line"><strong>'+safe(item.happened_on)+'</strong>'+
+    (clear?'<p>Orgasme : '+safe(clear.orgasm)+' · Point fort : '+safe(clear.good)+
+    ' · À améliorer : '+safe(clear.weak)+'</p>'+
+    (clear.note?'<p>'+safe(clear.note)+'</p>':''):'<p>Impossible de déchiffrer cette entrée avec cette phrase secrète.</p>')+'</div>';
+  }
+  body+='</section>';
+ }
+ body+='<section class="card">'+button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
+ frame(body,'MON CALENDRIER','Personnel et invisible pour un nouveau partenaire');
+}
 async function renderJournal(){
  const now=today(),yr=now.slice(0,4),currentMo=month(),mo=state.calendarMonth||currentMo,ws=week();
  const dates=state.journal.map(x=>x.happened_on);
@@ -680,6 +717,45 @@ function randomInviteToken(){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='skip-couple'){
+  if(sessionStorage.getItem('pendingInvite'))throw Error('Traitez ou fermez d’abord votre invitation en attente.');
+  localStorage.setItem('loveroll-skip-'+state.user.id,'1');state.tab='home';render();return;
+ }
+ if(verb==='start-couple'){
+  localStorage.removeItem('loveroll-skip-'+state.user.id);state.tab='home';render();return;
+ }
+ if(verb==='end-couple'){
+  if(!state.coupleId)return;
+  if(!confirm('Retirer le partenaire et fermer cet espace partagé pour LES DEUX personnes ? Vos propres notes restent dans votre calendrier privé. Vous ne pourrez plus lire les anciennes données communes.'))return;
+  await rpc('end_love_match',{p_couple:state.coupleId});
+  localStorage.setItem('loveroll-skip-'+state.user.id,'1');
+  state.unlockKey=null;state.personalPass=null;
+  await reload();notify('Espace partagé fermé. Votre calendrier privé est conservé.');return;
+ }
+ if(verb==='save-wellbeing'){
+  const relationship=id('wellbeing-relationship')?.value,intimacy=id('wellbeing-intimacy')?.value;
+  if(!RELATIONSHIP_OPTIONS.some(([v])=>v===relationship)||!INTIMACY_OPTIONS.some(([v])=>v===intimacy))
+   throw Error('Répondez aux deux questions ou choisissez « Je préfère ne pas répondre ».');
+  await rpc('save_my_wellbeing',{p_relationship:relationship,p_intimacy:intimacy});
+  await reload();notify('Réponses enregistrées en privé.');return;
+ }
+ if(verb==='unlock-personal'){
+  const pass=id('personal-pass')?.value||'';
+  if(pass.trim().length<12)throw Error('La phrase secrète doit faire au moins 12 caractères.');
+  const first=state.personalJournal[0];
+  if(first){
+   const key=await createCipherKey(pass,first.journal_salt);
+   try{await decryptJson(first.ciphertext,key);}catch{throw Error('Phrase secrète incorrecte pour les premières entrées.');}
+  }
+  state.personalPass=pass;render();return;
+ }
+ if(verb==='lock-personal'){state.personalPass=null;render();return;}
+ if(verb==='personal-date'){state.personalSelectedDate=parts[0];render();return;}
+ if(verb==='personal-month-prev'||verb==='personal-month-next'){
+  const d=new Date((state.personalCalendarMonth||month())+'-01T12:00:00Z');
+  d.setUTCMonth(d.getUTCMonth()+(verb==='personal-month-next'?1:-1));
+  state.personalCalendarMonth=d.toISOString().slice(0,7);render();return;
+ }
  if(verb==='show-auth'){state.showAuth=true;render();return;}
  if(verb==='show-landing'){state.showAuth=false;render();return;}
  if(verb==='google'||verb==='apple'){
@@ -710,7 +786,11 @@ async function handle(action,element){
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
   const birthday=parseMonthDay('signup-birth');
   if(!id('age-confirm')?.checked)throw Error('LoveRoll est réservé aux personnes de 18 ans et plus.');
+  const relationship=id('wellbeing-relationship')?.value,intimacy=id('wellbeing-intimacy')?.value;
+  if(!RELATIONSHIP_OPTIONS.some(([v])=>v===relationship)||!INTIMACY_OPTIONS.some(([v])=>v===intimacy))
+   throw Error('Répondez aux deux questions ou choisissez « Je préfère ne pas répondre ».');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
+  await rpc('save_my_wellbeing',{p_relationship:relationship,p_intimacy:intimacy});
   await reload();return;
  }
  if(verb==='profile'){
@@ -745,7 +825,12 @@ async function handle(action,element){
   await rpc('accept_love_match',{p_token_hash:await hashToken(token)});
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
- if(verb==='tab'){state.tab=parts[0];state.confirmCancel=false;render();return;}
+ if(verb==='tab'){
+  if(!state.coupleId&&!['home','settings','personal-journal'].includes(parts[0])){
+   state.tab='home';notify('Ajoutez un partenaire pour utiliser les jeux partagés.');
+  }else state.tab=parts[0];
+  state.confirmCancel=false;render();return;
+ }
  if(verb==='save-occasion-date'){
   const k=parts[0],d=id(k==='anniversary'?'loveroll-anniversary':'loveroll-birthday')?.value.trim();
   if(d&&!/^\\d{2}-\\d{2}$/.test(d))throw Error('Saisissez MM-JJ, par exemple 02-14.');
@@ -856,10 +941,8 @@ async function handle(action,element){
   const payload={orgasm:id('event-orgasm').value,good:id('event-good').value,
     weak:id('event-weak').value,note:id('event-note').value.slice(0,1200)};
   const ciphertext=await encryptJson(payload);
-  const {error}=await client.from('couple_intimacy').insert({
-   couple_id:state.coupleId,author_id:state.user.id,happened_on:date,ciphertext});
-  if(error)throw error;
-  state.selectedDate=date;await refreshAndShow();notify('Moment ajouté au calendrier commun');return;
+  await rpc('add_my_love_event',{p_couple:state.coupleId,p_happened_on:date,p_ciphertext:ciphertext});
+  state.selectedDate=date;await reload();notify('Moment ajouté au calendrier partagé et à votre calendrier privé');return;
  }
  if(verb==='delete-event'){
   if(!confirm('Supprimer définitivement cette entrée du journal ?'))return;
@@ -906,7 +989,7 @@ async function start(){
  });
 }
 document.addEventListener('visibilitychange',()=>{
- if(!document.hidden&&state.user&&state.coupleId){
+ if(!document.hidden&&state.user){
   reload().catch(fail);
  }
 });
