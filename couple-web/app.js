@@ -1,9 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
-import { dieOn,clearDice } from './dice3d.js';
+
 
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
+let diceCleanup=[],renderToken=0;
 const opts={auth:{flowType:'pkce',autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}};
 const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
@@ -56,15 +57,27 @@ async function query(table,options={}){
 }
 function frame(body,title='DÉS À DEUX',subtitle='Un jeu intime, juste pour vous deux'){
  const connected=!!state.coupleId;
- clearDice();
+ for(const dispose of diceCleanup)dispose();diceCleanup=[];
+ const token=++renderToken;
  root.innerHTML='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+
   '</header>'+body+(connected?nav():'');
  bindActions();
- root.querySelectorAll('canvas[data-dice-sides]').forEach(canvas=>{
-  dieOn(canvas,Number(canvas.dataset.diceSides),Number(canvas.dataset.face)||1,
-    canvas.dataset.spinning==='true');
- });
+ const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
+ if(canvases.length){
+  import('./dice3d.js').then(({dieOn})=>{
+   if(token!==renderToken)return;
+   for(const canvas of canvases){
+    if(!canvas.isConnected)continue;
+    try{
+     const cleanup=dieOn(canvas,Number(canvas.dataset.diceSides),
+       Number(canvas.dataset.face)||1,canvas.dataset.spinning==='true');
+     diceCleanup.push(cleanup);
+     canvas.closest('.die')?.classList.add('ready');
+    }catch(error){console.warn('WebGL non disponible',error);}
+   }
+  }).catch(error=>console.warn('Animation 3D indisponible, résultat textuel maintenu',error));
+ }
 }
 function nav(){
  const tabs=[['home','⌂','Accueil'],['session','🎲','Soirée'],['special','✦','Défi spécial'],
@@ -164,7 +177,7 @@ function subscribe(){
  state.channel=channel.subscribe();
 }
 function heroDice(face,sides,label){
- return '<div class="dice-row"><div class="die"><canvas class="dice-canvas" width="190" height="190"'+
+ return '<div class="dice-row"><div class="die"><strong class="dice-fallback">'+safe(face||'?')+'</strong><canvas class="dice-canvas" width="190" height="190"'+
   ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
   ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
  '<div><div class="eyebrow">D'+sides+' · '+safe(label)+'</div>'+
