@@ -373,40 +373,37 @@ test('Wellbeing selectors use dark custom dialogs, not white Android select popu
  assert.ok(manifest.includes('android:theme="@style/LoveRollConnectedTheme"'));
 });
 
-test('Solo users can explore the full app without joining a couple',()=>{
+test('Solo users can explore all LoveRoll tabs without joining a couple',()=>{
  assert.equal(isSharedCoupleReady(null,[]),false);
  assert.equal(isSharedCoupleReady('demo',[{user_id:'only'}]),false);
  assert.equal(isSharedCoupleReady('demo',[{user_id:'a'},{user_id:'b'}]),true);
- assert.match(SOLO_MESSAGE,/Mode découverte/);
- assert.match(app,/function renderSoloSession\\(\\)/);
- assert.match(app,/function renderSoloSpecial\\(\\)/);
- assert.match(app,/function renderSoloOccasions\\(\\)/);
- assert.match(app,/function renderSoloAdvent\\(\\)/);
- assert.match(app,/function renderPersonalJournal\\(\\)/);
- assert.match(app,/state\\.tab==='session'\\)renderSoloSession\\(\\)/);
- assert.match(app,/state\\.tab==='advent'\\)renderSoloAdvent\\(\\)/);
- assert.match(app,/state\\.tab==='special'\\)renderSoloSpecial\\(\\)/);
- assert.match(app,/state\\.tab==='settings'\\)renderSettings\\(\\)/);
- assert.match(app,/tab:'session'/);
- assert.match(app,/tab:'special'/);
- assert.match(app,/tab:'advent'/);
- assert.match(app,/tab:'personal-journal'/);
- assert.doesNotMatch(app,/Ajoutez un partenaire pour utiliser les jeux partagés/);
+ assert.ok(SOLO_MESSAGE.includes('Mode découverte'));
+ for(const label of ['renderSoloSession()','renderSoloSpecial()',
+  'renderSoloOccasions()','renderSoloAdvent()','renderPersonalJournal()',
+  "state.tab==='session')renderSoloSession()",
+  "state.tab==='advent')renderSoloAdvent()",
+  "state.tab==='special')renderSoloSpecial()",
+  "state.tab==='settings')renderSettings()",
+  "button('tab:session'","button('tab:special'","button('tab:advent'",
+  "button('tab:personal-journal'"]){
+   assert.ok(app.includes(label),'Missing solo UI: '+label);
+ }
+ assert.equal(app.includes('Ajoutez un partenaire pour utiliser les jeux partagés'),false);
 });
-test('Solo dice are functional but can never write shared couple data',()=>{
+test('Solo dice roll locally and shared database actions require two accounts',()=>{
  assert.equal(drawSoloFace(6,()=>0),1);
  assert.equal(drawSoloFace(6,()=>0.999),6);
  assert.equal(drawSoloFace(20,()=>0),1);
  assert.equal(drawSoloFace(20,()=>0.999),20);
  assert.throws(()=>drawSoloFace(8),/non pris en charge/);
  assert.throws(()=>drawSoloFace(6,()=>1),/invalide/);
- assert.match(app,/verb==='solo-roll'/);
- assert.match(app,/verb==='solo-advent'/);
- assert.match(app,/verb==='solo-category'/);
- assert.match(app,/drawSoloFace\\(sizes\\[kind\\]\\)/);
- assert.match(app,/!isSharedCoupleReady\\(state\\.coupleId,state\\.members\\)/);
- assert.match(app,/Cette action nécessite deux comptes associés/);
- assert.match(app,/Les démonstrations solo ne modifient pas les données du couple/);
+ for(const label of ["verb==='solo-roll'","verb==='solo-advent'",
+  "verb==='solo-category'","drawSoloFace(sizes[kind])",
+  "!isSharedCoupleReady(state.coupleId,state.members)",
+  'Cette action nécessite deux comptes associés',
+  'Les démonstrations solo ne modifient pas les données du couple']){
+    assert.ok(app.includes(label),'Missing solo security contract: '+label);
+ }
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
- assert.match(sw,/solo-mode\\.mjs/);
+ assert.ok(sw.includes('solo-mode.mjs'));
 });
