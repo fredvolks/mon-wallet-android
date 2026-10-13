@@ -238,9 +238,15 @@ public final class MainActivity extends Activity {
    }
    gap(c,13);
    addButton(c,"🎲   BRASSER LE DÉ HEBDOMADAIRE",true,()->{
+    if(prefs.getInt("goal",-1)>0)return;
     int n=GameLogic.rollWeek();
+    // Commit BEFORE animation so app termination cannot grant an extra weekly roll.
+    if(!prefs.edit().putInt("goal",n).commit()){
+     Toast.makeText(this,"Impossible d'enregistrer le tirage. Réessayez.",Toast.LENGTH_LONG).show();
+     return;
+    }
     roll(n,()->{
-     prefs.edit().putInt("goal",n).apply();draw();
+     draw();
      new AlertDialog.Builder(this).setTitle("♥  "+n+" soirée(s) cette semaine")
       .setMessage("Votre tirage est enregistré jusqu'à lundi. C'est un jeu, jamais une obligation.")
       .setPositiveButton("C'est parti !",(d,w)->{}).show();
@@ -334,9 +340,11 @@ public final class MainActivity extends Activity {
    if(emilie<0){
     addButton(page,"🎲  ÉMILIE BRASSE : JE REÇOIS…",true,()->{
      int n=GameLogic.d6();
+     // Preserve Émilie's number even if Android interrupts the GPU animation.
+     if(!prefs.edit().putInt("emilie_target",n).putInt("setup_last_face",n)
+       .putString("setup_last_receiver","Émilie").commit())return;
      roll(n,()->{
-      prefs.edit().putInt("emilie_target",n).putInt("setup_last_face",n)
-       .putString("setup_last_receiver","Émilie").apply();draw();
+      draw();
       new AlertDialog.Builder(this).setTitle("♥ Émilie reçoit "+n+" défi(s)")
        .setMessage("Fred donne "+n+" défi(s) à Émilie durant la soirée.")
        .setPositiveButton("Continuer",null).show();
@@ -346,9 +354,10 @@ public final class MainActivity extends Activity {
    if(fred<0){
     addButton(page,"🎲  FRED BRASSE : JE REÇOIS…",true,()->{
      int n=GameLogic.d6();
+     if(!prefs.edit().putInt("fred_target",n).putInt("setup_last_face",n)
+       .putString("setup_last_receiver","Fred").commit())return;
      roll(n,()->{
-      prefs.edit().putInt("fred_target",n).putInt("setup_last_face",n)
-       .putString("setup_last_receiver","Fred").apply();draw();
+      draw();
       new AlertDialog.Builder(this).setTitle("♥ Fred reçoit "+n+" défi(s)")
        .setMessage("Émilie donne "+n+" défi(s) à Fred durant la soirée.")
        .setPositiveButton("Continuer",null).show();
