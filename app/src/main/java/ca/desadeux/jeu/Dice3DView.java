@@ -35,16 +35,40 @@ public class Dice3DView extends View {
   float[] xs,ys; float depth,light; int index; float x,y;
  }
  public Dice3DView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setSides(6);}
- public void setSides(int n){sides=n==20?20:6;makeGeometry();invalidate();}
+ public void setSides(int n){sides=n==20?20:6;makeGeometry();faceToCamera(result);invalidate();}
  public boolean isRolling(){return rolling;}
- public void setResult(int value){result=value;invalidate();}
+ public void setResult(int value){
+  result=Math.max(1,Math.min(sides,value));
+  if(!rolling)faceToCamera(result);
+  invalidate();
+ }
+ /**
+  * Precisely align the normal of the winning physical face towards the viewer.
+  * The winning face does not merely receive a different painted label.
+  */
+ private void faceToCamera(int value){
+  int[] indices=faces[Math.max(0,Math.min(faces.length-1,value-1))];
+  float x=0,y=0,z=0;
+  for(int i:indices){x+=vertices[i][0];y+=vertices[i][1];z+=vertices[i][2];}
+  x/=indices.length;y/=indices.length;z/=indices.length;
+  float rx=(float)Math.atan2(y,z);
+  float yRot=(float)(y*Math.cos(rx)-z*Math.sin(rx));
+  float zRot=(float)(y*Math.sin(rx)+z*Math.cos(rx));
+  float ry=(float)-Math.atan2(x,zRot);
+  ax=rx+0.05f;ay=ry-0.05f;az=0.12f;
+ }
  public void roll(int value,Runnable end){
   if(rolling)return;
   result=value;
   final float x0=ax,y0=ay,z0=az;
-  final float x1=x0+(3.7f+RANDOM.nextFloat()*2f)*(float)Math.PI*2f;
-  final float y1=y0+(4.1f+RANDOM.nextFloat()*2f)*(float)Math.PI*2f;
-  final float z1=z0+(1.1f+RANDOM.nextFloat()*1.6f)*(float)Math.PI*2f;
+  // Compute the real target geometry before the spin.
+  faceToCamera(value);
+  final float landingX=ax,landingY=ay,landingZ=az;
+  ax=x0;ay=y0;az=z0;
+  final float twopi=(float)(2*Math.PI);
+  final float x1=landingX+twopi*4;
+  final float y1=landingY+twopi*5;
+  final float z1=landingZ+twopi*3;
   rolling=true;animator=ValueAnimator.ofFloat(0,1);
   animator.setDuration(2650);
   animator.setInterpolator(new DecelerateInterpolator(1.6f));
@@ -54,6 +78,7 @@ public class Dice3DView extends View {
   });
   animator.addListener(new android.animation.AnimatorListenerAdapter(){
    @Override public void onAnimationEnd(android.animation.Animator animation){
+    ax=landingX;ay=landingY;az=landingZ;
     rolling=false;invalidate();if(end!=null)end.run();
    }
   });
@@ -144,29 +169,60 @@ public class Dice3DView extends View {
    Path path=new Path();path.moveTo(face.xs[0],face.ys[0]);
    for(int i=1;i<face.xs.length;i++)path.lineTo(face.xs[i],face.ys[i]);
    path.close();
-   int c1=Color.rgb((int)(30+face.light*43),(int)(13+face.light*19),(int)(32+face.light*35));
-   int c2=Color.rgb((int)(64+face.light*87),(int)(16+face.light*23),(int)(49+face.light*63));
+   int c1=Color.rgb((int)(22+face.light*29),(int)(14+face.light*17),(int)(29+face.light*29));
+   int c2=Color.rgb((int)(60+face.light*88),(int)(28+face.light*46),(int)(60+face.light*69));
    p.setStyle(Paint.Style.FILL);
    p.setShader(new LinearGradient(face.x,face.y-unit,face.x,face.y+unit,c2,c1,Shader.TileMode.CLAMP));
    canvas.drawPath(path,p);p.setShader(null);
-   p.setColor(0xAAFF7EB9);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(unit*.015f);
+   p.setColor(!rolling&&face.index==result-1?0xFFFFBADB:0xBBEFA0C5);
+   p.setStyle(Paint.Style.STROKE);
+   p.setStrokeWidth(!rolling&&face.index==result-1?unit*.026f:unit*.012f);
    p.setShadowLayer(unit*.04f,0,0,0xBBFF368C);
    canvas.drawPath(path,p);p.clearShadowLayer();
    p.setStyle(Paint.Style.FILL);
    // Only visible/front-facing faces have readable labels.
    if(face.depth<-.1f)continue;
    int label=face.index+1;
-   if(!rolling&&face==front)label=result;
-   float size=unit*(sides==6?.38f:.26f);
-   p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-black",Typeface.BOLD));
-   p.setTextAlign(Paint.Align.CENTER);p.setColor(Color.rgb(255,217,237));
-   p.setShadowLayer(unit*.09f,0,0,NEON);
-   canvas.drawText(String.valueOf(label),face.x,face.y+size*.36f,p);
-   p.clearShadowLayer();
+   if(sides==6){
+    drawPips(canvas,face,label,unit);
+   }else{
+    float size=unit*.27f;
+    p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-black",Typeface.BOLD));
+    p.setTextAlign(Paint.Align.CENTER);p.setColor(Color.rgb(255,231,241));
+    p.setShadowLayer(unit*.065f,0,0,NEON);
+    canvas.drawText(String.valueOf(label),face.x,face.y+size*.36f,p);
+    p.clearShadowLayer();
+   }
   }
   if(rolling){
    p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(unit*.019f);
    p.setColor(0x55FF6BAB);canvas.drawCircle(cx,cy,unit*1.48f,p);p.setStyle(Paint.Style.FILL);
+  }
+ }
+ private void pip(Canvas canvas,Poly face,float u,float v,float radius){
+  // Bilinear interpolation keeps pips glued to each quadrilateral face.
+  float x=(1-u)*(1-v)*face.xs[0]+u*(1-v)*face.xs[1]+u*v*face.xs[2]+(1-u)*v*face.xs[3];
+  float y=(1-u)*(1-v)*face.ys[0]+u*(1-v)*face.ys[1]+u*v*face.ys[2]+(1-u)*v*face.ys[3];
+  p.setStyle(Paint.Style.FILL);
+  p.setColor(0xFFFFEAF3);
+  p.setShadowLayer(radius*.55f,0,0,0xFFFF68A8);
+  canvas.drawCircle(x,y,radius,p);
+  p.clearShadowLayer();
+ }
+ private void drawPips(Canvas canvas,Poly face,int value,float unit){
+  float r=unit*.083f;
+  if(value%2==1)pip(canvas,face,.5f,.5f,r);
+  if(value>=2){
+   pip(canvas,face,.26f,.26f,r);
+   pip(canvas,face,.74f,.74f,r);
+  }
+  if(value>=4){
+   pip(canvas,face,.74f,.26f,r);
+   pip(canvas,face,.26f,.74f,r);
+  }
+  if(value==6){
+   pip(canvas,face,.26f,.50f,r);
+   pip(canvas,face,.74f,.50f,r);
   }
  }
  @Override public boolean onTouchEvent(MotionEvent e){
@@ -175,7 +231,9 @@ public class Dice3DView extends View {
    case MotionEvent.ACTION_MOVE:
     if(!rolling){ay+=(e.getX()-downX)*.008f;ax+=(e.getY()-downY)*.008f;invalidate();}
     downX=e.getX();downY=e.getY();return true;
-   case MotionEvent.ACTION_UP:performClick();return true;
+   case MotionEvent.ACTION_UP:
+    if(!rolling)faceToCamera(result);
+    invalidate();performClick();return true;
   }return super.onTouchEvent(e);
  }
  @Override public boolean performClick(){super.performClick();return true;}

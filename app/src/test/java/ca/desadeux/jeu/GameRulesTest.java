@@ -22,4 +22,47 @@ public class GameRulesTest {
   }
   for(int i=0;i<100;i++){assertTrue(GameLogic.d6()>=1&&GameLogic.d6()<=6);assertTrue(GameLogic.d20()>=1&&GameLogic.d20()<=20);}
  }
+
+ @Test public void everyPersonGetsUniqueCardsEvenWhenTheyPass(){
+  long fredSeen=0L,emilieSeen=0L;
+  for(int i=0;i<60;i++){
+   ChallengePicker.Pick f=ChallengePicker.draw(Category.COQUIN,fredSeen);
+   assertNotNull("Fred draw "+i,f);
+   assertFalse(ChallengePicker.seen(fredSeen,f.category,f.face));
+   fredSeen=ChallengePicker.mark(fredSeen,f.category,f.face);
+   ChallengePicker.Pick e=ChallengePicker.draw(Category.SEXUEL,emilieSeen);
+   assertNotNull("Émilie draw "+i,e);
+   assertFalse(ChallengePicker.seen(emilieSeen,e.category,e.face));
+   emilieSeen=ChallengePicker.mark(emilieSeen,e.category,e.face);
+   assertEquals(59-i,ChallengePicker.remaining(fredSeen));
+   assertEquals(59-i,ChallengePicker.remaining(emilieSeen));
+  }
+  assertNull(ChallengePicker.draw(Category.SENSUEL,fredSeen));
+  assertNull(ChallengePicker.draw(Category.COQUIN,emilieSeen));
+  assertEquals(60,Long.bitCount(fredSeen));
+  assertEquals(60,Long.bitCount(emilieSeen));
+  // Histories are independent: a card seen by one remains available to the other.
+  assertEquals(60,ChallengePicker.remaining(0L));
+ }
+ @Test public void acceptedAndPassedShareSameExcludedHistory(){
+  long mask=0;
+  ChallengePicker.Pick first=ChallengePicker.draw(Category.COQUIN,mask);
+  mask=ChallengePicker.mark(mask,first.category,first.face); // passed
+  ChallengePicker.Pick second=ChallengePicker.draw(Category.COQUIN,mask);
+  assertNotNull(second);
+  assertFalse(first.category==second.category&&first.face==second.face);
+  mask=ChallengePicker.mark(mask,second.category,second.face); // accepted
+  assertEquals(58,ChallengePicker.remaining(mask));
+ }
+ @Test public void categoryOddsRemainWeightedWhenAllAvailable(){
+  int[] counts=new int[3];
+  int runs=60000;
+  for(int i=0;i<runs;i++){
+   ChallengePicker.Pick pick=ChallengePicker.draw(Category.SENSUEL,0L);
+   counts[pick.category.ordinal()]++;
+  }
+  assertEquals(.8,(double)counts[0]/runs,.015);
+  assertEquals(.1,(double)counts[1]/runs,.015);
+  assertEquals(.1,(double)counts[2]/runs,.015);
+ }
 }

@@ -52,7 +52,8 @@ public final class MainActivity extends Activity {
    prefs.edit().putString("week",GameLogic.monday()).putInt("goal",-1).putInt("done",0)
     .putBoolean("active",false).putBoolean("pending",false)
     .putInt("fred_target",-1).putInt("emilie_target",-1)
-    .putInt("fred_completed",0).putInt("emilie_completed",0).apply();
+     .putInt("fred_completed",0).putInt("emilie_completed",0)
+    .putLong("fred_seen",0L).putLong("emilie_seen",0L).apply();
   }
   // One-time v0.2.1 migration: preserve weekly roll but replace the old single D6 session.
   if(prefs.getInt("duo_setup_version",0)!=1){
@@ -60,6 +61,15 @@ public final class MainActivity extends Activity {
     .putBoolean("active",false).putBoolean("pending",false)
     .putInt("fred_target",-1).putInt("emilie_target",-1)
     .putInt("fred_completed",0).putInt("emilie_completed",0).apply();
+  }
+  if(prefs.getBoolean("pending",false)){
+   String previous=prefs.getString("card_player","Émilie");
+   try{
+    Category category=Category.valueOf(prefs.getString("actual","COQUIN"));
+    int face=prefs.getInt("face",1);
+    String key=previous.equals("Fred")?"fred_seen":"emilie_seen";
+    prefs.edit().putLong(key,ChallengePicker.mark(prefs.getLong(key,0L),category,face)).apply();
+   }catch(Exception ignored){}
   }
   player=prefs.getString("player","Émilie");
   if(!player.equals("Fred")&&!player.equals("Émilie")){
@@ -183,6 +193,8 @@ public final class MainActivity extends Activity {
   addText(page,"LE RITUEL DE LA SEMAINE",12,PINK,true,9);
   int goal=prefs.getInt("goal",-1),done=prefs.getInt("done",0);
   showDice(6,goal>0?goal:1);
+  if(goal>0)card("🎯  Résultat officiel : "+goal+" soirée(s)",
+   "Ce nombre est enregistré pour cette semaine.");
   if(goal<0){
    LinearLayout c=card("🎲  Le dé hebdomadaire","Un seul tirage par semaine. Le dé choisit le nombre de soirées.");
    LinearLayout chips=horizontal();c.addView(chips);
@@ -222,9 +234,32 @@ public final class MainActivity extends Activity {
     p.width=Math.max(0,(int)(track.getWidth()*fraction));fill.setLayoutParams(p);});
  }
  void resetEvening(){
-  prefs.edit().putBoolean("active",false).putBoolean("pending",false)
+  prefs.edit().putBoolean("active",false).putBoolean("pending",false).putBoolean("accepted",false)
    .putInt("fred_target",-1).putInt("emilie_target",-1)
-   .putInt("fred_completed",0).putInt("emilie_completed",0).apply();
+   .putInt("fred_completed",0).putInt("emilie_completed",0)
+   .putLong("fred_seen",0L).putLong("emilie_seen",0L).apply();
+ }
+ String seenKey(String who){return who.equals("Fred")?"fred_seen":"emilie_seen";}
+ long seenMask(String who){return prefs.getLong(seenKey(who),0L);}
+ void offerChallenge(String receiver){
+  long history=seenMask(receiver);
+  ChallengePicker.Pick next=ChallengePicker.draw(selected,history);
+  if(next==null){
+   new AlertDialog.Builder(this)
+    .setTitle("60 défis déjà proposés à "+receiver)
+    .setMessage("Aucun défi inédit ne reste pour cette personne ce soir. Vous pouvez terminer ou recommencer la soirée.")
+    .setPositiveButton("Compris",null).show();
+   return;
+  }
+  prefs.edit().putLong(seenKey(receiver),ChallengePicker.mark(history,next.category,next.face))
+   .putBoolean("pending",true).putBoolean("accepted",false)
+   .putString("actual",next.category.name()).putString("card_player",receiver)
+   .putInt("face",next.face).apply();
+  roll(next.face,()->{
+   draw();
+   if(next.category!=selected)
+    Toast.makeText(this,"SURPRISE ! Catégorie "+categoryName(next.category),Toast.LENGTH_LONG).show();
+  });
  }
  int target(String who){return prefs.getInt(who.equals("Fred")?"fred_target":"emilie_target",-1);}
  int completed(String who){return prefs.getInt(who.equals("Fred")?"fred_completed":"emilie_completed",0);}
@@ -258,6 +293,9 @@ public final class MainActivity extends Activity {
    addText(page,"ÉTAPE 2 / 3   ·   DEUX D6 INDIVIDUELS",12,PINK,true,13);
    int last=prefs.getInt("setup_last_face",1);
    showDice(6,last);
+   String lastReceiver=prefs.getString("setup_last_receiver","");
+   if(!lastReceiver.isEmpty())card("🎯 Résultat : "+lastReceiver+" reçoit "+last+" défi(s)",
+    "Le tirage est confirmé et enregistré.");
    LinearLayout explanation=card("🎲  Un dé chacun","Chaque personne brasse pour connaître le nombre de défis qu'elle reçoit (1 à 6). Le partenaire donne exactement ce nombre de défis.");
    addText(explanation,"Si Émilie reçoit 4, Fred donne 4. Si Fred reçoit 2, Émilie donne 2.",13,PALE,false,0);
    duoProgress();
@@ -265,7 +303,8 @@ public final class MainActivity extends Activity {
     addButton(page,"🎲  ÉMILIE BRASSE : JE REÇOIS…",true,()->{
      int n=GameLogic.d6();
      roll(n,()->{
-      prefs.edit().putInt("emilie_target",n).putInt("setup_last_face",n).apply();draw();
+      prefs.edit().putInt("emilie_target",n).putInt("setup_last_face",n)
+       .putString("setup_last_receiver","Émilie").apply();draw();
       new AlertDialog.Builder(this).setTitle("♥ Émilie reçoit "+n+" défi(s)")
        .setMessage("Fred donne "+n+" défi(s) à Émilie durant la soirée.")
        .setPositiveButton("Continuer",null).show();
@@ -276,7 +315,8 @@ public final class MainActivity extends Activity {
     addButton(page,"🎲  FRED BRASSE : JE REÇOIS…",true,()->{
      int n=GameLogic.d6();
      roll(n,()->{
-      prefs.edit().putInt("fred_target",n).putInt("setup_last_face",n).apply();draw();
+      prefs.edit().putInt("fred_target",n).putInt("setup_last_face",n)
+       .putString("setup_last_receiver","Fred").apply();draw();
       new AlertDialog.Builder(this).setTitle("♥ Fred reçoit "+n+" défi(s)")
        .setMessage("Émilie donne "+n+" défi(s) à Fred durant la soirée.")
        .setPositiveButton("Continuer",null).show();
@@ -304,6 +344,9 @@ public final class MainActivity extends Activity {
   Category actual=Category.valueOf(prefs.getString("actual","COQUIN"));
   int face=prefs.getInt("face",1);
   showDice(20,pending?face:20);
+  if(pending)card("🎯  "+categoryName(actual)+" · Face "+face,
+    "Résultat confirmé : "+other(prefs.getString("card_player","Émilie"))+
+    " propose ce défi à "+prefs.getString("card_player","Émilie")+".");
   LinearLayout counter=card("♢  "+done+" / "+total+" défis réalisés","Le D20 est brassé par celui ou celle qui donne le défi.");
   progress(counter,(float)done/Math.max(1,total));
   duoProgress();
@@ -312,17 +355,26 @@ public final class MainActivity extends Activity {
    String giver=other(receiver);
    String[] result=GameData.get(actual,face);
    LinearLayout resultCard=card("♥  "+categoryName(actual)+"  ·  Face "+face,null);
-   addText(resultCard,giver+" donne à "+receiver,16,PINK,true,10);
+   addText(resultCard,giver+" propose à "+receiver,16,PINK,true,10);
    addText(resultCard,result[0],24,WHITE,true,9);
    addText(resultCard,result[1],17,PALE,false,10);
-   addButton(resultCard,"✓   DÉFI TERMINÉ",true,()->{
-    String key=receiver.equals("Fred")?"fred_completed":"emilie_completed";
-    prefs.edit().putInt(key,completed(receiver)+1).putBoolean("pending",false).apply();
-    draw();
-   });
-   addButton(resultCard,"↻   PASSER / RELANCER SANS PÉNALITÉ",false,()->{
-    prefs.edit().putBoolean("pending",false).apply();draw();
-   });
+   addText(resultCard,"Défis différents proposés à "+receiver+" : "+
+    (60-ChallengePicker.remaining(seenMask(receiver)))+" / 60",12,MUTED,false,9);
+   if(!prefs.getBoolean("accepted",false)){
+    addButton(resultCard,"✓   ACCEPTER CE DÉFI",true,()->{
+     prefs.edit().putBoolean("accepted",true).apply();draw();
+    });
+    addButton(resultCard,"↻   PASSER · NOUVEAU DÉFI",false,()->offerChallenge(receiver));
+   }else{
+    addText(resultCard,"✓ Défi accepté — terminez-le à votre rythme.",15,GREEN,true,7);
+    addButton(resultCard,"✓   DÉFI TERMINÉ",true,()->{
+     String key=receiver.equals("Fred")?"fred_completed":"emilie_completed";
+     prefs.edit().putInt(key,completed(receiver)+1)
+      .putBoolean("pending",false).putBoolean("accepted",false).apply();
+     draw();
+    });
+    addButton(resultCard,"↻   CHANGER D'AVIS · PASSER",false,()->offerChallenge(receiver));
+   }
   }else if(done<total){
    if(target(player)<0||completed(player)>=target(player)){
     player=emilieDone<emilie?"Émilie":"Fred";
@@ -343,18 +395,7 @@ public final class MainActivity extends Activity {
     },1);
    gap(page,15);
    card("✦  20 % de surprise","80 % dans la catégorie choisie · 10 % dans chacune des deux autres.");
-   addButton(page,"🎲  "+other(player).toUpperCase()+" BRASSE LE D20",true,()->{
-    Category category=GameLogic.choose(selected);
-    int chosenFace=GameLogic.d20();
-    String receiver=player;
-    roll(chosenFace,()->{
-     prefs.edit().putBoolean("pending",true).putString("actual",category.name())
-      .putString("card_player",receiver).putInt("face",chosenFace).apply();
-     draw();
-     if(category!=selected)
-      Toast.makeText(this,"SURPRISE ! Catégorie "+categoryName(category),Toast.LENGTH_LONG).show();
-    });
-   });
+   addButton(page,"🎲  "+other(player).toUpperCase()+" BRASSE LE D20",true,()->offerChallenge(player));
   }else{
    LinearLayout c=card("♥  Tous les défis sont réalisés","Fred et Émilie ont chacun reçu leur nombre de défis.");
    addButton(c,"TERMINER ET COMPTER LA SOIRÉE",true,()->{
@@ -413,13 +454,15 @@ public final class MainActivity extends Activity {
      prefs.edit().putInt("goal",-1).putInt("done",0)
       .putBoolean("active",false).putBoolean("pending",false)
       .putInt("fred_target",-1).putInt("emilie_target",-1)
-      .putInt("fred_completed",0).putInt("emilie_completed",0).apply();
+      .putInt("fred_completed",0).putInt("emilie_completed",0)
+      .putLong("fred_seen",0L).putLong("emilie_seen",0L).apply();
      tab="home";draw();
     }).setNegativeButton("Annuler",null).show();
   });
   section("Règles du jeu");
   card("Répartition hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
   card("Quatre tirages en 3D","Semaine : D6 pondéré · Soirée : un D6 chacun · Défis : D20 à 80/10/10.");
+  card("Défis sans répétition","Toute carte proposée, même passée, ne peut pas ressortir pour la même personne pendant la soirée.");
   card("Intimité et respect","Les défis sont des invitations. Vous pouvez toujours passer. Les données de jeu restent sur ce téléphone.");
   gap(page,8);addText(page,"Dés à Deux · Version "+BuildConfig.VERSION_NAME,12,MUTED,false,0);
  }
