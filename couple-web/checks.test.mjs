@@ -107,8 +107,8 @@ test('Only the dedicated Supabase project and its publishable client key are con
  assert.match(cfg,/ejsrqfpkgwraorrznjpm\.supabase\.co\/functions\/v1\/loveroll-web/);
 });
 test('Email magic link fallback works in addition to Google and Apple login options',()=>{
- assert.match(app,/Continuer avec Google/);
- assert.match(app,/Continuer avec Apple/);
+ assert.match(authHtml(),/Continuer avec Google/);
+ assert.match(authHtml(),/Continuer avec Apple/);
  assert.match(app,/client\.auth\.signInWithOtp/);
  assert.match(app,/emailRedirectTo:redirectTo/);
  assert.match(app,/if\(verb==='email-login'\)/);
@@ -230,7 +230,7 @@ test('New couple match uses two individual sign-ups',()=>{
 });
 test('Anniversary and dates are not re-entered in Settings',()=>{
  const fragment=app.slice(app.indexOf('function renderSettings()'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
- assert.match(fragment,/Dates récupérées de l’inscription/);
+ assert.match(fragment,/enregistré à mon inscription/);
  assert.doesNotMatch(fragment,/loveroll-birthday|save-occasion-date:birthday/);
 });
 test('Database onboarding enforces profile birthday and revokes old bypasses',()=>{
