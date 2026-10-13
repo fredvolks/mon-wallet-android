@@ -21,10 +21,10 @@ public class PremiumDiceMathTest {
   for(int face=1;face<=6;face++){
    float[] q=Die3DMath.targetQuaternion(face);
    float[] forward=Die3DMath.rotate(q,Die3DMath.normal(face));
-   assertTrue("face "+face+" must point toward the camera",forward[2]>.987f);
+   assertTrue("face "+face+" must point toward the camera",forward[2]>.875f);
    assertEquals(1.0f,(float)Math.sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3]),.0001f);
    float[] opposite=Die3DMath.rotate(q,Die3DMath.normal(7-face));
-   assertTrue("opposite must point away from viewer",opposite[2]<-.987f);
+   assertTrue("opposite must point away from viewer",opposite[2]<-.875f);
   }
  }
  @Test public void sixFacesRemainDistinctAfterRotating(){
@@ -33,7 +33,7 @@ public class PremiumDiceMathTest {
    int front=0;
    for(int f=1;f<=6;f++){
     float[] v=Die3DMath.rotate(q,Die3DMath.normal(f));
-    if(v[2]>.987f){front++;assertEquals(n,f);}
+    if(v[2]>.875f){front++;assertEquals(n,f);}
    }
    assertEquals("Only one physical face is the result",1,front);
   }

@@ -33,7 +33,7 @@ public final class Die3DMath {
    case 5:q=axisAngle(1,0,0,(float)(-Math.PI*.5));break;
    default:q=axisAngle(0,1,0,(float)Math.PI);break;
   }
-  return normalize(multiply(axisAngle(0,1,0,.11f),multiply(axisAngle(1,0,0,-.07f),q)));
+  return normalize(multiply(axisAngle(0,1,0,.36f),multiply(axisAngle(1,0,0,.27f),q)));
  }
  public static float[] rotate(float[] q,float[] v){
   float[] p=new float[]{0,v[0],v[1],v[2]};

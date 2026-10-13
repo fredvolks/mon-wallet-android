@@ -183,7 +183,7 @@ public final class PremiumDice3DView extends GLSurfaceView {
    GLES20.glViewport(0,0,w,h);
    Matrix.perspectiveM(proj,0,48f,(float)w/Math.max(h,1),.1f,25f);
    Matrix.setIdentityM(viewMat,0);
-   Matrix.translateM(viewMat,0,0f,0f,-4.25f);
+   Matrix.translateM(viewMat,0,0f,0f,-4.75f);
   }
   @Override public void onDrawFrame(GL10 ignored){
    long now=System.nanoTime();

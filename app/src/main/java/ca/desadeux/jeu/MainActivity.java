@@ -93,7 +93,7 @@ public final class MainActivity extends Activity {
  void addText(LinearLayout target,String value,int size,int color,boolean strong,int bottom){
   TextView t=new TextView(this);t.setText(value);t.setTextColor(color);t.setTextSize(size);
   if(strong)t.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
-  t.setLineSpacing(dp(2),1.0f);
+  t.setLineSpacing(dp(1),1.0f);
   LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,ViewGroup.LayoutParams.WRAP_CONTENT);
   lp.bottomMargin=dp(bottom);target.addView(t,lp);
  }
@@ -108,38 +108,40 @@ public final class MainActivity extends Activity {
  LinearLayout vertical(){LinearLayout l=new LinearLayout(this);l.setOrientation(1);return l;}
  LinearLayout horizontal(){LinearLayout l=new LinearLayout(this);l.setOrientation(0);l.setGravity(Gravity.CENTER_VERTICAL);return l;}
  LinearLayout card(String title,String subtitle){
-  LinearLayout c=vertical();c.setBackground(shape(SURFACE,CARD2,22,0x4CFF6FA4));pad(c,18,16);
+  LinearLayout c=vertical();c.setBackground(shape(SURFACE,CARD2,18,0x4CFF6FA4));pad(c,14,11);
   LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,ViewGroup.LayoutParams.WRAP_CONTENT);
-  lp.bottomMargin=dp(15);page.addView(c,lp);
-  if(title!=null)addText(c,title,18,PALE,true,subtitle==null?0:5);
-  if(subtitle!=null)addText(c,subtitle,13,MUTED,false,0);
+  lp.bottomMargin=dp(9);page.addView(c,lp);
+  if(title!=null)addText(c,title,16,PALE,true,subtitle==null?0:3);
+  if(subtitle!=null)addText(c,subtitle,12,MUTED,false,0);
   return c;
  }
  void heading(String big,String subtitle){
-  addText(page,big,27,WHITE,true,5);
-  if(subtitle!=null)addText(page,subtitle,14,MUTED,false,16);
+  addText(page,big,24,WHITE,true,2);
+  if(subtitle!=null)addText(page,subtitle,13,MUTED,false,9);
  }
- void section(String title){gap(page,9);addText(page,title,19,PINK,true,10);}
+ void section(String title){gap(page,5);addText(page,title,16,PINK,true,7);}
  void addButton(LinearLayout dest,String title,boolean highlighted,Runnable action){
   Button b=new Button(this);b.setAllCaps(false);b.setText(title);b.setTextSize(14);
   b.setTextColor(highlighted?WHITE:PALE);
   b.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
   b.setBackground(shape(highlighted?0xFFFF4A9A:0xFF47243D,highlighted?0xFFC82870:0xFF2F1A31,16,highlighted?0x99FFB6D8:0x66F26B9C));
-  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(52));lp.topMargin=dp(9);
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(46));lp.topMargin=dp(7);
   dest.addView(b,lp);b.setOnClickListener(v->{if(!rolling)action.run();});
  }
  void chip(LinearLayout target,String title,boolean active,Runnable action,int weight){
   TextView v=text(title,13,active?WHITE:PALE,true);v.setGravity(Gravity.CENTER);
-  v.setPadding(dp(6),dp(11),dp(6),dp(11));
+  v.setPadding(dp(5),dp(7),dp(5),dp(7));
   v.setBackground(shape(active?0xFFD02D77:0xFF3B263C,active?0xFF822353:0xFF241628,13,active?PINK:0x554B3A4C));
-  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(44),weight);
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(38),weight);
   lp.rightMargin=dp(6);target.addView(v,lp);v.setOnClickListener(q->{if(!rolling)action.run();});
  }
  void showDice(int sides,int result){
   FrameLayout frame=new FrameLayout(this);
   frame.setBackground(shape(0xFF220D24,0xFF180E22,26,0x335A3558));
-  LinearLayout.LayoutParams fl=new LinearLayout.LayoutParams(-1,dp(270));
-  fl.bottomMargin=dp(14);
+  float screenDp=getResources().getDisplayMetrics().heightPixels/getResources().getDisplayMetrics().density;
+  int diceDp=Math.max(164,Math.min(213,Math.round(screenDp*.235f)));
+  LinearLayout.LayoutParams fl=new LinearLayout.LayoutParams(-1,dp(diceDp));
+  fl.bottomMargin=dp(8);
   page.addView(frame,fl);
   dice=null;gpuDice=null;
   if(sides==6&&PremiumDice3DView.supported(this)){
@@ -154,7 +156,7 @@ public final class MainActivity extends Activity {
   TextView caption=text("GLISSE POUR TOURNER LE DÉ",10,0xFFFFC4DF,true);
   caption.setGravity(Gravity.CENTER);
   caption.setBackgroundColor(0x5516071A);
-  FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(-1,dp(29),Gravity.BOTTOM);
+  FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(-1,dp(24),Gravity.BOTTOM);
   frame.addView(caption,cp);
   caption.setOnClickListener(v->{
    Toast.makeText(this,"Brasse le dé avec le bouton pour obtenir un résultat officiel.",Toast.LENGTH_SHORT).show();
@@ -170,6 +172,44 @@ public final class MainActivity extends Activity {
   if(gpuDice!=null)gpuDice.roll(value,finished);
   else dice.roll(value,finished);
  }
+ void showResultDialog(String symbol,String title,String description,String buttonTitle){
+  LinearLayout popup=vertical();
+  popup.setPadding(dp(24),dp(23),dp(24),dp(20));
+  popup.setBackground(shape(0xFF39182F,0xFF190F25,26,0x99FF83BD));
+  TextView badge=text(symbol,32,PINK,true);
+  badge.setGravity(Gravity.CENTER);
+  popup.addView(badge,new LinearLayout.LayoutParams(-1,dp(48)));
+  TextView result=text(title,25,WHITE,true);
+  result.setGravity(Gravity.CENTER);
+  LinearLayout.LayoutParams t=new LinearLayout.LayoutParams(-1,-2);t.bottomMargin=dp(12);
+  popup.addView(result,t);
+  TextView details=text(description,14,PALE,false);
+  details.setGravity(Gravity.CENTER);
+  details.setLineSpacing(dp(3),1f);
+  popup.addView(details,new LinearLayout.LayoutParams(-1,-2));
+  AlertDialog d=new AlertDialog.Builder(this).setView(popup).create();
+  Button confirm=new Button(this);
+  confirm.setAllCaps(false);
+  confirm.setText(buttonTitle);
+  confirm.setTextSize(15);
+  confirm.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
+  confirm.setTextColor(WHITE);
+  confirm.setBackground(shape(0xFFFF4E9C,0xFFBE276D,16,0x99FFC3DC));
+  LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,dp(49));
+  bp.topMargin=dp(20);popup.addView(confirm,bp);
+  confirm.setOnClickListener(v->d.dismiss());
+  d.setOnShowListener(ignore->{
+   if(d.getWindow()!=null){
+    d.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+    d.getWindow().setDimAmount(.72f);
+    d.getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels*.89f),
+      ViewGroup.LayoutParams.WRAP_CONTENT);
+   }
+   popup.setAlpha(0f);popup.setScaleX(.93f);popup.setScaleY(.93f);
+   popup.animate().alpha(1).scaleX(1).scaleY(1).setDuration(260).start();
+  });
+  d.show();
+ }
  void vibrate(long ms){
   try{Vibrator v=(Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
    if(v!=null&&v.hasVibrator())v.vibrate(VibrationEffect.createOneShot(ms,VibrationEffect.DEFAULT_AMPLITUDE));
@@ -184,18 +224,18 @@ public final class MainActivity extends Activity {
   root=vertical();root.setBackgroundColor(BG);
   scroll=new ScrollView(this);scroll.setFillViewport(false);
   scroll.setVerticalScrollBarEnabled(false);
-  page=vertical();page.setPadding(dp(20),dp(25),dp(20),dp(20));
+  page=vertical();page.setPadding(dp(17),dp(12),dp(17),dp(9));
   scroll.addView(page);
   root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-  nav=horizontal();nav.setBackground(shape(0xFF221326,0xFF1A1021,0,0));pad(nav,9,11);
-  root.addView(nav,new LinearLayout.LayoutParams(-1,dp(76)));
+  nav=horizontal();nav.setBackground(shape(0xFF221326,0xFF1A1021,0,0));pad(nav,9,6);
+  root.addView(nav,new LinearLayout.LayoutParams(-1,dp(64)));
   ViewCompat.setOnApplyWindowInsetsListener(root,(v,insets)->{
    int top=insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
    int bottom=insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
    root.setPadding(0,top,0,0);
-   nav.setPadding(dp(9),dp(9),dp(9),dp(9)+bottom);
+   nav.setPadding(dp(9),dp(4),dp(9),dp(5)+bottom);
    ViewGroup.LayoutParams params=nav.getLayoutParams();
-   int desired=dp(66)+bottom;
+   int desired=dp(58)+bottom;
    if(params.height!=desired){params.height=desired;nav.setLayoutParams(params);}
    return insets;
   });
@@ -211,56 +251,54 @@ public final class MainActivity extends Activity {
   drawNav();
  }
  void drawNav(){
-  for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"advent","🎁","Avent"},{"library","♡","Défis"},{"settings","⚙","Réglages"}}){
+  for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}}){
    LinearLayout col=vertical();col.setGravity(Gravity.CENTER);
-   boolean active=tab.equals(item[0]);
-   TextView icon=text(item[1],item[0].equals("advent")?23:25,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
-   TextView name=text(item[2],10,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
+   boolean active=tab.equals(item[0])||(item[0].equals("settings")&&tab.equals("library"));
+   TextView icon=text(item[1],item[0].equals("advent")?22:24,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
+   TextView name=text(item[2],11,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);
    nav.addView(col,lp);col.setOnClickListener(v->{if(rolling)return;tab=item[0];draw();});
   }
  }
  void drawHome(){
   heading("♡  DÉS À DEUX","Un jeu intime, juste pour vous deux");
-  addText(page,"LE RITUEL DE LA SEMAINE",12,PINK,true,9);
+  addText(page,"LE RITUEL DE LA SEMAINE",12,PINK,true,6);
   int goal=prefs.getInt("goal",-1),done=prefs.getInt("done",0);
   showDice(6,goal>0?goal:1);
-  if(goal>0)card("🎯  Résultat officiel : "+goal+" soirée(s)",
-   "Ce nombre est enregistré pour cette semaine.");
+  if(goal>0){
+   LinearLayout official=card("✦  RÉSULTAT OFFICIEL    "+goal+" SOIRÉE"+(goal>1?"S":""),null);
+   addText(official,"Enregistré jusqu'à lundi  ·  Face "+goal,12,MUTED,false,0);
+  }
   if(goal<0){
-   LinearLayout c=card("🎲  Le dé hebdomadaire","Un seul tirage par semaine. Le dé choisit le nombre de soirées.");
-   LinearLayout chips=horizontal();c.addView(chips);
+   LinearLayout intro=card("🎲  Le dé hebdomadaire","Choisissez le nombre de soirées de la semaine par un tirage pondéré.");
+   LinearLayout chips=horizontal();intro.addView(chips);
    for(String p:new String[]{"1×\n50%","2×\n25%","3×\n12%","4×\n8%","5×\n4%","6×\n1%"}){
     TextView v=text(p,11,PALE,true);v.setGravity(Gravity.CENTER);
     v.setBackground(shape(0xFF49223B,0xFF2F1730,9,0x337A4A69));
-    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(51),1);
-    lp.rightMargin=dp(3);chips.addView(v,lp);
+    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(41),1);lp.rightMargin=dp(3);
+    chips.addView(v,lp);
    }
-   gap(c,13);
-   addButton(c,"🎲   BRASSER LE DÉ HEBDOMADAIRE",true,()->{
+   addButton(intro,"🎲  BRASSER LE DÉ HEBDOMADAIRE",true,()->{
     if(prefs.getInt("goal",-1)>0)return;
     int n=GameLogic.rollWeek();
-    // Commit BEFORE animation so app termination cannot grant an extra weekly roll.
     if(!prefs.edit().putInt("goal",n).commit()){
      Toast.makeText(this,"Impossible d'enregistrer le tirage. Réessayez.",Toast.LENGTH_LONG).show();
      return;
     }
     roll(n,()->{
      draw();
-     new AlertDialog.Builder(this).setTitle("♥  "+n+" soirée(s) cette semaine")
-      .setMessage("Votre tirage est enregistré jusqu'à lundi. C'est un jeu, jamais une obligation.")
-      .setPositiveButton("C'est parti !",(d,w)->{}).show();
+     showResultDialog("♥",""+n+" SOIRÉE"+(n>1?"S":""),"Votre tirage est enregistré jusqu'à lundi. C'est un jeu, jamais une obligation.","C'EST PARTI !");
     });
    });
   }else{
-   LinearLayout c=card("♥  "+goal+" soirée(s) cette semaine","Le dé a été brassé. Nouveau tirage lundi !");
-   addText(c,"PROGRESSION    "+done+" / "+goal,18,WHITE,true,9);
-   progress(c,goal==0?0:((float)Math.min(done,goal)/goal));
+   LinearLayout c=card("♥  "+goal+" soirée(s) cette semaine","Votre progression commune");
+   addText(c,"PROGRESSION  "+done+" / "+goal,13,WHITE,true,4);
+   progress(c,goal==0?0:(float)Math.min(done,goal)/goal);
    addButton(c,"COMMENCER UNE SOIRÉE   →",true,()->{tab="game";draw();});
   }
-  section("Votre rituel");
-  LinearLayout info=card("3 dés, une soirée unique","① Dé hebdomadaire : nombre de soirées\n② Deux D6 : défis reçus par Fred et Émilie\n③ D20 : 20 défis par catégorie");
-  addText(info,"🔥 Sensuel  ·  Coquin  ·  Sexuel",14,PALE,true,0);
+  LinearLayout info=card("♥  Votre rituel   ·   3 types de dés",null);
+  addText(info,"SEMAINE  →  soirées     ·     D6 × 2  →  défis reçus",12,PALE,true,2);
+  addText(info,"D20  →  Sensuel  ·  Coquin  ·  Sexuel",12,MUTED,false,0);
  }
  void progress(LinearLayout dest,float fraction){
   FrameLayout track=new FrameLayout(this);
@@ -309,14 +347,14 @@ public final class MainActivity extends Activity {
   int f=target("Fred"),e=target("Émilie");
   LinearLayout c=card("♥  Qui donne, qui reçoit ?",null);
   if(e>0){
-   addText(c,"Émilie reçoit : "+completed("Émilie")+" / "+e+"  •  Fred donne",15,WHITE,true,8);
-   progress(c,(float)completed("Émilie")/e);
-  }else addText(c,"Émilie reçoit : dé non brassé",15,MUTED,false,7);
-  gap(c,12);
+   addText(c,"♡  Émilie reçoit "+completed("Émilie")+"/"+e+"     ·     Fred donne "+e,14,WHITE,true,4);
+   if(prefs.getBoolean("active",false))progress(c,(float)completed("Émilie")/e);
+  }else addText(c,"♡  Émilie reçoit : à brasser   ·   Fred donne",13,MUTED,false,4);
+  gap(c,3);
   if(f>0){
-   addText(c,"Fred reçoit : "+completed("Fred")+" / "+f+"  •  Émilie donne",15,WHITE,true,8);
-   progress(c,(float)completed("Fred")/f);
-  }else addText(c,"Fred reçoit : dé non brassé",15,MUTED,false,0);
+   addText(c,"♡  Fred reçoit "+completed("Fred")+"/"+f+"     ·     Émilie donne "+f,14,WHITE,true,4);
+   if(prefs.getBoolean("active",false))progress(c,(float)completed("Fred")/f);
+  }else addText(c,"♡  Fred reçoit : à brasser   ·   Émilie donne",13,MUTED,false,0);
  }
  void drawGame(){
   heading("🔥  Votre soirée","Chacun décide de son rythme et reçoit ses propres défis");
@@ -328,26 +366,25 @@ public final class MainActivity extends Activity {
   int fred=target("Fred"),emilie=target("Émilie");
   boolean active=prefs.getBoolean("active",false);
   if(!active){
-   addText(page,"ÉTAPE 2 / 3   ·   DEUX D6 INDIVIDUELS",12,PINK,true,13);
+   addText(page,"ÉTAPE 2 / 3   ·   DEUX D6 INDIVIDUELS",12,PINK,true,6);
    int last=prefs.getInt("setup_last_face",1);
    showDice(6,last);
    String lastReceiver=prefs.getString("setup_last_receiver","");
-   if(!lastReceiver.isEmpty())card("🎯 Résultat : "+lastReceiver+" reçoit "+last+" défi(s)",
-    "Le tirage est confirmé et enregistré.");
-   LinearLayout explanation=card("🎲  Un dé chacun","Chaque personne brasse pour connaître le nombre de défis qu'elle reçoit (1 à 6). Le partenaire donne exactement ce nombre de défis.");
-   addText(explanation,"Si Émilie reçoit 4, Fred donne 4. Si Fred reçoit 2, Émilie donne 2.",13,PALE,false,0);
+   if(!lastReceiver.isEmpty()&&(fred>0||emilie>0))
+    addText(page,"🎯  "+lastReceiver+" reçoit "+last+" défi"+(last>1?"s":""),15,PINK,true,6);
+   LinearLayout explanation=card("🎲  Un dé chacun",null);
+   addText(explanation,"Chacun brasse le nombre de défis qu'il reçoit (1 à 6). L'autre les offre.",13,PALE,false,2);
+   addText(explanation,"Ex. Émilie reçoit 4 → Fred donne 4.",12,MUTED,false,0);
    duoProgress();
    if(emilie<0){
     addButton(page,"🎲  ÉMILIE BRASSE : JE REÇOIS…",true,()->{
      int n=GameLogic.d6();
-     // Preserve Émilie's number even if Android interrupts the GPU animation.
      if(!prefs.edit().putInt("emilie_target",n).putInt("setup_last_face",n)
        .putString("setup_last_receiver","Émilie").commit())return;
      roll(n,()->{
       draw();
-      new AlertDialog.Builder(this).setTitle("♥ Émilie reçoit "+n+" défi(s)")
-       .setMessage("Fred donne "+n+" défi(s) à Émilie durant la soirée.")
-       .setPositiveButton("Continuer",null).show();
+      showResultDialog("♥","ÉMILIE REÇOIT "+n,
+       "Fred lui offre "+n+" défi"+(n>1?"s":"")+" pendant la soirée.","CONTINUER");
      });
     });
    }
@@ -358,24 +395,21 @@ public final class MainActivity extends Activity {
        .putString("setup_last_receiver","Fred").commit())return;
      roll(n,()->{
       draw();
-      new AlertDialog.Builder(this).setTitle("♥ Fred reçoit "+n+" défi(s)")
-       .setMessage("Émilie donne "+n+" défi(s) à Fred durant la soirée.")
-       .setPositiveButton("Continuer",null).show();
+      showResultDialog("♥","FRED REÇOIT "+n,
+       "Émilie lui offre "+n+" défi"+(n>1?"s":"")+" pendant la soirée.","CONTINUER");
      });
     });
    }
    if(fred>0&&emilie>0){
-    LinearLayout summary=card("♡  Votre programme de soirée",null);
-    addText(summary,"Fred : reçoit "+fred+"  ·  donne "+emilie,17,WHITE,true,8);
-    addText(summary,"Émilie : reçoit "+emilie+"  ·  donne "+fred,17,WHITE,true,8);
-    addText(summary,(fred+emilie)+" défis au total à partager.",13,PALE,false,0);
+    LinearLayout summary=card("♡  Votre programme de soirée",
+       (fred+emilie)+" défis au total. À chacun son rythme.");
     addButton(summary,"♥  COMMENCER LA SOIRÉE",true,()->{
      prefs.edit().putBoolean("active",true).putBoolean("pending",false).apply();
-     if(completed("Émilie")<emilie)player="Émilie";else player="Fred";
+     player=completed("Émilie")<emilie?"Émilie":"Fred";
      prefs.edit().putString("player",player).apply();draw();
     });
    }
-   addButton(page,"↻   RECOMMENCER LES DEUX D6",false,()->confirmResetEvening());
+   addButton(page,"↻  RECOMMENCER LES DEUX D6",false,()->confirmResetEvening());
    return;
   }
   int fredDone=completed("Fred"),emilieDone=completed("Émilie");
@@ -461,7 +495,8 @@ public final class MainActivity extends Activity {
   switch(c){case COQUIN:return "Coquin";case SEXUEL:return "Sexuel";default:return "Sensuel";}
  }
  void drawLibrary(){
-  heading("♡  Les défis","60 cartes revues avec consignes et exemples précis");
+  heading("♡  Les défis","Réglages  ›  Bibliothèque des 60 défis");
+  addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->{tab="settings";draw();});
   section("Explorer les catégories");
   LinearLayout row=horizontal();page.addView(row);
   for(Category c:Category.values())chip(row,categoryName(c),selected==c,()->{
@@ -579,7 +614,10 @@ public final class MainActivity extends Activity {
    card("♥  25 moments accomplis !","Le calendrier sera renouvelé en décembre prochain.");
  }
  void drawSettings(){
-  heading("⚙  Paramètres","Personnalisez votre expérience");
+  heading("⚙  Réglages","Personnalisez votre expérience");
+  section("Bibliothèque");
+  LinearLayout library=card("♡  Les 60 défis","Sensuel · Coquin · Sexuel — chaque défi avec son exemple.");
+  addButton(library,"CONSULTER ET GÉRER LES DÉFIS   →",true,()->{tab="library";draw();});
   section("Mises à jour");
   LinearLayout c=card("✦  Mises à jour automatiques","Vérification au lancement de l'application.");
   CheckBox auto=new CheckBox(this);auto.setText("Rechercher automatiquement les nouveautés");
@@ -623,6 +661,8 @@ public final class MainActivity extends Activity {
   if(gpuDice!=null)gpuDice.onResume();
  }
  @Override public void onBackPressed(){
-  if(!tab.equals("home")){tab="home";draw();}else super.onBackPressed();
+  if(tab.equals("library")){tab="settings";draw();}
+  else if(!tab.equals("home")){tab="home";draw();}
+  else super.onBackPressed();
  }
 }

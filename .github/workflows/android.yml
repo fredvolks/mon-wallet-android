@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.3.1
+      TAG: des-a-deux-v0.4.0
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -29,6 +29,21 @@ jobs:
           SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
           yes | "$SDKMGR" --licenses >/dev/null || true
           "$SDKMGR" --install 'platforms;android-35' 'build-tools;35.0.0'
+      - name: UI regression checks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src=Path('app/src/main/java/ca/desadeux/jeu/MainActivity.java').read_text()
+          assert '{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}' in src
+          assert '{"library","♡","Défis"}' not in src
+          assert 'CONSULTER ET GÉRER LES DÉFIS' in src
+          assert 'tab="library";draw();' in src
+          assert 'showResultDialog("♥"' in src
+          assert 'RÉSULTAT OFFICIEL' in src
+          assert 'float screenDp=' in src
+          assert 'new AlertDialog.Builder(this).setTitle("♥ Émilie reçoit ' not in src
+          print('Navigation 4 onglets, bibliothèque dans Réglages, popups sombres et dimensions adaptatives: OK')
+          PY
       - name: Assemble release APK
         run: gradle :app:testDebugUnitTest :app:assembleRelease --no-daemon --stacktrace
       - name: Sign and verify APK
@@ -49,15 +64,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/Des-a-Deux-v0.3.1.apk "$RUNNER_TEMP/aligned.apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.3.1.apk
-          sha256sum dist/Des-a-Deux-v0.3.1.apk
+            --out dist/Des-a-Deux-v0.4.0.apk "$RUNNER_TEMP/aligned.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.4.0.apk
+          sha256sum dist/Des-a-Deux-v0.4.0.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Des-a-Deux-v0.3.1
-          path: dist/Des-a-Deux-v0.3.1.apk
+          name: Des-a-Deux-v0.4.0
+          path: dist/Des-a-Deux-v0.4.0.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
         env:
@@ -65,9 +80,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/Des-a-Deux-v0.3.1.apk --clobber
+            gh release upload "$TAG" dist/Des-a-Deux-v0.4.0.apk --clobber
           else
-            gh release create "$TAG" dist/Des-a-Deux-v0.3.1.apk \
-              --target "$GITHUB_SHA" --title "Dés à Deux v0.3.1" \
-              --notes "Nouveau dé OpenGL 3D avec cœurs lumineux et véritable orientation physique. Tirages sauvegardés avant toute animation pour protéger le résultat en cas d interruption."
+            gh release create "$TAG" dist/Des-a-Deux-v0.4.0.apk \
+              --target "$GITHUB_SHA" --title "Dés à Deux v0.4.0" \
+              --notes "Accueil et Soirée compacts, fenêtres de résultat premium, navigation quatre onglets, bibliothèque des défis déplacée dans Réglages, dés 3D inclinés et résultats conservés."
           fi
