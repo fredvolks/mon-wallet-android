@@ -1,0 +1,31 @@
+:root{color-scheme:dark;--bg:#110917;--panel:#2b142b;--edge:#783654;--pink:#ff58a0;--text:#fff4fc;--mute:#c3a9c1;--good:#74e2ae;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#42203c,transparent 38%),var(--bg);color:var(--text);min-height:100dvh}
+main{max-width:640px;margin:auto;padding:16px 16px calc(92px + env(safe-area-inset-bottom))}
+h1{font-size:1.75rem;line-height:1.1;margin:12px 0 4px}h2{font-size:1.1rem;margin:8px 0 12px}h3{font-size:1rem;margin:4px 0 8px}
+p{color:var(--mute);line-height:1.45;margin:5px 0 14px}small,.muted{color:var(--mute)}
+.eyebrow{font-size:.77rem;letter-spacing:.12em;text-transform:uppercase;color:var(--pink);font-weight:800}
+.card{background:linear-gradient(145deg,#381a36,#241326);border:1px solid #783b65;border-radius:19px;padding:15px;margin:11px 0;box-shadow:0 8px 25px #09050b4d}
+.header{display:flex;align-items:center;justify-content:space-between;gap:10px}.title{font-size:1.4rem;font-weight:900}
+button,input,select,textarea{font:inherit}button{cursor:pointer;min-height:48px;border:0;border-radius:13px;background:linear-gradient(110deg,#ff62a8,#c92f74);color:white;font-weight:800;padding:10px 14px;max-width:100%}
+button:disabled{opacity:.45;cursor:not-allowed}.subtle{background:#41263b;color:#f7d7eb;border:1px solid #794160}
+.pill{border:1px solid #803b60;background:#40233d;padding:8px 12px;min-height:42px;border-radius:999px}.pill.selected{background:#be3074;color:white}
+.actions{display:flex;flex-wrap:wrap;gap:8px}.actions>*{flex:1}
+input,select,textarea{display:block;width:100%;min-height:48px;background:#1e1023;color:white;border:1px solid #8d4772;border-radius:12px;padding:12px;margin:9px 0}
+textarea{min-height:95px}label{font-size:.88rem;color:#eed3e4}
+.nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;background:#1b1020;border-top:1px solid #633455;padding:5px 5px calc(7px + env(safe-area-inset-bottom));z-index:10}
+.nav-inner{width:min(100%,640px);display:grid;grid-template-columns:repeat(5,1fr);gap:3px}.nav button{background:transparent;border-radius:10px;min-height:55px;padding:5px 0;font-size:.7rem;color:#ccadc8}
+.nav button.active{color:#ff89bd;background:#532544}.nav span{display:block;font-size:1.15rem}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{background:#341b33;padding:12px 4px;text-align:center;border-radius:12px}.stat strong{display:block;font-size:1.3rem}.stat small{font-size:.72rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.result{font-size:1.5rem;font-weight:900;color:#ff91c6}.tag{font-size:.79rem;color:#ffc2e0;font-weight:800}
+.die{width:120px;height:120px;flex-shrink:0;perspective:380px;display:grid;place-items:center;background:radial-gradient(ellipse,#57203f,#240e25);border-radius:18px}
+.die strong{font-size:3rem;text-shadow:0 0 15px #ff3f9f}.die.rolling strong{animation:tumble .18s linear infinite alternate}
+@keyframes tumble{from{transform:rotate(-20deg) scale(.95)}to{transform:rotate(17deg) scale(1.1)}}
+.dice-row{display:flex;gap:14px;align-items:center}
+.chipline{display:flex;gap:6px;flex-wrap:wrap}.muted-line{border-top:1px solid #583352;margin:11px 0;padding-top:9px}
+.day-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.day-grid button{min-height:51px;padding:4px}.locked{background:#251b2b;color:#84758a}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.calendar button{background:#3a2037;padding:7px 2px;min-height:44px}.calendar button.marked{border:1px solid #ff77b6;color:#ffbddc}
+.banner{padding:10px 13px;margin:5px 0 13px;background:#47203a;border-radius:12px}
+#toast{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:50;background:#5c2250;color:white;border:1px solid #fa79b6;padding:12px 16px;border-radius:13px;box-shadow:0 10px 30px #100;display:none;max-width:90vw}
+#toast.visible{display:block} .loading{text-align:center;padding:90px 10px}
+@media(min-width:580px){main{padding:25px 28px 100px}.die{height:145px;width:145px}}

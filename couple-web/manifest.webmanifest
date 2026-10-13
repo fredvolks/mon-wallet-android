@@ -1,0 +1,10 @@
+{
+  "name": "Dés à Deux",
+  "short_name": "Dés à Deux",
+  "lang": "fr-CA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a0b20",
+  "theme_color": "#1a0b20"
+}
