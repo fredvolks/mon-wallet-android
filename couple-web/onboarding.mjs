@@ -1,3 +1,4 @@
+import {RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 // LoveRoll — public onboarding UI. Profile name and personal anniversary come from registration.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(id,label,cls='')=>'<button class="'+cls+'" data-action="'+esc(id)+'">'+label+'</button>';
@@ -89,6 +90,24 @@ export function authHtml(){
  '<p class="tiny-note">Les connexions Google et Apple nécessitent leur activation auprès de leurs fournisseurs. Un lien par courriel est aussi proposé.</p>'+
  button('show-landing','← Retour à la présentation','text-link')+'</div>';
 }
+function wellnessSelect(label,id,options,selected=''){
+ return '<label>'+label+'<select id="'+id+'" required>'+
+ '<option value="">Choisir une réponse</option>'+
+ options.map(([v,t])=>'<option value="'+esc(v)+'"'+(v===selected?' selected':'')+'>'+esc(t)+'</option>').join('')+
+ '</select></label>';
+}
+export function wellbeingFields(current=null){
+ return '<h3>♡ Comment vivez-vous votre relation ?</h3>'+
+ '<p class="tiny-note">Deux réponses personnelles et privées pour proposer des soirées adaptées. Le partenaire ne verra pas vos réponses.</p>'+
+ wellnessSelect('Comment va votre couple en ce moment ?','wellbeing-relationship',RELATIONSHIP_OPTIONS,current?.relationship_state)+
+ wellnessSelect('Comment va votre sexualité dans votre couple ?','wellbeing-intimacy',INTIMACY_OPTIONS,current?.intimacy_state);
+}
+export function wellbeingHtml(current=null){
+ return '<div class="auth-panel"><div class="eyebrow">MON RESSENTI · CONFIDENTIEL</div>'+
+ '<h2>Des soirées à votre rythme ♡</h2>'+wellbeingFields(current)+
+ button('save-wellbeing','Enregistrer mes réponses')+
+ '<p class="tiny-note">Vos réponses sont modifiables à tout moment dans Réglages.</p></div>';
+}
 export function profileHtml(user,profile){
  const name=profile?.display_name||user?.user_metadata?.full_name||
  user?.user_metadata?.name||'';
@@ -99,6 +118,7 @@ export function profileHtml(user,profile){
  '<h3>🎂 Mon anniversaire</h3>'+
  '<p>Il est renseigné une seule fois, à l’inscription, pour les événements spéciaux. Nous ne conservons que le mois et le jour.</p>'+
  monthDayInputs('signup-birth',profile?.birthday_md||'')+
+ wellbeingFields()+
  '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+
  button('complete-registration','♡ Créer mon profil')+
  '<p class="tiny-note">Ton partenaire entrera lui-même son propre nom et son anniversaire.</p>'+
@@ -113,6 +133,7 @@ export function matchHtml(name,invitation){
  '<p>Créez votre duo, puis invitez votre partenaire par courriel. Elle ou il remplira son propre profil.</p>'+
  '<h3>🥂 Anniversaire de votre couple</h3>'+
  monthDayInputs('signup-couple','',true)+
- button('create-couple','♡ Créer notre espace à deux'))+
+ button('create-couple','♡ Créer notre espace à deux')+
+ button('skip-couple','Plus tard · Explorer sans partenaire','subtle'))+
  '</div>';
 }
