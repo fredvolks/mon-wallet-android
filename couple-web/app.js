@@ -686,7 +686,7 @@ function renderSettings(){
   '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
   button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
   (hasPartner?'<section class="card"><h3>♡ Notre journal commun</h3>'+
-   button('tab:journal','Ouvrir le journal partagé')+
+   button('tab:journal','Ouvrir le calendrier et les statistiques')+
    button('tab:feedback','Nos questionnaires de soirées','class="subtle"')+'</section>':'')+
   '<section class="card"><h3>Mon ressenti · confidentiel</h3>'+wellbeingFields(state.wellbeing)+
   button('save-wellbeing','Mettre à jour mes réponses')+
@@ -776,7 +776,7 @@ async function handle(action,element){
   return;
  }
  if(verb==='signout'){
-  state.unlockKey=null;
+  state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
   state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;render();return;
@@ -985,7 +985,7 @@ async function start(){
    state.user=session.user;
    setTimeout(()=>reload().catch(fail),0);
   }
-  if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;render();}
+  if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];render();}
  });
 }
 document.addEventListener('visibilitychange',()=>{
