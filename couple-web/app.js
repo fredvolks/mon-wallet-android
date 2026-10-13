@@ -120,6 +120,7 @@ function render(){
   }
   if(state.tab==='settings')renderSettings();
   else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
+  else if(state.tab==='ideas')renderIdeas();
   else renderSolo();
   return;
  }
@@ -133,6 +134,7 @@ function render(){
  return;}
  if(state.tab==='home')renderHome();
  else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
+ else if(state.tab==='ideas')renderIdeas();
  else if(state.tab==='session')renderSession();
  else if(state.tab==='special')renderSpecial();
  else if(state.tab==='occasions')renderOccasions();
@@ -242,13 +244,24 @@ function ideaHtml(){
  '<p>Ces propositions tiennent compte du ressenti du couple sans dévoiler les réponses individuelles. Chacun peut dire non ou proposer autre chose.</p>'+
  content.ideas.map(([title,detail])=>'<div class="muted-line"><strong>'+safe(title)+'</strong><p>'+safe(detail)+'</p></div>').join('')+'</section>';
 }
+function ideaPreview(){
+ const g=guidedIdeas(state.guidance);
+ return '<section class="card"><div class="eyebrow">Votre inspiration</div>'+
+ '<h3>♡ '+safe(g.heading)+'</h3>'+
+ '<p>Des propositions adaptées, sans pression et toujours facultatives.</p>'+
+ button('tab:ideas','Découvrir nos idées de soirées')+'</section>';
+}
+function renderIdeas(){
+ frame(ideaHtml()+'<section class="card">'+button('tab:home','← Retour à l’accueil','class="subtle"')+'</section>',
+  'NOS IDÉES DE SOIRÉE','Complicité et intimité selon votre rythme');
+}
 function renderSolo(){
  frame('<section class="card"><div class="eyebrow">Votre espace privé</div>'+
  '<h2>Bienvenue '+safe(state.profile.display_name)+' ♡</h2>'+
  '<p>Explorez LoveRoll à votre rythme. Vous pouvez inviter une personne plus tard, sans perdre votre calendrier personnel.</p>'+
  button('start-couple','♡ Ajouter un conjoint ou une conjointe')+
  button('tab:personal-journal','♥ Mon calendrier personnel','class="subtle"')+
- '</section>'+ideaHtml(),'VOTRE ESPACE','En solo pour le moment');
+ '</section>'+ideaPreview(),'VOTRE ESPACE','En solo pour le moment');
 }
 function renderHome(){
  const name=state.profile.display_name,partner=other()?.name;
@@ -259,7 +272,7 @@ function renderHome(){
  (state.weekly?'<div class="result">'+state.weekly.face+' soirée(s) cette semaine</div>'+
  '<p>Ce résultat a été brassé par '+safe(person(state.weekly.actor))+'. Prochain tirage lundi.</p>':
  button('roll:weekly','🎲 Brasser notre D6 hebdomadaire'))+'</section>'+
- ideaHtml()+
+ ideaPreview()+
  '<section class="card"><h3>♥ Notre soirée</h3>'+statsRow()+
  button('tab:session','Ouvrir notre soirée')+'</section>'+
  '<section class="card"><h3>✦ Activité du mois</h3><p>'+
@@ -826,7 +839,7 @@ async function handle(action,element){
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
  if(verb==='tab'){
-  if(!state.coupleId&&!['home','settings','personal-journal'].includes(parts[0])){
+  if(!state.coupleId&&!['home','settings','personal-journal','ideas'].includes(parts[0])){
    state.tab='home';notify('Ajoutez un partenaire pour utiliser les jeux partagés.');
   }else state.tab=parts[0];
   state.confirmCancel=false;render();return;
