@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.12.2
+      TAG: des-a-deux-v0.12.3
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -59,6 +59,10 @@ jobs:
           assert 'android:name=".ConnectedLoveRollActivity"' in Path('app/src/main/AndroidManifest.xml').read_text()
           native=Path('app/src/main/java/ca/desadeux/jeu/ConnectedLoveRollActivity.java').read_text()
           assert 'getCredentialAsync(' in native
+          assert 'GoogleNonce.sha256Hex(nonce)' in native
+          assert '.setNonce(googleNonce)' in native
+          assert 'data.put("nonce",nonce)' in native
+          assert Path('app/src/test/java/ca/desadeux/jeu/GoogleNonceTest.java').is_file()
           assert 'LoveRollNativeAuth' in native
           assert 'setDomStorageEnabled(true)' in native
           assert 'TRUSTED_HOST.equals(url.getHost())' in native
@@ -121,15 +125,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/LoveRoll-v0.12.2.apk "$RUNNER_TEMP/aligned.apk"
-          cp dist/LoveRoll-v0.12.2.apk dist/Des-a-Deux-v0.12.2.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.12.2.apk
-          sha256sum dist/LoveRoll-v0.12.2.apk dist/Des-a-Deux-v0.12.2.apk
+            --out dist/LoveRoll-v0.12.3.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.12.3.apk dist/Des-a-Deux-v0.12.3.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.12.3.apk
+          sha256sum dist/LoveRoll-v0.12.3.apk dist/Des-a-Deux-v0.12.3.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: LoveRoll-v0.12.2
+          name: LoveRoll-v0.12.3
           path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
@@ -138,9 +142,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/LoveRoll-v0.12.2.apk dist/Des-a-Deux-v0.12.2.apk --clobber
+            gh release upload "$TAG" dist/LoveRoll-v0.12.3.apk dist/Des-a-Deux-v0.12.3.apk --clobber
           else
-            gh release create "$TAG" dist/LoveRoll-v0.12.2.apk dist/Des-a-Deux-v0.12.2.apk \
-              --target "$GITHUB_SHA" --title "LoveRoll v0.12.2" \
-              --notes "LoveRoll v0.12.2 : création de compte dans l’application Android, choix de compte Google natif et écran connecté intégré; calendrier local conservé."
+            gh release create "$TAG" dist/LoveRoll-v0.12.3.apk dist/Des-a-Deux-v0.12.3.apk \
+              --target "$GITHUB_SHA" --title "LoveRoll v0.12.3" \
+              --notes "LoveRoll v0.12.3 : correction connexion Google 'Nonces mismatch' par SHA-256, aucun effacement des données personnelles."
           fi
