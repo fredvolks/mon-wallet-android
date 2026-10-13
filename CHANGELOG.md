@@ -1,5 +1,12 @@
 # Versions
 
+## Mon Wallet v0.2.47 — 2026-10-13 (P&L à 0 % les jours fériés)
+
+- Les titres dont la bourse est fermée pour congé affichent un P&L individuel de 0 $ et 0,00 %, avec le logo de congé dans Mes titres et la Watchlist.
+- Le widget affiche aussi 0,00 % et un repère « F » mauve à côté des titres en congé; les variations périmées et le PRE/AFTER sont masqués.
+- Le P&L quotidien global en dollars continue d’exclure les titres en congé.
+
+
 ## Mon Wallet v0.2.46 — 2026-10-12 (pourcentage quotidien calculé sur le wallet complet)
 
 - Les titres dont la bourse est fermée pour congé restent exclus du P&L quotidien en dollars.

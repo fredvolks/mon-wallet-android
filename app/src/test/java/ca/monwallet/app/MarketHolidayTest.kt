@@ -45,7 +45,9 @@ class MarketHolidayTest {
         assertEquals(0, d("50").compareTo(result.day!!))
         assertEquals(0, d("1500").compareTo(result.dayBase!!))
         assertEquals(3.3333, result.dayPercent!!.toDouble(), 0.01)
-        assertNull(result.holdings.single { it.securityId == canadian.id }.day)
+        val canadianHolding = result.holdings.single { it.securityId == canadian.id }
+        assertEquals(0, BigDecimal.ZERO.compareTo(canadianHolding.day!!))
+        assertEquals(0.0, canadianHolding.dayPercent!!.toDouble(), 0.001)
         assertEquals(0, d("50").compareTo(
             result.holdings.single { it.securityId == american.id }.day))
     }
@@ -62,6 +64,12 @@ class MarketHolidayTest {
         assertEquals(0, BigDecimal.ZERO.compareTo(result.day))
         assertEquals(0, d("1100").compareTo(result.dayBase!!))
         assertEquals(0.0, result.dayPercent!!.toDouble(), 0.001)
-        assertNull(result.holdings.single().day)
+        val holding = result.holdings.single()
+        assertEquals(0, BigDecimal.ZERO.compareTo(holding.day!!))
+        assertEquals(0.0, holding.dayPercent!!.toDouble(), 0.001)
+        assertEquals(0, BigDecimal.ZERO.compareTo(
+            MarketHoliday.dailyChange(canadian, quote, now)))
+        assertEquals(0, BigDecimal.ZERO.compareTo(
+            MarketHoliday.dailyPercent(canadian, quote, now)))
     }
 }

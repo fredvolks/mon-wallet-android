@@ -42,6 +42,8 @@ private data class WatchFacts(val fundamentals: Fundamentals? = null, val analys
 @Composable
 fun QuoteRow(w: Wallet, s: Security, onClick: () -> Unit, menu: (@Composable () -> Unit)? = null) {
     val q = w.quotes[s.id]
+    val dailyChange = MarketHoliday.dailyChange(s, q)
+    val dailyPercent = MarketHoliday.dailyPercent(s, q)
     Row(
         Modifier.fillMaxWidth()
             .heightIn(min = 68.dp)
@@ -91,8 +93,8 @@ fun QuoteRow(w: Wallet, s: Security, onClick: () -> Unit, menu: (@Composable () 
             horizontalAlignment = Alignment.End,
         ) {
             Text(number(q?.price), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            Text(signed(q?.change, s.currency), color = tint(q?.change), fontSize = 11.sp)
-            Text(percent(q?.percent), color = tint(q?.change), fontSize = 11.sp)
+            Text(signed(dailyChange, s.currency), color = tint(dailyChange), fontSize = 11.sp)
+            Text(percent(dailyPercent), color = tint(dailyChange), fontSize = 11.sp)
         }
         menu?.invoke()
     }
@@ -673,11 +675,14 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
     followSpark: Boolean, showName: Boolean, showExtended: Boolean,
     click: () -> Unit, move: (Int) -> Unit, menu: @Composable () -> Unit) {
     val q = w.quotes[s.id]
+    val holiday = MarketHoliday.isHolidayToday(s)
+    val dailyChange = MarketHoliday.dailyChange(s, q)
+    val dailyPercent = MarketHoliday.dailyPercent(s, q)
     val points = remember(w.prices, s.id) { w.prices.filter { it.securityId == s.id } }
     val selected = if (followSpark) period else PerformancePeriod.M1
     val spark = remember(points, selected) { MomentumEngine.series(points, selected)
         ?.map { it.close } ?: emptyList() }
-    val extended = q?.takeIf { showExtended && supportsUsExtendedHours(s) }
+    val extended = q?.takeIf { showExtended && supportsUsExtendedHours(s) && !holiday }
         ?.let { NormalizedQuote.from(it) }
     val extra = when (extended?.marketSession) {
         MarketSession.PRE_MARKET -> extended.preMarketPrice
@@ -724,17 +729,17 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
                 when (key) {
                     "sparkline" -> Box(Modifier.fillMaxWidth().height(22.dp)) {
                         if (spark.size > 1) Chart(spark, modifier = Modifier.fillMaxSize(),
-                            color = tint(q?.change))
+                            color = tint(dailyChange))
                         else Text("—", fontSize = 10.sp, color = Muted)
                     }
                     "price" -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
                         WatchValue(number(q?.price), MaterialTheme.colorScheme.onSurface,
                             11.sp, emphasized = true)
                     }
-                    "dayPercent" -> WatchValue(percent(q?.percent), tint(q?.change))
+                    "dayPercent" -> WatchValue(percent(dailyPercent), tint(dailyChange))
                     else -> {
                         val value = watchCell(w, s, q, points, key, period, extended, facts)
-                        WatchValue(value, if (key == "dayAmount") tint(q?.change)
+                        WatchValue(value, if (key == "dayAmount") tint(dailyChange)
                             else if (key == "period" || PerformancePeriod.entries.any {
                                     it.label == key }) tint(when {
                                 value.startsWith("+") -> BigDecimal.ONE
@@ -771,7 +776,7 @@ private fun watchCell(w: Wallet, s: Security, q: Quote?, points: List<Point>, ke
     "name" -> s.name
     "exchange" -> s.exchange
     "currency" -> s.currency
-    "dayAmount" -> signed(q?.change, s.currency)
+    "dayAmount" -> signed(MarketHoliday.dailyChange(s, q), s.currency)
     "period" -> percent(MomentumEngine.performance(points, period))
     "1S", "1M", "3M", "6M", "1A", "5A" -> percent(MomentumEngine.performance(
         points, PerformancePeriod.entries.first { it.label == key }))

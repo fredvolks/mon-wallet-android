@@ -19,6 +19,7 @@ import android.widget.RemoteViews
 import ca.monwallet.app.MainActivity
 import ca.monwallet.app.R
 import ca.monwallet.app.data.Catalog
+import ca.monwallet.app.domain.MarketHoliday
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Result
 import ca.monwallet.app.domain.Wallet
@@ -65,10 +66,14 @@ internal object WidgetWideRenderer {
     internal fun titleSummary(label: String, priceText: String, dayPercent: java.math.BigDecimal?,
         showPrice: Boolean, showPercent: Boolean, session: MarketSession?,
         tickerChars: Int = 5, priceChars: Int = 10,
-        extendedPercent: java.math.BigDecimal? = null): SpannableStringBuilder {
+        extendedPercent: java.math.BigDecimal? = null, holiday: Boolean = false): SpannableStringBuilder {
         val summary = SpannableStringBuilder()
         // Keep every value at the same monospace character offset, even with PRE/AH.
-        summary.append(label.take(tickerChars).padEnd(tickerChars)).append(" ")
+        summary.append(label.take(tickerChars).padEnd(tickerChars))
+        val badgeStart = summary.length
+        summary.append(if (holiday) "F" else " ")
+        if (holiday) summary.setSpan(ForegroundColorSpan(Color.rgb(181, 150, 241)),
+            badgeStart, summary.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         if (showPrice) {
             val start = summary.length
             summary.append(priceText.take(priceChars).padEnd(priceChars))
@@ -200,11 +205,12 @@ internal object WidgetWideRenderer {
         }
         data class TitleQuote(val id: String, val label: String, val price: String,
             val dayPercent: java.math.BigDecimal?, val session: MarketSession?,
-            val extendedPercent: java.math.BigDecimal?)
+            val extendedPercent: java.math.BigDecimal?, val holiday: Boolean)
         val quoteDetails = titles.mapNotNull { holding ->
             val security = wallet.security(holding.securityId) ?: return@mapNotNull null
             val q = wallet.quotes[security.id]
-            val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) }
+            val holiday = MarketHoliday.isHolidayToday(security)
+            val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) && !holiday }
                 ?.let { NormalizedQuote.from(it) }
             val session = extended?.marketSession
             val extraPrice = when (session) {
@@ -220,8 +226,9 @@ internal object WidgetWideRenderer {
             val showPrice = config.price && !config.hideAmounts
             TitleQuote(security.id, if (config.ticker) security.ticker else security.name,
                 if (showPrice) number(extraPrice ?: q?.price) else "",
-                q?.percent, session.takeIf { extraPrice != null },
-                extraPercent.takeIf { extraPrice != null })
+                MarketHoliday.dailyPercent(security, q),
+                session.takeIf { extraPrice != null && !holiday },
+                extraPercent.takeIf { extraPrice != null && !holiday }, holiday)
         }
         // Reserve only as many characters as this widget's selected titles need.
         // Ten fixed price characters made the type needlessly tiny on a real 4x2.
@@ -230,7 +237,7 @@ internal object WidgetWideRenderer {
         val summaries = quoteDetails.associate { detail ->
             detail.id to titleSummary(detail.label, detail.price, detail.dayPercent,
                 config.price && !config.hideAmounts, config.titleDayPercent, detail.session,
-                tickerChars, priceChars, detail.extendedPercent)
+                tickerChars, priceChars, detail.extendedPercent, detail.holiday)
         }
         // One text size for every title keeps the monospace price/% columns aligned.
         // Account for the actual 4x2 width, the divider, and the larger logos.

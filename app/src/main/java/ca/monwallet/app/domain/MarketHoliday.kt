@@ -1,5 +1,6 @@
 package ca.monwallet.app.domain
 
+import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -49,6 +50,13 @@ object MarketHoliday {
     /** A holiday title never contributes to the daily portfolio P&L, even with a cached quote. */
     fun excludesDailyPnl(security: Security, now: Long = System.currentTimeMillis()): Boolean =
         isHolidayToday(security, now)
+
+    /** Ignore cached price movement while the security's exchange is closed for a holiday. */
+    fun dailyChange(security: Security, quote: Quote?, now: Long = System.currentTimeMillis()): BigDecimal? =
+        if (isHolidayToday(security, now)) ZERO else quote?.change
+
+    fun dailyPercent(security: Security, quote: Quote?, now: Long = System.currentTimeMillis()): BigDecimal? =
+        if (isHolidayToday(security, now)) ZERO else quote?.percent
 
     private fun canadianHolidays(year: Int): Set<LocalDate> {
         val dates = mutableSetOf(

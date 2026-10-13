@@ -332,8 +332,13 @@ data class Wallet(
         val regular = Engine.calculate(entries, datedQuotes, usd, holidayIds).let { result ->
             if (holidayIds.isEmpty()) result else result.copy(
                 holdings = result.holdings.map { holding ->
-                    if (holding.securityId in holidayIds) holding.copy(day = null, dayBase = null)
-                    else holding
+                    if (holding.securityId in holidayIds) holding.copy(
+                        day = ZERO,
+                        dayBase = holding.value?.takeIf { it.signum() > 0 }
+                            ?: holding.dayBase?.takeIf { it.signum() > 0 }
+                            ?: holding.costCad.takeIf { it.signum() > 0 }
+                            ?: ONE,
+                    ) else holding
                 }
             )
         }
