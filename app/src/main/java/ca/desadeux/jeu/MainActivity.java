@@ -1077,8 +1077,8 @@ public final class MainActivity extends Activity {
   try{
    List<JournalStats.Entry> all=loadJournalStats();
    LocalDate today=LocalDate.now(ZoneId.of("America/Montreal"));
-   addText(journalCard,"Cette semaine "+JournalStats.week(all)+"  ·  Ce mois "+JournalStats.month(all)+
-    "  ·  Cette année "+JournalStats.year(all),14,PALE,true,5);
+   addText(journalCard,"Cette semaine "+JournalStats.week(all,today)+"  ·  Ce mois "+JournalStats.month(all,today)+
+    "  ·  Cette année "+JournalStats.year(all,today),14,PALE,true,5);
   }catch(Exception ex){addText(journalCard,"Journal temporairement inaccessible",12,PINK,false,5);}
   addButton(journalCard,"OUVRIR MON CALENDRIER ET MES STATS   →",true,()->openJournal());
   settingTile("★  Nos avis après les soirées","3 questions simples, une réponse de Fred et une d'Émilie.",
