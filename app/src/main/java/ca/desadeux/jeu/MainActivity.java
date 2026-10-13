@@ -1158,8 +1158,12 @@ public final class MainActivity extends Activity {
   if(gpuD20!=null)gpuD20.onResume();
  }
  @Override public void onBackPressed(){
-  if(tab.equals("library")){tab="settings";draw();}
-  else if(!tab.equals("home")){tab="home";draw();}
+  if(tab.equals("intimacy")){tab="journal";draw();}
+  else if(tab.equals("feedback_answer")){tab="feedback";draw();}
+  else if(tab.equals("library")||tab.equals("journal")||tab.equals("feedback")
+   ||tab.equals("privacy")||tab.equals("rules")||tab.equals("updater")){
+   tab="settings";draw();
+  }else if(!tab.equals("home")){tab="home";draw();}
   else super.onBackPressed();
  }
 }

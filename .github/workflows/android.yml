@@ -36,7 +36,7 @@ jobs:
           src=Path('app/src/main/java/ca/desadeux/jeu/MainActivity.java').read_text()
           assert '{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"special","✦","Défi spécial"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}' in src
           assert '{"library","♡","Défis"}' not in src
-          assert 'CONSULTER ET GÉRER LES DÉFIS' in src
+          assert 'CONSULTER LES DÉFIS' in src
           assert 'void drawSpecial()' in src
           assert 'specialSaved(now)' in src
           assert 'new PremiumD20View(this)' in src
