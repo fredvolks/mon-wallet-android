@@ -38,6 +38,7 @@ public final class MainActivity extends Activity {
  ScrollView scroll;
  Dice3DView dice;
  String tab="home",player="Émilie";
+ int adventSelected=1;
  Category selected=Category.COQUIN;
  boolean rolling=false;
  int width=0;
@@ -71,6 +72,9 @@ public final class MainActivity extends Activity {
     prefs.edit().putLong(key,ChallengePicker.mark(prefs.getLong(key,0L),category,face)).apply();
    }catch(Exception ignored){}
   }
+  LocalDate localToday=LocalDate.now(ZoneId.of("America/Montreal"));
+  int defaultDay=localToday.getMonthValue()==12?Math.min(25,localToday.getDayOfMonth()):1;
+  adventSelected=Math.max(1,Math.min(25,prefs.getInt("advent_selected",defaultDay)));
   player=prefs.getString("player","Émilie");
   if(!player.equals("Fred")&&!player.equals("Émilie")){
    player="Émilie";prefs.edit().putString("player",player).apply();
@@ -173,17 +177,18 @@ public final class MainActivity extends Activity {
   switch(tab){
    case "game":drawGame();break;
    case "library":drawLibrary();break;
+   case "advent":drawAdvent();break;
    case "settings":drawSettings();break;
    default:drawHome();break;
   }
   drawNav();
  }
  void drawNav(){
-  for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"library","♡","Défis"},{"settings","⚙","Réglages"}}){
+  for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"advent","🎁","Avent"},{"library","♡","Défis"},{"settings","⚙","Réglages"}}){
    LinearLayout col=vertical();col.setGravity(Gravity.CENTER);
    boolean active=tab.equals(item[0]);
-   TextView icon=text(item[1],27,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
-   TextView name=text(item[2],11,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
+   TextView icon=text(item[1],item[0].equals("advent")?23:25,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
+   TextView name=text(item[2],10,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);
    nav.addView(col,lp);col.setOnClickListener(v->{if(rolling)return;tab=item[0];draw();});
   }
@@ -345,8 +350,7 @@ public final class MainActivity extends Activity {
   int face=prefs.getInt("face",1);
   showDice(20,pending?face:20);
   if(pending)card("🎯  "+categoryName(actual)+" · Face "+face,
-    "Résultat confirmé : "+other(prefs.getString("card_player","Émilie"))+
-    " propose ce défi à "+prefs.getString("card_player","Émilie")+".");
+   "Défi proposé à "+prefs.getString("card_player","Émilie")+".");
   LinearLayout counter=card("♢  "+done+" / "+total+" défis réalisés","Le D20 est brassé par celui ou celle qui donne le défi.");
   progress(counter,(float)done/Math.max(1,total));
   duoProgress();
@@ -355,9 +359,12 @@ public final class MainActivity extends Activity {
    String giver=other(receiver);
    String[] result=GameData.get(actual,face);
    LinearLayout resultCard=card("♥  "+categoryName(actual)+"  ·  Face "+face,null);
-   addText(resultCard,giver+" propose à "+receiver,16,PINK,true,10);
+   addText(resultCard,"🎁  QUI OFFRE / PROPOSE : "+giver.toUpperCase(java.util.Locale.CANADA_FRENCH),15,PINK,true,7);
+   addText(resultCard,"♡  QUI REÇOIT : "+receiver.toUpperCase(java.util.Locale.CANADA_FRENCH),15,WHITE,true,13);
    addText(resultCard,result[0],24,WHITE,true,9);
-   addText(resultCard,result[1],17,PALE,false,10);
+   addText(resultCard,"À faire : "+result[1],17,PALE,false,11);
+   addText(resultCard,"EXEMPLE CONCRET",12,PINK,true,5);
+   addText(resultCard,result[2],15,MUTED,false,13);
    addText(resultCard,"Défis différents proposés à "+receiver+" : "+
     (60-ChallengePicker.remaining(seenMask(receiver)))+" / 60",12,MUTED,false,9);
    if(!prefs.getBoolean("accepted",false)){
@@ -418,7 +425,7 @@ public final class MainActivity extends Activity {
   switch(c){case COQUIN:return "Coquin";case SEXUEL:return "Sexuel";default:return "Sensuel";}
  }
  void drawLibrary(){
-  heading("♡  Les défis","60 idées pour vos soirées intimes");
+  heading("♡  Les défis","60 cartes revues avec consignes et exemples précis");
   section("Explorer les catégories");
   LinearLayout row=horizontal();page.addView(row);
   for(Category c:Category.values())chip(row,categoryName(c),selected==c,()->{
@@ -428,7 +435,75 @@ public final class MainActivity extends Activity {
   addText(page,categoryName(selected).toUpperCase()+"  ·  20 FACES",12,PINK,true,13);
   for(int i=1;i<=20;i++){
    String[] item=GameData.get(selected,i);
-   LinearLayout c=card(String.format(java.util.Locale.CANADA_FRENCH,"%02d  ♥  %s",i,item[0]),item[1]);
+   LinearLayout c=card(String.format(java.util.Locale.CANADA_FRENCH,"%02d  ♥  %s",i,item[0]),"À faire : "+item[1]);
+   addText(c,"Exemple : "+item[2].replaceFirst("^Exemple : ",""),13,MUTED,false,0);
+  }
+ }
+
+ int adventYear(){
+  return LocalDate.now(ZoneId.of("America/Montreal")).getYear();
+ }
+ String adventKey(int day,String kind){
+  return "advent_"+adventYear()+"_"+day+"_"+kind;
+ }
+ boolean adventDone(int day){return prefs.getBoolean(adventKey(day,"done"),false);}
+ boolean adventSwap(int day){return prefs.getBoolean(adventKey(day,"swapped"),false);}
+ int adventProgress(){
+  int result=0;for(int day=1;day<=25;day++)if(adventDone(day))result++;return result;
+ }
+ void drawAdvent(){
+  heading("🎁  Calendrier de l'Avent","25 surprises de décembre — un seul calendrier pour Fred et Émilie");
+  addText(page,"DÉCEMBRE "+adventYear()+"  ·  25 MOMENTS À DEUX",12,PINK,true,8);
+  LinearLayout total=card("♥  "+adventProgress()+" / 25 cases réalisées",
+   "Chaque journée est une activité partagée : Fred offre, Émilie offre ou vous la vivez ensemble.");
+  progress(total,adventProgress()/25f);
+  addText(page,"Touchez une case pour la découvrir. Le calendrier reste accessible toute l'année pour l'essayer.",13,MUTED,false,12);
+  for(int row=0;row<5;row++){
+   LinearLayout week=horizontal();page.addView(week);
+   for(int col=0;col<5;col++){
+    final int day=row*5+col+1;
+    String caption=adventDone(day)?"✓ "+day:""+day;
+    chip(week,caption,adventSelected==day,()->{
+     adventSelected=day;prefs.edit().putInt("advent_selected",day).apply();draw();
+    },1);
+   }
+   gap(page,7);
+  }
+  gap(page,15);
+  int day=adventSelected;
+  String[] item=AdventData.days[day-1];
+  boolean together=AdventData.isTogether(day);
+  String giver=AdventData.giver(day,adventSwap(day));
+  String receiver=AdventData.recipient(day,adventSwap(day));
+  LinearLayout chosen=card("🎁  CASE "+day+" / 25  ·  "+item[0],null);
+  if(together){
+   addText(chosen,"♥  À FAIRE ENSEMBLE : FRED + ÉMILIE",16,PINK,true,9);
+  }else{
+   addText(chosen,"🎁  QUI OFFRE : "+giver.toUpperCase(java.util.Locale.CANADA_FRENCH),16,PINK,true,7);
+   addText(chosen,"♡  QUI REÇOIT : "+receiver.toUpperCase(java.util.Locale.CANADA_FRENCH),16,WHITE,true,9);
+  }
+  addText(chosen,"DÉFI DU JOUR",12,PINK,true,6);
+  addText(chosen,AdventData.instruction(day,adventSwap(day)),17,WHITE,false,12);
+  addText(chosen,"EXEMPLE",12,PINK,true,5);
+  addText(chosen,AdventData.example(day,adventSwap(day)).replaceFirst("^Exemple : ",""),15,MUTED,false,12);
+  if(!together)
+   addButton(chosen,"↔  INVERSER FRED ET ÉMILIE",false,()->{
+    prefs.edit().putBoolean(adventKey(day,"swapped"),!adventSwap(day)).apply();draw();
+   });
+  if(!adventDone(day)){
+   addButton(chosen,"✓  MARQUER CETTE CASE TERMINÉE",true,()->{
+    prefs.edit().putBoolean(adventKey(day,"done"),true).apply();draw();
+   });
+  }else{
+   addText(chosen,"✓ Cette activité a été réalisée.",15,GREEN,true,6);
+   addButton(chosen,"↻  REMETTRE À FAIRE",false,()->{
+    prefs.edit().putBoolean(adventKey(day,"done"),false).apply();draw();
+   });
+  }
+  addText(page,"Aucune activité n'est obligatoire. Vous pouvez remplacer une proposition, la remettre à plus tard ou simplement la passer.",13,MUTED,false,16);
+  if(adventProgress()==25){
+   LinearLayout finish=card("♥  Vos 25 cases sont complétées !",
+    "Votre calendrier sera vierge pour le prochain mois de décembre.");
   }
  }
  void drawSettings(){
@@ -463,6 +538,7 @@ public final class MainActivity extends Activity {
   card("Répartition hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
   card("Quatre tirages en 3D","Semaine : D6 pondéré · Soirée : un D6 chacun · Défis : D20 à 80/10/10.");
   card("Défis sans répétition","Toute carte proposée, même passée, ne peut pas ressortir pour la même personne pendant la soirée.");
+  card("Calendrier de l'Avent","25 cases communes à Fred et Émilie. Possibilité d'inverser les rôles; progrès local sauvegardé par année.");
   card("Intimité et respect","Les défis sont des invitations. Vous pouvez toujours passer. Les données de jeu restent sur ce téléphone.");
   gap(page,8);addText(page,"Dés à Deux · Version "+BuildConfig.VERSION_NAME,12,MUTED,false,0);
  }

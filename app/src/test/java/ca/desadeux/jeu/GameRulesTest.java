@@ -18,7 +18,7 @@ public class GameRulesTest {
     assertEquals(category+" to "+actual,expectation,(double)counts[actual.ordinal()]/runs,.015);
    }
    assertEquals(20,GameData.cards[category.ordinal()].length);
-   for(int i=1;i<=20;i++)assertEquals(2,GameData.get(category,i).length);
+   for(int i=1;i<=20;i++)assertEquals(3,GameData.get(category,i).length);
   }
   for(int i=0;i<100;i++){assertTrue(GameLogic.d6()>=1&&GameLogic.d6()<=6);assertTrue(GameLogic.d20()>=1&&GameLogic.d20()<=20);}
  }
@@ -64,5 +64,42 @@ public class GameRulesTest {
   assertEquals(.8,(double)counts[0]/runs,.015);
   assertEquals(.1,(double)counts[1]/runs,.015);
   assertEquals(.1,(double)counts[2]/runs,.015);
+ }
+
+ @Test public void allSixtyCardsProvideActionAndConcreteExample(){
+  java.util.Set<String> seen=new java.util.HashSet<>();
+  for(Category category:Category.values()){
+   for(int face=1;face<=20;face++){
+    String[] card=GameData.get(category,face);
+    assertEquals(3,card.length);
+    assertTrue(card[0].length()>=4);
+    assertTrue(card[1].length()>25);
+    assertTrue(card[2].length()>25);
+    assertTrue("All challenges must be distinct by category and title",
+      seen.add(category.name()+":"+card[0]));
+    assertTrue("Example required for "+card[0],card[2].startsWith("Exemple : "));
+   }
+  }
+  assertEquals(60,seen.size());
+ }
+ @Test public void adventHasTwentyFiveSharedActivitiesWithClearRoles(){
+  assertEquals(25,AdventData.days.length);
+  int together=0,fred=0,emilie=0;
+  for(int day=1;day<=25;day++){
+   String[] item=AdventData.days[day-1];
+   assertEquals(4,item.length);
+   for(String text:item)assertFalse(text.trim().isEmpty());
+   assertTrue(item[3].startsWith("Exemple : "));
+   if(AdventData.isTogether(day)){
+    together++;assertEquals("Fred et Émilie",AdventData.giver(day,false));
+    assertEquals(AdventData.instruction(day,false),AdventData.instruction(day,true));
+   }else{
+    if(AdventData.giver(day,false).equals("Fred"))fred++;else emilie++;
+    assertNotEquals(AdventData.giver(day,false),AdventData.giver(day,true));
+    assertEquals(AdventData.giver(day,false),AdventData.recipient(day,true));
+    assertEquals(AdventData.recipient(day,false),AdventData.giver(day,true));
+   }
+  }
+  assertEquals(9,together);assertEquals(8,fred);assertEquals(8,emilie);
  }
 }
