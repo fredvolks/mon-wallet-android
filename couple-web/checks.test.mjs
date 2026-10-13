@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import { marketingHtml,authHtml,profileHtml,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
@@ -351,4 +351,22 @@ test('Embedded Android account screen uses platform Google and email code',()=>{
  assert.match(app,/verifyOtp/);
  assert.match(app,/launchParams\.has\('auth'\)/);
  assert.match(app,/launchParams\.has\('settings'\)/);
+});
+
+
+test('The two private wellbeing pickers are dark in-app dialogs, never native white OS select menus',()=>{
+ const html=wellbeingFields();
+ const css=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
+ const manifest=readFileSync(new URL('../app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
+ const theme=readFileSync(new URL('../app/src/main/res/values/styles.xml',import.meta.url),'utf8');
+ assert.equal((html.match(/class="love-answer-dialog"/g)||[]).length,2);
+ assert.equal((html.match(/class="love-answer-trigger"/g)||[]).length,2);
+ assert.equal((html.match(/type="hidden" id="wellbeing-/g)||[]).length,2);
+ assert.doesNotMatch(html,/<select\\s+id="wellbeing-/);
+ assert.match(html,/role="radiogroup"/);
+ assert.match(css,/dialog\\.love-answer-dialog::backdrop/);
+ assert.match(css,/button\\.love-answer-option\\[aria-checked="true"\\]/);
+ assert.match(app,/bindWellbeingMenus\\(\\)/);
+ assert.match(theme,/<style name="LoveRollConnectedTheme" parent="android:style\\/Theme\\.Material\\.NoActionBar">/);
+ assert.match(manifest,/android:theme="@style\\/LoveRollConnectedTheme"/);
 });
