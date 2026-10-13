@@ -2,7 +2,7 @@
 
 ## État exact
 Le code de l'application web multiappareil et son schéma Supabase sont préparés dans `couple-web/`.
-**Il n'est PAS déployé, aucun compte n'a été créé et aucune synchronisation réelle n'est encore active.**
+**La base Supabase dédiée est créée et le schéma SQL a été installé (12 tables avec RLS). La PWA n'est PAS encore publiée sur une URL vérifiée; aucun vrai compte ni aucune synchronisation n'ont encore été testés.**
 L'application Android native v0.7.0 reste locale et utilise encore ses anciennes données.
 Ce module connecté doit être provisionné dans un projet Supabase **dédié**, jamais Mon Wallet.
 
@@ -13,10 +13,10 @@ Ce module connecté doit être provisionné dans un projet Supabase **dédié**,
 - Chaque partenaire se connecte avec son propre compte. La personne invitée doit utiliser **le courriel exact** auquel l'invitation était destinée, y compris si Apple masque son courriel via relais.
 
 ## Installer une fois le projet dédié provisionné
-1. Créer un nouveau projet Supabase (avec autorisation et vérification du coût).
-2. Exécuter `schema.sql` sur ce seul projet. Tester les politiques de sécurité RLS en utilisant deux comptes réels + un troisième compte non autorisé.
+1. ✅ Projet Supabase dédié `Dés à Deux` créé dans l'organisation `Fred forge` en région `ca-central-1` ; coût annoncé 0 $/mois.
+2. ✅ Schéma `schema.sql` installé par migration dans le projet dédié. ✅ Contrôle SQL : 12/12 tables sous RLS, aucun accès anonyme au journal, aucun `INSERT` direct des tirages avec le rôle authenticated. ⏳ Tester avec trois vrais comptes reste à faire.
 3. Configurer Google et Apple dans Auth > Providers et autoriser le domaine HTTPS du site et son callback.
-4. Renseigner uniquement l'URL publique du projet, la clé **publishable** et l'adresse HTTPS du site dans `config.js`. Ne jamais inclure de secret admin/service-role.
+4. ✅ `config.js` contient uniquement l'URL publique du nouveau projet et sa clé **publishable**. Aucun secret admin/service-role n'est conservé dans le dépôt. L'URL HTTPS de GitHub Pages est prévue mais pas encore vérifiée.
 5. Héberger `couple-web/` sur un site HTTPS privé côté contenu (code statique public, données protégées par Auth, RLS et chiffrement). PWA accessible via Chrome Android et Safari iPhone.
 6. Faire une vraie invitation de test. L'invitant remplit l'adresse de son partenaire, puis son app courriel s'ouvre avec l'invitation : il doit appuyer sur **Envoyer**. Les envois automatiques nécessitent un fournisseur transactionnel distinct, non configuré.
 7. Pour le journal intime et les questionnaires, définir ensemble une phrase secrète forte et la partager hors de l'app. Elle sert à chiffrer les données côté appareil (AES-GCM avec clé PBKDF2), n'est jamais envoyée au serveur et **ne peut pas être récupérée si perdue**. Les dates restent visibles comme métadonnées aux membres du couple.
@@ -53,3 +53,15 @@ Il faut un projet cloud dédié avec coût confirmé, puis tester les règles RL
 Les notifications temps réel de premier plan sont prévues; les notifications push quand le navigateur iPhone est fermé nécessitent encore un service de push et des autorisations.
 L'invitation est préparée dans l'application de courriel (envoi manuel) jusqu'à l'installation d'un fournisseur de courriel transactionnel.
 L'APK natif v0.7.0 n'est pas encore relié au mode web. La PWA est prévue pour les deux appareils une fois hébergée, avec migration volontaire des anciennes données.
+
+## Configuration actuelle (2026-10-13)
+- Nouveau projet : [Dés à Deux — Supabase](https://supabase.com/dashboard/project/ejsrqfpkgwraorrznjpm), **séparé** de Mon Wallet.
+- Région : Canada central. Coût de création annoncé : **0 $ par mois**. Les limites du plan gratuit demeurent applicables.
+- Le serveur de données et les fonctions de tirage sont installés. Les avertissements de l'analyseur Supabase concernant les fonctions `SECURITY DEFINER` exposées aux utilisateurs authentifiés sont intentionnels pour les tirages ; chaque RPC doit obligatoirement vérifier l'appartenance au couple et l'auteur, et être testé avec un 3e compte non membre. Voir [l'avertissement](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+- Authentification courriel : l'UI contient maintenant `signInWithOtp` (lien courriel) comme option de secours ; dépend du quota de courriels Supabase et des URL de redirection.
+- **Action obligatoire à une seule reprise pour GitHub Pages (si le workflow échoue)** : aller à `github.com/fredvolks/mon-wallet-android/settings/pages`, puis sélectionner `GitHub Actions` comme source. Le workflow `.github/workflows/deploy-couple-web.yml` publiera alors exclusivement le répertoire `couple-web/`, normalement à `https://fredvolks.github.io/mon-wallet-android/`. Ne communiquer ce lien comme actif qu'après vérification de la publication.
+- **Action obligatoire Supabase Auth > URL Configuration** : définir **Site URL** et **Redirect URLs** sur cette adresse HTTPS. Les liens OAuth et Magic Link peuvent échouer sinon.
+- **Google** : créer un OAuth Client Web via Google Cloud Console, rediriger vers `https://ejsrqfpkgwraorrznjpm.supabase.co/auth/v1/callback`, puis installer le Client ID/Secret dans Supabase Auth > Providers > Google, sans jamais les mettre dans le code web.
+- **Apple** : un compte Apple Developer, Service ID, Team ID, Key ID et clé privée sont nécessaires dans Supabase Auth > Providers > Apple. Apple peut masquer le courriel, auquel cas la personne doit se connecter avec le courriel exact de l'invitation ou choisir une adresse Google/courriel identique.
+- L'application web peut fonctionner depuis Android/iPhone en PWA avec les **mêmes** comptes et données lorsque site + auth sont activés. L'APK Android natif existant n'est **pas automatiquement migré** vers ce système.
+- Notifications en temps réel : bannières dans l'application lorsque la PWA est ouverte, pas encore de notifications push quand Safari/Chrome est fermé.

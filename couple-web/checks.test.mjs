@@ -95,3 +95,18 @@ test('The five bottom tabs keep Settings, with shared Journal inside',()=>{
  assert.match(app,/Ouvrir le calendrier et les statistiques/);
  assert.match(app,/Nos questionnaires de soirées/);
 });
+
+test('Only the dedicated Supabase project and its publishable client key are configured',()=>{
+ const cfg=readFileSync(new URL('./config.js',import.meta.url),'utf8');
+ assert.match(cfg,/ejsrqfpkgwraorrznjpm\.supabase\.co/);
+ assert.match(cfg,/sb_publishable_/);
+ assert.doesNotMatch(cfg,/service_role|sb_secret_/);
+ assert.match(cfg,/fredvolks\.github\.io\/mon-wallet-android/);
+});
+test('Email magic link fallback works in addition to Google and Apple login options',()=>{
+ assert.match(app,/Continuer avec Google/);
+ assert.match(app,/Continuer avec Apple/);
+ assert.match(app,/client\.auth\.signInWithOtp/);
+ assert.match(app,/emailRedirectTo:redirectTo/);
+ assert.match(app,/if\(verb==='email-login'\)/);
+});

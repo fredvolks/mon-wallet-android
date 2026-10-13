@@ -1,0 +1,39 @@
+name: Déployer Dés à Deux Web sur GitHub Pages
+on:
+  push:
+    branches: [des-a-deux-apk-20261013]
+    paths:
+      - 'couple-web/**'
+      - '.github/workflows/deploy-couple-web.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: couple-web-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/des-a-deux-apk-20261013'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier la configuration PWA
+        run: |
+          set -euo pipefail
+          node --check couple-web/app.js
+          node --check couple-web/config.js
+          node --test couple-web/checks.test.mjs
+      - name: Préparer Pages
+        uses: actions/configure-pages@v5
+      - name: Téléverser uniquement la PWA (aucun fichier Android ni secret)
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: couple-web/
+      - name: Déployer sur Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

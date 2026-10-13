@@ -95,7 +95,10 @@ function render(){
  if(!state.user){frame('<section class="card"><div class="eyebrow">Votre espace privé</div>'+
  '<h2>Connectez-vous pour créer ou rejoindre votre couple</h2>'+
  '<div class="actions">'+button('google','Continuer avec Google')+button('apple','Continuer avec Apple')+
- '</div><p>Les noms viennent de votre inscription. Chaque partenaire possède son propre compte.</p></section>');return;}
+ '</div><div class="muted-line"><h3>Ou avec un lien de connexion</h3>'+
+ '<label>Votre courriel<input id="signin-email" type="email" autocomplete="email" placeholder="vous@exemple.com"></label>'+
+ button('email-login','Recevoir un lien sécurisé par courriel','class="subtle"')+'</div>'+
+ '<p>Les noms viennent de votre inscription. Chaque partenaire possède son propre compte.</p></section>');return;}
  if(!state.profile){const proposed=state.user.user_metadata?.full_name||state.user.user_metadata?.name||'';
   frame('<section class="card"><h2>Votre nom dans le jeu</h2><p>Ce nom apparaîtra sur les dés et les invitations. Il provient de votre inscription et peut être corrigé ici.</p>'+
   '<label>Nom à afficher<input id="profile-name" autocomplete="name" maxlength="80" value="'+safe(proposed)+'"></label>'+
@@ -486,6 +489,17 @@ async function handle(action,element){
   const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
   const {error}=await client.auth.signInWithOAuth({provider:verb,options:{redirectTo}});
   if(error)throw error;return;
+ }
+ if(verb==='email-login'){
+  const email=id('signin-email')?.value.trim().toLowerCase();
+  if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+   throw Error('Entre une adresse courriel valide.');
+  }
+  const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
+  const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
+  if(error)throw error;
+  notify('Vérifie ta boîte courriel : ton lien de connexion est envoyé.');
+  return;
  }
  if(verb==='signout'){
   state.unlockKey=null;
