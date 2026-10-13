@@ -93,6 +93,56 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           EOF
           node capture-landing.cjs
+          cat > couple-web/__wellbeing-test.html <<'EOF'
+          <!doctype html><html lang="fr-CA"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <link rel="stylesheet" href="./styles.css"></head>
+          <body><main id="app"></main><script type="module">
+          import {wellbeingFields,bindWellbeingMenus} from './onboarding.mjs';
+          document.querySelector('#app').innerHTML=
+            '<div class="auth-panel">'+wellbeingFields()+'</div>';
+          bindWellbeingMenus(document);
+          </script></body></html>
+          EOF
+          cat > verify-wellbeing.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:412,height:824},
+              deviceScaleFactor:3,isMobile:true,hasTouch:true});
+            await page.goto('http://127.0.0.1:8765/__wellbeing-test.html');
+            await page.locator('[data-love-answer-open="wellbeing-relationship"]').click();
+            const data=await page.evaluate(()=>{
+              const dialog=document.querySelector('#dialog-wellbeing-relationship');
+              const style=getComputedStyle(dialog);
+              return {open:dialog.open,background:style.backgroundImage,
+                color:style.color,nativeSelects:document.querySelectorAll('select[id^="wellbeing-"]').length,
+                options:dialog.querySelectorAll('.love-answer-option').length};
+            });
+            if(!data.open||!data.background.includes('gradient')||
+              data.nativeSelects!==0||data.options!==5)
+              throw Error('Le sélecteur du couple n’est pas entièrement personnalisé : '+JSON.stringify(data));
+            await page.screenshot({path:'landing-captures/S25-Ultra-choix-couple-sombre.png'});
+            await page.locator('#dialog-wellbeing-relationship [data-love-answer-value="distant"]').click();
+            if(await page.locator('#wellbeing-relationship').inputValue()!=='distant')
+              throw Error('La réponse couple n’est pas enregistrée.');
+            if(await page.locator('#dialog-wellbeing-relationship').evaluate(e=>e.open))
+              throw Error('Le menu couple ne se ferme pas.');
+            await page.locator('[data-love-answer-open="wellbeing-intimacy"]').click();
+            const intimate=await page.locator('#dialog-wellbeing-intimacy').evaluate(e=>({
+              open:e.open,count:e.querySelectorAll('.love-answer-option').length
+            }));
+            if(!intimate.open||intimate.count!==6)
+              throw Error('Le sélecteur intimité est incorrect : '+JSON.stringify(intimate));
+            await page.screenshot({path:'landing-captures/S25-Ultra-choix-intimite-sombre.png'});
+            await page.locator('#dialog-wellbeing-intimacy [data-love-answer-value="sensitive"]').click();
+            if(await page.locator('#wellbeing-intimacy').inputValue()!=='sensitive')
+              throw Error('La réponse intimité n’est pas enregistrée.');
+            console.log('Menu bourgogne et rose, deux sélections, fermeture : OK');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          EOF
+          node verify-wellbeing.cjs
       - name: Publier les captures comparatives
         if: always()
         uses: actions/upload-artifact@v4
