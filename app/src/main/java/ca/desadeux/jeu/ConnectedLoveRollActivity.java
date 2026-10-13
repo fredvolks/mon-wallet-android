@@ -158,9 +158,12 @@ public final class ConnectedLoveRollActivity extends Activity {
  private void beginGoogleSignIn() {
   if(authInProgress||web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
   authInProgress=true;
+  // Supabase hashes the raw nonce before comparing with Google's ID-token claim.
+  // Google MUST receive SHA-256 hex; Supabase MUST receive the original nonce.
   final String nonce=randomNonce();
+  final String googleNonce=GoogleNonce.sha256Hex(nonce);
   final GetSignInWithGoogleOption option =
-   new GetSignInWithGoogleOption.Builder(GOOGLE_WEB_CLIENT_ID).setNonce(nonce).build();
+   new GetSignInWithGoogleOption.Builder(GOOGLE_WEB_CLIENT_ID).setNonce(googleNonce).build();
   final GetCredentialRequest request=new GetCredentialRequest.Builder()
    .addCredentialOption(option).build();
   CredentialManager.create(this).getCredentialAsync(
