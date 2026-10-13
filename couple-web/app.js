@@ -789,7 +789,18 @@ async function handle(action,element){
   const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
   const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
   if(error)throw error;
-  notify('Vérifie ta boîte courriel : ton lien de connexion est envoyé.');
+  notify('Courriel envoyé. Si un code à 6 chiffres est présent, entre-le ici sans quitter LoveRoll.');
+  return;
+ }
+ if(verb==='verify-email-code'){
+  const email=id('signin-email')?.value.trim().toLowerCase();
+  const token=id('signin-code')?.value.trim();
+  if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))
+   throw Error('Entre le courriel avec lequel tu as demandé le code.');
+  if(!/^\\d{6}$/.test(token||''))throw Error('Saisis le code à six chiffres de ton courriel.');
+  const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});
+  if(error)throw error;
+  if(data?.user){state.user=data.user;state.showAuth=false;await reload();}
   return;
  }
  if(verb==='signout'){
