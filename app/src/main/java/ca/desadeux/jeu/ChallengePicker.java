@@ -31,18 +31,23 @@ public final class ChallengePicker {
   int n=0;for(Category cat:Category.values())n+=remaining(mask,cat);
   return n;
  }
- public static Pick draw(Category preferred,long seenMask){
-  // Weight category 80/10/10 while available. Exhausted categories are
-  // removed and the remaining relative weights are normalized.
+ private static int weight(Category category,Category preferred,boolean randomMode){
+  if(randomMode)return category==Category.SEXUEL?40:30;
+  return category==preferred?70:15;
+ }
+ public static Pick draw(Category preferred,long seenMask){return draw(preferred,false,seenMask);}
+ public static Pick draw(Category preferred,boolean randomMode,long seenMask){
+  // Selected mode is 70/15/15. Random mode is 30/30/40 (Sexuel 40%).
+  // Exhausted categories are excluded and probabilities renormalize without repeats.
   int totalWeight=0;
   for(Category cat:Category.values())if(remaining(seenMask,cat)>0)
-   totalWeight+=(cat==preferred?80:10);
+   totalWeight+=weight(cat,preferred,randomMode);
   if(totalWeight==0)return null;
   int roll=RANDOM.nextInt(totalWeight);
   Category chosen=null;
   for(Category cat:Category.values()){
    if(remaining(seenMask,cat)==0)continue;
-   roll-=cat==preferred?80:10;
+   roll-=weight(cat,preferred,randomMode);
    if(roll<0){chosen=cat;break;}
   }
   if(chosen==null)throw new IllegalStateException("Category choice impossible");

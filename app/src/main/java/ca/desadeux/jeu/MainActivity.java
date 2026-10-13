@@ -39,9 +39,11 @@ public final class MainActivity extends Activity {
  ScrollView scroll;
  Dice3DView dice;
  PremiumDice3DView gpuDice;
+ PremiumD20View gpuD20;
  String tab="home",player="Émilie";
  int adventSelected=1;
  Category selected=Category.COQUIN;
+ boolean randomMode=false;
  boolean rolling=false;
  int width=0;
  int dp(float x){return Math.round(getResources().getDisplayMetrics().density*x);}
@@ -82,6 +84,7 @@ public final class MainActivity extends Activity {
    player="Émilie";prefs.edit().putString("player",player).apply();
   }
   try{selected=Category.valueOf(prefs.getString("selected","COQUIN"));}catch(Exception ignored){}
+  randomMode=prefs.getBoolean("random_mode",false);
   draw();
   if(prefs.getBoolean("auto_update",true))UpdateManager.check(this,true);
  }
@@ -144,8 +147,12 @@ public final class MainActivity extends Activity {
   LinearLayout.LayoutParams fl=new LinearLayout.LayoutParams(-1,dp(diceDp));
   fl.bottomMargin=dp(8);
   page.addView(frame,fl);
-  dice=null;gpuDice=null;
-  if(sides==6&&PremiumDice3DView.supported(this)){
+  dice=null;gpuDice=null;gpuD20=null;
+  if(sides==20&&PremiumDice3DView.supported(this)){
+   gpuD20=new PremiumD20View(this);
+   gpuD20.setResult(result);
+   frame.addView(gpuD20,new FrameLayout.LayoutParams(-1,-1));
+  }else if(sides==6&&PremiumDice3DView.supported(this)){
    gpuDice=new PremiumDice3DView(this);
    gpuDice.setResult(result);
    frame.addView(gpuDice,new FrameLayout.LayoutParams(-1,-1));
@@ -164,13 +171,14 @@ public final class MainActivity extends Activity {
   });
  }
  void roll(int value,Runnable end){
-  if(rolling||(dice==null&&gpuDice==null))return;
+  if(rolling||(dice==null&&gpuDice==null&&gpuD20==null))return;
   rolling=true;
   vibrate(36);
   Runnable finished=()->{
    rolling=false;vibrate(85);end.run();
   };
-  if(gpuDice!=null)gpuDice.roll(value,finished);
+  if(gpuD20!=null)gpuD20.roll(value,finished);
+  else if(gpuDice!=null)gpuDice.roll(value,finished);
   else dice.roll(value,finished);
  }
  void showResultDialog(String symbol,String title,String description,String buttonTitle){
@@ -217,10 +225,8 @@ public final class MainActivity extends Activity {
   }catch(Exception ignored){}
  }
  void draw(){
-  if(gpuDice!=null){
-   gpuDice.onPause();
-   gpuDice=null;
-  }
+  if(gpuDice!=null){gpuDice.onPause();gpuDice=null;}
+  if(gpuD20!=null){gpuD20.onPause();gpuD20=null;}
   dice=null;
   root=vertical();root.setBackgroundColor(BG);
   scroll=new ScrollView(this);scroll.setFillViewport(false);
@@ -321,7 +327,7 @@ public final class MainActivity extends Activity {
  long seenMask(String who){return prefs.getLong(seenKey(who),0L);}
  void offerChallenge(String receiver){
   long history=seenMask(receiver);
-  ChallengePicker.Pick next=ChallengePicker.draw(selected,history);
+  ChallengePicker.Pick next=ChallengePicker.draw(selected,randomMode,history);
   if(next==null){
    new AlertDialog.Builder(this)
     .setTitle("60 défis déjà proposés à "+receiver)
@@ -357,6 +363,64 @@ public final class MainActivity extends Activity {
    addText(c,"♡  Fred reçoit "+completed("Fred")+"/"+f+"     ·     Émilie donne "+f,14,WHITE,true,4);
    if(prefs.getBoolean("active",false))progress(c,(float)completed("Fred")/f);
   }else addText(c,"♡  Fred reçoit : à brasser   ·   Émilie donne",13,MUTED,false,0);
+ }
+ void showGameD20(int value,boolean pending,Category actual,String receiver,int done,int total){
+  LinearLayout hero=horizontal();
+  hero.setBackground(shape(0xFF231126,0xFF32182E,19,0x66FC6AAB));
+  hero.setPadding(dp(6),dp(6),dp(10),dp(6));
+  LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,dp(164));
+  hp.bottomMargin=dp(8);
+  page.addView(hero,hp);
+  FrameLayout die=new FrameLayout(this);
+  LinearLayout.LayoutParams dp20=new LinearLayout.LayoutParams(0,-1,.47f);
+  hero.addView(die,dp20);
+  gpuDice=null;gpuD20=null;dice=null;
+  if(PremiumDice3DView.supported(this)){
+   gpuD20=new PremiumD20View(this);
+   gpuD20.setResult(value);
+   die.addView(gpuD20,new FrameLayout.LayoutParams(-1,-1));
+  }else{
+   dice=new Dice3DView(this);dice.setSides(20);dice.setResult(value);
+   die.addView(dice,new FrameLayout.LayoutParams(-1,-1));
+  }
+  LinearLayout detail=vertical();
+  detail.setGravity(Gravity.CENTER_VERTICAL);
+  detail.setPadding(dp(8),0,0,0);
+  hero.addView(detail,new LinearLayout.LayoutParams(0,-1,.53f));
+  addText(detail,pending?categoryName(actual).toUpperCase(java.util.Locale.CANADA_FRENCH)+" · FACE "+value:"D20 · DÉFIS",13,PINK,true,7);
+  if(pending)addText(detail,"Pour : "+receiver+"\nDe : "+other(receiver),14,WHITE,true,7);
+  else addText(detail,"Brassez pour découvrir le prochain défi.",13,PALE,false,7);
+  addText(detail,done+" / "+total+" réalisés",14,WHITE,true,5);
+  progress(detail,(float)done/Math.max(1,total));
+ }
+ void compactCoupleProgress(int fred,int emilie){
+  LinearLayout box=vertical();box.setPadding(dp(12),dp(9),dp(12),dp(10));
+  box.setBackground(shape(SURFACE,CARD2,16,0x55FF78B1));
+  LinearLayout.LayoutParams outside=new LinearLayout.LayoutParams(-1,-2);
+  outside.bottomMargin=dp(8);page.addView(box,outside);
+  LinearLayout row=horizontal();box.addView(row);
+  for(String receiver:new String[]{"Émilie","Fred"}){
+   LinearLayout entry=vertical();
+   LinearLayout.LayoutParams cell=new LinearLayout.LayoutParams(0,-2,1);
+   if(receiver.equals("Émilie"))cell.rightMargin=dp(9);
+   row.addView(entry,cell);
+   int goal=receiver.equals("Émilie")?emilie:fred;
+   int done=completed(receiver);
+   addText(entry,receiver+" reçoit "+done+"/"+goal,13,WHITE,true,2);
+   addText(entry,other(receiver)+" donne "+goal,11,MUTED,false,5);
+   progress(entry,(float)done/Math.max(1,goal));
+  }
+ }
+ void pairButton(LinearLayout target,String caption,boolean primary,Runnable callback){
+  Button b=new Button(this);
+  b.setAllCaps(false);b.setText(caption);b.setTextSize(12);
+  b.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
+  b.setTextColor(primary?WHITE:PALE);
+  b.setBackground(shape(primary?0xFFFF4998:0xFF3D2639,
+    primary?0xFFC62D76:0xFF241729,14,primary?0x99FFD1E6:0x77F270AD));
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(49),1);
+  lp.rightMargin=dp(5);target.addView(b,lp);
+  b.setOnClickListener(v->{if(!rolling)callback.run();});
  }
  void drawGame(){
   heading("🔥  Votre soirée","Chacun décide de son rythme et reçoit ses propres défis");
@@ -416,76 +480,76 @@ public final class MainActivity extends Activity {
   }
   int fredDone=completed("Fred"),emilieDone=completed("Émilie");
   int total=fred+emilie,done=fredDone+emilieDone;
-  addText(page,"ÉTAPE 3 / 3   ·   D20 DES DÉFIS",12,PINK,true,8);
+  addText(page,"ÉTAPE 3 / 3   ·   D20 DES DÉFIS",12,PINK,true,5);
   boolean pending=prefs.getBoolean("pending",false);
   Category actual=Category.valueOf(prefs.getString("actual","COQUIN"));
   int face=prefs.getInt("face",1);
-  showDice(20,pending?face:20);
-  if(pending)card("🎯  "+categoryName(actual)+" · Face "+face,
-   "Défi proposé à "+prefs.getString("card_player","Émilie")+".");
-  LinearLayout counter=card("♢  "+done+" / "+total+" défis réalisés","Le D20 est brassé par celui ou celle qui donne le défi.");
-  progress(counter,(float)done/Math.max(1,total));
-  duoProgress();
+  String receiver=prefs.getString("card_player","Émilie");
+  showGameD20(pending?face:20,pending,actual,receiver,done,total);
+  compactCoupleProgress(fred,emilie);
   if(pending){
-   String receiver=prefs.getString("card_player","Émilie");
    String giver=other(receiver);
    String[] result=GameData.get(actual,face);
-   LinearLayout resultCard=card("♥  "+categoryName(actual)+"  ·  Face "+face,null);
-   addText(resultCard,"🎁  QUI OFFRE / PROPOSE : "+giver.toUpperCase(java.util.Locale.CANADA_FRENCH),15,PINK,true,7);
-   addText(resultCard,"♡  QUI REÇOIT : "+receiver.toUpperCase(java.util.Locale.CANADA_FRENCH),15,WHITE,true,13);
-   addText(resultCard,result[0],24,WHITE,true,9);
-   addText(resultCard,"À faire : "+result[1],17,PALE,false,11);
-   addText(resultCard,"EXEMPLE CONCRET",12,PINK,true,5);
-   addText(resultCard,result[2],15,MUTED,false,13);
-   addText(resultCard,"Défis différents proposés à "+receiver+" : "+
-    (60-ChallengePicker.remaining(seenMask(receiver)))+" / 60",12,MUTED,false,9);
+   LinearLayout resultCard=card("♥ "+categoryName(actual)+" · Face "+face,null);
+   addText(resultCard,giver+" OFFRE  →  "+receiver+" REÇOIT",14,PINK,true,6);
+   addText(resultCard,result[0],20,WHITE,true,5);
+   addText(resultCard,result[1],14,PALE,false,6);
+   addText(resultCard,"Exemple : "+result[2].replaceFirst("^Exemple : ",""),12,MUTED,false,7);
+   addText(resultCard,"Défis proposés à "+receiver+" : "+
+    (60-ChallengePicker.remaining(seenMask(receiver)))+" / 60",11,MUTED,false,7);
+   LinearLayout actions=horizontal();resultCard.addView(actions);
    if(!prefs.getBoolean("accepted",false)){
-    addButton(resultCard,"✓   ACCEPTER CE DÉFI",true,()->{
+    pairButton(actions,"✓  ACCEPTER",true,()->{
      prefs.edit().putBoolean("accepted",true).apply();draw();
     });
-    addButton(resultCard,"↻   PASSER · NOUVEAU DÉFI",false,()->offerChallenge(receiver));
+    pairButton(actions,"↻  PASSER · NOUVEAU",false,()->offerChallenge(receiver));
    }else{
-    addText(resultCard,"✓ Défi accepté — terminez-le à votre rythme.",15,GREEN,true,7);
-    addButton(resultCard,"✓   DÉFI TERMINÉ",true,()->{
+    pairButton(actions,"✓  DÉFI TERMINÉ",true,()->{
      String key=receiver.equals("Fred")?"fred_completed":"emilie_completed";
      prefs.edit().putInt(key,completed(receiver)+1)
-      .putBoolean("pending",false).putBoolean("accepted",false).apply();
-     draw();
+      .putBoolean("pending",false).putBoolean("accepted",false).apply();draw();
     });
-    addButton(resultCard,"↻   CHANGER D'AVIS · PASSER",false,()->offerChallenge(receiver));
+    pairButton(actions,"↻  CHANGER D'AVIS",false,()->offerChallenge(receiver));
    }
   }else if(done<total){
    if(target(player)<0||completed(player)>=target(player)){
     player=emilieDone<emilie?"Émilie":"Fred";
     prefs.edit().putString("player",player).apply();
    }
-   section("Qui reçoit le prochain défi ?");
-   LinearLayout players=horizontal();page.addView(players);
+   LinearLayout selection=card("Qui reçoit le prochain défi ?",null);
+   LinearLayout who=horizontal();selection.addView(who);
    if(emilieDone<emilie)
-    chip(players,"Émilie reçoit",player.equals("Émilie"),()->setReceiver("Émilie"),1);
+    chip(who,"Émilie",player.equals("Émilie"),()->setReceiver("Émilie"),1);
    if(fredDone<fred)
-    chip(players,"Fred reçoit",player.equals("Fred"),()->setReceiver("Fred"),1);
-   addText(page,other(player)+" brasse pour "+player,16,PALE,true,10);
-   section("Catégorie du prochain défi");
-   LinearLayout row=horizontal();page.addView(row);
-   for(Category cat:Category.values())
-    chip(row,categoryName(cat),selected==cat,()->{
-     selected=cat;prefs.edit().putString("selected",cat.name()).apply();draw();
+    chip(who,"Fred",player.equals("Fred"),()->setReceiver("Fred"),1);
+   addText(selection,other(player)+" propose à "+player,13,PALE,false,5);
+   addText(selection,"CHOIX DE LA CATÉGORIE",11,PINK,true,6);
+   LinearLayout choices=horizontal();selection.addView(choices);
+   for(Category cat:Category.values()){
+    chip(choices,categoryName(cat),!randomMode&&selected==cat,()->{
+     selected=cat;randomMode=false;
+     prefs.edit().putString("selected",cat.name()).putBoolean("random_mode",false).apply();draw();
     },1);
-   gap(page,15);
-   card("✦  20 % de surprise","80 % dans la catégorie choisie · 10 % dans chacune des deux autres.");
-   addButton(page,"🎲  "+other(player).toUpperCase()+" BRASSE LE D20",true,()->offerChallenge(player));
+   }
+   chip(choices,"Aléatoire",randomMode,()->{
+    randomMode=true;prefs.edit().putBoolean("random_mode",true).apply();draw();
+   },1);
+   addText(selection,randomMode?
+     "Aléatoire : Sexuel 40 % · Coquin 30 % · Sensuel 30 %":
+     "Choisie : 70 % · autres catégories : 15 % chacune",12,MUTED,false,3);
+   addButton(selection,"🎲  "+other(player).toUpperCase()+" BRASSE LE D20",true,
+     ()->offerChallenge(player));
   }else{
-   LinearLayout c=card("♥  Tous les défis sont réalisés","Fred et Émilie ont chacun reçu leur nombre de défis.");
-   addButton(c,"TERMINER ET COMPTER LA SOIRÉE",true,()->{
+   LinearLayout finish=card("♥  Tous les défis sont réalisés",
+    "Vous avez complété les défis prévus pour vous deux.");
+   addButton(finish,"TERMINER ET COMPTER LA SOIRÉE",true,()->{
     prefs.edit().putInt("done",prefs.getInt("done",0)+1).apply();
     resetEvening();tab="home";draw();
    });
   }
-  gap(page,8);
   addButton(page,"Arrêter la soirée sans la compter",false,()->confirmResetEvening());
-  gap(page,10);
-  addText(page,"Chacun peut refuser, modifier ou interrompre un défi. Un défi passé ne réduit pas le nombre restant.",12,MUTED,false,0);
+  addText(page,"Chacun peut refuser, modifier ou interrompre un défi. Passer ne réduit jamais le nombre restant.",
+    11,MUTED,false,0);
  }
  void confirmResetEvening(){
   new AlertDialog.Builder(this).setTitle("Recommencer cette soirée ?")
@@ -744,7 +808,7 @@ public final class MainActivity extends Activity {
   });
   section("Règles du jeu");
   card("Répartition hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
-  card("Quatre tirages en 3D","Semaine : D6 pondéré · Soirée : un D6 chacun · Défis : D20 à 80/10/10.");
+  card("Quatre tirages en 3D","Semaine : D6 pondéré · Soirée : un D6 chacun · D20 sélection 70/15/15, aléatoire 30/30/40.");
   card("Défis sans répétition","Toute carte proposée, même passée, ne peut pas ressortir pour la même personne pendant la soirée.");
   card("Calendrier de l'Avent","25 cases secrètes qui s'ouvrent à partir de leur date en décembre; dernier samedi avant Noël : défi spécial à deux.");
   card("Intimité et respect","Les défis sont des invitations. Vous pouvez toujours passer. Les données de jeu restent sur ce téléphone.");
@@ -752,11 +816,13 @@ public final class MainActivity extends Activity {
  }
  @Override protected void onPause(){
   if(gpuDice!=null)gpuDice.onPause();
+  if(gpuD20!=null)gpuD20.onPause();
   super.onPause();
  }
  @Override protected void onResume(){
   super.onResume();
   if(gpuDice!=null)gpuDice.onResume();
+  if(gpuD20!=null)gpuD20.onResume();
  }
  @Override public void onBackPressed(){
   if(tab.equals("library")){tab="settings";draw();}

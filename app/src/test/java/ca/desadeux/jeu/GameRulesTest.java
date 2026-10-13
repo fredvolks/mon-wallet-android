@@ -14,7 +14,7 @@ public class GameRulesTest {
    int[] counts=new int[3]; int runs=120000;
    for(int i=0;i<runs;i++){counts[GameLogic.choose(category).ordinal()]++;}
    for(Category actual:Category.values()){
-    double expectation=actual==category?.8:.1;
+    double expectation=actual==category?.70:.15;
     assertEquals(category+" to "+actual,expectation,(double)counts[actual.ordinal()]/runs,.015);
    }
    assertEquals(20,GameData.cards[category.ordinal()].length);
@@ -61,11 +61,38 @@ public class GameRulesTest {
    ChallengePicker.Pick pick=ChallengePicker.draw(Category.SENSUEL,0L);
    counts[pick.category.ordinal()]++;
   }
-  assertEquals(.8,(double)counts[0]/runs,.015);
-  assertEquals(.1,(double)counts[1]/runs,.015);
-  assertEquals(.1,(double)counts[2]/runs,.015);
+  assertEquals(.70,(double)counts[0]/runs,.015);
+  assertEquals(.15,(double)counts[1]/runs,.015);
+  assertEquals(.15,(double)counts[2]/runs,.015);
  }
 
+ @Test public void randomModeHasThirtyThirtyFortyAndNoRepeats(){
+  int[] hits=new int[3];int n=150000;
+  for(int i=0;i<n;i++){
+   ChallengePicker.Pick p=ChallengePicker.draw(Category.SENSUEL,true,0L);
+   hits[p.category.ordinal()]++;
+  }
+  assertEquals(.30,hits[Category.SENSUEL.ordinal()]/(double)n,.012);
+  assertEquals(.30,hits[Category.COQUIN.ordinal()]/(double)n,.012);
+  assertEquals(.40,hits[Category.SEXUEL.ordinal()]/(double)n,.012);
+  long history=0L;
+  for(int i=0;i<60;i++){
+   ChallengePicker.Pick p=ChallengePicker.draw(Category.SEXUEL,true,history);
+   assertNotNull(p);
+   assertFalse(ChallengePicker.seen(history,p.category,p.face));
+   history=ChallengePicker.mark(history,p.category,p.face);
+  }
+  assertEquals(60,Long.bitCount(history));
+  assertNull(ChallengePicker.draw(Category.COQUIN,true,history));
+ }
+ @Test public void categorySelectionRenormalizesWhenOneDeckIsEmpty(){
+  long mask=0;
+  for(int i=1;i<=20;i++)mask=ChallengePicker.mark(mask,Category.SEXUEL,i);
+  for(int i=0;i<200;i++){
+   ChallengePicker.Pick p=ChallengePicker.draw(Category.SEXUEL,true,mask);
+   assertNotNull(p);assertNotEquals(Category.SEXUEL,p.category);
+  }
+ }
  @Test public void allSixtyCardsProvideActionAndConcreteExample(){
   java.util.Set<String> seen=new java.util.HashSet<>();
   for(Category category:Category.values()){
