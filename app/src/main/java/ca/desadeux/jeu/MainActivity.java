@@ -351,7 +351,7 @@ public final class MainActivity extends Activity {
    root.setPadding(0,top,0,bottom);
    return insets;
   });
-  setContentView(root);ViewCompat.requestApplyWindowInsets(root);
+  setContentView(root);ViewCompat.requestApplyInsets(root);
   // A/B/C: brand, photographic hero and TWO authentication actions only.
   LinearLayout hero=vertical();
   hero.setPadding(dp(11),dp(7),dp(11),dp(8));
