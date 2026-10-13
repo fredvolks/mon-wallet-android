@@ -37,3 +37,10 @@ textarea{min-height:95px}label{font-size:.88rem;color:#eed3e4}
 .die .dice-fallback{position:absolute;inset:0;display:grid;place-items:center;color:#ffb2d7;font-size:40px;text-shadow:0 0 18px #f946aa}
 .die.ready .dice-fallback{display:none}
 .die .dice-canvas{position:absolute;inset:0}
+
+/* LoveRoll 0.9: readable, tactile challenge timer */
+.timer-panel{margin:12px 0;padding:13px 14px;border:1px solid #ae547f;border-radius:15px;background:radial-gradient(circle at 60% 0%,#4a203d,#2b152e)}
+.timer-clock{font-weight:900;font-size:2.45rem;letter-spacing:.08em;font-variant-numeric:tabular-nums;line-height:1.2;margin:5px 0;color:#ffd7e9;text-align:center}
+.timer-panel p{text-align:center;margin:2px 0 9px}
+.timer-panel .actions button{min-height:48px}
+.timer-panel small{display:block;margin-top:10px;font-size:.75rem;line-height:1.4;color:#d6b3cd}

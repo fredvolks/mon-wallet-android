@@ -1,3 +1,4 @@
+import { eveningCard, EVENING_CATEGORIES, formatCountdown } from './evening-challenges.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
@@ -14,6 +15,10 @@ const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
+let timerCtx=null;
+const challengeTimer={id:null,durationMs:0,remainingMs:0,deadline:0,running:false,notified:false,mode:'sound'};
+try{const saved=localStorage.getItem('loveroll-timer-mode');if(saved==='vibrate'||saved==='sound')challengeTimer.mode=saved;}catch(e){}
+
 const kinds={weekly:'Dé hebdomadaire',monthly_activity:'Sortie du mois',
  monthly_host:'Qui invite',monthly_restaurant:'Type de restaurant'};
 const outings=['Souper en amoureux','Spa nordique','Brunch prolongé','Spectacle ou théâtre',
@@ -223,6 +228,71 @@ function renderHome(){
  '<p>Les tirages et les réponses de votre partenaire apparaîtront ici pendant que vous utilisez l’application.</p>')+
  '</section>');
 }
+function activeTimer(challenge,minutes){
+ const millis=minutes*60000;
+ if(challengeTimer.id!==challenge.id){
+  challengeTimer.id=challenge.id;
+  challengeTimer.durationMs=millis;
+  challengeTimer.remainingMs=millis;
+  challengeTimer.deadline=0;
+  challengeTimer.running=false;
+  challengeTimer.notified=false;
+ }
+}
+function clockMs(){
+ return challengeTimer.running?Math.max(0,challengeTimer.deadline-Date.now()):challengeTimer.remainingMs;
+}
+function endSignal(){
+ if(challengeTimer.notified)return;
+ challengeTimer.notified=true;
+ if(challengeTimer.mode==='vibrate'){
+  if(typeof navigator.vibrate==='function')navigator.vibrate([190,90,190,90,360]);
+  else notify("Le minuteur est terminé. La vibration n'est pas offerte sur cet iPhone : utilisez Son.");
+ }else{
+  try{
+   const context=timerCtx||new (window.AudioContext||window.webkitAudioContext)();
+   timerCtx=context;
+   context.resume().catch(()=>{});
+   for(const [idx,pitch] of [392,494,587].entries()){
+    const osc=context.createOscillator(),gain=context.createGain();
+    osc.type='sine';osc.frequency.value=pitch;
+    osc.connect(gain);gain.connect(context.destination);
+    const when=context.currentTime+idx*.25;
+    gain.gain.setValueAtTime(.0001,when);
+    gain.gain.exponentialRampToValueAtTime(.13,when+.035);
+    gain.gain.exponentialRampToValueAtTime(.0001,when+.6);
+    osc.start(when);osc.stop(when+.61);
+   }
+  }catch(e){console.warn('Son indisponible',e);}
+ }
+ notify('♡ Minuteur terminé. À vous de décider si le défi continue.');
+}
+function updateChallengeClock(){
+ if(!challengeTimer.id)return;
+ if(challengeTimer.running&&Date.now()>=challengeTimer.deadline){
+  challengeTimer.running=false;challengeTimer.remainingMs=0;endSignal();
+ }
+ const clock=document.getElementById('challenge-timer-clock');
+ if(clock)clock.textContent=formatCountdown(clockMs());
+ const button=document.getElementById('challenge-timer-toggle');
+ if(button)button.textContent=challengeTimer.running?'Ⅱ Pause':'▶ '+(challengeTimer.remainingMs<challengeTimer.durationMs?'Reprendre':'Démarrer');
+ const status=document.getElementById('challenge-timer-status');
+ if(status)status.textContent=challengeTimer.running?'En cours':challengeTimer.remainingMs===0?'Terminé':'À votre rythme';
+}
+setInterval(updateChallengeClock,500);
+function timerWidget(challenge,minutes){
+ activeTimer(challenge,minutes);
+ return '<div class="timer-panel"><div class="eyebrow">⏱ Minuteur du défi · '+minutes+' min</div>'+
+   '<div id="challenge-timer-clock" class="timer-clock">'+formatCountdown(clockMs())+'</div>'+
+   '<p id="challenge-timer-status">'+(challengeTimer.running?'En cours':'À votre rythme')+'</p>'+
+   '<div class="actions"><button id="challenge-timer-toggle" data-action="timer-toggle">'+
+    (challengeTimer.running?'Ⅱ Pause':'▶ Démarrer')+'</button>'+
+   button('timer-reset','↻ Recommencer','class="subtle"')+'</div>'+
+   '<div class="chipline" style="margin-top:9px">'+
+   '<button class="pill '+(challengeTimer.mode==='sound'?'selected':'')+'" data-action="timer-mode:sound">♫ Son doux</button>'+
+   '<button class="pill '+(challengeTimer.mode==='vibrate'?'selected':'')+'" data-action="timer-mode:vibrate">〰 Vibration</button></div>'+
+   '<small>Sonnerie discrète en fin de compte à rebours; sur iPhone, la vibration peut être indisponible. Le minuteur n’oblige jamais à poursuivre.</small></div>';
+}
 function renderSession(){
  let s=state.session; const p=other();
  let body='<section class="card"><h2>Une soirée, deux D6 individuels</h2>'+
@@ -243,9 +313,14 @@ function renderSession(){
    body+='<p>Mes défis terminés : '+completed+' / '+mine.face+
     ' · '+safe(p.name)+' donne mes défis.</p>';
    if(active){
+    const challenge=EVENING_CATEGORIES.includes(active.category)?
+      eveningCard(active.category,active.face):
+      {title:ideas[active.category]?.[active.face-1]||'Défi précédent',minutes:3,description:'Une proposition de votre partenaire.'};
     body+='<div class="card"><div class="eyebrow">'+safe(names[active.category])+
-     ' · Face '+active.face+'</div><h3>'+safe(ideas[active.category][active.face-1])+'</h3>'+
+     ' · Face '+active.face+'</div><h3>'+safe(challenge.title)+'</h3>'+
+     '<p>'+safe(challenge.description)+'</p>'+
      '<p>'+safe(p.name)+' propose → '+safe(state.profile.display_name)+' reçoit</p>'+
+     timerWidget(active,challenge.minutes)+
      '<div class="actions">'+
      (active.status==='proposed'?button('answer:'+active.id+':accepted','Accepter'):'')+
      (active.status==='accepted'?button('answer:'+active.id+':completed','Terminé'):'')+
@@ -255,14 +330,12 @@ function renderSession(){
    const otherCompleted=state.challenges.filter(x=>x.recipient===p.user_id&&x.status==='completed').length;
    if(!otherActive&&otherCompleted<theirs.face){
     body+='<div class="card"><h3>Offrir un défi à '+safe(p.name)+'</h3>'+
-     '<div class="chipline">'+['SENSUEL','COQUIN','SEXUEL'].map(c=>
-     '<button class="pill '+(!state.randomMode&&state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+
-     '<button class="pill '+(state.randomMode?'selected':'')+'" data-action="random">Aléatoire</button></div>'+
-     '<p>'+(state.randomMode?'30 % Sensuel · 30 % Coquin · 40 % Sexuel':
-       '70 % catégorie choisie · 15 % chacun des deux autres')+'</p>'+
+     '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
+     '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
+     '<p>Chaque défi : 80 % de chances de tomber dans la catégorie choisie, 20 % dans l’autre.</p>'+
      button('new-challenge','🎲 Brasser le D20 pour '+safe(p.name))+'</div>';
    }else if(otherActive){body+='<p>Défi proposé à '+safe(p.name)+
-    ' : '+safe(ideas[otherActive.category][otherActive.face-1])+'</p>';}
+    ' : '+safe(EVENING_CATEGORIES.includes(otherActive.category)?eveningCard(otherActive.category,otherActive.face).title:ideas[otherActive.category]?.[otherActive.face-1]||'Défi')+'</p>';}
   }
   const myTarget=mine?.face||0,otherTarget=theirs?.face||0;
   const mineCompleted=state.challenges.filter(x=>x.recipient===state.user.id&&x.status==='completed').length;
@@ -629,12 +702,42 @@ async function handle(action,element){
   const result=await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}));
   notify('Votre D6 : '+result.face);return;
  }
- if(verb==='category'){state.category=parts[0];state.randomMode=false;render();return;}
- if(verb==='random'){state.randomMode=true;render();return;}
+ if(verb==='category'){if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');state.category=parts[0];state.randomMode=false;render();return;}
+  if(verb==='timer-mode'){
+   if(parts[0]!=='vibrate'&&parts[0]!=='sound')throw Error('Signal inconnu');
+   challengeTimer.mode=parts[0];localStorage.setItem('loveroll-timer-mode',parts[0]);
+   if(parts[0]==='vibrate'&&typeof navigator.vibrate!=='function')
+     notify('La vibration n’est pas disponible ici. Choisis Son doux pour une alerte audible.');
+   render();return;
+ }
+ if(verb==='timer-reset'){
+   challengeTimer.running=false;
+   challengeTimer.deadline=0;
+   challengeTimer.remainingMs=challengeTimer.durationMs;
+   challengeTimer.notified=false;updateChallengeClock();return;
+ }
+ if(verb==='timer-toggle'){
+   if(!challengeTimer.id)throw Error('Aucun défi avec minuteur');
+   if(challengeTimer.running){
+    challengeTimer.remainingMs=Math.max(0,challengeTimer.deadline-Date.now());
+    challengeTimer.running=false;
+   }else if(challengeTimer.remainingMs>0){
+    if(challengeTimer.mode==='sound'){
+      try{
+       timerCtx=timerCtx||new (window.AudioContext||window.webkitAudioContext)();
+       await timerCtx.resume();
+      }catch(e){notify('Le navigateur ne permet pas encore la sonnerie.');}
+    }
+    challengeTimer.deadline=Date.now()+challengeTimer.remainingMs;
+    challengeTimer.running=true;
+    challengeTimer.notified=false;
+   }
+   updateChallengeClock();return;
+ }
  if(verb==='new-challenge'){
   if(!state.session)throw Error('Aucune soirée active.');
   await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
-   p_preference:state.category,p_random:state.randomMode}));
+   p_preference:state.category,p_random:false}));
   return;
  }
  if(verb==='answer'){await rpc('answer_challenge',{p_id:parts[0],p_status:parts[1]});

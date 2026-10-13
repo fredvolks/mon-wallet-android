@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.8.0
+      TAG: des-a-deux-v0.9.0
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -43,8 +43,10 @@ jobs:
           assert 'LoveOccasions.SURPRISES' in src
           assert 'specialSaved(now)' in src
           assert 'new PremiumD20View(this)' in src
-          assert 'Aléatoire : Sexuel 40 %' in src
-          assert 'ChallengePicker.draw(selected,randomMode,history)' in src
+          assert '80 % dans la catégorie choisie' in src
+          assert 'drawEveningTimer(resultCard,receiver,actual,face)' in src
+          assert 'Category.SENSUEL,Category.SEXUEL' in src
+          assert 'ChallengePicker.draw(selected,false,history)' in src
           assert 'void showGameD20(' in src
           assert 'SpecialDateData.draw()' in src
           assert 'BRASSER LE DÉ DU RESTAURANT' in src
@@ -92,15 +94,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/LoveRoll-v0.8.0.apk "$RUNNER_TEMP/aligned.apk"
-          cp dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.8.0.apk
-          sha256sum dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk
+            --out dist/LoveRoll-v0.9.0.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.9.0.apk dist/Des-a-Deux-v0.9.0.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.9.0.apk
+          sha256sum dist/LoveRoll-v0.9.0.apk dist/Des-a-Deux-v0.9.0.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: LoveRoll-v0.8.0
+          name: LoveRoll-v0.9.0
           path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
@@ -109,9 +111,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk --clobber
+            gh release upload "$TAG" dist/LoveRoll-v0.9.0.apk dist/Des-a-Deux-v0.9.0.apk --clobber
           else
-            gh release create "$TAG" dist/LoveRoll-v0.8.0.apk dist/Des-a-Deux-v0.8.0.apk \
-              --target "$GITHUB_SHA" --title "LoveRoll v0.8.0" \
-              --notes "LoveRoll v0.8.0 : nouveau nom, soirées événements et anniversaires, mêmes clés Android et données préservées."
+            gh release create "$TAG" dist/LoveRoll-v0.9.0.apk dist/Des-a-Deux-v0.9.0.apk \
+              --target "$GITHUB_SHA" --title "LoveRoll v0.9.0" \
+              --notes "LoveRoll v0.9.0 : soirées Sensuel ou Sexuel 80/20, minuteur intégré, sonnerie douce ou vibration, défis conservés et mises à jour compatibles."
           fi

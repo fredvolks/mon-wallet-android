@@ -92,3 +92,15 @@ https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/
 - Enregistrement OAuth : dans Supabase > Authentication > URL Configuration, ajouter https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/ à Site URL et Redirect URLs. Sans cette autorisation, liens courriel et retours OAuth peuvent rediriger ailleurs.
 - Les fournisseurs Google et Apple nécessitent encore les identifiants OAuth dans Supabase > Authentication > Providers. La connexion courriel (lien magique) peut être testée après autorisation de redirection.
 - GitHub Pages est maintenant une option secondaire seulement : son workflow ne se déclenche plus automatiquement pour éviter les échecs inutiles.
+
+
+## v0.9.0 — Soirées à deux catégories et minuteurs
+- **Nouveaux tirages** : uniquement Sensuel ou Sexuel. Chaque carte utilise 80 % de la catégorie choisie et 20 % de l'autre, à sélectionner avant chaque D20.
+- Les catégories épuisées sont automatiquement exclues et les probabilités renormalisées; aucune répétition d'une carte dans la même soirée.
+- Les anciens défis Coquin déjà enregistrés restent consultables dans les historiques, mais ne sont plus proposés par de nouveaux tirages.
+- Chaque défi propose une durée en minutes (notamment massage 10 min) et un minuteur : démarrer, pause, reprendre, réinitialiser.
+- Alerte de fin : **son doux** ou **vibration** à choisir. La vibration peut être indisponible sur iPhone/Safari; le minuteur reste visible, avec une notification textuelle.
+- Les durées n'obligent pas à finir ou continuer un défi : le consentement et les limites des personnes prévalent.
+- Base Supabase : migration `couple-web/evening-80-20.sql` déployée dans le projet dédié. Même signature RPC `draw_for_partner(uuid,text,boolean)`; `p_random` historique est ignoré volontairement.
+- Android : APK local v0.9.0 avec mêmes deux catégories et un minuteur; la version web avec compte Supabase est destinée aux deux appareils. Les comptes partagés ne sont pas encore intégrés à l'APK natif.
+- **Configuration Supabase URL** : la Site URL et les Redirect URLs doivent pointer vers `https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/`. Aucune action d'administration Auth n'est disponible pour modifier ce paramètre depuis ce connecteur.

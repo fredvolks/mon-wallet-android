@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
+import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
@@ -153,4 +154,38 @@ test('Brand LoveRoll is applied to PWA',()=>{
  const manifest=readFileSync(new URL('./manifest.webmanifest',import.meta.url),'utf8');
  assert.match(manifest,/"name": "LoveRoll"/);
  assert.match(app,/LoveRoll/);
+});
+
+test('The evening shows exactly two categories and per-draw 80/20 odds',()=>{
+ assert.deepEqual(EVENING_CATEGORIES,['SENSUEL','SEXUEL']);
+ assert.deepEqual(availableEveningCategories('SENSUEL'),[{category:'SENSUEL',weight:80},{category:'SEXUEL',weight:20}]);
+ assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:20},{category:'SEXUEL',weight:80}]);
+ assert.match(app,/EVENING_CATEGORIES\.map/);
+ assert.match(app,/80 % de chances/);
+ assert.doesNotMatch(app,/Aléatoire : Sexuel 40/);
+});
+test('All forty live evening cards have a positive minute duration',()=>{
+ for(const category of EVENING_CATEGORIES){
+  assert.equal(EVENING_CHALLENGES[category].length,20);
+  for(let face=1;face<=20;face++){
+   const card=eveningCard(category,face);
+   assert.ok(card.title.length>=5);
+   assert.ok(card.description.length>25);
+   assert.ok(card.minutes>=1&&card.minutes<=15);
+  }
+ }
+ assert.equal(eveningCard('SENSUEL',3).minutes,10);
+ assert.equal(eveningCard('SEXUEL',5).minutes,10);
+ assert.throws(()=>eveningCard('COQUIN',1));
+});
+test('Countdown uses a monotonic wall deadline, pause reset and optional signals',()=>{
+ assert.equal(formatCountdown(600_000),'10:00');
+ assert.equal(formatCountdown(61_200),'01:02');
+ assert.equal(formatCountdown(-500),'00:00');
+ assert.match(app,/challengeTimer\.deadline-Date\.now\(\)/);
+ assert.match(app,/timer-reset/);
+ assert.match(app,/timer-toggle/);
+ assert.match(app,/navigator\.vibrate/);
+ assert.match(app,/AudioContext/);
+ assert.match(app,/Le minuteur n’oblige jamais/);
 });

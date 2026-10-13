@@ -4,7 +4,7 @@ import ca.desadeux.jeu.GameLogic.Category;
 
 /**
  * No challenge repeats for the same recipient in the current evening.
- * A challenge is identified by category + D20 face, i.e. 60 independent cards.
+ * Active mode has 40 cards (Sensuel / Sexuel). Historical Coquin data remain supported.
  * Cards enter history as soon as they're drawn (accepted and passed both count).
  */
 public final class ChallengePicker {
@@ -28,34 +28,30 @@ public final class ChallengePicker {
   return available;
  }
  public static int remaining(long mask){
-  int n=0;for(Category cat:Category.values())n+=remaining(mask,cat);
-  return n;
+  return remaining(mask,Category.SENSUEL)+remaining(mask,Category.SEXUEL);
  }
- private static int weight(Category category,Category preferred,boolean randomMode){
-  if(randomMode)return category==Category.SEXUEL?40:30;
-  return category==preferred?70:15;
- }
+ private static final Category[] ACTIVE={Category.SENSUEL,Category.SEXUEL};
  public static Pick draw(Category preferred,long seenMask){return draw(preferred,false,seenMask);}
- public static Pick draw(Category preferred,boolean randomMode,long seenMask){
-  // Selected mode is 70/15/15. Random mode is 30/30/40 (Sexuel 40%).
-  // Exhausted categories are excluded and probabilities renormalize without repeats.
-  int totalWeight=0;
-  for(Category cat:Category.values())if(remaining(seenMask,cat)>0)
-   totalWeight+=weight(cat,preferred,randomMode);
-  if(totalWeight==0)return null;
-  int roll=RANDOM.nextInt(totalWeight);
+ public static Pick draw(Category preferred,boolean unusedRandomMode,long seenMask){
+  // Each challenge uses the current preference; 80% selected, 20% the other.
+  if(preferred!=Category.SENSUEL&&preferred!=Category.SEXUEL)preferred=Category.SENSUEL;
+  int total=0;
+  for(Category cat:ACTIVE)if(remaining(seenMask,cat)>0)
+   total+=cat==preferred?80:20;
+  if(total==0)return null;
+  int ticket=RANDOM.nextInt(total);
   Category chosen=null;
-  for(Category cat:Category.values()){
+  for(Category cat:ACTIVE){
    if(remaining(seenMask,cat)==0)continue;
-   roll-=weight(cat,preferred,randomMode);
-   if(roll<0){chosen=cat;break;}
+   ticket-=cat==preferred?80:20;
+   if(ticket<0){chosen=cat;break;}
   }
-  if(chosen==null)throw new IllegalStateException("Category choice impossible");
-  int index=RANDOM.nextInt(remaining(seenMask,chosen));
-  for(int face=1;face<=FACES;face++){
+  if(chosen==null)throw new IllegalStateException("No category available");
+  int k=RANDOM.nextInt(remaining(seenMask,chosen));
+  for(int face=1;face<=20;face++){
    if(seen(seenMask,chosen,face))continue;
-   if(index--==0)return new Pick(chosen,face);
+   if(k--==0)return new Pick(chosen,face);
   }
-  throw new IllegalStateException("Face choice impossible");
+  throw new IllegalStateException("No face available");
  }
 }

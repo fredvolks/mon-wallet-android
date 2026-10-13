@@ -5,6 +5,10 @@ import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.graphics.Color;
@@ -53,7 +57,10 @@ public final class MainActivity extends Activity {
  PremiumD20View gpuD20;
  String tab="home",player="Émilie";
  int adventSelected=1;
- Category selected=Category.COQUIN;
+ Category selected=Category.SENSUEL;
+ Handler timerHandler=new Handler(Looper.getMainLooper());
+ Runnable timerTask;
+ TextView timerDisplay;
  boolean randomMode=false;
  boolean rolling=false;
  int width=0;
@@ -65,6 +72,12 @@ public final class MainActivity extends Activity {
   getWindow().setNavigationBarColor(Color.TRANSPARENT);
   prefs=getSharedPreferences("des_a_deux_game",MODE_PRIVATE);
   journal=new PrivateJournal(this);
+  try{
+   selected=Category.valueOf(prefs.getString("selected","SENSUEL"));
+   if(selected==Category.COQUIN)selected=Category.SENSUEL;
+  }catch(Exception e){selected=Category.SENSUEL;}
+  randomMode=false;
+  prefs.edit().putString("selected",selected.name()).putBoolean("random_mode",false).apply();
   if(!GameLogic.monday().equals(prefs.getString("week",""))){
    prefs.edit().putString("week",GameLogic.monday()).putInt("goal",-1).putInt("done",0)
     .putBoolean("active",false).putBoolean("pending",false)
@@ -237,6 +250,7 @@ public final class MainActivity extends Activity {
   }catch(Exception ignored){}
  }
  void draw(){
+  clearTimerTicker();
   if(gpuDice!=null){gpuDice.onPause();gpuDice=null;}
   if(gpuD20!=null){gpuD20.onPause();gpuD20=null;}
   dice=null;
@@ -348,13 +362,16 @@ public final class MainActivity extends Activity {
  long seenMask(String who){return prefs.getLong(seenKey(who),0L);}
  void offerChallenge(String receiver){
   long history=seenMask(receiver);
-  ChallengePicker.Pick next=ChallengePicker.draw(selected,randomMode,history);
+  ChallengePicker.Pick next=ChallengePicker.draw(selected,false,history);
   if(next==null){
-   PremiumDialog.info(this,"60 défis proposés à "+receiver,
+   PremiumDialog.info(this,"40 défis proposés à "+receiver,
     "Aucun défi inédit ne reste pour cette personne ce soir. Vous pouvez terminer ou recommencer la soirée.");
    return;
   }
-  prefs.edit().putLong(seenKey(receiver),ChallengePicker.mark(history,next.category,next.face))
+  long nextNo=prefs.getLong("evening_roll_seq",0L)+1;
+  prefs.edit().putLong("evening_roll_seq",nextNo)
+   .remove("evening_timer_key").remove("evening_timer_end").remove("evening_timer_left")
+   .putLong(seenKey(receiver),ChallengePicker.mark(history,next.category,next.face))
    .putBoolean("pending",true).putBoolean("accepted",false)
    .putString("actual",next.category.name()).putString("card_player",receiver)
    .putInt("face",next.face).apply();
@@ -441,6 +458,95 @@ public final class MainActivity extends Activity {
   lp.rightMargin=dp(5);target.addView(b,lp);
   b.setOnClickListener(v->{if(!rolling)callback.run();});
  }
+ void clearTimerTicker(){
+  if(timerTask!=null)timerHandler.removeCallbacks(timerTask);
+  timerTask=null;timerDisplay=null;
+ }
+ long remainingTimer(){
+  long deadline=prefs.getLong("evening_timer_end",0L);
+  return deadline>0?Math.max(0,deadline-System.currentTimeMillis()):
+    Math.max(0,prefs.getLong("evening_timer_left",0L));
+ }
+ String clockFormat(long millis){
+  long sec=(millis+999)/1000;
+  return String.format(java.util.Locale.CANADA_FRENCH,"%02d:%02d",sec/60,sec%60);
+ }
+ void signalTimer(){
+  if(prefs.getBoolean("evening_timer_notified",false))return;
+  prefs.edit().putBoolean("evening_timer_notified",true).apply();
+  String signal=prefs.getString("evening_timer_signal","sound");
+  if(signal.equals("vibrate"))vibrate(350);
+  else{
+   try{
+    ToneGenerator tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,48);
+    tone.startTone(ToneGenerator.TONE_PROP_BEEP2,650);
+    timerHandler.postDelayed(tone::release,800);
+   }catch(Exception ignored){vibrate(250);}
+  }
+  Toast.makeText(this,"♡ Minuteur terminé. Vous choisissez si vous poursuivez.",Toast.LENGTH_LONG).show();
+ }
+ void updateTimerDisplay(){
+  if(timerDisplay==null)return;
+  long rem=remainingTimer();
+  timerDisplay.setText("⏱  "+clockFormat(rem));
+  long deadline=prefs.getLong("evening_timer_end",0);
+  if(deadline>0&&rem==0){
+   prefs.edit().putLong("evening_timer_end",0).putLong("evening_timer_left",0).apply();
+   signalTimer();
+  }
+ }
+ void startTimerTicker(){
+  if(timerTask!=null)timerHandler.removeCallbacks(timerTask);
+  timerTask=new Runnable(){@Override public void run(){
+   if(timerDisplay==null)return;
+   updateTimerDisplay();
+   timerHandler.postDelayed(this,500);
+  }};
+  timerHandler.post(timerTask);
+ }
+ void drawEveningTimer(LinearLayout card,String receiver,Category category,int face){
+  String id=receiver+"_"+category.name()+"_"+face+"_"+prefs.getLong("evening_roll_seq",0L);
+  long duration=EveningDurations.minutes(category,face)*60000L;
+  if(!id.equals(prefs.getString("evening_timer_key",""))){
+   prefs.edit().putString("evening_timer_key",id).putLong("evening_timer_end",0L)
+    .putLong("evening_timer_left",duration).putBoolean("evening_timer_notified",false).apply();
+  }
+  addText(card,"MINUTEUR · "+EveningDurations.durationLabel(category,face),12,PINK,true,8);
+  timerDisplay=text("⏱  "+clockFormat(remainingTimer()),26,WHITE,true);
+  timerDisplay.setGravity(Gravity.CENTER);
+  card.addView(timerDisplay,new LinearLayout.LayoutParams(-1,dp(48)));
+  LinearLayout controls=horizontal();card.addView(controls);
+  boolean running=prefs.getLong("evening_timer_end",0L)>0;
+  pairButton(controls,running?"Ⅱ  PAUSE":"▶  DÉMARRER",true,()->{
+   long end=prefs.getLong("evening_timer_end",0L);
+   if(end>0){
+    prefs.edit().putLong("evening_timer_left",Math.max(0,end-System.currentTimeMillis()))
+     .putLong("evening_timer_end",0L).apply();
+   }else{
+    long left=remainingTimer();
+    if(left<=0)left=duration;
+    prefs.edit().putLong("evening_timer_left",left)
+     .putLong("evening_timer_end",System.currentTimeMillis()+left)
+     .putBoolean("evening_timer_notified",false).apply();
+   }
+   draw();
+  });
+  pairButton(controls,"↻  RECOMMENCER",false,()->{
+   prefs.edit().putLong("evening_timer_end",0L).putLong("evening_timer_left",duration)
+    .putBoolean("evening_timer_notified",false).apply();
+   draw();
+  });
+  LinearLayout modes=horizontal();card.addView(modes);
+  String current=prefs.getString("evening_timer_signal","sound");
+  chip(modes,"♫ Son doux","sound".equals(current),()->{
+   prefs.edit().putString("evening_timer_signal","sound").apply();draw();
+  },1);
+  chip(modes,"〰 Vibration","vibrate".equals(current),()->{
+   prefs.edit().putString("evening_timer_signal","vibrate").apply();draw();
+  },1);
+  addText(card,"La durée est une suggestion; chacun peut interrompre le défi. Le signal de fin retentit quand LoveRoll est ouvert.",11,MUTED,false,6);
+  startTimerTicker();
+ }
  void drawGame(){
   heading("🔥  Votre soirée","Chacun décide de son rythme et reçoit ses propres défis");
   if(prefs.getInt("goal",-1)<0){
@@ -515,7 +621,8 @@ public final class MainActivity extends Activity {
    addText(resultCard,result[1],14,PALE,false,6);
    addText(resultCard,"Exemple : "+result[2].replaceFirst("^Exemple : ",""),12,MUTED,false,7);
    addText(resultCard,"Défis proposés à "+receiver+" : "+
-    (60-ChallengePicker.remaining(seenMask(receiver)))+" / 60",11,MUTED,false,7);
+    (40-ChallengePicker.remaining(seenMask(receiver)))+" / 40",11,MUTED,false,7);
+   drawEveningTimer(resultCard,receiver,actual,face);
    LinearLayout actions=horizontal();resultCard.addView(actions);
    if(!prefs.getBoolean("accepted",false)){
     pairButton(actions,"✓  ACCEPTER",true,()->{
@@ -544,18 +651,13 @@ public final class MainActivity extends Activity {
    addText(selection,other(player)+" propose à "+player,13,PALE,false,5);
    addText(selection,"CHOIX DE LA CATÉGORIE",11,PINK,true,6);
    LinearLayout choices=horizontal();selection.addView(choices);
-   for(Category cat:Category.values()){
-    chip(choices,categoryName(cat),!randomMode&&selected==cat,()->{
+   for(Category cat:new Category[]{Category.SENSUEL,Category.SEXUEL}){
+    chip(choices,categoryName(cat),selected==cat,()->{
      selected=cat;randomMode=false;
      prefs.edit().putString("selected",cat.name()).putBoolean("random_mode",false).apply();draw();
     },1);
    }
-   chip(choices,"Aléatoire",randomMode,()->{
-    randomMode=true;prefs.edit().putBoolean("random_mode",true).apply();draw();
-   },1);
-   addText(selection,randomMode?
-     "Aléatoire : Sexuel 40 % · Coquin 30 % · Sensuel 30 %":
-     "Choisie : 70 % · autres catégories : 15 % chacune",12,MUTED,false,3);
+   addText(selection,"80 % dans la catégorie choisie · 20 % dans l'autre",12,MUTED,false,3);
    addButton(selection,"🎲  "+other(player).toUpperCase()+" BRASSE LE D20",true,
      ()->offerChallenge(player));
   }else{
@@ -790,11 +892,11 @@ public final class MainActivity extends Activity {
   addButton(page,"←  ÉVÉNEMENTS",false,()->{tab="occasions";draw();});
  }
  void drawLibrary(){
-  heading("♡  Les défis","Réglages  ›  Bibliothèque des 60 défis");
+  heading("♡  Les défis","Réglages  ›  40 défis actifs · anciennes cartes conservées");
   addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->{tab="settings";draw();});
   section("Explorer les catégories");
   LinearLayout row=horizontal();page.addView(row);
-  for(Category c:Category.values())chip(row,categoryName(c),selected==c,()->{
+  for(Category c:new Category[]{Category.SENSUEL,Category.SEXUEL})chip(row,categoryName(c),selected==c,()->{
    selected=c;prefs.edit().putString("selected",c.name()).apply();draw();
   },1);
   gap(page,16);
@@ -802,7 +904,8 @@ public final class MainActivity extends Activity {
   for(int i=1;i<=20;i++){
    String[] item=GameData.get(selected,i);
    LinearLayout c=card(String.format(java.util.Locale.CANADA_FRENCH,"%02d  ♥  %s",i,item[0]),"À faire : "+item[1]);
-   addText(c,"Exemple : "+item[2].replaceFirst("^Exemple : ",""),13,MUTED,false,0);
+   addText(c,"Exemple : "+item[2].replaceFirst("^Exemple : ",""),13,MUTED,false,5);
+   addText(c,"⏱ "+EveningDurations.durationLabel(selected,i)+" · Minuteur intégré pendant la soirée",12,PINK,true,0);
   }
  }
 
@@ -1178,7 +1281,7 @@ public final class MainActivity extends Activity {
   }
   addButton(celebration,"VOIR LES ÉVÉNEMENTS SPÉCIAUX",true,()->{tab="occasions";draw();});
   section("🎲  Le jeu");
-  settingTile("♡  Bibliothèque des 60 défis","Sensuel · Coquin · Sexuel, consignes et exemples.",
+  settingTile("♡  Bibliothèque des 40 défis","Sensuel · Sexuel, 20 défis par catégorie et durées.",
    "CONSULTER LES DÉFIS",()->{tab="library";draw();});
   settingTile("⚙  Règles et réinitialisation","Probabilités, dé hebdomadaire et règles des tirages.",
    "VOIR LES RÈGLES",()->{tab="rules";draw();});
@@ -1192,7 +1295,7 @@ public final class MainActivity extends Activity {
  void drawRules(){
   heading("🎲  Règles du jeu","Comment fonctionnent nos tirages");
   card("Dé hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
-  card("D6 et D20","Un D6 pour les défis reçus par chaque personne. Catégorie choisie 70/15/15, mode aléatoire Sensuel 30 %, Coquin 30 %, Sexuel 40 %.");
+  card("D6 et D20","Chacun a son D6. Pour chaque D20 : Sensuel ou Sexuel, 80 % pour le choix, 20 % pour l'autre.");
   card("Les défis ne se répètent pas","Une proposition, même passée, ne ressort pas pour la même personne pendant sa soirée.");
   card("Calendrier de l'Avent","Les 25 cases s'ouvrent uniquement à leur date en décembre.");
   section("↻  Réinitialisation");
@@ -1242,12 +1345,15 @@ public final class MainActivity extends Activity {
   addButton(page,"←  RETOUR AUX RÉGLAGES",false,()->settingsBack());
  }
  @Override protected void onPause(){
+  if(timerTask!=null)timerHandler.removeCallbacks(timerTask);
+  timerTask=null;
   if(gpuDice!=null)gpuDice.onPause();
   if(gpuD20!=null)gpuD20.onPause();
   super.onPause();
  }
  @Override protected void onResume(){
   super.onResume();
+  if(timerDisplay!=null)startTimerTicker();
   if(gpuDice!=null)gpuDice.onResume();
   if(gpuD20!=null)gpuD20.onResume();
  }

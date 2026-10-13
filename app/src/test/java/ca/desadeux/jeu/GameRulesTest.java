@@ -25,8 +25,8 @@ public class GameRulesTest {
 
  @Test public void everyPersonGetsUniqueCardsEvenWhenTheyPass(){
   long fredSeen=0L,emilieSeen=0L;
-  for(int i=0;i<60;i++){
-   ChallengePicker.Pick f=ChallengePicker.draw(Category.COQUIN,fredSeen);
+  for(int i=0;i<40;i++){
+   ChallengePicker.Pick f=ChallengePicker.draw(Category.SENSUEL,fredSeen);
    assertNotNull("Fred draw "+i,f);
    assertFalse(ChallengePicker.seen(fredSeen,f.category,f.face));
    fredSeen=ChallengePicker.mark(fredSeen,f.category,f.face);
@@ -34,25 +34,25 @@ public class GameRulesTest {
    assertNotNull("Émilie draw "+i,e);
    assertFalse(ChallengePicker.seen(emilieSeen,e.category,e.face));
    emilieSeen=ChallengePicker.mark(emilieSeen,e.category,e.face);
-   assertEquals(59-i,ChallengePicker.remaining(fredSeen));
-   assertEquals(59-i,ChallengePicker.remaining(emilieSeen));
+   assertEquals(39-i,ChallengePicker.remaining(fredSeen));
+   assertEquals(39-i,ChallengePicker.remaining(emilieSeen));
   }
   assertNull(ChallengePicker.draw(Category.SENSUEL,fredSeen));
-  assertNull(ChallengePicker.draw(Category.COQUIN,emilieSeen));
-  assertEquals(60,Long.bitCount(fredSeen));
-  assertEquals(60,Long.bitCount(emilieSeen));
+  assertNull(ChallengePicker.draw(Category.SEXUEL,emilieSeen));
+  assertEquals(40,Long.bitCount(fredSeen));
+  assertEquals(40,Long.bitCount(emilieSeen));
   // Histories are independent: a card seen by one remains available to the other.
-  assertEquals(60,ChallengePicker.remaining(0L));
+  assertEquals(40,ChallengePicker.remaining(0L));
  }
  @Test public void acceptedAndPassedShareSameExcludedHistory(){
   long mask=0;
-  ChallengePicker.Pick first=ChallengePicker.draw(Category.COQUIN,mask);
+  ChallengePicker.Pick first=ChallengePicker.draw(Category.SENSUEL,mask);
   mask=ChallengePicker.mark(mask,first.category,first.face); // passed
   ChallengePicker.Pick second=ChallengePicker.draw(Category.COQUIN,mask);
   assertNotNull(second);
   assertFalse(first.category==second.category&&first.face==second.face);
   mask=ChallengePicker.mark(mask,second.category,second.face); // accepted
-  assertEquals(58,ChallengePicker.remaining(mask));
+  assertEquals(38,ChallengePicker.remaining(mask));
  }
  @Test public void categoryOddsRemainWeightedWhenAllAvailable(){
   int[] counts=new int[3];
@@ -61,36 +61,42 @@ public class GameRulesTest {
    ChallengePicker.Pick pick=ChallengePicker.draw(Category.SENSUEL,0L);
    counts[pick.category.ordinal()]++;
   }
-  assertEquals(.70,(double)counts[0]/runs,.015);
-  assertEquals(.15,(double)counts[1]/runs,.015);
-  assertEquals(.15,(double)counts[2]/runs,.015);
+  assertEquals(.80,(double)counts[0]/runs,.015);
+  assertEquals(0.,(double)counts[1]/runs,.001);
+  assertEquals(.20,(double)counts[2]/runs,.015);
  }
 
- @Test public void randomModeHasThirtyThirtyFortyAndNoRepeats(){
-  int[] hits=new int[3];int n=150000;
-  for(int i=0;i<n;i++){
-   ChallengePicker.Pick p=ChallengePicker.draw(Category.SENSUEL,true,0L);
-   hits[p.category.ordinal()]++;
-  }
-  assertEquals(.30,hits[Category.SENSUEL.ordinal()]/(double)n,.012);
-  assertEquals(.30,hits[Category.COQUIN.ordinal()]/(double)n,.012);
-  assertEquals(.40,hits[Category.SEXUEL.ordinal()]/(double)n,.012);
+ @Test public void twoCategoryOddsAndFortyNeverRepeat(){
+  int[] hits=new int[3];int n=120000;
+  for(int i=0;i<n;i++)hits[ChallengePicker.draw(Category.SEXUEL,0L).category.ordinal()]++;
+  assertEquals(.20,hits[Category.SENSUEL.ordinal()]/(double)n,.012);
+  assertEquals(0,hits[Category.COQUIN.ordinal()]);
+  assertEquals(.80,hits[Category.SEXUEL.ordinal()]/(double)n,.012);
   long history=0L;
-  for(int i=0;i<60;i++){
-   ChallengePicker.Pick p=ChallengePicker.draw(Category.SEXUEL,true,history);
-   assertNotNull(p);
-   assertFalse(ChallengePicker.seen(history,p.category,p.face));
-   history=ChallengePicker.mark(history,p.category,p.face);
+  for(int i=0;i<40;i++){
+   ChallengePicker.Pick pick=ChallengePicker.draw(Category.SEXUEL,history);
+   assertNotNull(pick);
+   assertNotEquals(Category.COQUIN,pick.category);
+   assertFalse(ChallengePicker.seen(history,pick.category,pick.face));
+   history=ChallengePicker.mark(history,pick.category,pick.face);
   }
-  assertEquals(60,Long.bitCount(history));
-  assertNull(ChallengePicker.draw(Category.COQUIN,true,history));
+  assertEquals(40,Long.bitCount(history));
+  assertNull(ChallengePicker.draw(Category.SENSUEL,history));
  }
  @Test public void categorySelectionRenormalizesWhenOneDeckIsEmpty(){
   long mask=0;
   for(int i=1;i<=20;i++)mask=ChallengePicker.mark(mask,Category.SEXUEL,i);
   for(int i=0;i<200;i++){
    ChallengePicker.Pick p=ChallengePicker.draw(Category.SEXUEL,true,mask);
-   assertNotNull(p);assertNotEquals(Category.SEXUEL,p.category);
+   assertNotNull(p);assertEquals(Category.SENSUEL,p.category);
+  }
+ }
+ @Test public void eachChallengeIncludesDuration(){
+  assertEquals(10,EveningDurations.minutes(Category.SENSUEL,4));
+  assertEquals(10,EveningDurations.minutes(Category.SEXUEL,5));
+  for(Category category:Category.values())for(int face=1;face<=20;face++){
+   int minutes=EveningDurations.minutes(category,face);
+   assertTrue(minutes>=1&&minutes<=15);
   }
  }
  @Test public void allSixtyCardsProvideActionAndConcreteExample(){
