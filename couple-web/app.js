@@ -123,6 +123,8 @@ function render(){
   else renderSolo();
   return;
  }
+ if(state.members.length<2&&state.tab==='settings'){renderSettings();return;}
+ if(state.members.length<2&&state.tab==='personal-journal'){renderPersonalJournal().catch(fail);return;}
  if(state.members.length<2){frame('<section class="card"><h2>Votre match</h2><p>Bonjour '+safe(state.profile.display_name)+
   ' ! Invitez votre partenaire avec son courriel de connexion.</p>'+
  '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
@@ -234,6 +236,20 @@ function statsRow(){return '<div class="stat-grid">'+[
  [state.personal.find(r=>r.user_id===state.user?.id)?.face||'—','Mes défis'],
  [state.personal.find(r=>r.user_id===other()?.user_id)?.face||'—',safe(other()?.name||'Partenaire')]
  ].map(([v,label])=>'<div class="stat"><strong>'+safe(v)+'</strong><small>'+label+'</small></div>').join('')+'</div>';}
+function ideaHtml(){
+ const content=guidedIdeas(state.guidance);
+ return '<section class="card"><div class="eyebrow">Des idées selon vos envies</div><h2>'+safe(content.heading)+'</h2>'+
+ '<p>Ces propositions tiennent compte du ressenti du couple sans dévoiler les réponses individuelles. Chacun peut dire non ou proposer autre chose.</p>'+
+ content.ideas.map(([title,detail])=>'<div class="muted-line"><strong>'+safe(title)+'</strong><p>'+safe(detail)+'</p></div>').join('')+'</section>';
+}
+function renderSolo(){
+ frame('<section class="card"><div class="eyebrow">Votre espace privé</div>'+
+ '<h2>Bienvenue '+safe(state.profile.display_name)+' ♡</h2>'+
+ '<p>Explorez LoveRoll à votre rythme. Vous pouvez inviter une personne plus tard, sans perdre votre calendrier personnel.</p>'+
+ button('start-couple','♡ Ajouter un conjoint ou une conjointe')+
+ button('tab:personal-journal','♥ Mon calendrier personnel','class="subtle"')+
+ '</section>'+ideaHtml(),'VOTRE ESPACE','En solo pour le moment');
+}
 function renderHome(){
  const name=state.profile.display_name,partner=other()?.name;
  frame('<div class="eyebrow">Votre couple</div>'+
@@ -243,6 +259,7 @@ function renderHome(){
  (state.weekly?'<div class="result">'+state.weekly.face+' soirée(s) cette semaine</div>'+
  '<p>Ce résultat a été brassé par '+safe(person(state.weekly.actor))+'. Prochain tirage lundi.</p>':
  button('roll:weekly','🎲 Brasser notre D6 hebdomadaire'))+'</section>'+
+ ideaHtml()+
  '<section class="card"><h3>♥ Notre soirée</h3>'+statsRow()+
  button('tab:session','Ouvrir notre soirée')+'</section>'+
  '<section class="card"><h3>✦ Activité du mois</h3><p>'+
@@ -607,25 +624,43 @@ async function renderFeedback(){
  body+='</section>';frame(body,'NOS QUESTIONNAIRES','Une réponse individuelle, visible par le couple');
 }
 function renderSettings(){
+ const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
+ let partner='<section class="card"><h3>♡ Gérer mon couple</h3>';
+ if(hasPartner){
+  partner+='<p>Partenaire actuel : '+safe(other()?.name||'Compte associé')+'</p>'+
+  '<p class="tiny-note">Dissocier les comptes retire immédiatement aux deux personnes l’accès à l’ancien calendrier partagé. Chaque personne conserve ses propres entrées dans son calendrier privé.</p>'+
+  button('end-couple','Retirer mon conjoint ou ma conjointe','class="subtle danger-action"');
+ }else if(linked){
+  partner+='<p>En attente d’un partenaire. Invitez-le ou laissez cette étape pour plus tard.</p>'+
+  '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
+  button('invite','Inviter mon conjoint ou ma conjointe')+
+  button('end-couple','Annuler cet espace à deux','class="subtle"');
+ }else{
+  partner+='<p>Vous n’avez pas de partenaire lié. Votre calendrier personnel reste disponible.</p>'+
+  button('start-couple','Ajouter un conjoint ou une conjointe');
+ }
+ partner+='</section>';
  frame('<section class="card"><h2>Mon compte</h2><p>'+
   safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
   '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
   button('profile','Mettre à jour mon nom')+'</section>'+
-  '<section class="card"><h3>♡ Notre journal commun</h3><p>Calendrier des relations et statistiques partagées, chiffrées.</p>'+
-  button('tab:journal','Ouvrir le calendrier et les statistiques')+'<div class="muted-line"></div>'+
-  button('tab:feedback','Nos questionnaires de soirées','class="subtle"')+'</section>'+
-  '<section class="card"><h3>🔐 Vie privée</h3><p>Les entrées et questionnaires sont chiffrés dans votre navigateur avant envoi au serveur. Les dates et événements de tirage restent des métadonnées partagées.</p>'+
-  button('lock','Verrouiller le journal','class="subtle"')+'</section>'+
-  '<section class="card"><h3>Invitations et partenaire</h3><p>Votre match : '+
-  safe(state.members.map(m=>m.name).join(' ♡ '))+
-  '</p><p>Une invitation ne fonctionne que pour le courriel de connexion de votre partenaire.</p></section>'+
-  '<section class="card"><h3>🎂 Nos dates</h3>'+
-  '<p>Mon anniversaire : '+safe(state.profile.birthday_md)+' (enregistré à mon inscription).</p>'+
-  '<p>Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné lors de la création du match')+'</p>'+
-  '<p>Le partenaire entre sa date à sa première connexion. Plus besoin de remplir les dates ici.</p>'+
-  '</section>'+
-  '<section class="card"><h3>Connexion iPhone</h3><p>Sur iPhone, ouvrez le site sécurisé dans Safari puis ajoutez-le à l’écran d’accueil. Les notifications de tirage apparaissent tant que l’application est ouverte.</p></section>',
- 'RÉGLAGES','Profil, confidentialité et connexion');
+  partner+
+  '<section class="card"><h3>♥ Mon calendrier personnel</h3>'+
+  '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
+  button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
+  (hasPartner?'<section class="card"><h3>♡ Notre journal commun</h3>'+
+   button('tab:journal','Ouvrir le journal partagé')+
+   button('tab:feedback','Nos questionnaires de soirées','class="subtle"')+'</section>':'')+
+  '<section class="card"><h3>Mon ressenti · confidentiel</h3>'+wellbeingFields(state.wellbeing)+
+  button('save-wellbeing','Mettre à jour mes réponses')+
+  '<p class="tiny-note">Votre partenaire ne voit pas vos réponses individuelles. Les propositions de soirées utilisent une orientation générale.</p></section>'+
+  '<section class="card"><h3>🔐 Vie privée</h3><p>Les réponses restent privées. Votre ancien espace partagé est bloqué après une dissociation; les copies déjà conservées par quelqu’un ne peuvent pas être effacées à distance.</p>'+
+  (linked?button('lock','Verrouiller le journal','class="subtle"'):'')+'</section>'+
+  '<section class="card"><h3>🎂 Mes dates</h3><p>Mon anniversaire : '+
+  safe(state.profile.birthday_md)+' (enregistré à mon inscription).</p>'+
+  (linked?'<p>Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>':'')+
+  '</section>',
+ 'RÉGLAGES','Profil, confidentialité et gestion du partenaire');
 }
 async function refreshAndShow(){await refreshShared();render();}
 async function animateRoll(fn){
