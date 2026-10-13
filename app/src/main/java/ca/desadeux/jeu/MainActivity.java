@@ -573,7 +573,7 @@ public final class MainActivity extends Activity {
   StringBuilder sb=new StringBuilder("20 idées possibles à Québec :\n\n");
   for(int i=0;i<20;i++)sb.append(i+1).append(".  ")
     .append(SpecialDateData.ACTIVITIES[i][0]).append("\n");
-  sb.append("\nLa variante et la personne qui invite sont aussi tirées 50/50.");
+  sb.append("\nLa personne qui invite est tirée à 50/50. Pour une sortie au restaurant, vous brassez un D6 supplémentaire pour choisir resto connu ou nouveau.");
   new AlertDialog.Builder(this).setTitle("✦ Nos 20 sorties").setMessage(sb.toString())
    .setPositiveButton("Compris",null).show();
  }
@@ -584,13 +584,21 @@ public final class MainActivity extends Activity {
   heading("✦  Défi spécial","Une vraie sortie en amoureux, une fois par mois");
   addText(page,"RENDEZ-VOUS DE "+SpecialDateData.monthLabel(now).toUpperCase(java.util.Locale.CANADA_FRENCH),
     12,PINK,true,7);
-  showDice(20,saved==null?20:saved.face);
+  boolean restaurant=saved!=null&&SpecialDateData.isRestaurant(saved.face);
+  int restaurantD6=restaurant?prefs.getInt(prefix+"restaurant_variant_face",0):0;
+  if(restaurant){
+   addText(page,"🎲 D20 : "+SpecialDateData.title(saved)+" · Face "+saved.face,13,PINK,true,6);
+   showDice(6,restaurantD6>0?restaurantD6:1);
+  }else{
+   showDice(20,saved==null?20:saved.face);
+  }
   if(saved==null){
    LinearLayout intro=card("♡  Votre rendez-vous mensuel",
     "20 activités adaptées à votre vie de parents, dans la région de Québec.");
    addText(intro,"🎲 Sortie : 1 chance sur 20 par activité",13,PALE,true,5);
    addText(intro,"♥ Fred invite / Émilie invite : 50 % / 50 %",13,PALE,true,5);
-   addText(intro,"✦ Variante A / B : 50 % / 50 %",13,PALE,true,4);
+   addText(intro,"✦ Restaurant : second D6 (1–3 connu, 4–6 nouveau)",13,PALE,true,4);
+   addText(intro,"Autres sorties : variante A/B à 50 % / 50 %",12,MUTED,false,4);
    addText(intro,"Gardienne à prévoir : environ 2 à 6 heures selon la sortie. Aucune réservation faite automatiquement.",12,MUTED,false,5);
    addButton(intro,"🎲  BRASSER LE D20 DU MOIS",true,()->{
     if(!SpecialDateData.monthKeyNow().equals(SpecialDateData.monthKey(now))){draw();return;}
@@ -600,6 +608,7 @@ public final class MainActivity extends Activity {
     boolean stored=prefs.edit().putInt(prefix+"face",pick.face)
       .putBoolean(prefix+"fred",pick.fredInvites)
       .putBoolean(prefix+"optionB",pick.optionB)
+      .putInt(prefix+"restaurant_variant_face",0)
       .putString(prefix+"date",now.toString())
       .putBoolean(prefix+"done",false).commit();
     if(!stored){
@@ -610,7 +619,9 @@ public final class MainActivity extends Activity {
      draw();
      showResultDialog("✦",SpecialDateData.title(pick),
        SpecialDateData.inviter(pick)+" invite "+SpecialDateData.invited(pick)+
-       " !\n"+SpecialDateData.label(pick)+" · "+SpecialDateData.option(pick,now),
+       (SpecialDateData.isRestaurant(pick.face)?
+         " !\nBrassez maintenant le D6 pour choisir RESTO CONNU ou NOUVEAU RESTO (50/50).":
+         " !\n"+SpecialDateData.label(pick)+" · "+SpecialDateData.option(pick,now)),
        "DÉCOUVRIR NOTRE SORTIE");
     });
    });
@@ -620,13 +631,46 @@ public final class MainActivity extends Activity {
       16,PINK,true,5);
    addText(result,"♡  QUI EST INVITÉ(E) : "+SpecialDateData.invited(saved).toUpperCase(java.util.Locale.CANADA_FRENCH),
       15,WHITE,true,8);
-   addText(result,SpecialDateData.label(saved)+"  ·  "+SpecialDateData.option(saved,now),
+   if(restaurant){
+    if(restaurantD6==0){
+     addText(result,"🎲 RESTO CONNU OU NOUVEAU RESTO ?",16,PINK,true,7);
+     addText(result,"Un second D6 décidera à 50/50 : 1, 2, 3 = connu · 4, 5, 6 = nouveau.",13,PALE,false,7);
+     addButton(result,"🎲  BRASSER LE DÉ DU RESTAURANT",true,()->{
+      if(!SpecialDateData.monthKeyNow().equals(SpecialDateData.monthKey(now))){draw();return;}
+      if(prefs.getInt(prefix+"restaurant_variant_face",0)!=0)return;
+      int faceD6=GameLogic.d6();
+      boolean isNew=SpecialDateData.restaurantIsNew(faceD6);
+      boolean committed=prefs.edit()
+       .putInt(prefix+"restaurant_variant_face",faceD6)
+       .putBoolean(prefix+"optionB",isNew).commit();
+      if(!committed){
+       Toast.makeText(this,"Impossible d'enregistrer le résultat.",Toast.LENGTH_LONG).show();
+       return;
+      }
+      roll(faceD6,()->{
+       draw();
+       showResultDialog("♥",SpecialDateData.restaurantChoiceLabel(faceD6),
+        "Dé du restaurant : "+faceD6+"\n"+SpecialDateData.option(
+          new SpecialDateData.Draw(saved.face,saved.fredInvites,isNew),now),
+        "C'EST NOTÉ !");
+      });
+     });
+    }else{
+     addText(result,"🎯  "+SpecialDateData.restaurantChoiceLabel(restaurantD6)+
+       " · D6 FACE "+restaurantD6,16,PINK,true,6);
+     addText(result,SpecialDateData.option(saved,now),15,WHITE,true,8);
+    }
+   }else{
+    addText(result,SpecialDateData.label(saved)+"  ·  "+SpecialDateData.option(saved,now),
       16,WHITE,true,10);
+   }
    addText(result,SpecialDateData.description(saved),13,PALE,false,10);
    addText(result,"📍 "+SpecialDateData.location(saved)+"     ·     Gardienne : "+SpecialDateData.childcare(saved),
       12,MUTED,false,5);
    addText(result,"La personne qui invite propose et organise; le partage des frais reste votre choix.",12,MUTED,false,7);
-   if(prefs.getBoolean(prefix+"done",false)){
+   if(restaurant&&restaurantD6==0){
+    addText(result,"La sortie sera validable une fois le deuxième dé brassé.",12,MUTED,false,5);
+   }else if(prefs.getBoolean(prefix+"done",false)){
     addText(result,"✓  Votre rendez-vous du mois est réalisé !",15,GREEN,true,5);
     addButton(result,"↻  MARQUER COMME À ORGANISER",false,()->{
      prefs.edit().putBoolean(prefix+"done",false).apply();draw();

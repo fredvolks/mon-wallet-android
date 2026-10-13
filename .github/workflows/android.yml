@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.6.0
+      TAG: des-a-deux-v0.6.1
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -44,6 +44,11 @@ jobs:
           assert 'ChallengePicker.draw(selected,randomMode,history)' in src
           assert 'void showGameD20(' in src
           assert 'SpecialDateData.draw()' in src
+          assert 'BRASSER LE DÉ DU RESTAURANT' in src
+          assert 'restaurant_variant_face' in src
+          manifest=Path('app/src/main/AndroidManifest.xml').read_text()
+          assert '@drawable/ic_desadeux' in manifest
+          assert Path('app/src/main/res/drawable-nodpi/ic_desadeux.webp').is_file()
           assert 'tab="library";draw();' in src
           assert 'showResultDialog("♥"' in src
           assert 'RÉSULTAT OFFICIEL' in src
@@ -71,15 +76,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/Des-a-Deux-v0.6.0.apk "$RUNNER_TEMP/aligned.apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.6.0.apk
-          sha256sum dist/Des-a-Deux-v0.6.0.apk
+            --out dist/Des-a-Deux-v0.6.1.apk "$RUNNER_TEMP/aligned.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.6.1.apk
+          sha256sum dist/Des-a-Deux-v0.6.1.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Des-a-Deux-v0.6.0
-          path: dist/Des-a-Deux-v0.6.0.apk
+          name: Des-a-Deux-v0.6.1
+          path: dist/Des-a-Deux-v0.6.1.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
         env:
@@ -87,9 +92,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/Des-a-Deux-v0.6.0.apk --clobber
+            gh release upload "$TAG" dist/Des-a-Deux-v0.6.1.apk --clobber
           else
-            gh release create "$TAG" dist/Des-a-Deux-v0.6.0.apk \
-              --target "$GITHUB_SHA" --title "Dés à Deux v0.6.0" \
-              --notes "D20 premium OpenGL en vraie 3D, catégorie 70/15/15, mode Aléatoire 30/30/40, écrans Soirée compacts, 5 onglets et données conservées."
+            gh release create "$TAG" dist/Des-a-Deux-v0.6.1.apk \
+              --target "$GITHUB_SHA" --title "Dés à Deux v0.6.1" \
+              --notes "Nouvelle icône du dé rose premium et second tirage D6 à 50/50 pour restaurant connu ou nouvelle adresse, sans modifier le tirage mensuel."
           fi

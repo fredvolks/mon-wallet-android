@@ -34,6 +34,30 @@ public class SpecialDateDataTest {
   assertEquals(.5,optionB/(double)n,.01);
   assertEquals(.25,both/(double)n,.01);
  }
+ @Test public void restaurantOutingsTriggerAnExtraSixSidedFiftyFiftyRoll(){
+  int[] restaurants={1,3,7,13,18};
+  for(int face=1;face<=20;face++){
+   boolean known=false;
+   for(int f:restaurants)if(face==f)known=true;
+   assertEquals("restaurant flag "+face,known,SpecialDateData.isRestaurant(face));
+  }
+  int known=0,newPlace=0;
+  for(int i=0;i<150000;i++){
+   int face=GameLogic.d6();
+   if(SpecialDateData.restaurantIsNew(face))newPlace++;else known++;
+  }
+  assertEquals(.5,newPlace/(double)(known+newPlace),.012);
+  for(int face=1;face<=3;face++)assertFalse(SpecialDateData.restaurantIsNew(face));
+  for(int face=4;face<=6;face++)assertTrue(SpecialDateData.restaurantIsNew(face));
+  assertEquals("RESTO CONNU",SpecialDateData.restaurantChoiceLabel(1));
+  assertEquals("NOUVEAU RESTO",SpecialDateData.restaurantChoiceLabel(6));
+  for(int face:restaurants){
+   String a=SpecialDateData.option(new SpecialDateData.Draw(face,true,false),LocalDate.of(2026,10,13));
+   String b=SpecialDateData.option(new SpecialDateData.Draw(face,true,true),LocalDate.of(2026,10,13));
+   assertNotEquals(a,b);
+   assertTrue(a.length()>15&&b.length()>15);
+  }
+ }
  @Test public void monthRolloverAndSameMonthStable(){
   assertEquals("2026-10",SpecialDateData.monthKey(LocalDate.of(2026,10,1)));
   assertEquals("2026-10",SpecialDateData.monthKey(LocalDate.of(2026,10,31)));
