@@ -95,9 +95,46 @@ function nav(){
  '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
-function bindActions(){document.querySelectorAll('[data-action]').forEach(el=>{
- el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
-});}
+function bindWellbeingMenus(){
+ document.querySelectorAll('.love-answer-field').forEach(field=>{
+  const trigger=field.querySelector('[data-love-answer-open]');
+  const dialog=field.querySelector('.love-answer-dialog');
+  const valueField=field.querySelector('input[type="hidden"]');
+  if(!trigger||!dialog||!valueField)return;
+  const close=()=>{if(dialog.open)dialog.close();trigger.setAttribute('aria-expanded','false');trigger.focus();};
+  trigger.addEventListener('click',()=>{
+   if(dialog.open)return;
+   dialog.showModal();
+   trigger.setAttribute('aria-expanded','true');
+   const selected=dialog.querySelector('[aria-checked="true"]');
+   (selected||dialog.querySelector('.love-answer-option'))?.focus();
+  });
+  dialog.querySelectorAll('.love-answer-option').forEach(option=>{
+   option.addEventListener('click',()=>{
+    valueField.value=option.dataset.loveAnswerValue;
+    trigger.querySelector('.love-answer-current').textContent=
+     option.querySelector('.love-answer-option-label').textContent;
+    dialog.querySelectorAll('.love-answer-option').forEach(item=>
+     item.setAttribute('aria-checked',item===option?'true':'false'));
+    close();
+   });
+  });
+  dialog.querySelector('[data-love-answer-close]')?.addEventListener('click',close);
+  dialog.addEventListener('cancel',()=>trigger.setAttribute('aria-expanded','false'));
+  dialog.addEventListener('click',event=>{
+   if(event.target!==dialog)return;
+   const rect=dialog.getBoundingClientRect();
+   if(event.clientX<rect.left||event.clientX>rect.right||
+      event.clientY<rect.top||event.clientY>rect.bottom)close();
+  });
+ });
+}
+function bindActions(){
+ document.querySelectorAll('[data-action]').forEach(el=>{
+  el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
+ });
+ bindWellbeingMenus();
+}
 function render(){
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
