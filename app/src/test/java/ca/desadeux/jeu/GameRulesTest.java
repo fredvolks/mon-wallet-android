@@ -4,14 +4,14 @@ import static org.junit.Assert.*;
 import ca.desadeux.jeu.GameLogic.Category;
 public class GameRulesTest {
  @Test public void weeklyRollHasExpectedWeightedRange(){
-  int[] count=new int[7],runs=180000;
+  int[] count=new int[7]; int runs=180000;
   for(int i=0;i<runs;i++){int n=GameLogic.rollWeek();assertTrue(n>=1&&n<=6);count[n]++;}
   double[] expected={0,.50,.25,.12,.08,.04,.01};
   for(int i=1;i<=6;i++) assertEquals("week face "+i,expected[i],(double)count[i]/runs,.015);
  }
  @Test public void surpriseDistributionAndFaceCount(){
   for(Category category:Category.values()){
-   int[] counts=new int[3],runs=120000;
+   int[] counts=new int[3]; int runs=120000;
    for(int i=0;i<runs;i++){counts[GameLogic.choose(category).ordinal()]++;}
    for(Category actual:Category.values()){
     double expectation=actual==category?.8:.1;
