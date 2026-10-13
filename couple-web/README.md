@@ -77,3 +77,18 @@ L'APK natif v0.7.0 n'est pas encore relié au mode web. La PWA est prévue pour 
 - Supabase : migration `special-occasions.sql` déployée sur le projet LoveRoll séparé, avec RLS. Une seconde migration a retiré l'exécution directe de la fonction d'aide interne.
 - Hébergement iPhone : le premier essai GitHub Pages n'a pas pu publier le site. L'URL `https://fredvolks.github.io/mon-wallet-android/` **n'est pas vérifiée comme active**. Se rendre dans GitHub → Settings → Pages, sélectionner **GitHub Actions**, puis relancer le workflow de déploiement.
 - OAuth Apple/Google nécessite encore les identifiants configurés dans Supabase Auth. Les tests automatiques du code ne constituent pas un test mobile de bout en bout.
+
+
+## Déploiement direct Supabase Edge (13 octobre 2026)
+Le site public (HTML, CSS, JavaScript seulement, sans journal ni secrets administrateur) a été mis en ligne via la fonction Supabase Edge `loveroll-web`, version 1, statut `ACTIVE` :
+
+https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/
+
+- Aucun GitHub Pages n'est requis pour cette adresse.
+- Le site n'utilise que la clé publique Supabase et les RPC/RLS du projet dédié.
+- La fonction publique a `verify_jwt=false` **uniquement pour permettre d'afficher la page de connexion**. Les données du couple demeurent protégées par des sessions authentifiées et les règles RLS/RPC.
+- Les ressources web sont servies par la fonction depuis son bundle (vous devez redéployer Edge après chaque modification de l'interface sur GitHub).
+- Statut ACTIVE confirmé par Supabase; test HTTP navigateur complet et authentification de bout en bout **à faire**.
+- Enregistrement OAuth : dans Supabase > Authentication > URL Configuration, ajouter https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/ à Site URL et Redirect URLs. Sans cette autorisation, liens courriel et retours OAuth peuvent rediriger ailleurs.
+- Les fournisseurs Google et Apple nécessitent encore les identifiants OAuth dans Supabase > Authentication > Providers. La connexion courriel (lien magique) peut être testée après autorisation de redirection.
+- GitHub Pages est maintenant une option secondaire seulement : son workflow ne se déclenche plus automatiquement pour éviter les échecs inutiles.
