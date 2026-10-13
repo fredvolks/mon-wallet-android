@@ -341,3 +341,14 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(app,/function ideaHtml\(/);
  assert.match(app,/Chacun peut dire non/);
 });
+
+test('Embedded Android account screen uses platform Google and email code',()=>{
+ const html=authHtml();
+ assert.match(html,/signin-code/);
+ assert.match(html,/verify-email-code/);
+ assert.match(app,/LoveRollNativeAuth\?\.googleSignIn/);
+ assert.match(app,/signInWithIdToken/);
+ assert.match(app,/verifyOtp/);
+ assert.match(app,/launchParams\.has\('auth'\)/);
+ assert.match(app,/launchParams\.has\('settings'\)/);
+});

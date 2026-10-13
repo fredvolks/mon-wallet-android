@@ -266,16 +266,13 @@ public final class MainActivity extends Activity {
  }
 
  static final String LOVEROLL_WEB="https://fredvolks.github.io/mon-wallet-android/";
- void openConnectedLoveRoll(){
+ // Keep registration and login inside the installed app.
+ void openConnectedLoveRoll(){openConnectedLoveRoll("auth");}
+ void openConnectedLoveRoll(String destination){
   prefs.edit().putBoolean("loveroll_web_chosen",true).apply();
-  try{
-   Intent intent=new Intent(Intent.ACTION_VIEW,Uri.parse(LOVEROLL_WEB));
-   intent.addCategory(Intent.CATEGORY_BROWSABLE);
-   startActivity(intent);
-  }catch(Exception ex){
-   PremiumDialog.info(this,"Navigateur indisponible",
-    "Ouvre cette adresse HTTPS dans Chrome : "+LOVEROLL_WEB);
-  }
+  Intent intent=new Intent(this,ConnectedLoveRollActivity.class);
+  intent.putExtra("destination",destination);
+  startActivity(intent);
  }
 
  void premiumWelcomeButton(LinearLayout container,String text,boolean primary,Runnable action){
@@ -1437,7 +1434,7 @@ public final class MainActivity extends Activity {
   settingTile("LoveRoll Android + iPhone","Les noms et anniversaires sont renseignés lors de l’inscription. Vos données du mode hors ligne ne sont pas synchronisées.",
    "OUVRIR L'ESPACE CONNECTÉ",()->{tab="welcome";drawWelcome();});
   settingTile("♡  Ajouter / retirer un partenaire","Gérez vos invitations et vos séparations depuis l’espace connecté. Le journal intime local reste intact.",
-   "GÉRER MON COUPLE CONNECTÉ",()->openConnectedLoveRoll());
+   "GÉRER MON COUPLE CONNECTÉ",()->openConnectedLoveRoll("settings"));
   section("🎲  Le jeu");
   settingTile("♡  Bibliothèque des 40 défis","Sensuel · Sexuel, 20 défis par catégorie et durées.",
    "CONSULTER LES DÉFIS",()->{tab="library";draw();});

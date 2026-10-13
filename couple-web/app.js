@@ -12,10 +12,11 @@ let diceCleanup=[],renderToken=0;
 const opts={auth:{flowType:'pkce',autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}};
 const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
+const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
+ tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:false,diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 let timerCtx=null;
 const challengeTimer={id:null,durationMs:0,remainingMs:0,deadline:0,running:false,notified:false,mode:'sound'};
@@ -771,6 +772,9 @@ async function handle(action,element){
  }
  if(verb==='show-auth'){state.showAuth=true;render();return;}
  if(verb==='show-landing'){state.showAuth=false;render();return;}
+ if(verb==='google'&&window.LoveRollNativeAuth?.googleSignIn){
+  window.LoveRollNativeAuth.googleSignIn();return;
+ }
  if(verb==='google'||verb==='apple'){
   sessionStorage.setItem('authStarted','1');
   const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
@@ -785,7 +789,18 @@ async function handle(action,element){
   const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
   const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
   if(error)throw error;
-  notify('Vérifie ta boîte courriel : ton lien de connexion est envoyé.');
+  notify('Courriel envoyé. Si un code à 6 chiffres est présent, entre-le ici sans quitter LoveRoll.');
+  return;
+ }
+ if(verb==='verify-email-code'){
+  const email=id('signin-email')?.value.trim().toLowerCase();
+  const token=id('signin-code')?.value.trim();
+  if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))
+   throw Error('Entre le courriel avec lequel tu as demandé le code.');
+  if(!/^\\d{6}$/.test(token||''))throw Error('Saisis le code à six chiffres de ton courriel.');
+  const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});
+  if(error)throw error;
+  if(data?.user){state.user=data.user;state.showAuth=false;await reload();}
   return;
  }
  if(verb==='signout'){
@@ -1005,6 +1020,20 @@ document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&state.user){
   reload().catch(fail);
  }
+});
+// Android native Google chooser passes the selected ID token to Supabase.
+window.addEventListener('loveroll-native-google-result',async event=>{
+ const {token,nonce,error}=event.detail||{};
+ if(error){notify(error);return;}
+ if(!token){notify('Aucun identifiant Google reçu.');return;}
+ try{
+  const result=await client.auth.signInWithIdToken({provider:'google',token,nonce});
+  if(result.error)throw result.error;
+  if(result.data?.user){
+   state.user=result.data.user;state.showAuth=false;
+   await reload();
+  }
+ }catch(err){fail(err);}
 });
 start().catch(fail);
 
