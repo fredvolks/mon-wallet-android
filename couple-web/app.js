@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
+import { dieOn,clearDice } from './dice3d.js';
 
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
@@ -55,10 +56,15 @@ async function query(table,options={}){
 }
 function frame(body,title='DÉS À DEUX',subtitle='Un jeu intime, juste pour vous deux'){
  const connected=!!state.coupleId;
+ clearDice();
  root.innerHTML='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+
   '</header>'+body+(connected?nav():'');
  bindActions();
+ root.querySelectorAll('canvas[data-dice-sides]').forEach(canvas=>{
+  dieOn(canvas,Number(canvas.dataset.diceSides),Number(canvas.dataset.face)||1,
+    canvas.dataset.spinning==='true');
+ });
 }
 function nav(){
  const tabs=[['home','⌂','Accueil'],['session','🎲','Soirée'],['special','✦','Défi spécial'],
@@ -158,10 +164,12 @@ function subscribe(){
  state.channel=channel.subscribe();
 }
 function heroDice(face,sides,label){
- return '<div class="dice-row"><div class="die '+(state.diceStatus?'rolling':'')+'"><strong>'+
- safe(state.diceStatus?'✦':face||'?')+'</strong></div>'+
+ return '<div class="dice-row"><div class="die"><canvas class="dice-canvas" width="190" height="190"'+
+  ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
+  ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
  '<div><div class="eyebrow">D'+sides+' · '+safe(label)+'</div>'+
- '<p>Le résultat officiel est tiré et verrouillé sur le serveur.</p></div></div>';
+ '<p>'+(!face?'En attente du tirage officiel.':'Face gagnante : '+face)+
+ '. Faites glisser le dé pour le tourner.</p></div></div>';
 }
 function statsRow(){return '<div class="stat-grid">'+[
  [state.weekly?.face||'—','Soirées semaine'],

@@ -45,3 +45,14 @@ test('No cross-project configuration or privileged key in client',()=>{
  assert.doesNotMatch(cfg,/service_role|sb_secret_/);
  assert.match(cfg,/supabasePublishableKey/);
 });
+
+test('WebGL dice do not determine official random results',()=>{
+ const webgl=readFileSync(new URL('./dice3d.js',import.meta.url),'utf8');
+ assert.match(webgl,/new THREE\.WebGLRenderer/);
+ assert.match(webgl,/IcosahedronGeometry\(1\.16,0\)/);
+ assert.match(webgl,/RoundedBoxGeometry/);
+ assert.match(webgl,/const target=new THREE\.Quaternion/);
+ assert.doesNotMatch(webgl,/Math\.random\(/);
+ assert.match(app,/roll_couple_once/);
+ assert.match(app,/data-dice-sides/);
+});
