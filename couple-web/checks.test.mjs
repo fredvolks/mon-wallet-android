@@ -89,7 +89,7 @@ test('No default opinion: every rating requires an actual user choice',()=>{
 });
 
 test('A member waiting for their match is notified when the partner accepts',()=>{
- assert.match(app,/event:'INSERT',schema:'public',table:'couple_members'/);
+ assert.match(app,/event:'\*',schema:'public',table:'couple_members'/);
  assert.match(app,/Votre partenaire a accepté le match/);
  assert.match(app,/if\(state.members.length<2\)\{state.channel=channel.subscribe\(\);return;\}/);
 });
@@ -325,7 +325,7 @@ test('Removing a partner retains their own diary and removes access at the serve
  assert.match(sql,/create or replace function public\.end_love_match/);
  assert.match(sql,/delete from public\.couple_members where couple_id=p_couple/);
  assert.doesNotMatch(sql,/delete from public\.couple_intimacy/);
- assert.match(sql,/on conflict \(user_id,source_event_id\) do nothing/);
+ assert.match(sql,/on conflict\s*\(user_id,source_event_id\) do nothing/);
  assert.match(sql,/create or replace function public\.add_my_love_event/);
  assert.match(app,/rpc\('end_love_match'/);
  assert.match(app,/rpc\('add_my_love_event'/);
