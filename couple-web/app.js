@@ -841,7 +841,28 @@ async function handle(action,element){
   localStorage.setItem('loveroll-skip-'+state.user.id,'1');state.tab='home';render();return;
  }
  if(verb==='start-couple'){
+  if(state.coupleId){state.tab='settings';render();return;}
   localStorage.removeItem('loveroll-skip-'+state.user.id);state.tab='home';render();return;
+ }
+ if(verb==='solo-roll'){
+  if(isSharedCoupleReady(state.coupleId,state.members))throw Error('Utilisez les tirages partagés pour votre couple.');
+  const kind=parts[0],sizes={weekly:6,session:6,challenge:20,special:20,host:6,occasion:20};
+  if(!Object.hasOwn(sizes,kind))throw Error('Dé d’essai inconnu.');
+  state.solo[kind]=drawSoloFace(sizes[kind]);
+  if(kind==='special')state.solo.host=null;
+  render();return;
+ }
+ if(verb==='solo-category'){
+  if(isSharedCoupleReady(state.coupleId,state.members))throw Error('Le mode solo est indisponible dans un couple connecté.');
+  if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie inconnue.');
+  state.solo.challengeCategory=parts[0];state.solo.challenge=null;
+  render();return;
+ }
+ if(verb==='solo-advent'){
+  if(isSharedCoupleReady(state.coupleId,state.members))throw Error('Utilisez le calendrier partagé.');
+  const day=Number(parts[0]);
+  if(!Number.isInteger(day)||day<1||day>25)throw Error('Case invalide.');
+  state.solo.adventDay=day;render();return;
  }
  if(verb==='end-couple'){
   if(!state.coupleId)return;
@@ -959,11 +980,19 @@ async function handle(action,element){
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
  if(verb==='tab'){
-  if(!state.coupleId&&!['home','settings','personal-journal','ideas'].includes(parts[0])){
-   state.tab='home';notify('Ajoutez un partenaire pour utiliser les jeux partagés.');
-  }else state.tab=parts[0];
+  const allowed=['home','session','special','occasions','advent','settings',
+   'personal-journal','journal','ideas','feedback'];
+  if(!allowed.includes(parts[0]))throw Error('Onglet inconnu.');
+  // The full discovery experience is available in solo mode. No shared writes.
+  state.tab=parts[0]==='feedback'&&!isSharedCoupleReady(state.coupleId,state.members)?
+   'session':parts[0];
   state.confirmCancel=false;render();return;
  }
+ if(['save-occasion-date','occasion-roll','roll','new-session','my-d6',
+    'new-challenge','answer','finish-session','cancel-session','confirm-cancel',
+    'save-event','delete-event','save-feedback'].includes(verb)&&
+    !isSharedCoupleReady(state.coupleId,state.members))
+   throw Error('Cette action nécessite deux comptes associés. Les démonstrations solo ne modifient pas les données du couple.');
  if(verb==='save-occasion-date'){
   const k=parts[0],d=id(k==='anniversary'?'loveroll-anniversary':'loveroll-birthday')?.value.trim();
   if(d&&!/^\\d{2}-\\d{2}$/.test(d))throw Error('Saisissez MM-JJ, par exemple 02-14.');
