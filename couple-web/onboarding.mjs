@@ -83,7 +83,7 @@ export function authHtml(){
  '<h2>Créer mon compte ou me connecter</h2>'+
  '<p>Un compte par personne. Les noms et les anniversaires viennent de l’inscription.</p>'+
  button('google','◉ Continuer avec Google')+
- button('apple','Continuer avec Apple','subtle')+
+ (typeof window!=='undefined'&&window.LoveRollNativeAuth?'':button('apple','Continuer avec Apple','subtle'))+
  '<div class="login-divider">ou par courriel</div>'+
  '<label>Courriel<input id="signin-email" type="email" autocomplete="email" placeholder="vous@exemple.com"></label>'+
  button('email-login','Recevoir un courriel de connexion','subtle')+
