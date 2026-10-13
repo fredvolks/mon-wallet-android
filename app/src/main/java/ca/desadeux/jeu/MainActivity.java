@@ -440,71 +440,107 @@ public final class MainActivity extends Activity {
   }
  }
 
- int adventYear(){
-  return LocalDate.now(ZoneId.of("America/Montreal")).getYear();
+ LocalDate adventToday(){return LocalDate.now(ZoneId.of("America/Montreal"));}
+ int adventYear(){return adventToday().getYear();}
+ String adventKey(int day,String kind){return "advent_"+adventYear()+"_"+day+"_"+kind;}
+ boolean adventDone(int day){
+  return AdventData.unlocked(day,adventToday())&&prefs.getBoolean(adventKey(day,"done"),false);
  }
- String adventKey(int day,String kind){
-  return "advent_"+adventYear()+"_"+day+"_"+kind;
- }
- boolean adventDone(int day){return prefs.getBoolean(adventKey(day,"done"),false);}
  boolean adventSwap(int day){return prefs.getBoolean(adventKey(day,"swapped"),false);}
  int adventProgress(){
-  int result=0;for(int day=1;day<=25;day++)if(adventDone(day))result++;return result;
+  int done=0;
+  for(int day=1;day<=AdventData.unlockedCount(adventToday());day++)if(adventDone(day))done++;
+  return done;
  }
  void drawAdvent(){
-  heading("🎁  Calendrier de l'Avent","25 surprises de décembre — un seul calendrier pour Fred et Émilie");
-  addText(page,"DÉCEMBRE "+adventYear()+"  ·  25 MOMENTS À DEUX",12,PINK,true,8);
-  LinearLayout total=card("♥  "+adventProgress()+" / 25 cases réalisées",
-   "Chaque journée est une activité partagée : Fred offre, Émilie offre ou vous la vivez ensemble.");
-  progress(total,adventProgress()/25f);
-  addText(page,"Touchez une case pour la découvrir. Le calendrier reste accessible toute l'année pour l'essayer.",13,MUTED,false,12);
+  LocalDate today=adventToday();
+  int unlocked=AdventData.unlockedCount(today);
+  int year=today.getYear();
+  heading("🎁  Calendrier de l'Avent","25 surprises qui deviennent de plus en plus coquines");
+  addText(page,"DÉCEMBRE "+year+"  ·  UN JOUR, UNE CASE À DÉCOUVRIR",12,PINK,true,8);
+  LinearLayout intro=card("♥  "+adventProgress()+" / 25 cases réalisées",
+   "Un seul calendrier pour Fred et Émilie. Chaque surprise s'ouvre uniquement à partir de sa date.");
+  progress(intro,adventProgress()/25f);
+  if(unlocked==0){
+   LinearLayout waiting=card("🔒  Calendrier encore fermé",
+    "Rendez-vous le 1er décembre "+year+" pour dévoiler la première surprise.");
+   addText(waiting,"Les 25 activités resteront secrètes jusque-là. Impossible d'ouvrir une case en avance.",14,PALE,false,0);
+  }else if(unlocked<25){
+   card("🎁  Cases 1 à "+unlocked+" disponibles",
+    "La prochaine case se débloque le "+(unlocked+1)+" décembre. Les suivantes restent secrètes.");
+  }else{
+   card("🎁  Toutes les cases sont débloquées",
+    "Vous pouvez revoir les surprises des jours précédents et cocher celles réalisées.");
+  }
   for(int row=0;row<5;row++){
    LinearLayout week=horizontal();page.addView(week);
    for(int col=0;col<5;col++){
     final int day=row*5+col+1;
-    String caption=adventDone(day)?"✓ "+day:""+day;
-    chip(week,caption,adventSelected==day,()->{
-     adventSelected=day;prefs.edit().putInt("advent_selected",day).apply();draw();
+    final boolean available=AdventData.unlocked(day,today);
+    String label=available?(adventDone(day)?"✓ "+day:"🎁 "+day):"🔒 "+day;
+    chip(week,label,available&&adventSelected==day,()->{
+     if(!AdventData.unlocked(day,adventToday())){
+      Toast.makeText(this,"La case "+day+" sera dévoilée le "+day+" décembre.",Toast.LENGTH_LONG).show();
+      return;
+     }
+     adventSelected=day;
+     prefs.edit().putInt("advent_selected",day).apply();
+     draw();
     },1);
    }
    gap(page,7);
   }
-  gap(page,15);
+  if(unlocked==0){
+   gap(page,13);
+   card("♥  Le suspense fait partie du jeu",
+    "Le contenu des cases et le défi du samedi spécial seront révélés seulement le jour venu.");
+   return;
+  }
+  if(adventSelected<1||adventSelected>unlocked){
+   adventSelected=unlocked;
+   prefs.edit().putInt("advent_selected",adventSelected).apply();
+  }
   int day=adventSelected;
-  String[] item=AdventData.days[day-1];
-  boolean together=AdventData.isTogether(day);
-  String giver=AdventData.giver(day,adventSwap(day));
-  String receiver=AdventData.recipient(day,adventSwap(day));
+  String[] item=AdventData.revealedActivity(day,today);
+  if(item==null)return; // Never show unopened day contents, even if an old selection is stored.
+  boolean together=AdventData.isTogether(day,year);
+  String giver=AdventData.giver(day,adventSwap(day),year);
+  String receiver=AdventData.recipient(day,adventSwap(day),year);
+  gap(page,13);
   LinearLayout chosen=card("🎁  CASE "+day+" / 25  ·  "+item[0],null);
   if(together){
-   addText(chosen,"♥  À FAIRE ENSEMBLE : FRED + ÉMILIE",16,PINK,true,9);
+   addText(chosen,"♥  ACTIVITÉ ENSEMBLE : FRED + ÉMILIE",16,PINK,true,9);
   }else{
    addText(chosen,"🎁  QUI OFFRE : "+giver.toUpperCase(java.util.Locale.CANADA_FRENCH),16,PINK,true,7);
    addText(chosen,"♡  QUI REÇOIT : "+receiver.toUpperCase(java.util.Locale.CANADA_FRENCH),16,WHITE,true,9);
   }
-  addText(chosen,"DÉFI DU JOUR",12,PINK,true,6);
-  addText(chosen,AdventData.instruction(day,adventSwap(day)),17,WHITE,false,12);
+  addText(chosen,"À FAIRE",12,PINK,true,6);
+  addText(chosen,AdventData.instruction(day,adventSwap(day),year),17,WHITE,false,12);
   addText(chosen,"EXEMPLE",12,PINK,true,5);
-  addText(chosen,AdventData.example(day,adventSwap(day)).replaceFirst("^Exemple : ",""),15,MUTED,false,12);
-  if(!together)
+  addText(chosen,AdventData.example(day,adventSwap(day),year).replaceFirst("^Exemple : ",""),15,MUTED,false,12);
+  if(!together){
    addButton(chosen,"↔  INVERSER FRED ET ÉMILIE",false,()->{
-    prefs.edit().putBoolean(adventKey(day,"swapped"),!adventSwap(day)).apply();draw();
+    if(!AdventData.unlocked(day,adventToday()))return;
+    prefs.edit().putBoolean(adventKey(day,"swapped"),!adventSwap(day)).apply();
+    draw();
    });
+  }
   if(!adventDone(day)){
    addButton(chosen,"✓  MARQUER CETTE CASE TERMINÉE",true,()->{
-    prefs.edit().putBoolean(adventKey(day,"done"),true).apply();draw();
+    if(!AdventData.unlocked(day,adventToday()))return;
+    prefs.edit().putBoolean(adventKey(day,"done"),true).apply();
+    draw();
    });
   }else{
    addText(chosen,"✓ Cette activité a été réalisée.",15,GREEN,true,6);
    addButton(chosen,"↻  REMETTRE À FAIRE",false,()->{
+    if(!AdventData.unlocked(day,adventToday()))return;
     prefs.edit().putBoolean(adventKey(day,"done"),false).apply();draw();
    });
   }
-  addText(page,"Aucune activité n'est obligatoire. Vous pouvez remplacer une proposition, la remettre à plus tard ou simplement la passer.",13,MUTED,false,16);
-  if(adventProgress()==25){
-   LinearLayout finish=card("♥  Vos 25 cases sont complétées !",
-    "Votre calendrier sera vierge pour le prochain mois de décembre.");
-  }
+  addText(page,"Chaque proposition est facultative. Vous pouvez la modifier, la remettre à plus tard ou passer sans justification.",13,MUTED,false,16);
+  if(adventProgress()==25)
+   card("♥  25 moments accomplis !","Le calendrier sera renouvelé en décembre prochain.");
  }
  void drawSettings(){
   heading("⚙  Paramètres","Personnalisez votre expérience");
@@ -538,7 +574,7 @@ public final class MainActivity extends Activity {
   card("Répartition hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
   card("Quatre tirages en 3D","Semaine : D6 pondéré · Soirée : un D6 chacun · Défis : D20 à 80/10/10.");
   card("Défis sans répétition","Toute carte proposée, même passée, ne peut pas ressortir pour la même personne pendant la soirée.");
-  card("Calendrier de l'Avent","25 cases communes à Fred et Émilie. Possibilité d'inverser les rôles; progrès local sauvegardé par année.");
+  card("Calendrier de l'Avent","25 cases secrètes qui s'ouvrent à partir de leur date en décembre; dernier samedi avant Noël : défi spécial à deux.");
   card("Intimité et respect","Les défis sont des invitations. Vous pouvez toujours passer. Les données de jeu restent sur ce téléphone.");
   gap(page,8);addText(page,"Dés à Deux · Version "+BuildConfig.VERSION_NAME,12,MUTED,false,0);
  }

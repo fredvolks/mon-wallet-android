@@ -1,60 +1,92 @@
 package ca.desadeux.jeu;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.Month;
+import java.time.temporal.TemporalAdjusters;
 
-/** A single shared 25-day advent calendar for the couple, with an optional role swap per day. */
+/**
+ * Shared Advent calendar. Content only unlocks on the matching date in December.
+ * The last Saturday strictly before December 25 has a special consensual challenge.
+ */
 public final class AdventData {
- public static final String FRED="FRED", EMILIE="EMILIE", TOGETHER="ENSEMBLE";
- /** Each day: title, original giver role, instruction, example. */
- public static final String[][] days = new String[][] {
-  {"L'ouverture en douceur", "ENSEMBLE", "Prenez dix minutes à deux pour vous retrouver sans écrans.", "Exemple : mettez une chanson, donnez-vous un long câlin et choisissez une petite attention pour demain."},
-  {"Massage pour Émilie", "FRED", "Fred offre cinq minutes de massage des épaules et de la nuque à Émilie.", "Exemple : Émilie choisit la pression et peut demander d'arrêter quand elle veut."},
-  {"Trois mots pour Fred", "EMILIE", "Émilie offre à Fred trois compliments précis et un baiser.", "Exemple : décris un geste, une qualité et un souvenir que tu apprécies."},
-  {"Danse de décembre", "ENSEMBLE", "Choisissez une chanson et dansez ensemble jusqu'à la fin.", "Exemple : dans le salon, lumières tamisées et téléphones rangés."},
-  {"Un baiser surprise", "FRED", "Fred demande à Émilie où elle aimerait recevoir trois baisers.", "Exemple : main, joue et nuque si cela lui plaît."},
-  {"Massage pour Fred", "EMILIE", "Émilie offre cinq minutes de massage à Fred.", "Exemple : commence par les épaules et demande si la pression lui convient."},
-  {"Souvenir préféré", "ENSEMBLE", "Racontez chacun un souvenir drôle ou romantique de votre couple.", "Exemple : reparlez de votre première sortie ensemble."},
-  {"Strip-tease léger de Fred", "FRED", "Fred propose à Émilie une petite danse de déshabillage, à son rythme.", "Exemple : une chanson et un vêtement en moins, si les deux sont à l'aise."},
-  {"Déclaration coquine", "EMILIE", "Émilie confie à Fred une envie intime qu'elle aimerait partager.", "Exemple : « Ce soir, j'aimerais qu'on prenne plus de temps pour… »."},
-  {"Douche à deux", "ENSEMBLE", "Proposez une douche chaude partagée, sans attente pour la suite.", "Exemple : installez vos serviettes et prenez un moment ensemble."},
-  {"Baisers au ralenti", "FRED", "Fred offre à Émilie une minute de baisers lents, si elle en a envie.", "Exemple : commence par lui demander si elle préfère un baiser ou un câlin."},
-  {"Strip-tease léger d'Émilie", "EMILIE", "Émilie propose à Fred une danse de séduction, avec ou sans déshabillage.", "Exemple : une chanson qu'elle choisit et quelques mouvements devant lui."},
-  {"Choix des fantasmes", "ENSEMBLE", "Partagez chacun une idée coquine, sans obligation de la réaliser.", "Exemple : parlez d'une ambiance ou d'un scénario qui vous intrigue."},
-  {"Une attention sexuelle", "FRED", "Fred propose à Émilie du sexe oral, uniquement si elle en a envie.", "Exemple : une simple proposition; si elle préfère autre chose, choisissez une activité différente."},
-  {"Une attention sexuelle", "EMILIE", "Émilie propose à Fred du sexe oral, uniquement si lui et elle le souhaitent.", "Exemple : demande d'abord ce qui lui ferait plaisir; vous pouvez remplacer le défi."},
-  {"Cinq minutes rien qu'à vous", "ENSEMBLE", "Prenez cinq minutes pour des baisers, des câlins ou une autre attention commune.", "Exemple : chacun choisit une chose qu'il aimerait recevoir."},
-  {"L'invitation secrète", "FRED", "Fred prépare une petite invitation romantique ou coquine pour Émilie.", "Exemple : une note « Rendez-vous dans le salon à 21 h »."},
-  {"Le choix du jouet", "EMILIE", "Émilie propose, si vous en possédez, un jouet intime que vous connaissez.", "Exemple : choisissez ensemble de l'utiliser ou de remplacer cette activité."},
-  {"La soirée sans pression", "ENSEMBLE", "Choisissez ensemble une façon agréable d'être proches, avec ou sans sexe.", "Exemple : un film collés, un long massage ou un moment intime partagé."},
-  {"Bain ou massage", "FRED", "Fred offre à Émilie le choix entre un bain relaxant et un massage.", "Exemple : prépare une serviette chaude et laisse-la décider."},
-  {"Rendez-vous improvisé", "EMILIE", "Émilie imagine un petit rendez-vous pour Fred à la maison.", "Exemple : une musique, une collation et un moment à deux."},
-  {"Préliminaires au choix", "ENSEMBLE", "Parlez de vos préliminaires préférés et choisissez une idée commune.", "Exemple : chacun dit ce qui lui plaît et ce qu'il veut éviter."},
-  {"L'ambiance parfaite", "FRED", "Fred prépare pour Émilie une ambiance sensuelle qu'elle apprécie.", "Exemple : bougies LED, musique et lumières tamisées."},
-  {"Le souhait de Noël", "EMILIE", "Émilie offre à Fred une attention intime de leur choix, avec son accord.", "Exemple : il peut choisir entre un massage, une danse ou un moment à deux."},
-  {"Le grand cadeau à deux", "ENSEMBLE", "Chacun choisit une activité qu'il aimerait vivre ensemble pour terminer le calendrier.", "Exemple : une soirée câlins et baisers, un massage partagé ou une activité sexuelle voulue par les deux."}
+ public static final String FRED="FRED",EMILIE="EMILIE",TOGETHER="ENSEMBLE";
+ /** Fields: title, who gives, instruction, concrete example. */
+ public static final String[][] days={
+  {"Premier rapprochement", "ENSEMBLE", "Prenez dix minutes ensemble sans téléphone. Choisissez un geste tendre que vous aimez tous les deux.", "Exemple : écoutez une chanson en vous tenant dans les bras."},
+  {"Massage détente pour Émilie", "FRED", "Fred offre cinq minutes de massage du dos ou des épaules à Émilie.", "Exemple : Émilie choisit la pression et la durée qui lui conviennent."},
+  {"Trois baisers pour Fred", "EMILIE", "Émilie propose trois baisers à Fred, aux endroits non intimes qu'il préfère.", "Exemple : la joue, la nuque et le front, si Fred en a envie."},
+  {"Danse collée", "ENSEMBLE", "Invitez-vous à danser lentement et profitez d'un moment sans distraction.", "Exemple : une chanson complète dans le salon, serrés l'un contre l'autre."},
+  {"Massage pour Fred", "EMILIE", "Émilie propose à Fred un massage relaxant de cinq minutes.", "Exemple : commencer par les épaules et laisser Fred guider les mouvements."},
+  {"Baisers dans le cou", "FRED", "Fred propose à Émilie une minute de baisers doux dans le cou.", "Exemple : commencer par lui demander si elle préfère un baiser ou un câlin."},
+  {"Le compliment séduisant", "ENSEMBLE", "Dites-vous chacun trois détails physiques ou gestes que vous trouvez attirants.", "Exemple : un sourire, une façon de regarder l'autre ou un baiser."},
+  {"Danse de séduction de Fred", "FRED", "Fred offre une courte danse de séduction à Émilie.", "Exemple : une chanson et, s'il en a envie, un chandail en moins."},
+  {"Murmure coquin", "EMILIE", "Émilie propose à Fred une idée coquine qu'elle aimerait explorer.", "Exemple : parler d'une soirée avec musique, lumière tamisée ou un bain."},
+  {"Strip-tease léger", "EMILIE", "Émilie propose une danse privée avec déshabillage à son rythme.", "Exemple : choisir une chanson et décider librement si elle retire un vêtement."},
+  {"Jeu de la tentation", "FRED", "Fred invite Émilie à un jeu de séduction : rapprochez-vous sans vous embrasser pendant quelques secondes.", "Exemple : se regarder vingt secondes avant de demander un baiser."},
+  {"Douche ensemble", "ENSEMBLE", "Proposez de prendre une douche chaude ensemble et décidez librement de la suite.", "Exemple : préparez deux serviettes chaudes et profitez du moment."},
+  {"Massage plus sensuel", "FRED", "Fred offre à Émilie un massage sensuel de dix minutes, selon ses limites.", "Exemple : huile adaptée à la peau, lumière douce et choix des zones massées par Émilie."},
+  {"Le désir caché", "EMILIE", "Émilie raconte à Fred un désir intime qu'elle aimerait partager un jour.", "Exemple : suggérer une nouvelle ambiance ou une activité que vous n'avez pas essayée."},
+  {"Préliminaires préférés", "ENSEMBLE", "Échangez sur les préliminaires que vous aimez et choisissez-en un si l'envie est partagée.", "Exemple : chacun nomme deux attentions qu'il aime recevoir."},
+  {"Le choix du jouet", "FRED", "Fred propose d'intégrer un jouet intime que vous connaissez déjà.", "Exemple : Émilie choisit si cela lui fait envie et lequel utiliser, ou passe le défi."},
+  {"Une invitation sexuelle", "EMILIE", "Émilie propose à Fred une activité sexuelle qu'ils apprécient tous les deux.", "Exemple : demander clairement ce qui lui ferait plaisir, sans insister en cas de refus."},
+  {"Une attention intime", "FRED", "Fred propose à Émilie un moment de préliminaires ou de sexe oral, selon leurs envies communes.", "Exemple : laisser Émilie choisir une attention, une alternative, ou passer."},
+  {"Une soirée passionnée", "ENSEMBLE", "Choisissez ensemble une activité sexuelle qui vous fait envie, ou un moment très tendre.", "Exemple : chacun dit ce qu'il souhaite pour ce soir et vous retenez uniquement une envie commune."},
+  {"Strip-tease et surprise", "EMILIE", "Émilie propose à Fred une danse de déshabillage et une surprise intime de son choix.", "Exemple : une chanson, quelques gestes de séduction, et une pause si elle le souhaite."},
+  {"Changement de décor", "FRED", "Fred propose un moment intime dans une autre pièce privée de la maison.", "Exemple : préparer une ambiance confortable au salon puis demander si cela convient."},
+  {"Plaisir à deux", "ENSEMBLE", "Proposez un moment de plaisir mutuel avec une activité sexuelle voulue par les deux.", "Exemple : chacun explique ce qui lui plaît et ce qu'il ne veut pas essayer."},
+  {"Un fantasme réalisable", "EMILIE", "Émilie propose un fantasme simple à réaliser ensemble, ou simplement à discuter.", "Exemple : un scénario de rencontre imaginaire ou une soirée différente."},
+  {"Le choix de la nuit", "FRED", "Fred propose à Émilie une soirée intime à son rythme, avec une option de son choix.", "Exemple : choisir ensemble entre un massage prolongé, des préliminaires ou un moment sexuel."},
+  {"Le cadeau final", "ENSEMBLE", "Chacun choisit une envie intime à proposer à l'autre. Gardez seulement ce qui vous tente mutuellement.", "Exemple : une longue soirée de baisers et de préliminaires, un jouet ou une activité sexuelle choisie à deux."}
  };
- public static String giver(int day,boolean swapped){
-  String code=days[day-1][1];
+ private static final String[] SATURDAY_SPECIAL={
+  "Deux moments d'amour aujourd'hui",
+  TOGETHER,
+  "Défi spécial du dernier samedi avant Noël : proposez de faire l'amour deux fois aujourd'hui, seulement si vous en avez tous les deux envie. Rien n'est dû ni obligatoire.",
+  "Exemple : un premier moment intime le matin et un autre le soir, ou remplacez l'un ou les deux par des câlins si vous préférez."
+ };
+ private AdventData(){}
+ /** Saturday in Dec 18–24, strictly before Christmas day. */
+ public static int specialSaturday(int year){
+  return LocalDate.of(year,12,25).with(TemporalAdjusters.previous(DayOfWeek.SATURDAY)).getDayOfMonth();
+ }
+ public static String[] activity(int day,int year){
+  checkDay(day);
+  return day==specialSaturday(year)?SATURDAY_SPECIAL:days[day-1];
+ }
+ public static int unlockedCount(LocalDate today){
+  return today.getMonth()==Month.DECEMBER?Math.min(25,today.getDayOfMonth()):0;
+ }
+ public static boolean unlocked(int day,LocalDate today){
+  return day>=1&&day<=unlockedCount(today);
+ }
+ private static void checkDay(int day){
+  if(day<1||day>25)throw new IllegalArgumentException("Day must be 1 through 25");
+ }
+ public static boolean isTogether(int day,int year){
+  return activity(day,year)[1].equals(TOGETHER);
+ }
+ public static String giver(int day,boolean swapped,int year){
+  String code=activity(day,year)[1];
   if(code.equals(TOGETHER))return "Fred et Émilie";
-  boolean fred=code.equals(FRED);
-  return fred!=swapped?"Fred":"Émilie";
+  return (code.equals(FRED)!=swapped)?"Fred":"Émilie";
  }
- public static String recipient(int day,boolean swapped){
-  String code=days[day-1][1];
-  if(code.equals(TOGETHER))return "Fred et Émilie";
-  return giver(day,swapped).equals("Fred")?"Émilie":"Fred";
+ public static String recipient(int day,boolean swapped,int year){
+  if(isTogether(day,year))return "Fred et Émilie";
+  return giver(day,swapped,year).equals("Fred")?"Émilie":"Fred";
  }
- private static String swapNames(String value){
-  return value.replace("Fred","__PERSON_SWAP__")
-   .replace("Émilie","Fred").replace("__PERSON_SWAP__","Émilie");
+ private static String swapNames(String v){
+  return v.replace("Fred","__SWAP_NAME__").replace("Émilie","Fred").replace("__SWAP_NAME__","Émilie");
  }
- public static String instruction(int day,boolean swapped){
-  String value=days[day-1][2];
-  return swapped&&!isTogether(day)?swapNames(value):value;
+ public static String instruction(int day,boolean swapped,int year){
+  String content=activity(day,year)[2];
+  return swapped&&!isTogether(day,year)?swapNames(content):content;
  }
- public static String example(int day,boolean swapped){
-  String value=days[day-1][3];
-  return swapped&&!isTogether(day)?swapNames(value):value;
+ public static String example(int day,boolean swapped,int year){
+  String content=activity(day,year)[3];
+  return swapped&&!isTogether(day,year)?swapNames(content):content;
  }
- public static boolean isTogether(int day){
-  return days[day-1][1].equals(TOGETHER);
+ // Explicit date checks are required by the UI before ANY activity text is read.
+ public static String[] revealedActivity(int day,LocalDate today){
+  return unlocked(day,today)?activity(day,today.getYear()):null;
  }
 }

@@ -82,24 +82,56 @@ public class GameRulesTest {
   }
   assertEquals(60,seen.size());
  }
- @Test public void adventHasTwentyFiveSharedActivitiesWithClearRoles(){
-  assertEquals(25,AdventData.days.length);
-  int together=0,fred=0,emilie=0;
+ @Test public void adventCalendarLocksAllCasesBeforeDecember(){
+  java.time.LocalDate november=java.time.LocalDate.of(2026,11,30);
+  assertEquals(0,AdventData.unlockedCount(november));
   for(int day=1;day<=25;day++){
-   String[] item=AdventData.days[day-1];
-   assertEquals(4,item.length);
-   for(String text:item)assertFalse(text.trim().isEmpty());
-   assertTrue(item[3].startsWith("Exemple : "));
-   if(AdventData.isTogether(day)){
-    together++;assertEquals("Fred et Émilie",AdventData.giver(day,false));
-    assertEquals(AdventData.instruction(day,false),AdventData.instruction(day,true));
-   }else{
-    if(AdventData.giver(day,false).equals("Fred"))fred++;else emilie++;
-    assertNotEquals(AdventData.giver(day,false),AdventData.giver(day,true));
-    assertEquals(AdventData.giver(day,false),AdventData.recipient(day,true));
-    assertEquals(AdventData.recipient(day,false),AdventData.giver(day,true));
+   assertFalse(AdventData.unlocked(day,november));
+   assertNull(AdventData.revealedActivity(day,november));
+  }
+  assertEquals(0,AdventData.unlockedCount(java.time.LocalDate.of(2026,10,13)));
+  assertEquals(0,AdventData.unlockedCount(java.time.LocalDate.of(2027,1,1)));
+ }
+ @Test public void adventCalendarNeverRevealsFutureDay(){
+  for(int current=1;current<=25;current++){
+   java.time.LocalDate date=java.time.LocalDate.of(2026,12,current);
+   assertEquals(current,AdventData.unlockedCount(date));
+   for(int day=1;day<=25;day++){
+    assertEquals(day<=current,AdventData.unlocked(day,date));
+    if(day<=current)assertNotNull(AdventData.revealedActivity(day,date));
+    else assertNull(AdventData.revealedActivity(day,date));
    }
   }
-  assertEquals(9,together);assertEquals(8,fred);assertEquals(8,emilie);
+  assertEquals(25,AdventData.unlockedCount(java.time.LocalDate.of(2026,12,31)));
+ }
+ @Test public void adventSpecialChallengeFallsOnSaturdayBeforeChristmas(){
+  assertEquals(19,AdventData.specialSaturday(2026));
+  for(int year=2026;year<=2040;year++){
+   int special=AdventData.specialSaturday(year);
+   java.time.LocalDate date=java.time.LocalDate.of(year,12,special);
+   assertTrue(date.getDayOfMonth()<25);
+   assertEquals(java.time.DayOfWeek.SATURDAY,date.getDayOfWeek());
+   assertTrue(AdventData.activity(special,year)[0].contains("Deux moments"));
+   assertTrue(AdventData.isTogether(special,year));
+   assertNull(AdventData.revealedActivity(special,date.minusDays(1)));
+   assertNotNull(AdventData.revealedActivity(special,date));
+  }
+ }
+ @Test public void adventHasTwentyFiveDetailedActivitiesAndRoleSwaps(){
+  assertEquals(25,AdventData.days.length);
+  for(int day=1;day<=25;day++){
+   String[] item=AdventData.activity(day,2026);
+   assertEquals(4,item.length);
+   for(String field:item)assertFalse(field.trim().isEmpty());
+   assertTrue(item[3].startsWith("Exemple : "));
+   if(AdventData.isTogether(day,2026)){
+    assertEquals("Fred et Émilie",AdventData.giver(day,false,2026));
+    assertEquals(AdventData.instruction(day,false,2026),AdventData.instruction(day,true,2026));
+   }else{
+    assertNotEquals(AdventData.giver(day,false,2026),AdventData.giver(day,true,2026));
+    assertEquals(AdventData.giver(day,false,2026),AdventData.recipient(day,true,2026));
+    assertEquals(AdventData.recipient(day,false,2026),AdventData.giver(day,true,2026));
+   }
+  }
  }
 }

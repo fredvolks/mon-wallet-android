@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.2.3
+      TAG: des-a-deux-v0.2.4
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -49,15 +49,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/Des-a-Deux-v0.2.3.apk "$RUNNER_TEMP/aligned.apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.2.3.apk
-          sha256sum dist/Des-a-Deux-v0.2.3.apk
+            --out dist/Des-a-Deux-v0.2.4.apk "$RUNNER_TEMP/aligned.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/Des-a-Deux-v0.2.4.apk
+          sha256sum dist/Des-a-Deux-v0.2.4.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Des-a-Deux-v0.2.3
-          path: dist/Des-a-Deux-v0.2.3.apk
+          name: Des-a-Deux-v0.2.4
+          path: dist/Des-a-Deux-v0.2.4.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
         env:
@@ -65,9 +65,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/Des-a-Deux-v0.2.3.apk --clobber
+            gh release upload "$TAG" dist/Des-a-Deux-v0.2.4.apk --clobber
           else
-            gh release create "$TAG" dist/Des-a-Deux-v0.2.3.apk \
-              --target "$GITHUB_SHA" --title "Dés à Deux v0.2.3" \
-              --notes "25 cases partagées de calendrier de l'Avent, rôles Fred et Émilie clairs, 60 descriptions détaillées avec exemples, navigation à 5 onglets."
+            gh release create "$TAG" dist/Des-a-Deux-v0.2.4.apk \
+              --target "$GITHUB_SHA" --title "Dés à Deux v0.2.4" \
+              --notes "Calendrier progressif de décembre, cases verrouillées jusqu à leur date, dernière surprise du samedi avant Noël."
           fi
