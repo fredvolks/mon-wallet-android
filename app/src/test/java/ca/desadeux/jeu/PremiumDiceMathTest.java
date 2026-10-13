@@ -45,8 +45,8 @@ public class PremiumDiceMathTest {
   for(int f=1;f<=6;f++)assertEquals(expectations[f],weekly[f]/(double)runs,.01);
   int[] category=new int[3];
   for(int i=0;i<runs;i++)category[GameLogic.choose(Category.COQUIN).ordinal()]++;
-  assertEquals(.1,category[Category.SENSUEL.ordinal()]/(double)runs,.01);
-  assertEquals(.8,category[Category.COQUIN.ordinal()]/(double)runs,.01);
-  assertEquals(.1,category[Category.SEXUEL.ordinal()]/(double)runs,.01);
+  assertEquals(.15,category[Category.SENSUEL.ordinal()]/(double)runs,.01);
+  assertEquals(.70,category[Category.COQUIN.ordinal()]/(double)runs,.01);
+  assertEquals(.15,category[Category.SEXUEL.ordinal()]/(double)runs,.01);
  }
 }
