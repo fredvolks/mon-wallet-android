@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.12.4
+      TAG: des-a-deux-v0.12.5
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -130,15 +130,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/LoveRoll-v0.12.4.apk "$RUNNER_TEMP/aligned.apk"
-          cp dist/LoveRoll-v0.12.4.apk dist/Des-a-Deux-v0.12.4.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.12.4.apk
-          sha256sum dist/LoveRoll-v0.12.4.apk dist/Des-a-Deux-v0.12.4.apk
+            --out dist/LoveRoll-v0.12.5.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.12.5.apk dist/Des-a-Deux-v0.12.5.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.12.5.apk
+          sha256sum dist/LoveRoll-v0.12.5.apk dist/Des-a-Deux-v0.12.5.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: LoveRoll-v0.12.4
+          name: LoveRoll-v0.12.5
           path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
@@ -147,9 +147,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/LoveRoll-v0.12.4.apk dist/Des-a-Deux-v0.12.4.apk --clobber
+            gh release upload "$TAG" dist/LoveRoll-v0.12.5.apk dist/Des-a-Deux-v0.12.5.apk --clobber
           else
-            gh release create "$TAG" dist/LoveRoll-v0.12.4.apk dist/Des-a-Deux-v0.12.4.apk \
-              --target "$GITHUB_SHA" --title "LoveRoll v0.12.4" \
-              --notes "LoveRoll v0.12.4 : menus de réponses bourgogne et magenta dans l’app, thème Android sombre, calendrier et données conservés."
+            gh release create "$TAG" dist/LoveRoll-v0.12.5.apk dist/Des-a-Deux-v0.12.5.apk \
+              --target "$GITHUB_SHA" --title "LoveRoll v0.12.5" \
+              --notes "LoveRoll v0.12.5 : accès complet aux écrans en solo, dés et défis de découverte, aucune activité partagée créée, calendrier personnel conservé."
           fi

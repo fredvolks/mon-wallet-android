@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
+import { drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE } from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
@@ -281,7 +282,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v6/);
+ assert.match(sw,/loveroll-static-v7/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -370,4 +371,39 @@ test('Wellbeing selectors use dark custom dialogs, not white Android select popu
  assert.ok(theme.includes('name="LoveRollConnectedTheme"'));
  assert.ok(theme.includes('parent="android:style/Theme.Material.NoActionBar"'));
  assert.ok(manifest.includes('android:theme="@style/LoveRollConnectedTheme"'));
+});
+
+test('Solo users can explore all LoveRoll tabs without joining a couple',()=>{
+ assert.equal(isSharedCoupleReady(null,[]),false);
+ assert.equal(isSharedCoupleReady('demo',[{user_id:'only'}]),false);
+ assert.equal(isSharedCoupleReady('demo',[{user_id:'a'},{user_id:'b'}]),true);
+ assert.ok(SOLO_MESSAGE.includes('Mode découverte'));
+ for(const label of ['renderSoloSession()','renderSoloSpecial()',
+  'renderSoloOccasions()','renderSoloAdvent()','renderPersonalJournal()',
+  "state.tab==='session')renderSoloSession()",
+  "state.tab==='advent')renderSoloAdvent()",
+  "state.tab==='special')renderSoloSpecial()",
+  "state.tab==='settings')renderSettings()",
+  "button('tab:session'","button('tab:special'","button('tab:advent'",
+  "button('tab:personal-journal'"]){
+   assert.ok(app.includes(label),'Missing solo UI: '+label);
+ }
+ assert.equal(app.includes('Ajoutez un partenaire pour utiliser les jeux partagés'),false);
+});
+test('Solo dice roll locally and shared database actions require two accounts',()=>{
+ assert.equal(drawSoloFace(6,()=>0),1);
+ assert.equal(drawSoloFace(6,()=>0.999),6);
+ assert.equal(drawSoloFace(20,()=>0),1);
+ assert.equal(drawSoloFace(20,()=>0.999),20);
+ assert.throws(()=>drawSoloFace(8),/non pris en charge/);
+ assert.throws(()=>drawSoloFace(6,()=>1),/invalide/);
+ for(const label of ["verb==='solo-roll'","verb==='solo-advent'",
+  "verb==='solo-category'","drawSoloFace(sizes[kind])",
+  "!isSharedCoupleReady(state.coupleId,state.members)",
+  'Cette action nécessite deux comptes associés',
+  'Les démonstrations solo ne modifient pas les données du couple']){
+    assert.ok(app.includes(label),'Missing solo security contract: '+label);
+ }
+ const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ assert.ok(sw.includes('solo-mode.mjs'));
 });
