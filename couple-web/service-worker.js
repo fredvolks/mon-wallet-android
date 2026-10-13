@@ -1,5 +1,5 @@
-const CACHE='loveroll-static-v1';
-const SHELL=['./','./index.html','./app.js','./styles.css','./dice3d.js','./special-occasions.mjs','./config.js','./manifest.webmanifest'];
+const CACHE='loveroll-static-v2';
+const SHELL=['./','./index.html','./app.js','./styles.css','./dice3d.js','./special-occasions.mjs','./evening-challenges.mjs','./onboarding.mjs','./config.js','./manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(names=>Promise.all(names.filter(n=>n!==CACHE).map(n=>caches.delete(n))))));
 self.addEventListener('fetch',e=>{

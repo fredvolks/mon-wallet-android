@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
+import { marketingHtml,authHtml,profileHtml,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
@@ -188,4 +189,56 @@ test('Countdown uses a monotonic wall deadline, pause reset and optional signals
  assert.match(app,/navigator\.vibrate/);
  assert.match(app,/AudioContext/);
  assert.match(app,/Le minuteur n’oblige jamais/);
+});
+
+test('Marketing page before OAuth or email signup',()=>{
+ const h=marketingHtml();
+ assert.match(h,/Un dé. Deux cœurs/);
+ assert.match(h,/Créer mon compte gratuitement/);
+ assert.match(h,/Android et iPhone/);
+ assert.match(app,/root\.innerHTML=marketingHtml\(\)/);
+ assert.match(app,/if\(!state\.showAuth\)/);
+ assert.match(app,/if\(verb==='show-auth'\)/);
+});
+test('Registration obtains the name from identity and birthday in the initial form',()=>{
+ const h=profileHtml({user_metadata:{full_name:'Camille Martin'}},null);
+ assert.match(h,/Camille Martin/);
+ assert.match(h,/signup-birth-month/);
+ assert.match(h,/signup-birth-day/);
+ assert.match(h,/age-confirm/);
+ assert.doesNotMatch(h,/Fred|Émilie/);
+ assert.match(app,/complete_love_registration/);
+ assert.match(app,/p_birthday_md:birthday/);
+});
+test('Birthday inputs reject invalid dates, and support leap day',()=>{
+ const fake=(m,d)=>({getElementById:k=>({value:k.endsWith('month')?String(m):String(d)})});
+ assert.equal(parseMonthDay('signup-birth',true,fake(2,29)),'02-29');
+ assert.equal(parseMonthDay('signup-birth',true,fake(10,13)),'10-13');
+ assert.throws(()=>parseMonthDay('signup-birth',true,fake(2,30)));
+ assert.throws(()=>parseMonthDay('signup-birth',true,fake(13,10)));
+ assert.equal(parseMonthDay('signup-couple',false,fake('','')),null);
+ assert.match(monthDayInputs('signup-birth','06-23'),/value="6" selected/);
+});
+test('New couple match uses two individual sign-ups',()=>{
+ assert.match(matchHtml('Camille',false),/signup-couple-month/);
+ assert.match(matchHtml('Camille',false),/Créer notre espace à deux/);
+ assert.match(matchHtml('Alex',true),/Accepter ce match/);
+ assert.match(app,/create_love_match/);
+ assert.match(app,/accept_love_match/);
+ assert.match(app,/parseMonthDay\('signup-couple',false\)/);
+ assert.doesNotMatch(app,/rpc\('create_my_couple'/);
+});
+test('Anniversary and dates are not re-entered in Settings',()=>{
+ const fragment=app.slice(app.indexOf('function renderSettings()'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
+ assert.match(fragment,/Dates récupérées de l’inscription/);
+ assert.doesNotMatch(fragment,/loveroll-birthday|save-occasion-date:birthday/);
+});
+test('Database onboarding enforces profile birthday and revokes old bypasses',()=>{
+ const schema=readFileSync(new URL('./registration-onboarding.sql',import.meta.url),'utf8');
+ assert.match(schema,/create or replace function public\.complete_love_registration/);
+ assert.match(schema,/birthday_md text/);
+ assert.match(schema,/public\.create_love_match/);
+ assert.match(schema,/public\.accept_love_match/);
+ assert.match(schema,/revoke execute on function public\.save_my_profile/);
+ assert.match(schema,/couple_private\.validate_month_day/);
 });

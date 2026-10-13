@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -110,7 +112,8 @@ public final class MainActivity extends Activity {
   }
   try{selected=Category.valueOf(prefs.getString("selected","COQUIN"));}catch(Exception ignored){}
   randomMode=prefs.getBoolean("random_mode",false);
-  draw();
+  if(prefs.getBoolean("loveroll_legacy_offline",false)){tab="home";draw();}
+  else{tab="welcome";drawWelcome();}
   if(prefs.getBoolean("auto_update",true))UpdateManager.check(this,true);
  }
  GradientDrawable shape(int top,int bottom,int radius,int stroke){
@@ -248,6 +251,56 @@ public final class MainActivity extends Activity {
   try{Vibrator v=(Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
    if(v!=null&&v.hasVibrator())v.vibrate(VibrationEffect.createOneShot(ms,VibrationEffect.DEFAULT_AMPLITUDE));
   }catch(Exception ignored){}
+ }
+
+ static final String LOVEROLL_WEB="https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/";
+ void openConnectedLoveRoll(){
+  prefs.edit().putBoolean("loveroll_web_chosen",true).apply();
+  try{
+   Intent intent=new Intent(Intent.ACTION_VIEW,Uri.parse(LOVEROLL_WEB));
+   intent.addCategory(Intent.CATEGORY_BROWSABLE);
+   startActivity(intent);
+  }catch(Exception ex){
+   PremiumDialog.info(this,"Navigateur indisponible",
+    "Ouvre cette adresse HTTPS dans Chrome : "+LOVEROLL_WEB);
+  }
+ }
+ void drawWelcome(){
+  root=vertical();root.setBackgroundColor(BG);
+  scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
+  page=vertical();page.setPadding(dp(22),dp(17),dp(22),dp(30));
+  scroll.addView(page);root.addView(scroll,new LinearLayout.LayoutParams(-1,-1));
+  ViewCompat.setOnApplyWindowInsetsListener(root,(v,insets)->{
+   int top=insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+   int bottom=insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+   root.setPadding(0,top,0,bottom);return insets;
+  });
+  setContentView(root);ViewCompat.requestApplyInsets(root);
+  gap(page,10);
+  LinearLayout hero=card("♥  LoveRoll","UN DÉ. DEUX CŒURS. DES SOIRÉES INOUBLIABLES.");
+  TextView heart=text("♥",68,PINK,true);heart.setGravity(Gravity.CENTER);
+  hero.addView(heart,new LinearLayout.LayoutParams(-1,dp(96)));
+  addText(hero,"Votre aventure à deux commence ici.",23,WHITE,true,7);
+  addText(hero,"Rapprochez-vous avec les défis Sensuel et Sexuel, vos sorties surprises et un calendrier partagé.",15,PALE,false,12);
+  addButton(hero,prefs.getBoolean("loveroll_web_chosen",false)?
+   "♡  OUVRIR MON COMPTE LOVEROLL":"♡  CRÉER MON COMPTE GRATUITEMENT",true,
+   ()->openConnectedLoveRoll());
+  addButton(hero,"J'AI DÉJÀ UN COMPTE · ME CONNECTER",false,()->openConnectedLoveRoll());
+  addText(hero,"La connexion et le match s'ouvrent dans votre navigateur sécurisé pour fonctionner sur Android et iPhone.",12,MUTED,false,7);
+  LinearLayout a=card("🎲  Des dés rien qu'à vous",
+   "Chacun brasse son propre D6; les résultats communs sont synchronisés une seule fois.");
+  LinearLayout b=card("💌  Créez votre match",
+   "Inscrivez-vous avec Google, Apple (si activé) ou par courriel. Invitez votre partenaire.");
+  LinearLayout c=card("✦  Vos dates, automatiquement",
+   "Votre anniversaire est demandé à l'inscription. La date de couple est enregistrée à la création du match.");
+  LinearLayout d=card("♡  Privé et complice",
+   "Vos avis et votre calendrier intime appartiennent à votre espace commun.");
+  gap(page,12);
+  addButton(page,"Ancienne version hors ligne (non synchronisée)",false,()->{
+   prefs.edit().putBoolean("loveroll_legacy_offline",true).apply();
+   tab="home";draw();
+  });
+  addText(page,"Réservé aux adultes de 18 ans et plus. Une activité n'est jamais une obligation.",11,MUTED,false,5);
  }
  void draw(){
   clearTimerTicker();
@@ -1258,28 +1311,11 @@ public final class MainActivity extends Activity {
     "  ·  Cette année "+JournalStats.year(all,today),14,PALE,true,5);
   }catch(Exception ex){addText(journalCard,"Journal temporairement inaccessible",12,PINK,false,5);}
   addButton(journalCard,"OUVRIR MON CALENDRIER ET MES STATS   →",true,()->openJournal());
-  settingTile("★  Nos avis après les soirées","3 questions simples, une réponse de Fred et une d'Émilie.",
+  settingTile("★  Nos avis après les soirées","3 questions simples, une réponse par personne (ancien mode hors ligne).",
    "REMPLIR LES QUESTIONNAIRES",()->{tab="feedback";draw();});
-  section("💘  Dates à célébrer");
-  LinearLayout celebration=card("Anniversaires et fêtes","Saint-Valentin et fêtes des parents sont automatiques. Pour les autres, entrez le mois et le jour (MM-JJ).");
-  for(int i:new int[]{1,4,5}){
-   final int idx=i;
-   addText(celebration,LoveOccasions.title(i),13,PALE,true,4);
-   EditText date=new EditText(this);date.setSingleLine(true);date.setTextColor(WHITE);
-   date.setHintTextColor(MUTED);date.setTextSize(15);
-   date.setHint("MM-JJ");date.setText(occasionMd(i));
-   date.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
-   celebration.addView(date,new LinearLayout.LayoutParams(-1,dp(48)));
-   addButton(celebration,"ENREGISTRER CETTE DATE",false,()->{
-    String mmdd=date.getText().toString().trim();
-    if(!mmdd.isEmpty()&&LoveOccasions.date(idx,2024,mmdd)==null){
-     Toast.makeText(this,"Utilisez une date valide MM-JJ",Toast.LENGTH_SHORT).show();return;
-    }
-    prefs.edit().putString("loveroll_occasion_md_"+LoveOccasions.dateKey(idx),mmdd).apply();
-    Toast.makeText(this,"Date enregistrée",Toast.LENGTH_SHORT).show();
-   });
-  }
-  addButton(celebration,"VOIR LES ÉVÉNEMENTS SPÉCIAUX",true,()->{tab="occasions";draw();});
+  section("♡  Mon compte connecté");
+  settingTile("LoveRoll Android + iPhone","Les noms et anniversaires sont renseignés lors de l’inscription. Vos données du mode hors ligne ne sont pas synchronisées.",
+   "OUVRIR L'ESPACE CONNECTÉ",()->{tab="welcome";drawWelcome();});
   section("🎲  Le jeu");
   settingTile("♡  Bibliothèque des 40 défis","Sensuel · Sexuel, 20 défis par catégorie et durées.",
    "CONSULTER LES DÉFIS",()->{tab="library";draw();});

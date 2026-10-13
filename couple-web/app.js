@@ -1,3 +1,4 @@
+import { marketingHtml,authHtml,profileHtml,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown } from './evening-challenges.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
@@ -13,7 +14,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],showAuth:false,diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 let timerCtx=null;
 const challengeTimer={id:null,durationMs:0,remainingMs:0,deadline:0,running:false,notified:false,mode:'sound'};
@@ -98,22 +99,21 @@ function bindActions(){document.querySelectorAll('[data-action]').forEach(el=>{
 function render(){
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
- if(!state.user){frame('<section class="card"><div class="eyebrow">Votre espace privé</div>'+
- '<h2>Connectez-vous pour créer ou rejoindre votre couple</h2>'+
- '<div class="actions">'+button('google','Continuer avec Google')+button('apple','Continuer avec Apple')+
- '</div><div class="muted-line"><h3>Ou avec un lien de connexion</h3>'+
- '<label>Votre courriel<input id="signin-email" type="email" autocomplete="email" placeholder="vous@exemple.com"></label>'+
- button('email-login','Recevoir un lien sécurisé par courriel','class="subtle"')+'</div>'+
- '<p>Les noms viennent de votre inscription. Chaque partenaire possède son propre compte.</p></section>');return;}
- if(!state.profile){const proposed=state.user.user_metadata?.full_name||state.user.user_metadata?.name||'';
-  frame('<section class="card"><h2>Votre nom dans le jeu</h2><p>Ce nom apparaîtra sur les dés et les invitations. Il provient de votre inscription et peut être corrigé ici.</p>'+
-  '<label>Nom à afficher<input id="profile-name" autocomplete="name" maxlength="80" value="'+safe(proposed)+'"></label>'+
-  button('profile','Continuer')+'</section>');return;}
- if(!state.coupleId){frame('<section class="card"><h2>Bienvenue '+safe(state.profile.display_name)+'</h2>'+
-  (sessionStorage.getItem('pendingInvite')?
-  '<p>Vous avez une invitation. Acceptez-la pour retrouver votre espace commun.</p>'+
-   button('accept-invite','Accepter le match'):'<p>Créez votre espace de couple, puis invitez votre partenaire par courriel.</p>'+
-   button('create-couple','Créer mon couple'))+'</section>');return;}
+ if(!state.user){
+  if(!state.showAuth){
+   root.innerHTML=marketingHtml();bindActions();
+  }else frame(authHtml(),'♡ LOVE ROLL','Créer ou retrouver votre espace amoureux');
+  return;
+ }
+ if(!state.profile||!state.profile.birthday_md){
+  frame(profileHtml(state.user,state.profile),'♡ MON PROFIL','Première connexion : inscription');
+  return;
+ }
+ if(!state.coupleId){
+  frame(matchHtml(state.profile.display_name,!!sessionStorage.getItem('pendingInvite')),
+   '♡ NOTRE MATCH','Deux comptes, un espace partagé');
+  return;
+ }
  if(state.members.length<2){frame('<section class="card"><h2>Votre match</h2><p>Bonjour '+safe(state.profile.display_name)+
   ' ! Invitez votre partenaire avec son courriel de connexion.</p>'+
  '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
@@ -594,14 +594,12 @@ function renderSettings(){
   '<section class="card"><h3>Invitations et partenaire</h3><p>Votre match : '+
   safe(state.members.map(m=>m.name).join(' ♡ '))+
   '</p><p>Une invitation ne fonctionne que pour le courriel de connexion de votre partenaire.</p></section>'+
-  '<section class="card"><h3>🎂 Dates importantes</h3>'+
- '<p>La Saint-Valentin et les fêtes parentales sont automatiques. Les anniversaires sont configurés sans stocker l’année de naissance.</p>'+
- '<label>Anniversaire de couple (MM-JJ)<input id="loveroll-anniversary" inputmode="numeric" maxlength="5" placeholder="MM-JJ" value="'+safe(state.occasionSettings?.anniversary_md||'')+'"></label>'+
- button('save-occasion-date:anniversary','Enregistrer notre anniversaire','class="subtle"')+
- '<label>Mon anniversaire (MM-JJ)<input id="loveroll-birthday" inputmode="numeric" maxlength="5" placeholder="MM-JJ" value="'+safe(state.occasionSettings?.birthday_by_user?.[state.user.id]||'')+'"></label>'+
- button('save-occasion-date:birthday','Enregistrer mon anniversaire','class="subtle"')+
- '</section>'+
- '<section class="card"><h3>Connexion iPhone</h3><p>Sur iPhone, ouvrez le site sécurisé dans Safari puis ajoutez-le à l’écran d’accueil. Les notifications de tirage apparaissent tant que l’application est ouverte.</p></section>',
+  '<section class="card"><h3>🎂 Nos dates</h3>'+
+  '<p>Mon anniversaire : '+safe(state.profile.birthday_md)+' (enregistré à mon inscription).</p>'+
+  '<p>Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné lors de la création du match')+'</p>'+
+  '<p>Le partenaire entre sa date à sa première connexion. Plus besoin de remplir les dates ici.</p>'+
+  '</section>'+
+  '<section class="card"><h3>Connexion iPhone</h3><p>Sur iPhone, ouvrez le site sécurisé dans Safari puis ajoutez-le à l’écran d’accueil. Les notifications de tirage apparaissent tant que l’application est ouverte.</p></section>',
  'RÉGLAGES','Profil, confidentialité et connexion');
 }
 async function refreshAndShow(){await refreshShared();render();}
@@ -622,6 +620,8 @@ function randomInviteToken(){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='show-auth'){state.showAuth=true;render();return;}
+ if(verb==='show-landing'){state.showAuth=false;render();return;}
  if(verb==='google'||verb==='apple'){
   sessionStorage.setItem('authStarted','1');
   const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
@@ -643,15 +643,26 @@ async function handle(action,element){
   state.unlockKey=null;
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
-  state.user=null;state.profile=null;state.coupleId=null;render();return;
+  state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;render();return;
+ }
+ if(verb==='complete-registration'){
+  const name=id('profile-name')?.value.trim();
+  if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
+  const birthday=parseMonthDay('signup-birth');
+  if(!id('age-confirm')?.checked)throw Error('LoveRoll est réservé aux personnes de 18 ans et plus.');
+  await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
+  await reload();return;
  }
  if(verb==='profile'){
-  const newName=id('profile-name')?.value.trim();
-  if(!newName||newName.length>80)throw Error('Choisissez votre nom à afficher.');
-  await rpc('save_my_profile',{p_name:newName});await reload();return;
+  const name=id('profile-name')?.value.trim();
+  if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
+  await rpc('complete_love_registration',{p_name:name,p_birthday_md:state.profile.birthday_md});
+  await reload();return;
  }
  if(verb==='create-couple'){
-  await rpc('create_my_couple');await reload();return;
+  const date=parseMonthDay('signup-couple',false);
+  await rpc('create_love_match',{p_anniversary_md:date});
+  await reload();return;
  }
  if(verb==='invite'){
   const email=id('invite-email')?.value.trim().toLowerCase();
@@ -671,7 +682,7 @@ async function handle(action,element){
  if(verb==='accept-invite'){
   const token=sessionStorage.getItem('pendingInvite');
   if(!token)throw Error('Invitation introuvable.');
-  await rpc('accept_pair_invite',{p_token_hash:await hashToken(token)});
+  await rpc('accept_love_match',{p_token_hash:await hashToken(token)});
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
  if(verb==='tab'){state.tab=parts[0];state.confirmCancel=false;render();return;}
@@ -815,6 +826,7 @@ async function start(){
  if(invite){
   if(!/^[0-9a-f]{64}$/i.test(invite))throw Error('Ce lien d’invitation est invalide.');
   sessionStorage.setItem('pendingInvite',invite);
+  state.showAuth=true;
   fragment.delete('invite');currentUrl.searchParams.delete('invite');
   currentUrl.hash=fragment.toString();
   history.replaceState(null,'',currentUrl.pathname+currentUrl.search+currentUrl.hash);

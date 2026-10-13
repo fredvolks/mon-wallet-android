@@ -44,3 +44,50 @@ textarea{min-height:95px}label{font-size:.88rem;color:#eed3e4}
 .timer-panel p{text-align:center;margin:2px 0 9px}
 .timer-panel .actions button{min-height:48px}
 .timer-panel small{display:block;margin-top:10px;font-size:.75rem;line-height:1.4;color:#d6b3cd}
+
+/* LoveRoll premium landing + onboarding · responsive iPhone/Android. */
+.marketing-shell{max-width:760px;margin:0 auto;padding:0 16px 36px}
+.landing-hero{position:relative;overflow:hidden;margin:10px 0 16px;padding:28px 20px 23px;text-align:center;
+ background:radial-gradient(ellipse at 50% 8%,#893467 0%,#3a1935 44%,#1c1023 80%);
+ border:1px solid #8d466d;border-radius:28px;box-shadow:0 20px 55px #08030c90}
+.landing-hero:after{content:'✦';position:absolute;top:13px;right:22px;color:#ff8ec55c;font-size:38px;pointer-events:none}
+.brand-mark{position:relative;width:137px;height:132px;margin:0 auto 13px;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;transform:rotate(-13deg);
+ border:2px solid #e16dacf0;border-radius:34px;
+ background:radial-gradient(circle at 28% 16%,#74546c,#2f1b33 44%,#08090e 85%);
+ box-shadow:inset -18px -21px 30px #0009,inset 6px 7px 20px #fff2,8px 19px 30px #08020baa,
+  0 0 24px #ff329a77}
+.brand-mark span{font-size:72px;color:#ff5fb2;line-height:1;text-shadow:0 0 17px #ff64b5,0 2px 1px #fddeef}
+.brand-mark small{font-size:16px;letter-spacing:12px;padding-left:12px;color:#ff9ccd;text-shadow:0 0 10px #ff69c5}
+.landing-hero .eyebrow{letter-spacing:.12em;font-size:.73rem}
+.landing-hero h1{font-size:clamp(1.75rem,7.5vw,2.65rem);line-height:1.17;letter-spacing:-.045em;
+ color:#fff2f9;max-width:500px;margin:13px auto}
+.landing-hero h1 span{display:block;color:#ff88ba}
+.landing-hero p{margin:14px auto;max-width:480px;font-size:.95rem;color:#e7c9de}
+.landing-cta{width:100%;max-width:480px;min-height:54px;margin:8px auto 0;font-size:1rem;
+ border:1px solid #ffb5d8;background:linear-gradient(105deg,#ff579e,#d02c75);box-shadow:0 6px 18px #fe31804a}
+.landing-small{font-size:.8rem!important;color:#c9b2c8;text-align:center;line-height:1.45}
+.text-link{background:none;border:0;color:#ff96c8;font-weight:700;text-decoration:underline;
+ padding:6px;min-height:36px}
+.landing-features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.feature-card{background:linear-gradient(145deg,#391b37,#211327);border:1px solid #65405e;
+ border-radius:17px;padding:13px 12px 8px}
+.feature-card>div{font-size:1.45rem;line-height:1.1}
+.feature-card h3{font-size:.9rem;margin:9px 0 6px;color:#ffebf6}
+.feature-card p{font-size:.78rem;color:#bda6b9;margin:0 0 6px}
+.auth-panel{background:linear-gradient(147deg,#391b36,#1b1125);border:1px solid #a15a80;
+ border-radius:24px;padding:22px 18px;margin:12px 0;box-shadow:0 20px 40px #05020780}
+.auth-panel h2{font-size:1.45rem;margin:11px 0 14px}
+.auth-panel>button:not(.text-link){width:100%;margin:8px 0 0}
+.auth-panel h3{margin:18px 0 6px}
+.auth-panel p{font-size:.9rem}
+.auth-panel label{display:block;margin-top:10px;color:#ffe3f1}
+.date-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.date-fields select{background:#2e1c2e;border:1px solid #945173;border-radius:12px;
+ color:#fff3fa;padding:11px 7px;margin-top:7px;min-width:0;font-size:1rem}
+.checkline{display:flex!important;align-items:flex-start;gap:9px;font-size:.83rem}
+.checkline input[type=checkbox]{width:21px;height:21px;min-height:21px;margin:0;accent-color:#ff519c;flex-shrink:0}
+.login-divider{text-align:center;margin:20px 0 9px;color:#d9b9cb}
+.tiny-note{font-size:.76rem!important;color:#b9a3b6!important;margin:11px 0}
+@media(max-width:360px){.landing-features{grid-template-columns:1fr}.brand-mark{width:112px;height:109px}}
+@media(min-width:650px){.landing-hero{padding:35px 35px}.landing-features{gap:14px}.feature-card{padding:19px}}

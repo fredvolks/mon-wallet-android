@@ -104,3 +104,15 @@ https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/
 - Base Supabase : migration `couple-web/evening-80-20.sql` déployée dans le projet dédié. Même signature RPC `draw_for_partner(uuid,text,boolean)`; `p_random` historique est ignoré volontairement.
 - Android : APK local v0.9.0 avec mêmes deux catégories et un minuteur; la version web avec compte Supabase est destinée aux deux appareils. Les comptes partagés ne sont pas encore intégrés à l'APK natif.
 - **Configuration Supabase URL** : la Site URL et les Redirect URLs doivent pointer vers `https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/`. Aucune action d'administration Auth n'est disponible pour modifier ce paramètre depuis ce connecteur.
+
+
+## v0.10.0 — Première visite LoveRoll et inscription
+- L'APK existant reste identifié par `ca.desadeux.jeu` et conserve sa signature : ne pas désinstaller l'ancien, pour préserver les données locales.
+- Le lancement Android affiche maintenant l'écran promotionnel LoveRoll avec appel à l'inscription ou à la connexion. L'accès **connecté** ouvre le navigateur externe (OAuth Google y est pris en charge lorsqu'il est configuré ; les WebView embarquées peuvent être rejetées par Google).
+- L'ancienne application locale existe sous un bouton **Ancienne version hors ligne (non synchronisée)**. Elle garde ses propres données et historiques, qui **ne se transfèrent pas automatiquement** dans le match.
+- L'interface web Android/iPhone affiche une page de présentation avant connexion, puis Google/Apple/courriel, puis la fiche profil avec **nom et anniversaire (jour/mois uniquement)**, confirmation d'âge 18+, puis le match.
+- L'inscription ne dépend d'aucun prénom écrit en dur. Le nom issu de Google/Apple est prérempli si disponible, et peut être édité ; pour Apple il faut le demander si le fournisseur ne le livre pas.
+- La date personnelle se renseigne **une seule fois dans l'inscription** et est synchronisée dans les événements du couple au moment de la création/acceptation du match. L'anniversaire de couple est proposé à la création du match. L'application n'affiche plus de champs d'anniversaire dans Réglages.
+- Migration `couple-web/registration-onboarding.sql` appliquée au projet Supabase dédié. Les anciens RPC de création et d'acceptation de match et l'ancien éditeur de profil sont révoqués pour le rôle authentifié ; les nouvelles fonctions exigent un anniversaire de profil.
+- La plateforme Supabase ne fournit pas via notre connecteur la gestion des **Providers Google et Apple** ni les **Redirect URLs**. Ces autorisations sont à configurer dans le tableau de bord avant de pouvoir valider des connexions OAuth.
+- La PWA est hébergée dans Supabase Edge, pas GitHub Pages. Redéployer l'Edge Function après chaque mise à jour du site.
