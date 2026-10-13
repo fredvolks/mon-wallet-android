@@ -354,19 +354,20 @@ test('Embedded Android account screen uses platform Google and email code',()=>{
 });
 
 
-test('The two private wellbeing pickers are dark in-app dialogs, never native white OS select menus',()=>{
+test('Wellbeing selectors use dark custom dialogs, not white Android select popups',()=>{
  const html=wellbeingFields();
  const css=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
  const manifest=readFileSync(new URL('../app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
  const theme=readFileSync(new URL('../app/src/main/res/values/styles.xml',import.meta.url),'utf8');
- assert.equal((html.match(/class="love-answer-dialog"/g)||[]).length,2);
- assert.equal((html.match(/class="love-answer-trigger"/g)||[]).length,2);
- assert.equal((html.match(/type="hidden" id="wellbeing-/g)||[]).length,2);
- assert.doesNotMatch(html,/<select\\s+id="wellbeing-/);
- assert.match(html,/role="radiogroup"/);
- assert.match(css,/dialog\\.love-answer-dialog::backdrop/);
- assert.match(css,/button\\.love-answer-option\\[aria-checked="true"\\]/);
- assert.match(app,/bindWellbeingMenus\\(\\)/);
- assert.match(theme,/<style name="LoveRollConnectedTheme" parent="android:style\\/Theme\\.Material\\.NoActionBar">/);
- assert.match(manifest,/android:theme="@style\\/LoveRollConnectedTheme"/);
+ assert.equal(html.split('class="love-answer-dialog"').length-1,2);
+ assert.equal(html.split('class="love-answer-trigger"').length-1,2);
+ assert.equal(html.split('type="hidden" id="wellbeing-').length-1,2);
+ assert.equal(html.includes('<select id="wellbeing-'),false);
+ assert.ok(html.includes('role="radiogroup"'));
+ assert.ok(css.includes('dialog.love-answer-dialog::backdrop'));
+ assert.ok(css.includes('button.love-answer-option[aria-checked="true"]'));
+ assert.ok(app.includes('bindWellbeingMenus()'));
+ assert.ok(theme.includes('name="LoveRollConnectedTheme"'));
+ assert.ok(theme.includes('parent="android:style/Theme.Material.NoActionBar"'));
+ assert.ok(manifest.includes('android:theme="@style/LoveRollConnectedTheme"'));
 });
