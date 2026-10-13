@@ -18,6 +18,7 @@ jobs:
           node --check couple-web/app.js
           node --check couple-web/onboarding.mjs
           node --check couple-web/wellbeing.mjs
+          node --check couple-web/solo-mode.mjs
           node --check couple-web/config.js
       - name: Static security and logic contracts
         run: node --test couple-web/checks.test.mjs
