@@ -193,8 +193,8 @@ test('Countdown uses a monotonic wall deadline, pause reset and optional signals
 
 test('Marketing page before OAuth or email signup',()=>{
  const h=marketingHtml();
- assert.match(h,/Un dé. Deux cœurs/);
- assert.match(h,/Créer mon compte gratuitement/);
+ assert.match(h,/Votre aventure à deux/);
+ assert.match(h,/CRÉER MON COMPTE GRATUITEMENT/);
  assert.match(h,/Android et iPhone/);
  assert.match(app,/root\.innerHTML=marketingHtml\(\)/);
  assert.match(app,/if\(!state\.showAuth\)/);
