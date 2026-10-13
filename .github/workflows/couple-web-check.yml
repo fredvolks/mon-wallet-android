@@ -17,3 +17,71 @@ jobs:
           node --check couple-web/config.js
       - name: Static security and logic contracts
         run: node --test couple-web/checks.test.mjs
+
+      - name: Capture landing on Galaxy S25 Ultra representative viewport
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright@1.56.0
+          npx playwright install chromium
+          cat > couple-web/__landing-test.html <<'EOF'
+          <!doctype html><html lang="fr-CA"><head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <link rel="stylesheet" href="./styles.css"></head>
+          <body><main id="app"></main>
+          <script type="module">
+          import {marketingHtml} from './onboarding.mjs';
+          document.querySelector('#app').innerHTML=marketingHtml();
+          </script></body></html>
+          EOF
+          python3 -m http.server 8765 -d couple-web > /tmp/love-http.log 2>&1 &
+          echo $! > /tmp/love-http.pid
+          mkdir -p landing-captures
+          cat > capture-landing.cjs <<'EOF'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser=await chromium.launch({headless:true});
+            for(const {name,width,height} of [
+              {name:'S25-Ultra',width:412,height:915},
+              {name:'Petit-Android',width:360,height:780},
+              {name:'iPhone',width:393,height:852}
+            ]){
+              const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:2,
+                isMobile:true,hasTouch:true});
+              await page.goto('http://127.0.0.1:8765/__landing-test.html',{waitUntil:'load'});
+              await page.locator('.love-hero-art').waitFor();
+              await page.waitForFunction(()=>document.querySelector('.love-hero-art')?.complete);
+              const data=await page.evaluate(()=>{
+                const ct=[...document.querySelectorAll('[data-action="show-auth"]')];
+                const top=document.querySelector('.love-cta-group').getBoundingClientRect();
+                const image=document.querySelector('.love-hero-art');
+                return {
+                  ctas:ct.length, imageLoaded:image.naturalWidth>0,
+                  buttonsVisible:ct.every(b=>b.getBoundingClientRect().width>0),
+                  noHorizontalOverflow:document.documentElement.scrollWidth<=innerWidth+2,
+                  buttonsInFirstScreen:top.bottom<innerHeight-8,
+                  features:document.querySelectorAll('.love-feature').length,
+                  benefits:document.querySelectorAll('.love-benefit').length
+                };
+              });
+              if(data.ctas!==2||!data.imageLoaded||!data.buttonsVisible||
+                !data.noHorizontalOverflow||!data.buttonsInFirstScreen||
+                data.features!==4||data.benefits!==5){
+                throw new Error(name+': '+JSON.stringify(data));
+              }
+              await page.screenshot({path:'landing-captures/'+name+'-premier-ecran.png'});
+              await page.screenshot({path:'landing-captures/'+name+'-page-complete.png',fullPage:true});
+              console.log(name,JSON.stringify(data));
+              await page.close();
+            }
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          EOF
+          node capture-landing.cjs
+      - name: Publier les captures comparatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LoveRoll-landing-captures
+          path: landing-captures/*.png
+          if-no-files-found: warn

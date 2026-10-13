@@ -127,3 +127,14 @@ Site Web : https://fredvolks.github.io/mon-wallet-android/
 L'ancienne adresse https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/ est remplacée par une redirection HTTP 302 vers la vraie page d'accueil, sans contenu HTML. Le projet ne nécessite pas de Supabase Pro.
 
 **Auth** : changer Site URL et Redirect URLs dans Supabase > Authentication > URL Configuration pour https://fredvolks.github.io/mon-wallet-android/. Google et Apple nécessitent leur configuration OAuth côté Supabase. Tant que ces étapes ne sont pas validées, ne pas présenter une inscription comme pleinement fonctionnelle.
+
+
+## v0.11.0 — landing premium (maquette LoveRoll)
+- Accueil **avant connexion** renouvelé sur web (Android/iPhone) et dans l'APK natif avec le nom de marque LoveRoll blanc/rose, une véritable illustration composée d'un cœur en verre et de deux dés noirs sur satin.
+- Texte, logo, cartes et deux boutons d'inscription et connexion restent des composants natifs ou du DOM interactifs, sans capture aplatie en arrière-plan.
+- **Un seul bouton « Créer mon compte » et un seul « Me connecter »**. Les deux mènent à l'authentification existante (Google, Apple si configurés, ou lien courriel), sans modification du schéma ni des règles du jeu.
+- Quatre cartes 2 × 2, cinq bénéfices compacts, message émotionnel de clôture et réassurances.
+- Visuel `couple-web/assets/loveroll-hero.webp` et `app/src/main/res/drawable-nodpi/loveroll_hero.webp` : recadrage graphique propre sans boutons incrustés dans l'image.
+- Test web et captures responsives au format S25 Ultra représentatif (412 × 915 CSS px), petit Android (360 × 780) et iPhone (393 × 852) produits par GitHub Actions. Ce test navigateur n'est **pas** une validation sur le téléphone physique.
+- Identifiant Android et secrets de signature existants inchangés. Les anciennes données locales restent accessibles depuis la landing.
+- GitHub Pages est le site web HTML public, Supabase Auth et RPC restent le backend. L'adresse Supabase Edge est redirigée vers GitHub Pages.

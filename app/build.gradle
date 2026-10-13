@@ -1,7 +1,7 @@
 plugins { id 'com.android.application' }
 android { namespace 'ca.desadeux.jeu'
  compileSdk 35
- defaultConfig { applicationId 'ca.desadeux.jeu'; minSdk 26; targetSdk 35; versionCode 100000; versionName '0.10.0' }
+ defaultConfig { applicationId 'ca.desadeux.jeu'; minSdk 26; targetSdk 35; versionCode 110000; versionName '0.11.0' }
  buildFeatures { buildConfig true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

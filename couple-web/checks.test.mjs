@@ -242,3 +242,44 @@ test('Database onboarding enforces profile birthday and revokes old bypasses',()
  assert.match(schema,/revoke execute on function public\.save_my_profile/);
  assert.match(schema,/couple_private\.validate_month_day/);
 });
+
+test('Premium LoveRoll landing has exactly one create and one login CTA',()=>{
+ const source=marketingHtml();
+ const actions=[...source.matchAll(/data-action="show-auth"/g)];
+ assert.equal(actions.length,2,'No duplicate login/sign-up buttons');
+ assert.equal((source.match(/CRÉER MON COMPTE GRATUITEMENT/g)||[]).length,1);
+ assert.equal((source.match(/J’AI DÉJÀ UN COMPTE/g)||[]).length,1);
+ assert.ok(source.indexOf('CRÉER MON COMPTE')<source.indexOf('love-features'));
+ assert.ok(source.indexOf('J’AI DÉJÀ UN COMPTE')<source.indexOf('love-features'));
+ const footer=source.slice(source.indexOf('<footer'));
+ assert.doesNotMatch(footer,/data-action=/);
+});
+test('LoveRoll landing uses real artwork, not emoji substitutes or screenshot text',()=>{
+ const source=marketingHtml();
+ assert.match(source,/Love<\/span><b>Roll<\/b>/);
+ assert.match(source,/JEUX · DÉFIS · DATES · NOUS/);
+ assert.match(source,/assets\/loveroll-hero\.webp/);
+ assert.match(source,/alt="Grand cœur en verre rose/);
+ assert.match(source,/Votre aventure à deux/);
+ assert.match(source,/commence ici\./);
+ assert.match(source,/Connexion sécurisée pour Android et iPhone/);
+ assert.equal((source.match(/class="love-feature"/g)||[]).length,4);
+ assert.equal((source.match(/class="love-benefit"/g)||[]).length,5);
+ assert.match(source,/Plus qu’un jeu/);
+ assert.match(source,/Même équipe/);
+ assert.match(source,/Sans pression/);
+ assert.doesNotMatch(source,/🎲|💌|🔒/);
+});
+test('Premade art and CSS are available, web cache contains the artwork',()=>{
+ const image=readFileSync(new URL('./assets/loveroll-hero.webp',import.meta.url));
+ assert.ok(image.byteLength>1000);
+ assert.equal(image.subarray(0,4).toString(),'RIFF');
+ assert.equal(image.subarray(8,12).toString(),'WEBP');
+ const stylesheet=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
+ assert.match(stylesheet,/\.love-hero-art/);
+ assert.match(stylesheet,/\.love-trust/);
+ assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ assert.match(sw,/assets\/loveroll-hero\.webp/);
+ assert.match(sw,/loveroll-static-v3/);
+});

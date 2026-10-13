@@ -21,6 +21,10 @@ import android.content.res.ColorStateList;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -253,7 +257,7 @@ public final class MainActivity extends Activity {
   }catch(Exception ignored){}
  }
 
- static final String LOVEROLL_WEB="https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loveroll-web/";
+ static final String LOVEROLL_WEB="https://fredvolks.github.io/mon-wallet-android/";
  void openConnectedLoveRoll(){
   prefs.edit().putBoolean("loveroll_web_chosen",true).apply();
   try{
@@ -265,10 +269,48 @@ public final class MainActivity extends Activity {
     "Ouvre cette adresse HTTPS dans Chrome : "+LOVEROLL_WEB);
   }
  }
+
+ void premiumWelcomeButton(LinearLayout container,String text,boolean primary,Runnable action){
+  Button b=new Button(this);
+  b.setText(text);b.setAllCaps(false);b.setTextSize(12.5f);
+  b.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));b.setTextColor(WHITE);
+  GradientDrawable shape=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+   primary?new int[]{0xFFFF438F,0xFFF5207B,0xFFC51E6B}:new int[]{0xFF29152A,0xFF1B1024});
+  shape.setCornerRadius(dp(21));
+  shape.setStroke(dp(1),primary?0xFFFFAFD2:0xFFAA5681);
+  b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x44FFFFFF),shape,null));
+  b.setElevation(dp(primary?4:1));
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(52));
+  lp.topMargin=dp(9);container.addView(b,lp);b.setOnClickListener(v->action.run());
+ }
+ LinearLayout welcomeFeature(String title,String detail,int icon){
+  LinearLayout c=vertical();c.setPadding(dp(10),dp(11),dp(10),dp(12));
+  c.setBackground(shape(0xFF35172F,0xFF1B0D20,16,0x88994470));
+  LoveRollWelcomeIcon picture=new LoveRollWelcomeIcon(this,icon);
+  c.addView(picture,new LinearLayout.LayoutParams(dp(47),dp(47)));
+  addText(c,title,13,WHITE,true,5);
+  addText(c,detail,11,PALE,false,0);
+  return c;
+ }
+ void welcomeFeatureRow(LinearLayout dest,
+  String aTitle,String aText,int ai,String bTitle,String bText,int bi){
+  LinearLayout row=horizontal();
+  LinearLayout.LayoutParams r=new LinearLayout.LayoutParams(-1,-2);
+  r.bottomMargin=dp(9);dest.addView(row,r);
+  LinearLayout a=welcomeFeature(aTitle,aText,ai),b=welcomeFeature(bTitle,bText,bi);
+  LinearLayout.LayoutParams pa=new LinearLayout.LayoutParams(0,-2,1);
+  pa.rightMargin=dp(5);row.addView(a,pa);
+  LinearLayout.LayoutParams pb=new LinearLayout.LayoutParams(0,-2,1);
+  pb.leftMargin=dp(5);row.addView(b,pb);
+ }
  void drawWelcome(){
-  root=vertical();root.setBackgroundColor(BG);
+  // Native promotional landing only. Shared login and couple data remain
+  // in the HTTPS PWA to work consistently on Android and iOS.
+  root=vertical();
+  root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+     new int[]{0xFF1E0C23,0xFF130919,0xFF08050E}));
   scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
-  page=vertical();page.setPadding(dp(22),dp(17),dp(22),dp(30));
+  page=vertical();page.setPadding(dp(17),dp(8),dp(17),dp(28));
   scroll.addView(page);root.addView(scroll,new LinearLayout.LayoutParams(-1,-1));
   ViewCompat.setOnApplyWindowInsetsListener(root,(v,insets)->{
    int top=insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
@@ -276,31 +318,93 @@ public final class MainActivity extends Activity {
    root.setPadding(0,top,0,bottom);return insets;
   });
   setContentView(root);ViewCompat.requestApplyInsets(root);
-  gap(page,10);
-  LinearLayout hero=card("♥  LoveRoll","UN DÉ. DEUX CŒURS. DES SOIRÉES INOUBLIABLES.");
-  TextView heart=text("♥",68,PINK,true);heart.setGravity(Gravity.CENTER);
-  hero.addView(heart,new LinearLayout.LayoutParams(-1,dp(96)));
-  addText(hero,"Votre aventure à deux commence ici.",23,WHITE,true,7);
-  addText(hero,"Rapprochez-vous avec les défis Sensuel et Sexuel, vos sorties surprises et un calendrier partagé.",15,PALE,false,12);
-  addButton(hero,prefs.getBoolean("loveroll_web_chosen",false)?
-   "♡  OUVRIR MON COMPTE LOVEROLL":"♡  CRÉER MON COMPTE GRATUITEMENT",true,
-   ()->openConnectedLoveRoll());
-  addButton(hero,"J'AI DÉJÀ UN COMPTE · ME CONNECTER",false,()->openConnectedLoveRoll());
-  addText(hero,"La connexion et le match s'ouvrent dans votre navigateur sécurisé pour fonctionner sur Android et iPhone.",12,MUTED,false,7);
-  LinearLayout a=card("🎲  Des dés rien qu'à vous",
-   "Chacun brasse son propre D6; les résultats communs sont synchronisés une seule fois.");
-  LinearLayout b=card("💌  Créez votre match",
-   "Inscrivez-vous avec Google, Apple (si activé) ou par courriel. Invitez votre partenaire.");
-  LinearLayout c=card("✦  Vos dates, automatiquement",
-   "Votre anniversaire est demandé à l'inscription. La date de couple est enregistrée à la création du match.");
-  LinearLayout d=card("♡  Privé et complice",
-   "Vos avis et votre calendrier intime appartiennent à votre espace commun.");
-  gap(page,12);
-  addButton(page,"Ancienne version hors ligne (non synchronisée)",false,()->{
-   prefs.edit().putBoolean("loveroll_legacy_offline",true).apply();
-   tab="home";draw();
+  LinearLayout hero=vertical();
+  hero.setPadding(dp(13),dp(12),dp(13),dp(17));
+  hero.setBackground(shape(0xFF3C1429,0xFF180C1D,23,0x99CB5285));
+  page.addView(hero,new LinearLayout.LayoutParams(-1,-2));
+  TextView logo=text("LoveRoll",43,WHITE,true);
+  logo.setTypeface(Typeface.create("serif",Typeface.BOLD_ITALIC));
+  SpannableString logoSpans=new SpannableString("LoveRoll");
+  logoSpans.setSpan(new ForegroundColorSpan(0xFFFF75B0),4,8,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+  logo.setText(logoSpans);logo.setGravity(Gravity.CENTER);
+  hero.addView(logo,new LinearLayout.LayoutParams(-1,dp(51)));
+  TextView signature=text("JEUX · DÉFIS · DATES · NOUS",10,PALE,true);
+  signature.setGravity(Gravity.CENTER);signature.setLetterSpacing(.21f);
+  hero.addView(signature,new LinearLayout.LayoutParams(-1,dp(22)));
+  ImageView art=new ImageView(this);
+  art.setImageResource(R.drawable.loveroll_hero);
+  art.setScaleType(ImageView.ScaleType.CENTER_CROP);
+  LinearLayout.LayoutParams img=new LinearLayout.LayoutParams(-1,dp(182));
+  img.topMargin=dp(1);img.bottomMargin=dp(6);
+  hero.addView(art,img);
+  TextView title=text("Votre aventure à deux commence ici.",28,WHITE,true);
+  title.setTypeface(Typeface.create("serif",Typeface.BOLD));
+  SpannableString titleParts=new SpannableString("Votre aventure à deux commence ici.");
+  titleParts.setSpan(new ForegroundColorSpan(0xFFFF6EA8),22,titleParts.length(),
+    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+  title.setText(titleParts);title.setLineSpacing(0,1.02f);
+  hero.addView(title,new LinearLayout.LayoutParams(-1,-2));
+  addText(hero,"Rapprochez-vous avec des défis sensuels, des jeux pour couple, des sorties surprises et un calendrier partagé.",
+   14,PALE,false,13);
+  premiumWelcomeButton(hero,"♡  CRÉER MON COMPTE GRATUITEMENT →",true,()->openConnectedLoveRoll());
+  premiumWelcomeButton(hero,"J'AI DÉJÀ UN COMPTE · ME CONNECTER →",false,()->openConnectedLoveRoll());
+  TextView note=text("♢  Connexion sécurisée pour Android et iPhone.",11,MUTED,false);
+  note.setGravity(Gravity.CENTER);
+  LinearLayout.LayoutParams noteLp=new LinearLayout.LayoutParams(-1,-2);
+  noteLp.topMargin=dp(12);hero.addView(note,noteLp);
+  gap(page,13);
+  welcomeFeatureRow(page,"Des dés rien qu'à vous",
+   "Chacun lance ses dés et partage une expérience unique avec son partenaire.",0,
+   "Créez votre match","Invitez votre partenaire et créez votre espace à deux.",1);
+  welcomeFeatureRow(page,"Vos dates, automatiquement",
+   "Retrouvez anniversaires et moments importants dans un calendrier partagé.",2,
+   "Privé et complice","Vos défis et vos moments partagés restent dans votre espace privé.",3);
+  TextView why=text("♡  Pourquoi vous allez aimer  ♡",20,WHITE,true);
+  why.setTypeface(Typeface.create("serif",Typeface.BOLD));why.setGravity(Gravity.CENTER);
+  LinearLayout.LayoutParams whyLp=new LinearLayout.LayoutParams(-1,dp(58));page.addView(why,whyLp);
+  LinearLayout icons=horizontal();page.addView(icons,new LinearLayout.LayoutParams(-1,-2));
+  String[] titles={"Défis sensuels","Moments à deux","Rituel hebdo","Calendrier","Espace privé"};
+  String[] descs={"Ravivez la flamme","Spontané & mémorable","Toute l'année","Vos dates","Rien qu'à vous"};
+  int[] ids={4,5,6,2,7};
+  for(int i=0;i<5;i++){
+   LinearLayout item=vertical();item.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);
+   LoveRollWelcomeIcon pic=new LoveRollWelcomeIcon(this,ids[i]);
+   item.addView(pic,new LinearLayout.LayoutParams(dp(43),dp(43)));
+   TextView name=text(titles[i],10,WHITE,true);name.setGravity(Gravity.CENTER);
+   LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=dp(3);
+   item.addView(name,np);
+   TextView detail=text(descs[i],9,MUTED,false);detail.setGravity(Gravity.CENTER);
+   item.addView(detail,new LinearLayout.LayoutParams(-1,-2));
+   icons.addView(item,new LinearLayout.LayoutParams(0,-2,1));
+  }
+  gap(page,21);
+  LinearLayout finale=vertical();finale.setPadding(dp(17),dp(19),dp(17),dp(18));
+  finale.setBackground(shape(0xFF45152F,0xFF200C1E,21,0x88883461));
+  page.addView(finale,new LinearLayout.LayoutParams(-1,-2));
+  TextView finalTitle=text("Plus qu'un jeu, une histoire à écrire.",25,WHITE,true);
+  finalTitle.setTypeface(Typeface.create("serif",Typeface.BOLD));
+  SpannableString ft=new SpannableString("Plus qu'un jeu, une histoire à écrire.");
+  ft.setSpan(new ForegroundColorSpan(0xFFFF77AF),16,ft.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+  finalTitle.setText(ft);finale.addView(finalTitle);
+  addText(finale,"Des petits défis aux grandes surprises, LoveRoll transforme votre quotidien en moments inoubliables.",
+   13,PALE,false,12);
+  TextView motto=text("Même équipe, plus de frissons. ♡",17,PINK,false);
+  motto.setTypeface(Typeface.create("cursive",Typeface.ITALIC));motto.setGravity(Gravity.RIGHT);
+  finale.addView(motto);
+  addText(finale,"♡  Sécurisé et privé     ·     ♡  Conçu pour les couples\n♡  Sans pression — jouez à votre rythme",
+   11,PALE,false,8);
+  // Existing offline local records must remain accessible without showing extra
+  // duplicate signup/login buttons or adding calls to action to the emotional footer.
+  TextView offline=text("Retrouver mes anciennes données hors ligne  ›",11,MUTED,false);
+  offline.setGravity(Gravity.CENTER);
+  LinearLayout.LayoutParams offLp=new LinearLayout.LayoutParams(-1,dp(50));
+  offLp.topMargin=dp(10);page.addView(offline,offLp);
+  offline.setOnClickListener(v->{
+   prefs.edit().putBoolean("loveroll_legacy_offline",true).apply();tab="home";draw();
   });
-  addText(page,"Réservé aux adultes de 18 ans et plus. Une activité n'est jamais une obligation.",11,MUTED,false,5);
+  offline.setContentDescription("Ouvrir mes anciennes données locales non synchronisées");
+  addText(page,"Réservé aux adultes de 18 ans et plus. Chaque activité est facultative.",
+   10,MUTED,false,5);
  }
  void draw(){
   clearTimerTicker();
