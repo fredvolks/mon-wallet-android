@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import { marketingHtml,authHtml,profileHtml,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
@@ -281,7 +281,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v5/);
+ assert.match(sw,/loveroll-static-v6/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -351,4 +351,23 @@ test('Embedded Android account screen uses platform Google and email code',()=>{
  assert.match(app,/verifyOtp/);
  assert.match(app,/launchParams\.has\('auth'\)/);
  assert.match(app,/launchParams\.has\('settings'\)/);
+});
+
+
+test('Wellbeing selectors use dark custom dialogs, not white Android select popups',()=>{
+ const html=wellbeingFields();
+ const css=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
+ const manifest=readFileSync(new URL('../app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
+ const theme=readFileSync(new URL('../app/src/main/res/values/styles.xml',import.meta.url),'utf8');
+ assert.equal(html.split('class="love-answer-dialog"').length-1,2);
+ assert.equal(html.split('class="love-answer-trigger"').length-1,2);
+ assert.equal(html.split('type="hidden" id="wellbeing-').length-1,2);
+ assert.equal(html.includes('<select id="wellbeing-'),false);
+ assert.ok(html.includes('role="radiogroup"'));
+ assert.ok(css.includes('dialog.love-answer-dialog::backdrop'));
+ assert.ok(css.includes('button.love-answer-option[aria-checked="true"]'));
+ assert.ok(app.includes('bindWellbeingMenus()'));
+ assert.ok(theme.includes('name="LoveRollConnectedTheme"'));
+ assert.ok(theme.includes('parent="android:style/Theme.Material.NoActionBar"'));
+ assert.ok(manifest.includes('android:theme="@style/LoveRollConnectedTheme"'));
 });

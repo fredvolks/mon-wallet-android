@@ -92,11 +92,28 @@ export function authHtml(){
  '<p class="tiny-note">La connexion Google sur Android ouvre le sélecteur de comptes du téléphone. Pour recevoir un code plutôt qu’un lien, le modèle de courriel Supabase doit inclure le jeton à 6 chiffres.</p>'+
  button('show-landing','← Retour à la présentation','text-link')+'</div>';
 }
+// Custom in-app chooser: Android WebView's native <select> popup uses the OS
+// light theme and ignores CSS. Use a themed modal for both wellbeing questions.
 function wellnessSelect(label,id,options,selected=''){
- return '<label>'+label+'<select id="'+id+'" required>'+
- '<option value="">Choisir une réponse</option>'+
- options.map(([v,t])=>'<option value="'+esc(v)+'"'+(v===selected?' selected':'')+'>'+esc(t)+'</option>').join('')+
- '</select></label>';
+ const choice=options.find(([value])=>value===selected);
+ return '<div class="love-answer-field">'+
+ '<span id="label-'+id+'" class="love-answer-label">'+esc(label)+'</span>'+
+ '<input type="hidden" id="'+id+'" value="'+esc(choice?.[0]||'')+'">'+
+ '<button type="button" class="love-answer-trigger" data-love-answer-open="'+id+
+ '" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="label-'+id+' current-'+id+'">'+
+ '<span id="current-'+id+'" class="love-answer-current">'+esc(choice?.[1]||'Choisir une réponse')+'</span>'+
+ '<span class="love-answer-chevron" aria-hidden="true">⌄</span></button>'+
+ '<dialog class="love-answer-dialog" id="dialog-'+id+'" aria-labelledby="title-'+id+'">'+
+ '<div class="love-answer-top"><div class="love-answer-kicker">LOVEROLL · MON RESSENTI</div>'+
+ '<h3 id="title-'+id+'">'+esc(label)+'</h3>'+
+ '<p>Choisissez la réponse qui vous correspond. Vous pourrez la modifier plus tard.</p></div>'+
+ '<div class="love-answer-choices" role="radiogroup" aria-labelledby="title-'+id+'">'+
+ options.map(([value,text])=>'<button type="button" role="radio" class="love-answer-option"'+
+ ' data-love-answer-value="'+esc(value)+'" aria-checked="'+(value===selected?'true':'false')+'">'+
+ '<span class="love-answer-option-label">'+esc(text)+'</span>'+
+ '<span class="love-answer-radio" aria-hidden="true"></span></button>').join('')+
+ '</div><button type="button" class="love-answer-dismiss" data-love-answer-close>Annuler</button>'+
+ '</dialog></div>';
 }
 export function wellbeingFields(current=null){
  return '<h3>♡ Comment vivez-vous votre relation ?</h3>'+
@@ -138,4 +155,39 @@ export function matchHtml(name,invitation){
  button('create-couple','♡ Créer notre espace à deux')+
  button('skip-couple','Plus tard · Explorer sans partenaire','subtle'))+
  '</div>';
+}
+
+export function bindWellbeingMenus(container=document){
+ container.querySelectorAll('.love-answer-field').forEach(field=>{
+  const trigger=field.querySelector('[data-love-answer-open]');
+  const dialog=field.querySelector('.love-answer-dialog');
+  const valueField=field.querySelector('input[type="hidden"]');
+  if(!trigger||!dialog||!valueField)return;
+  const close=()=>{if(dialog.open)dialog.close();trigger.setAttribute('aria-expanded','false');trigger.focus();};
+  trigger.addEventListener('click',()=>{
+   if(dialog.open)return;
+   dialog.showModal();
+   trigger.setAttribute('aria-expanded','true');
+   const selected=dialog.querySelector('[aria-checked="true"]');
+   (selected||dialog.querySelector('.love-answer-option'))?.focus();
+  });
+  dialog.querySelectorAll('.love-answer-option').forEach(option=>{
+   option.addEventListener('click',()=>{
+    valueField.value=option.dataset.loveAnswerValue;
+    trigger.querySelector('.love-answer-current').textContent=
+     option.querySelector('.love-answer-option-label').textContent;
+    dialog.querySelectorAll('.love-answer-option').forEach(item=>
+     item.setAttribute('aria-checked',item===option?'true':'false'));
+    close();
+   });
+  });
+  dialog.querySelector('[data-love-answer-close]')?.addEventListener('click',close);
+  dialog.addEventListener('cancel',()=>trigger.setAttribute('aria-expanded','false'));
+  dialog.addEventListener('click',event=>{
+   if(event.target!==dialog)return;
+   const rect=dialog.getBoundingClientRect();
+   if(event.clientX<rect.left||event.clientX>rect.right||
+      event.clientY<rect.top||event.clientY>rect.bottom)close();
+  });
+ });
 }

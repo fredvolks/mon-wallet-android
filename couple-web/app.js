@@ -1,4 +1,4 @@
-import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,matchHtml,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown } from './evening-challenges.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
@@ -95,9 +95,12 @@ function nav(){
  '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
-function bindActions(){document.querySelectorAll('[data-action]').forEach(el=>{
- el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
-});}
+function bindActions(){
+ document.querySelectorAll('[data-action]').forEach(el=>{
+  el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
+ });
+ bindWellbeingMenus();
+}
 function render(){
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
