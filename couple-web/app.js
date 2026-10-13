@@ -1,6 +1,7 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown } from './evening-challenges.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
+import {drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE} from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
@@ -16,7 +17,8 @@ const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false,
+ solo:{weekly:null,session:null,challenge:null,challengeCategory:'SENSUEL',special:null,host:null,occasion:null,occasionDay:null,adventDay:null}};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 let timerCtx=null;
 const challengeTimer={id:null,durationMs:0,remainingMs:0,deadline:0,running:false,notified:false,mode:'sound'};
@@ -117,25 +119,27 @@ function render(){
  if(!state.wellbeing){
   frame(wellbeingHtml(),'♡ MON RESSENTI','Vos réponses sont personnelles');return;
  }
- if(!state.coupleId){
-  if(sessionStorage.getItem('pendingInvite')||!localStorage.getItem('loveroll-skip-'+state.user.id)){
-   frame(matchHtml(state.profile.display_name,!!sessionStorage.getItem('pendingInvite')),
+ // Full app navigation is available without a partner. Shared RPC actions remain gated.
+ if(!isSharedCoupleReady(state.coupleId,state.members)){
+  if(!state.coupleId&&sessionStorage.getItem('pendingInvite')&&!localStorage.getItem('loveroll-skip-'+state.user.id)){
+   frame(matchHtml(state.profile.display_name,true),
     '♡ NOTRE MATCH','Inviter un partenaire reste facultatif');return;
   }
+  if(!state.coupleId&&!localStorage.getItem('loveroll-skip-'+state.user.id)&&state.tab==='home'){
+   frame(matchHtml(state.profile.display_name,false),
+    '♡ NOTRE MATCH','Vous pouvez aussi découvrir LoveRoll sans partenaire');return;
+  }
   if(state.tab==='settings')renderSettings();
-  else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
+  else if(state.tab==='personal-journal'||state.tab==='journal')
+   renderPersonalJournal().catch(fail);
   else if(state.tab==='ideas')renderIdeas();
+  else if(state.tab==='session')renderSoloSession();
+  else if(state.tab==='special')renderSoloSpecial();
+  else if(state.tab==='occasions')renderSoloOccasions();
+  else if(state.tab==='advent')renderSoloAdvent();
   else renderSolo();
   return;
  }
- if(state.members.length<2&&state.tab==='settings'){renderSettings();return;}
- if(state.members.length<2&&state.tab==='personal-journal'){renderPersonalJournal().catch(fail);return;}
- if(state.members.length<2){frame('<section class="card"><h2>Votre match</h2><p>Bonjour '+safe(state.profile.display_name)+
-  ' ! Invitez votre partenaire avec son courriel de connexion.</p>'+
- '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
- button('invite','Préparer l’invitation par courriel')+
- '<p class="muted">L’envoi s’ouvre dans votre application courriel. Votre partenaire doit confirmer l’envoi du courriel d’invitation.</p></section>');
- return;}
  if(state.tab==='home')renderHome();
  else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
  else if(state.tab==='ideas')renderIdeas();
@@ -165,7 +169,7 @@ async function reload(){
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
   state.feedback=[];state.advent=[];state.unlockKey=null;
-  state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
+  state.tab=['settings','personal-journal','ideas','session','special','occasions','advent','journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
   render();return;
  }
