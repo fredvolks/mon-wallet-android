@@ -86,7 +86,7 @@ begin
  return make_date(p_year,m,d);
 end; $$;
 revoke all on function couple_private.love_occasion_date(uuid,text,uuid,int) from public,anon,authenticated;
-grant execute on function couple_private.love_occasion_date(uuid,text,uuid,int) to authenticated;
+-- This helper remains private; only the SECURITY DEFINER roll RPC may call it.
 
 create or replace function public.roll_love_occasion_once(
  p_couple uuid,p_kind text,p_owner uuid default null,p_roll text default 'surprise')

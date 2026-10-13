@@ -65,3 +65,15 @@ L'APK natif v0.7.0 n'est pas encore relié au mode web. La PWA est prévue pour 
 - **Apple** : un compte Apple Developer, Service ID, Team ID, Key ID et clé privée sont nécessaires dans Supabase Auth > Providers > Apple. Apple peut masquer le courriel, auquel cas la personne doit se connecter avec le courriel exact de l'invitation ou choisir une adresse Google/courriel identique.
 - L'application web peut fonctionner depuis Android/iPhone en PWA avec les **mêmes** comptes et données lorsque site + auth sont activés. L'APK Android natif existant n'est **pas automatiquement migré** vers ce système.
 - Notifications en temps réel : bannières dans l'application lorsque la PWA est ouverte, pas encore de notifications push quand Safari/Chrome est fermé.
+
+## LoveRoll 0.8.0 — Fêtes et anniversaires
+- L'application visible s'appelle **LoveRoll**. L'identifiant APK reste `ca.desadeux.jeu` pour préserver les mises à jour et données existantes.
+- Nouvel onglet interne `Défi spécial → Fêtes et anniversaires` avec Saint-Valentin (14 février), fête des Mères (2e dimanche de mai au Canada), fête des Pères (3e dimanche de juin), anniversaire de couple et deux anniversaires personnels.
+- Les anniversaires configurés stockent seulement **mois et jour**, pas l'année de naissance.
+- Fenêtre d'ouverture : 14 jours avant, jusqu'à 7 jours après. Un seul D20 et un seul D6 d'organisation par occasion/année. Les deux partenaires sont synchronisés sur le web par Supabase.
+- 20 idées de surprises romantiques, coquines et audacieuses, facultatives et respectueuses des limites individuelles; ne jamais assimiler un tirage à un consentement.
+- Le module Android natif contient une version **locale** des événements, sans comptes connectés. Le module web connecté doit être testé avec deux identités authentifiées une fois le site déployé. Les données Android locales ne sont pas synchronisées automatiquement.
+- Pour conserver la mise à jour des APK v0.7.0, la publication LoveRoll v0.8.0 utilise le tag historique `des-a-deux-v0.8.0` et inclut **deux noms de fichier identiques** `LoveRoll-v0.8.0.apk` et `Des-a-Deux-v0.8.0.apk`.
+- Supabase : migration `special-occasions.sql` déployée sur le projet LoveRoll séparé, avec RLS. Une seconde migration a retiré l'exécution directe de la fonction d'aide interne.
+- Hébergement iPhone : le premier essai GitHub Pages n'a pas pu publier le site. L'URL `https://fredvolks.github.io/mon-wallet-android/` **n'est pas vérifiée comme active**. Se rendre dans GitHub → Settings → Pages, sélectionner **GitHub Actions**, puis relancer le workflow de déploiement.
+- OAuth Apple/Google nécessite encore les identifiants configurés dans Supabase Auth. Les tests automatiques du code ne constituent pas un test mobile de bout en bout.
