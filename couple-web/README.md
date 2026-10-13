@@ -138,3 +138,12 @@ L'ancienne adresse https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loverol
 - Test web et captures responsives au format S25 Ultra représentatif (412 × 915 CSS px), petit Android (360 × 780) et iPhone (393 × 852) produits par GitHub Actions. Ce test navigateur n'est **pas** une validation sur le téléphone physique.
 - Identifiant Android et secrets de signature existants inchangés. Les anciennes données locales restent accessibles depuis la landing.
 - GitHub Pages est le site web HTML public, Supabase Auth et RPC restent le backend. L'adresse Supabase Edge est redirigée vers GitHub Pages.
+
+
+## v0.12.0 — Landing page PREMIUM COMPACTE (une page)
+- Refactorisation des deux accueils **Android natif** et **PWA** sans changer l'applicationId `ca.desadeux.jeu` ni les règles du jeu.
+- Six zones : marque LoveRoll, cœur + dés brillants, titre + promesse réduite, **deux seuls boutons** de connexion, quatre fonctions miniatures en 2 × 2, message émotionnel fusionné et pied de page discret (limites d'âge/consentement).
+- Sur Android, la hauteur utilisable est mesurée avec `WindowMetrics` moins les insets de status/nav pour adapter la zone graphique; le `ScrollView` demeure le comportement de secours pour petite hauteur ou accessibilité.
+- Sur le web, la landing utilise des sections compactes et la hauteur `dvh`, avec un test Playwright qui doit **prouver l'absence de scroll à 412 × 824 et 412 × 915 CSS pixels**; les petites tailles peuvent défiler.
+- Lien `loveroll://offline` déclaré dans le manifeste Android : permet depuis la PWA de retrouver les données locales **sans les réinitialiser** (si l'APK est installé).
+- Captures Playwright disponibles dans l'artifact GitHub `LoveRoll-landing-captures`; émulateur Android indépendant de la validation des dés 3D.

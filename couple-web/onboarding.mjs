@@ -43,48 +43,39 @@ const benefit = (icon,title,caption) =>
  '<div class="love-benefit"><div class="love-benefit-icon">'+lineIcon(icon)+'</div>'+
  '<strong>'+title+'</strong><small>'+caption+'</small></div>';
 export function marketingHtml(){
- return '<div class="marketing-shell" aria-label="Présentation LoveRoll">'+
- '<section class="love-hero">'+
-  '<div class="love-scene">'+
-   '<div class="love-brand"><span class="love-brand-decoration">♡</span>'+
+ return '<div class="marketing-shell love-onepage" aria-label="LoveRoll · présentation avant connexion">'+
+ '<section class="love-hero love-compact-hero">'+
+  '<div class="love-scene"><div class="love-brand">'+
+   '<span class="love-brand-decoration">♡</span>'+
    '<div class="love-wordmark"><span>Love</span><b>Roll</b></div>'+
    '<div class="love-signature">JEUX · DÉFIS · DATES · NOUS</div></div>'+
-   '<img class="love-hero-art" src="./assets/loveroll-hero.webp" alt="Grand cœur en verre rose et deux dés noirs brillants sur un satin bourgogne" fetchpriority="high" decoding="async" width="682" height="376">'+
+   '<img class="love-hero-art" src="./assets/loveroll-hero.webp" alt="Cœur en verre rose, deux dés noirs brillants et satin bourgogne" fetchpriority="high" decoding="async" width="682" height="376">'+
   '</div>'+
   '<div class="love-hero-copy">'+
    '<h1>Votre aventure à deux <em>commence ici.</em></h1>'+
-   '<p>Rapprochez-vous avec des défis sensuels, des jeux pour couple, des sorties surprises et un calendrier partagé.</p>'+
+   '<p>Défis sensuels, soirées surprises et moments complices à partager.</p>'+
    '<div class="love-cta-group">'+
     button('show-auth','♡ CRÉER MON COMPTE GRATUITEMENT →','love-cta-primary')+
     button('show-auth','J’AI DÉJÀ UN COMPTE · ME CONNECTER →','love-cta-secondary')+
    '</div>'+
-   '<div class="love-auth-note"><span aria-hidden="true">♢</span> Connexion sécurisée pour Android et iPhone.</div>'+
+   '<div class="love-auth-note">♢ Connexion sécurisée pour Android et iPhone.</div>'+
   '</div>'+
  '</section>'+
- '<section class="love-features" aria-label="Fonctionnalités">'+
-  feature('dice','Des dés rien qu’à vous','Chacun lance ses dés et partage une expérience unique avec son partenaire.')+
-  feature('couple','Créez votre match','Invitez votre partenaire et créez votre espace à deux.')+
-  feature('calendar','Vos dates, automatiquement','Retrouvez anniversaires et moments importants dans un calendrier partagé.')+
-  feature('lock','Privé et complice','Vos défis et vos moments partagés restent dans votre espace privé.')+
+ '<section class="love-features" aria-label="Quatre fonctionnalités LoveRoll">'+
+  feature('dice','Dés à deux','Vos défis synchronisés.')+
+  feature('couple','Votre match','Connectez votre couple.')+
+  feature('calendar','Calendrier','Vos dates importantes.')+
+  feature('lock','Espace privé','Rien qu’à vous.')+
  '</section>'+
- '<section class="love-why" aria-labelledby="why-title"><h2 id="why-title"><span>♡</span> Pourquoi vous allez aimer <span>♡</span></h2>'+
- '<div class="love-benefits">'+
-  benefit('flame','Défis sensuels','Ravivez la flamme')+
-  benefit('heart','Moments à deux','Du spontané au mémorable')+
-  benefit('clock','Rituel hebdomadaire','Des idées toute l’année')+
-  benefit('calendar','Calendrier partagé','Ne manquez aucune date')+
-  benefit('users','Espace privé','Rien qu’à vous')+
- '</div></section>'+
- '<footer class="love-finale"><h2>Plus qu’un jeu,<br><em>une histoire à écrire.</em></h2>'+
-  '<p>Des petits défis aux grandes surprises, LoveRoll transforme votre quotidien en moments inoubliables.</p>'+
-  '<div class="love-handwriting">Même équipe,<br>plus de frissons. ♡</div>'+
-  '<div class="love-trust">'+
-    '<span>'+lineIcon('shield')+'<small>Sécurisé et privé</small></span>'+
-    '<span>'+lineIcon('couple')+'<small>Conçu pour les couples</small></span>'+
-    '<span>'+lineIcon('heart')+'<small>Sans pression — jouez à votre rythme</small></span>'+
-  '</div>'+
-  '<p class="love-legal">Réservé aux adultes de 18 ans et plus. Chaque activité est facultative et se décide ensemble.</p>'+
- '</footer></div>';
+ '<section class="love-mini-finale" aria-label="Notre philosophie">'+
+   '<h2>Plus qu’un jeu, <em>votre histoire à deux. ♡</em></h2>'+
+   '<p>Complicité, surprises et frissons à votre rythme.</p>'+
+ '</section>'+
+ '<footer class="love-compact-footer">'+
+   '<a href="loveroll://offline" class="love-old-data" aria-label="Ouvrir les anciennes données hors ligne dans LoveRoll Android">Retrouver mes anciennes données hors ligne ↗</a>'+
+   '<p>Réservé aux adultes de 18 ans et plus. Chaque activité est facultative.</p>'+
+ '</footer>'+
+ '</div>';
 }
 export function authHtml(){
  return '<div class="auth-panel"><div class="eyebrow">VOTRE NOUVELLE HISTOIRE</div>'+

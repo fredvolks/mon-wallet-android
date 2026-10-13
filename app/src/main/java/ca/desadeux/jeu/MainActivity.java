@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.util.DisplayMetrics;
 import android.os.Handler;
 import android.os.Looper;
 import android.media.AudioManager;
@@ -77,6 +79,12 @@ public final class MainActivity extends Activity {
   getWindow().setStatusBarColor(Color.TRANSPARENT);
   getWindow().setNavigationBarColor(Color.TRANSPARENT);
   prefs=getSharedPreferences("des_a_deux_game",MODE_PRIVATE);
+  // A deep link from the public landing opens existing local data without
+  // asking for a second account or touching any stored challenge history.
+  Uri incoming=getIntent()!=null?getIntent().getData():null;
+  if(incoming!=null&&"loveroll".equals(incoming.getScheme())&&"offline".equals(incoming.getHost())){
+   prefs.edit().putBoolean("loveroll_legacy_offline",true).apply();
+  }
   journal=new PrivateJournal(this);
   try{
    selected=Category.valueOf(prefs.getString("selected","SENSUEL"));
@@ -280,131 +288,139 @@ public final class MainActivity extends Activity {
   shape.setStroke(dp(1),primary?0xFFFFAFD2:0xFFAA5681);
   b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x44FFFFFF),shape,null));
   b.setElevation(dp(primary?4:1));
-  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(52));
-  lp.topMargin=dp(9);container.addView(b,lp);b.setOnClickListener(v->action.run());
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(48));
+  lp.topMargin=dp(5);container.addView(b,lp);b.setOnClickListener(v->action.run());
  }
- LinearLayout welcomeFeature(String title,String detail,int icon){
-  LinearLayout c=vertical();c.setPadding(dp(10),dp(11),dp(10),dp(12));
-  c.setBackground(shape(0xFF35172F,0xFF1B0D20,16,0x88994470));
+
+ int welcomeAvailableDp(){
+  DisplayMetrics metrics=getResources().getDisplayMetrics();
+  if(Build.VERSION.SDK_INT>=30){
+   android.view.WindowMetrics wm=getWindowManager().getCurrentWindowMetrics();
+   android.graphics.Insets inset=wm.getWindowInsets().getInsets(
+    android.view.WindowInsets.Type.systemBars());
+   return Math.round((wm.getBounds().height()-inset.top-inset.bottom)/metrics.density);
+  }
+  DisplayMetrics dm=new DisplayMetrics();
+  getWindowManager().getDefaultDisplay().getMetrics(dm);
+  return Math.round(dm.heightPixels/dm.density);
+ }
+ LinearLayout welcomeMiniFeature(String title,String detail,int icon){
+  LinearLayout c=horizontal();c.setPadding(dp(7),dp(6),dp(7),dp(6));
+  c.setGravity(Gravity.CENTER_VERTICAL);
+  c.setBackground(shape(0xFF35172F,0xFF1B0D20,14,0x88994470));
   LoveRollWelcomeIcon picture=new LoveRollWelcomeIcon(this,icon);
-  c.addView(picture,new LinearLayout.LayoutParams(dp(47),dp(47)));
-  addText(c,title,13,WHITE,true,5);
-  addText(c,detail,11,PALE,false,0);
+  c.addView(picture,new LinearLayout.LayoutParams(dp(36),dp(36)));
+  LinearLayout textCol=vertical();textCol.setPadding(dp(5),0,0,0);
+  TextView heading=text(title,13,WHITE,true);
+  heading.setTypeface(Typeface.create("serif",Typeface.BOLD));
+  textCol.addView(heading,new LinearLayout.LayoutParams(-1,-2));
+  TextView desc=text(detail,11,PALE,false);
+  textCol.addView(desc,new LinearLayout.LayoutParams(-1,-2));
+  c.addView(textCol,new LinearLayout.LayoutParams(0,-2,1));
   return c;
  }
  void welcomeFeatureRow(LinearLayout dest,
   String aTitle,String aText,int ai,String bTitle,String bText,int bi){
   LinearLayout row=horizontal();
-  LinearLayout.LayoutParams r=new LinearLayout.LayoutParams(-1,-2);
-  r.bottomMargin=dp(9);dest.addView(row,r);
-  LinearLayout a=welcomeFeature(aTitle,aText,ai),b=welcomeFeature(bTitle,bText,bi);
-  LinearLayout.LayoutParams pa=new LinearLayout.LayoutParams(0,-2,1);
-  pa.rightMargin=dp(5);row.addView(a,pa);
-  LinearLayout.LayoutParams pb=new LinearLayout.LayoutParams(0,-2,1);
-  pb.leftMargin=dp(5);row.addView(b,pb);
+  LinearLayout.LayoutParams r=new LinearLayout.LayoutParams(-1,dp(69));
+  r.bottomMargin=dp(5);dest.addView(row,r);
+  LinearLayout a=welcomeMiniFeature(aTitle,aText,ai);
+  LinearLayout b=welcomeMiniFeature(bTitle,bText,bi);
+  LinearLayout.LayoutParams pa=new LinearLayout.LayoutParams(0,-1,1);
+  pa.rightMargin=dp(3);row.addView(a,pa);
+  LinearLayout.LayoutParams pb=new LinearLayout.LayoutParams(0,-1,1);
+  pb.leftMargin=dp(3);row.addView(b,pb);
  }
  void drawWelcome(){
-  // Native promotional landing only. Shared login and couple data remain
-  // in the HTTPS PWA to work consistently on Android and iOS.
+  // Six-zone one-screen layout, based on app content height after both system
+  // bars. ScrollView is retained to support large fonts / smaller phones.
+  final int available=welcomeAvailableDp();
+  final boolean standardFont=getResources().getConfiguration().fontScale<=1.12f;
+  final int sceneHeight=standardFont&&available>=690?
+   Math.min(163,Math.max(118,(int)(available*.185f))):125;
   root=vertical();
   root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
      new int[]{0xFF1E0C23,0xFF130919,0xFF08050E}));
-  scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
-  page=vertical();page.setPadding(dp(17),dp(8),dp(17),dp(28));
+  scroll=new ScrollView(this);
+  scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
+  page=vertical();page.setPadding(dp(12),dp(4),dp(12),dp(8));
   scroll.addView(page);root.addView(scroll,new LinearLayout.LayoutParams(-1,-1));
   ViewCompat.setOnApplyWindowInsetsListener(root,(v,insets)->{
    int top=insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
    int bottom=insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-   root.setPadding(0,top,0,bottom);return insets;
+   root.setPadding(0,top,0,bottom);
+   return insets;
   });
-  setContentView(root);ViewCompat.requestApplyInsets(root);
+  setContentView(root);ViewCompat.requestApplyWindowInsets(root);
+  // A/B/C: brand, photographic hero and TWO authentication actions only.
   LinearLayout hero=vertical();
-  hero.setPadding(dp(13),dp(12),dp(13),dp(17));
-  hero.setBackground(shape(0xFF3C1429,0xFF180C1D,23,0x99CB5285));
+  hero.setPadding(dp(11),dp(7),dp(11),dp(8));
+  hero.setBackground(shape(0xFF3C1429,0xFF180C1D,18,0x99CB5285));
   page.addView(hero,new LinearLayout.LayoutParams(-1,-2));
-  TextView logo=text("LoveRoll",43,WHITE,true);
+  TextView logo=text("LoveRoll",39,WHITE,true);
   logo.setTypeface(Typeface.create("serif",Typeface.BOLD_ITALIC));
   SpannableString logoSpans=new SpannableString("LoveRoll");
   logoSpans.setSpan(new ForegroundColorSpan(0xFFFF75B0),4,8,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
   logo.setText(logoSpans);logo.setGravity(Gravity.CENTER);
-  hero.addView(logo,new LinearLayout.LayoutParams(-1,dp(51)));
-  TextView signature=text("JEUX · DÉFIS · DATES · NOUS",10,PALE,true);
-  signature.setGravity(Gravity.CENTER);signature.setLetterSpacing(.21f);
-  hero.addView(signature,new LinearLayout.LayoutParams(-1,dp(22)));
+  hero.addView(logo,new LinearLayout.LayoutParams(-1,dp(43)));
+  TextView signature=text("JEUX · DÉFIS · DATES · NOUS",9,PALE,true);
+  signature.setGravity(Gravity.CENTER);signature.setLetterSpacing(.16f);
+  hero.addView(signature,new LinearLayout.LayoutParams(-1,dp(17)));
   ImageView art=new ImageView(this);
   art.setImageResource(R.drawable.loveroll_hero);
-  art.setScaleType(ImageView.ScaleType.CENTER_CROP);
-  LinearLayout.LayoutParams img=new LinearLayout.LayoutParams(-1,dp(182));
-  img.topMargin=dp(1);img.bottomMargin=dp(6);
+  art.setScaleType(ImageView.ScaleType.FIT_CENTER);
+  art.setAdjustViewBounds(false);
+  LinearLayout.LayoutParams img=new LinearLayout.LayoutParams(-1,dp(sceneHeight));
   hero.addView(art,img);
-  TextView title=text("Votre aventure à deux commence ici.",28,WHITE,true);
+  TextView title=text("Votre aventure à deux commence ici.",26,WHITE,true);
   title.setTypeface(Typeface.create("serif",Typeface.BOLD));
   SpannableString titleParts=new SpannableString("Votre aventure à deux commence ici.");
   titleParts.setSpan(new ForegroundColorSpan(0xFFFF6EA8),22,titleParts.length(),
     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-  title.setText(titleParts);title.setLineSpacing(0,1.02f);
+  title.setText(titleParts);title.setLineSpacing(0,1.0f);
   hero.addView(title,new LinearLayout.LayoutParams(-1,-2));
-  addText(hero,"Rapprochez-vous avec des défis sensuels, des jeux pour couple, des sorties surprises et un calendrier partagé.",
-   14,PALE,false,13);
+  addText(hero,"Défis sensuels, soirées surprises et moments complices à partager.",
+    13,PALE,false,4);
   premiumWelcomeButton(hero,"♡  CRÉER MON COMPTE GRATUITEMENT →",true,()->openConnectedLoveRoll());
   premiumWelcomeButton(hero,"J'AI DÉJÀ UN COMPTE · ME CONNECTER →",false,()->openConnectedLoveRoll());
   TextView note=text("♢  Connexion sécurisée pour Android et iPhone.",11,MUTED,false);
   note.setGravity(Gravity.CENTER);
-  LinearLayout.LayoutParams noteLp=new LinearLayout.LayoutParams(-1,-2);
-  noteLp.topMargin=dp(12);hero.addView(note,noteLp);
-  gap(page,13);
-  welcomeFeatureRow(page,"Des dés rien qu'à vous",
-   "Chacun lance ses dés et partage une expérience unique avec son partenaire.",0,
-   "Créez votre match","Invitez votre partenaire et créez votre espace à deux.",1);
-  welcomeFeatureRow(page,"Vos dates, automatiquement",
-   "Retrouvez anniversaires et moments importants dans un calendrier partagé.",2,
-   "Privé et complice","Vos défis et vos moments partagés restent dans votre espace privé.",3);
-  TextView why=text("♡  Pourquoi vous allez aimer  ♡",20,WHITE,true);
-  why.setTypeface(Typeface.create("serif",Typeface.BOLD));why.setGravity(Gravity.CENTER);
-  LinearLayout.LayoutParams whyLp=new LinearLayout.LayoutParams(-1,dp(58));page.addView(why,whyLp);
-  LinearLayout icons=horizontal();page.addView(icons,new LinearLayout.LayoutParams(-1,-2));
-  String[] titles={"Défis sensuels","Moments à deux","Rituel hebdo","Calendrier","Espace privé"};
-  String[] descs={"Ravivez la flamme","Spontané & mémorable","Toute l'année","Vos dates","Rien qu'à vous"};
-  int[] ids={4,5,6,2,7};
-  for(int i=0;i<5;i++){
-   LinearLayout item=vertical();item.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);
-   LoveRollWelcomeIcon pic=new LoveRollWelcomeIcon(this,ids[i]);
-   item.addView(pic,new LinearLayout.LayoutParams(dp(43),dp(43)));
-   TextView name=text(titles[i],10,WHITE,true);name.setGravity(Gravity.CENTER);
-   LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=dp(3);
-   item.addView(name,np);
-   TextView detail=text(descs[i],9,MUTED,false);detail.setGravity(Gravity.CENTER);
-   item.addView(detail,new LinearLayout.LayoutParams(-1,-2));
-   icons.addView(item,new LinearLayout.LayoutParams(0,-2,1));
-  }
-  gap(page,21);
-  LinearLayout finale=vertical();finale.setPadding(dp(17),dp(19),dp(17),dp(18));
-  finale.setBackground(shape(0xFF45152F,0xFF200C1E,21,0x88883461));
-  page.addView(finale,new LinearLayout.LayoutParams(-1,-2));
-  TextView finalTitle=text("Plus qu'un jeu, une histoire à écrire.",25,WHITE,true);
-  finalTitle.setTypeface(Typeface.create("serif",Typeface.BOLD));
-  SpannableString ft=new SpannableString("Plus qu'un jeu, une histoire à écrire.");
-  ft.setSpan(new ForegroundColorSpan(0xFFFF77AF),16,ft.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-  finalTitle.setText(ft);finale.addView(finalTitle);
-  addText(finale,"Des petits défis aux grandes surprises, LoveRoll transforme votre quotidien en moments inoubliables.",
-   13,PALE,false,12);
-  TextView motto=text("Même équipe, plus de frissons. ♡",17,PINK,false);
-  motto.setTypeface(Typeface.create("cursive",Typeface.ITALIC));motto.setGravity(Gravity.RIGHT);
-  finale.addView(motto);
-  addText(finale,"♡  Sécurisé et privé     ·     ♡  Conçu pour les couples\n♡  Sans pression — jouez à votre rythme",
-   11,PALE,false,8);
-  // Existing offline local records must remain accessible without showing extra
-  // duplicate signup/login buttons or adding calls to action to the emotional footer.
-  TextView offline=text("Retrouver mes anciennes données hors ligne  ›",11,MUTED,false);
+  LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);
+  np.topMargin=dp(5);hero.addView(note,np);
+  // D: real two-column/two-row compact functionality grid.
+  gap(page,6);
+  welcomeFeatureRow(page,"Dés à deux","Défis synchronisés.",0,
+    "Votre match","Votre couple connecté.",1);
+  welcomeFeatureRow(page,"Calendrier","Vos dates importantes.",2,
+    "Espace privé","Rien qu'à vous.",3);
+  // E: one emotional banner instead of repeated marketing sections.
+  LinearLayout slogan=vertical();
+  slogan.setPadding(dp(10),dp(7),dp(10),dp(7));
+  slogan.setBackground(shape(0xFF46162F,0xFF260C22,14,0x88994470));
+  LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);
+  sp.topMargin=dp(1);page.addView(slogan,sp);
+  TextView motto=text("Plus qu'un jeu, votre histoire à deux. ♡",18,WHITE,true);
+  motto.setTypeface(Typeface.create("serif",Typeface.BOLD));
+  SpannableString mottoSpans=new SpannableString("Plus qu'un jeu, votre histoire à deux. ♡");
+  mottoSpans.setSpan(new ForegroundColorSpan(0xFFFF78B2),15,mottoSpans.length(),
+    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+  motto.setText(mottoSpans);motto.setGravity(Gravity.CENTER);
+  slogan.addView(motto);
+  TextView tagline=text("Complicité, surprises et frissons à votre rythme.",12,PALE,false);
+  tagline.setGravity(Gravity.CENTER);slogan.addView(tagline);
+  // F: functional recovery of existing local data + safety notice.
+  TextView offline=text("Retrouver mes anciennes données hors ligne  ›",11,PALE,false);
   offline.setGravity(Gravity.CENTER);
-  LinearLayout.LayoutParams offLp=new LinearLayout.LayoutParams(-1,dp(50));
-  offLp.topMargin=dp(10);page.addView(offline,offLp);
-  offline.setOnClickListener(v->{
-   prefs.edit().putBoolean("loveroll_legacy_offline",true).apply();tab="home";draw();
+  LinearLayout.LayoutParams op=new LinearLayout.LayoutParams(-1,dp(44));
+  page.addView(offline,op);offline.setOnClickListener(v->{
+   prefs.edit().putBoolean("loveroll_legacy_offline",true).apply();
+   tab="home";draw();
   });
   offline.setContentDescription("Ouvrir mes anciennes données locales non synchronisées");
-  addText(page,"Réservé aux adultes de 18 ans et plus. Chaque activité est facultative.",
-   10,MUTED,false,5);
+  TextView legal=text("Réservé aux adultes de 18 ans et plus. Chaque activité est facultative.",
+     10,MUTED,false);
+  legal.setGravity(Gravity.CENTER);
+  page.addView(legal,new LinearLayout.LayoutParams(-1,-2));
  }
  void draw(){
   clearTimerTicker();

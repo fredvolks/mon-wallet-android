@@ -1,4 +1,4 @@
-name: Dés à Deux connected web checks
+name: LoveRoll connected web checks
 on:
   push:
     branches: [des-a-deux-apk-20261013]
@@ -41,10 +41,11 @@ jobs:
           const { chromium } = require('playwright');
           (async () => {
             const browser=await chromium.launch({headless:true});
-            for(const {name,width,height} of [
-              {name:'S25-Ultra',width:412,height:915},
-              {name:'Petit-Android',width:360,height:780},
-              {name:'iPhone',width:393,height:852}
+            for(const {name,width,height,requireOneScreen} of [
+              {name:'S25-Ultra',width:412,height:824,requireOneScreen:true},
+              {name:'S25-Ultra-long',width:412,height:915,requireOneScreen:true},
+              {name:'Petit-Android',width:360,height:700,requireOneScreen:false},
+              {name:'iPhone',width:393,height:780,requireOneScreen:false}
             ]){
               const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:2,
                 isMobile:true,hasTouch:true});
@@ -55,18 +56,28 @@ jobs:
                 const ct=[...document.querySelectorAll('[data-action="show-auth"]')];
                 const top=document.querySelector('.love-cta-group').getBoundingClientRect();
                 const image=document.querySelector('.love-hero-art');
+                const legal=document.querySelector('.love-compact-footer').getBoundingClientRect();
+                const main=document.querySelector('.marketing-shell').getBoundingClientRect();
                 return {
                   ctas:ct.length, imageLoaded:image.naturalWidth>0,
                   buttonsVisible:ct.every(b=>b.getBoundingClientRect().width>0),
                   noHorizontalOverflow:document.documentElement.scrollWidth<=innerWidth+2,
                   buttonsInFirstScreen:top.bottom<innerHeight-8,
+                  oneScreen:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)<=innerHeight+2&&legal.bottom<=innerHeight+2,
+                  legalVisible:legal.width>0,
+                  footerBottom:Math.round(legal.bottom),
+                  screenHeight:innerHeight,
+                  pageHeight:Math.round(main.height),
+                  accessibleButtons:ct.every(b=>b.getBoundingClientRect().height>=48),
                   features:document.querySelectorAll('.love-feature').length,
-                  benefits:document.querySelectorAll('.love-benefit').length
+                  emotionalBanners:document.querySelectorAll('.love-mini-finale').length
                 };
               });
               if(data.ctas!==2||!data.imageLoaded||!data.buttonsVisible||
                 !data.noHorizontalOverflow||!data.buttonsInFirstScreen||
-                data.features!==4||data.benefits!==5){
+                !data.accessibleButtons||!data.legalVisible||
+                (requireOneScreen&&!data.oneScreen)||
+                data.features!==4||data.emotionalBanners!==1){
                 throw new Error(name+': '+JSON.stringify(data));
               }
               await page.screenshot({path:'landing-captures/'+name+'-premier-ecran.png'});

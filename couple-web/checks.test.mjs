@@ -259,15 +259,15 @@ test('LoveRoll landing uses real artwork, not emoji substitutes or screenshot te
  assert.match(source,/Love<\/span><b>Roll<\/b>/);
  assert.match(source,/JEUX · DÉFIS · DATES · NOUS/);
  assert.match(source,/assets\/loveroll-hero\.webp/);
- assert.match(source,/alt="Grand cœur en verre rose/);
+ assert.match(source,/alt="Cœur en verre rose/);
  assert.match(source,/Votre aventure à deux/);
  assert.match(source,/commence ici\./);
  assert.match(source,/Connexion sécurisée pour Android et iPhone/);
  assert.equal((source.match(/class="love-feature"/g)||[]).length,4);
- assert.equal((source.match(/class="love-benefit"/g)||[]).length,5);
+ assert.equal((source.match(/class="love-benefit"/g)||[]).length,0);
  assert.match(source,/Plus qu’un jeu/);
- assert.match(source,/Même équipe/);
- assert.match(source,/Sans pression/);
+ assert.match(source,/Complicité, surprises et frissons/);
+ assert.match(source,/Chaque activité est facultative/);
  assert.doesNotMatch(source,/🎲|💌|🔒/);
 });
 test('Premade art and CSS are available, web cache contains the artwork',()=>{
@@ -277,9 +277,25 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.equal(image.subarray(8,12).toString(),'WEBP');
  const stylesheet=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
  assert.match(stylesheet,/\.love-hero-art/);
- assert.match(stylesheet,/\.love-trust/);
+ assert.match(stylesheet,/\.love-mini-finale/);
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v3/);
+ assert.match(sw,/loveroll-static-v4/);
+});
+
+test('Compact v2 keeps exactly six zones and all essential content',()=>{
+ const h=marketingHtml();
+ for(const x of ['love-brand','love-scene','love-cta-group','love-features','love-mini-finale','love-compact-footer']){
+  assert.match(h,new RegExp('class="[^"]*'+x));
+ }
+ assert.match(h,/Dés à deux/);
+ assert.match(h,/Votre match/);
+ assert.match(h,/Calendrier/);
+ assert.match(h,/Espace privé/);
+ assert.match(h,/Plus qu’un jeu, <em>votre histoire à deux/);
+ assert.match(h,/Réservé aux adultes de 18 ans et plus/);
+ assert.match(h,/Chaque activité est facultative/);
+ assert.match(h,/href="loveroll:\/\/offline"/);
+ assert.doesNotMatch(h,/Pourquoi vous allez aimer/);
 });
