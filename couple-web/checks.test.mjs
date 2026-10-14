@@ -934,3 +934,17 @@ test('LoveRoll user-facing navigation uses inviting words instead of technical d
  assert.match(app,/SURPRISE DU MOIS|RENDEZ-VOUS SURPRISE/);
  assert.doesNotMatch(app,/LANCER LE D35 POUR|LANCER LE D20 MENSUEL/);
 });
+
+test('Premium screens share a responsive dice and invitation layout on mobile and tablets',()=>{
+ const css=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
+ const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
+ const onboarding=readFileSync(new URL('./onboarding.mjs',import.meta.url),'utf8');
+ for(const cls of ['premium-intro','hero-game-card','premium-die','premium-invite-hero','premium-auth-panel','premium-help']){
+  assert.match(css,new RegExp('\\\\.'+cls));
+ }
+ assert.match(css,/@media\(min-width:768px\)/);
+ assert.match(app,/heroDice\(state\.weekly\?\.face,6/);
+ assert.match(app,/heroDice\(null,35/);
+ assert.match(app,/heroDice\(null,20/);
+ assert.match(onboarding,/premium-email-disclosure/);
+});
