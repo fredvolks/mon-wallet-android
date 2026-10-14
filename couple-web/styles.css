@@ -534,3 +534,21 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
 /* Make navigation distribution exact for both four- and five-item modes. */
 .nav-inner{width:100%;display:grid;justify-content:stretch}
 .nav-inner>button{min-width:0}
+
+
+/* Notifications LoveRoll - same visual language on Android, iPhone and iPad. */
+.push-status{padding:15px;border:1px solid #99516f;border-radius:15px;
+ background:linear-gradient(135deg,#4c2541,#24132a);margin:8px 0 15px}
+.push-status strong{font-size:1.02rem;color:#ffc4e2}
+.push-status p{font-size:.85rem;color:#dec4d1;margin:8px 0 0;line-height:1.5}
+.push-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+.push-actions button{flex:1;min-width:min(100%,190px);font-size:.87rem;padding:12px}
+.push-options{display:flex;flex-direction:column;gap:2px;padding:8px 0}
+.push-option{display:flex;align-items:center;justify-content:space-between;gap:10px;
+ padding:12px 3px;cursor:pointer;border-bottom:1px solid #70435b}
+.push-option span{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.push-option strong{color:#ffe7f2;font-size:.92rem}
+.push-option small{color:#baa0b1;font-size:.79rem;line-height:1.35}
+.push-option input{appearance:auto!important;width:22px;height:22px;flex:0 0 22px;
+ accent-color:#ec448f;cursor:pointer}
+.push-option input:disabled{opacity:.4;cursor:not-allowed}
