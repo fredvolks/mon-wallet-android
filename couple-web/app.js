@@ -1,5 +1,6 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
+import {loginEmail,loginCode,emailAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
 import {sharedEveningTurns} from './evening-turns.mjs';
@@ -1675,27 +1676,43 @@ async function handle(action,element){
   if(error)throw error;return;
  }
  if(verb==='email-login'){
-  const email=id('signin-email')?.value.trim().toLowerCase();
-  if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
-   throw Error('Entre une adresse courriel valide.');
+  const email=loginEmail(id('signin-email')?.value);
+  const lastAttempt=Number(sessionStorage.getItem('loverollEmailSentAt')||0);
+  // Avoid a repeat click immediately exhausting Supabase's email quota.
+  if(lastAttempt&&Date.now()-lastAttempt<60000){
+   const msg="Un courriel a déjà été demandé. Vérifie le message reçu et ouvre son lien de confirmation plutôt que de renvoyer un autre courriel.";
+   const help=id('auth-email-help');if(help)help.textContent=msg;
+   notify(msg);return;
   }
   const redirectUrl=new URL(CONFIG.siteUrl||location.origin+location.pathname);
   const pendingId=sessionStorage.getItem('pendingInviteId');
   if(pendingId){redirectUrl.searchParams.set('invite_id',pendingId);redirectUrl.searchParams.set('v',INVITATION_REVISION);}
   const redirectTo=redirectUrl.toString();
-  const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
-  if(error)throw error;
-  notify('Courriel envoyé. Si un code à 6 chiffres est présent, entre-le ici sans quitter LoveRoll.');
+  const buttonElement=element;
+  if(buttonElement)buttonElement.disabled=true;
+  try{
+   const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
+   if(error){
+    const msg=emailAuthMessage(error);
+    const help=id('auth-email-help');if(help)help.textContent=msg;
+    notify(msg);return;
+   }
+   sessionStorage.setItem('loverollEmailSentAt',String(Date.now()));
+   const msg="Courriel demandé. Ouvre le message de Supabase Auth et clique sur « Confirm email address » ou sur le lien de connexion. S'il n'y a pas de code à 6 chiffres, c'est normal.";
+   const help=id('auth-email-help');if(help)help.textContent=msg;
+   notify('Courriel envoyé : ouvre le lien de confirmation reçu.');
+  }finally{if(buttonElement)buttonElement.disabled=false;}
   return;
  }
  if(verb==='verify-email-code'){
-  const email=id('signin-email')?.value.trim().toLowerCase();
-  const token=id('signin-code')?.value.trim();
-  if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))
-   throw Error('Entre le courriel avec lequel tu as demandé le code.');
-  if(!/^\\d{6}$/.test(token||''))throw Error('Saisis le code à six chiffres de ton courriel.');
+  const email=loginEmail(id('signin-email')?.value);
+  const token=loginCode(id('signin-code')?.value);
   const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});
-  if(error)throw error;
+  if(error){
+   const msg=emailAuthMessage(error);
+   const help=id('auth-email-help');if(help)help.textContent=msg;
+   notify(msg);return;
+  }
   if(data?.user){state.user=data.user;state.showAuth=false;await reload();}
   return;
  }
