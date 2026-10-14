@@ -12,11 +12,11 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false){
    '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:'Dé en attente')+'"></canvas>'+
   '</div></div>';
 }
-const d6=(m,roll,localUser,canRoll,ready,rolling)=>{
+const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace)=>{
  const has=!!roll&&ready;
  return '<article class="evening-user-die">'+
   '<strong class="evening-person">'+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
-  premiumPolyDie(6,has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser)+
+  premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser)+
   '<div class="evening-face-result"><strong>'+(has?roll.face:'♡')+'</strong>'+
   '<small>'+(has?'défi'+(roll.face>1?'s':'')+' ce soir':roll?'Résultat caché':'Pas encore lancé')+'</small></div>'+
   (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):(!roll?'<small class="evening-wait">En attente</small>':''))+
@@ -25,7 +25,7 @@ const d6=(m,roll,localUser,canRoll,ready,rolling)=>{
 export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
- challengeOverlay='',showMore=false,confirmCancel=false,
+ challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
  lastEvening=null
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
@@ -50,8 +50,8 @@ export function premiumEveningHtml({
  (session?
   '<section class="evening-step one"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
-  '<div class="evening-d6-grid">'+d6(mine,myRoll,true,canMyRoll,ready,rolling&&canMyRoll)+
-  d6(partner,theirRoll,false,false,ready,false)+'</div>'+
+  '<div class="evening-d6-grid">'+d6(mine,myRoll,true,canMyRoll,ready,rollingKind==='my-d6'&&rolling,rollFace)+
+  d6(partner,theirRoll,false,false,ready,false,null)+'</div>'+
   '<div class="evening-ready '+(ready?'yes':'')+'">'+stateText+'</div></section>'+
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
@@ -59,7 +59,7 @@ export function premiumEveningHtml({
   '<div class="evening-progress"><span>'+esc(mine.name?.split(' ')[0]||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span>'+esc(partner.name?.split(' ')[0]||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div></div>'+
   '<div class="evening-play">'+
-    '<div class="evening-d35-col">'+premiumPolyDie(35,pending?.face||null,'Notre dé 35 faces',rolling)+
+    '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:pending?.face||null,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
     '<div class="evening-play-controls"><p>Le D35 révèle un défi parmi 70 cartes, à tour de rôle.</p>'+
     '<div class="evening-choice">'+
