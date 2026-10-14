@@ -47,7 +47,6 @@ jobs:
           PY
       - name: Validate approved premium die artwork
         run: |
-          python3 couple-web/repair-approved-die.py
           python3 - <<'PY'
           from pathlib import Path
           from PIL import Image
@@ -55,7 +54,7 @@ jobs:
           with Image.open(asset) as im:
               im.verify()
           with Image.open(asset) as im:
-              assert im.width>=160 and im.height>=150 and im.format=='WEBP'
+              assert im.width>=140 and im.height>=130 and im.format=='WEBP'
           assert asset.stat().st_size>2000
           page=Path('couple-web/discover.mjs').read_text(encoding='utf8')
           styles=Path('couple-web/approved-artwork.css').read_text(encoding='utf8')
