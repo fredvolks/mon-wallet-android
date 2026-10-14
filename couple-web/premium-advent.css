@@ -1,0 +1,173 @@
+/* LoveRoll — the REAL couple Advent page, responsive S25 Ultra and iPhone */
+main#app.loveroll-advent-page{
+ width:100%;max-width:none!important;height:100dvh;min-height:0;
+ padding:max(27px,env(safe-area-inset-top,0px)) clamp(9px,2.7vw,21px) 0!important;
+ overflow:hidden;display:flex;flex-direction:column;
+ background:
+  radial-gradient(ellipse at 8% 37%,#cc154b45,transparent 36%),
+  radial-gradient(ellipse at 98% 30%,#a9167152,transparent 38%),
+  radial-gradient(ellipse at 45% 60%,#bc115440,transparent 55%),
+  linear-gradient(175deg,#080208,#21030f 50%,#080208);
+}
+.loveroll-advent-page .header{display:none}
+.loveroll-advent-page .nav{background:linear-gradient(180deg,#280a20f7,#11040dfc);
+ border-top:1px solid #f356a087;box-shadow:0 -5px 20px #220515}
+.loveroll-advent-page .nav-inner button.active{
+ border:1px solid #ff70a8;border-radius:19px;
+ background:linear-gradient(145deg,#a91758,#710e3d);
+ box-shadow:inset 0 1px #ffb1d5,0 0 16px #ec146687;color:#fff4fa
+}
+.advent-premium-view{
+ flex:1;min-height:0;width:min(100%,780px);margin:0 auto;
+ display:grid;grid-template-rows:minmax(70px,1.15fr) minmax(116px,1.42fr) minmax(360px,5.1fr);
+ gap:clamp(5px,1dvh,12px);
+ padding-bottom:calc(83px + env(safe-area-inset-bottom));
+ color:#fff3f8;
+}
+.advent-top{display:flex;gap:clamp(6px,2.4vw,15px);align-items:center;min-height:0}
+.advent-top-heart{font:400 clamp(2.7rem,10vw,5rem)/1 Georgia,serif;color:#ff7bba;
+ text-shadow:0 0 7px #ff2b8a,0 0 22px #e90565;align-self:flex-start}
+.advent-top h1{margin:0;font:750 clamp(1.45rem,5.5vw,2.6rem)/1.02 Georgia,serif;
+ letter-spacing:-.025em;color:#fff7fa;text-shadow:0 2px 9px #ff78ba37}
+.advent-top p{font-size:clamp(.74rem,2.4vw,1.04rem);line-height:1.12;margin:4px 0 0;color:#e7baca}
+.advent-intro{text-align:center;min-height:0;display:flex;flex-direction:column;
+ justify-content:center;position:relative;
+ background:radial-gradient(ellipse at 4% 60%,#ba0f5b44,transparent 42%),
+ radial-gradient(ellipse at 90% 66%,#d3196640,transparent 42%);
+}
+.advent-intro:before,.advent-intro:after{
+ content:'♡';font:clamp(2.5rem,8vw,5rem) Georgia,serif;color:#ff4e974f;
+ text-shadow:0 0 20px #fe147459;position:absolute;pointer-events:none
+}
+.advent-intro:before{left:-2%;top:8%;transform:rotate(-15deg)}
+.advent-intro:after{right:1%;bottom:10%;transform:rotate(20deg)}
+.advent-overline{font-size:clamp(.72rem,2.65vw,1.05rem);font-weight:800;
+ letter-spacing:.2em;color:#ff94bf}
+.advent-intro h2{font:800 clamp(1.64rem,6.4vw,3.18rem)/1.07 Georgia,serif;margin:3px 0;
+ letter-spacing:-.03em;color:#fff1f7;white-space:nowrap}
+.advent-intro h2 em{font-style:normal;color:#ff8ebd;text-shadow:0 0 10px #fa3c88}
+.advent-intro p{font-size:clamp(.69rem,2.28vw,.95rem);line-height:1.17;margin:3px 0;color:#f5cedf}
+.advent-shell{position:relative;min-height:0;display:flex;flex-direction:column;
+ padding:clamp(9px,2vw,18px) clamp(8px,2.5vw,22px);
+ border:1px solid #ff80aec7;border-radius:clamp(18px,5vw,30px);
+ background:
+ radial-gradient(ellipse at 50% -20%,#ff367562,transparent 65%),
+ linear-gradient(130deg,#4b0b28ed,#29051aed 47%,#460823ed);
+ box-shadow:0 0 0 3px #bd124b38,inset 0 0 28px #f13b7c28,
+  0 0 18px #fe34817b,inset 0 1px #ffd4ed96;
+ overflow:hidden}
+.advent-shell:before{content:'';position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(115deg,transparent 5%,#ffbfdd0c 25%,transparent 45%,#ff8fb50c 65%,transparent 85%);
+ border-radius:inherit}
+.advent-shell-head{text-align:center;flex:none;position:relative;z-index:1}
+.advent-shell-head h3{font:750 clamp(1.12rem,4.5vw,2.1rem)/1.02 Georgia,serif;
+ margin:0 0 4px;letter-spacing:-.02em;color:#fff2f7}
+.advent-shell-head p{font-size:clamp(.63rem,2.3vw,.92rem);line-height:1.14;
+ margin:0;color:#f2c9d8}
+.advent-tiles{
+ flex:1;min-height:0;
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+ grid-template-rows:repeat(5,minmax(0,1fr));
+ gap:clamp(5px,1.6vw,12px);
+ margin:clamp(13px,2.25dvh,22px) 1px clamp(4px,.65dvh,8px);
+ position:relative;z-index:1;
+}
+.advent-box{
+ position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;
+ overflow:visible;min-width:0;min-height:0;
+ padding:3px 2px 2px!important;
+ border:1px solid #ffbd84df!important;border-radius:clamp(10px,2.8vw,19px)!important;
+ background:linear-gradient(145deg,#bd275b 0%,#8f0a3b 24%,#5a0c2a 68%,#280417)!important;
+ box-shadow:inset 0 2px #ffd4e180,inset -3px -5px 12px #08000580,
+ 0 4px 8px #080005b0,0 0 6px #ff6f9d28!important;
+ color:#fff5f9!important;transition:transform .26s ease,box-shadow .26s ease!important;
+ cursor:pointer;
+}
+.advent-box:disabled{cursor:not-allowed;opacity:.82}
+.advent-box-shimmer{position:absolute;pointer-events:none;inset:2px;overflow:hidden;border-radius:inherit;
+ background:linear-gradient(130deg,#fff1f84d 0%,transparent 33%,#f65d8a08 77%);
+ opacity:.65}
+.advent-box-icon{height:56%;display:flex;align-items:center;justify-content:center;
+ filter:drop-shadow(0 0 5px #ffb74b5b)}
+.advent-gold-lock,.advent-open-gift{display:block;height:100%;width:auto;max-width:100%}
+.advent-box-number{font:700 clamp(1rem,3.65vw,1.65rem)/1 Georgia,serif;
+ text-shadow:0 0 6px #fff3ee60;position:relative}
+.advent-box.available{
+ border:2px solid #ffb8de!important;
+ background:linear-gradient(150deg,#ff4e9c,#ba0d59 35%,#640830 90%)!important;
+ box-shadow:inset 0 1px #ffedf0,0 0 11px #ff52a3,0 0 22px #f5298bb9!important;
+ animation:advent-pulse 2.6s ease-in-out infinite;
+}
+.advent-today-tag{position:absolute;z-index:3;top:-19px;left:50%;transform:translateX(-50%);
+ background:linear-gradient(150deg,#ff61af,#9a0947);color:#fff;border:1px solid #ffb5d7;
+ border-radius:30px;padding:2px 7px;white-space:nowrap;line-height:1.05;
+ font-size:clamp(.49rem,1.68vw,.75rem);font-weight:750;box-shadow:0 0 8px #ff3698}
+.advent-box.opened{border:1px solid #ffd9a0!important;
+ background:linear-gradient(135deg,#9c164e,#50102d)!important;
+ box-shadow:0 0 12px #ff9cba52,inset 0 2px #ffc0d980!important}
+.advent-box.opened .advent-box-icon{filter:drop-shadow(0 0 8px #ff71ab)}
+.advent-opened-mark{position:absolute;right:3px;top:1px;font-size:10px;color:#ffeb9e}
+.advent-box.opening{animation:advent-unlock 1.1s ease forwards!important;
+ box-shadow:0 0 27px #ff66b7!important}
+.advent-box.opening .advent-box-icon{transform-origin:top center;
+ animation:advent-lift .85s ease-in-out}
+.advent-box:focus-visible{outline:3px solid #fff3bd;outline-offset:2px}
+.advent-shell-bottom{flex:none;display:flex;align-items:center;gap:3px;justify-content:center;
+ color:#d3a1b9;font-size:clamp(.52rem,1.7vw,.72rem);min-height:15px;
+ text-align:center;position:relative;z-index:1;line-height:1.1}
+.advent-history-trigger{min-height:25px!important;padding:2px 8px!important;
+ white-space:nowrap;font-size:.64rem!important;border:1px solid #c55e8a!important;
+ border-radius:12px!important;background:#43132ee3!important}
+.advent-dialog-shade{position:fixed;inset:0;background:#0b020cce;z-index:8100;
+ display:grid;place-items:center;padding:18px;backdrop-filter:blur(5px)}
+.advent-dialog{width:min(100%,475px);max-height:min(79dvh,680px);
+ overflow:auto;border-radius:25px;padding:25px 20px;
+ border:1px solid #ff8fbd;box-shadow:0 0 28px #e8207980,inset 0 1px #ffe0ef70;
+ background:radial-gradient(ellipse at 50% 0%,#a92b6975,transparent 75%),
+ linear-gradient(130deg,#4d0e30,#17051a);
+ text-align:center}
+.advent-dialog h2{font:750 clamp(1.35rem,5.4vw,2rem) Georgia,serif;margin:8px 0;color:#ffe0eb}
+.advent-dialog p{line-height:1.4}
+.advent-dialog-action,.advent-dialog-close{display:block;width:100%;padding:11px 15px!important;
+ min-height:45px!important;margin:8px auto!important;border-radius:20px!important;
+ background:linear-gradient(125deg,#ff70aa,#d31369)!important;color:#fff!important;
+ border:1px solid #ffb7d6!important}
+.advent-dialog-close{background:#4f1532!important}
+.advent-reveal-heart{font-size:3rem;color:#ff8cbc;text-shadow:0 0 18px #fa4b94}
+.advent-reveal-heading{letter-spacing:.12em;font-weight:800;color:#ff9ac5;font-size:.75rem}
+.advent-opened-by{font-size:.86rem;color:#e7bfd3}
+.advent-reveal-type{padding:7px 10px;border:1px solid #fd84b25c;
+ border-radius:14px;color:#ffd1e4}
+.advent-description{white-space:pre-wrap;text-align:left;line-height:1.5}
+.advent-reveal-timer{color:#ffd792}
+@keyframes advent-pulse{
+ 0%,100%{filter:brightness(1);box-shadow:0 0 10px #ff3e95!important}
+ 50%{filter:brightness(1.1);box-shadow:0 0 20px #ff74ba!important}
+}
+@keyframes advent-unlock{
+ 0%{transform:scale(1)}35%{transform:scale(1.09) rotateY(12deg)}
+ 75%{transform:scale(1.03) rotateY(-9deg)}100%{transform:scale(1)}
+}
+@keyframes advent-lift{
+ 0%{transform:translateY(0) rotateX(0deg)}55%{transform:translateY(-11px) rotateX(17deg)}
+ 100%{transform:translateY(0)}
+}
+@media(max-height:780px){
+ .advent-premium-view{
+  grid-template-rows:minmax(62px,1fr) minmax(100px,1.3fr) minmax(300px,4.9fr);
+  padding-bottom:calc(73px + env(safe-area-inset-bottom));gap:4px}
+ .advent-shell{padding:7px 8px}
+ .advent-tiles{gap:5px;margin:13px 0 3px}
+ .advent-intro h2{font-size:clamp(1.58rem,5.9vw,2.8rem)}
+ .advent-box-icon{height:54%}
+}
+@media(max-width:350px){
+ .advent-tiles{gap:3px}
+ .advent-intro h2{font-size:1.4rem}
+ .advent-box-number{font-size:.92rem}
+ .advent-shell-head h3{font-size:1.05rem}
+}
+@media(prefers-reduced-motion:reduce){
+ .advent-box.available,.advent-box.opening,.advent-box.opening .advent-box-icon{
+ animation:none!important}
+}

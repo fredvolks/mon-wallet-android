@@ -1,0 +1,25 @@
+<!doctype html><html lang="fr-CA"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./premium-theme.css">
+<link rel="stylesheet" href="./premium-advent.css">
+</head><body><main id="app"></main><script type="module">
+import {adventPremiumHtml} from './premium-advent.mjs';
+const root=document.querySelector('#app'),qs=new URLSearchParams(location.search);
+root.className='loveroll-advent-page';
+const year=2026,day=Number(qs.get('day')||1),mode=qs.get('mode')||'current';
+const date=mode==='before'?new Date('2026-10-14T15:00:00Z'):
+ new Date('2026-12-'+String(day).padStart(2,'0')+'T16:00:00Z');
+const opened=mode==='opened'?[
+ {year,day,opened_by:'a',opened_at:'2026-12-05T15:00:00Z',
+  advent_title:'Un doux moment à deux',advent_type:'SENSUEL',
+  advent_description:'Une vraie surprise du calendrier',advent_timer_minutes:7}
+]:[];
+const members=[{user_id:'a',name:'Camille'},{user_id:'b',name:'Noémie'}];
+const body=adventPremiumHtml({openings:opened,members,when:date,
+ selectedDay:mode==='opened'?day:null});
+const nav='<nav class="nav"><div class="nav-inner">'+
+ [['⌂','Accueil'],['🎲','Soirée'],['✦','Surprise'],['🎁','Avent'],['⚙','Réglages']].map((x,i)=>
+ '<button class="'+(i===3?'active':'')+'"><span>'+x[0]+'</span>'+x[1]+'</button>').join('')+
+ '</div></nav>';
+root.innerHTML=body+nav;
+</script></body></html>

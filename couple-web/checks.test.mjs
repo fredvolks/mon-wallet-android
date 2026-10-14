@@ -42,7 +42,7 @@ test('One questionnaire per authenticated partner and encrypted shared journal',
  assert.match(app,/if\(!state\.unlockKey\)/);
 });
 test('Backend explicitly rejects opening future advent days',()=>{
- assert.match(sql,/p_day>extract\(day from d\)::int/);
+ assert.match(readFileSync(new URL('./migrations/20261014_advent_one_door_per_day.sql',import.meta.url),'utf8'),/p_day is distinct from extract\(day from d\)::int/);
  assert.match(sql,/primary key\(couple_id,year,day\)/);
 });
 test('No cross-project configuration or privileged key in client',()=>{
@@ -303,7 +303,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v34/);
+ assert.match(sw,/loveroll-static-v35/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -795,9 +795,11 @@ test('Founder-only Advent editor, server date locks and shared immutable case sn
  assert.ok(app.includes("state.advent2026Config=adventConfig[0]||null"));
  assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  assert.ok(app.includes("['library','monthly-library','advent-editor','special-editor'].includes(parts[0])"));
- assert.ok(app.includes("selected.advent_description"));
- assert.ok(app.includes("selected.advent_type"));
- assert.ok(app.includes("selected.advent_title||advent[selected.day-1]"));
+ const newAdvent=readFileSync(new URL('./premium-advent.mjs',import.meta.url),'utf8');
+ assert.match(newAdvent,/opened\.advent_description/);
+ assert.match(newAdvent,/opened\.advent_type/);
+ assert.match(newAdvent,/opened\.advent_title/);
+ assert.match(app,/adventPremiumHtml\(/);
  assert.ok(!app.includes('advent[selected.day-1])</h3>'));
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.ok(sw.includes("'./advent-calendar.mjs'"));
