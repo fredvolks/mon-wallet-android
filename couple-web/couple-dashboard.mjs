@@ -21,14 +21,17 @@ export function formatCoupleDate(iso){
  const d=new Date(iso.slice(0,10)+'T12:00:00');
  return Number.isNaN(d.getTime())?'À compléter':new Intl.DateTimeFormat('fr-CA',{day:'numeric',month:'long',year:'numeric'}).format(d);
 }
-// Messenger supplies the title, description and artwork through Open Graph.
-// Keep the shared message short: no duplicate 'ACCEPTER' heading or paragraph.
-// The personalized URL is still required for the secure one-time invitation.
-// Send only a URL: Messenger builds its clickable image/title card from OG data.
-// Messenger controls whether the raw URL is also shown; duplicate caption removed.
+// Meta may choose not to render Open Graph cards, especially from Android
+// ACTION_SEND or when a new invitation URL has not yet been scraped.
+// Never rely on the preview as the only visible invitation: include a short,
+// human-readable fallback and put the ONE personal URL on its own final line.
+// The URL carries only a non-secret invitation reference; Supabase validates
+// the authenticated recipient before joining the couple.
 export function invitationMessengerText(url){
  if(typeof url!=='string'||!/^https:\/\//.test(url))throw Error('Lien d’invitation invalide.');
- return url;
+ return '💌 LoveRoll ❤️ Une aventure rien qu’à deux\n\n'+
+  'Je t’invite dans notre espace privé pour partager des jeux, des défis et des surprises. ♡\n\n'+
+  'Ouvre ton invitation personnelle :\n'+url;
 }
 export function invitationEmailText(url){
  return '♡ LoveRoll — Une invitation juste pour nous deux\n\n'
