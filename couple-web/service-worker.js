@@ -1,4 +1,4 @@
-const CACHE='loveroll-static-v18';
+const CACHE='loveroll-static-v19';
 const SHELL=['./','./index.html','./app.js','./styles.css','./dice3d.js',
  './special-occasions.mjs','./evening-challenges.mjs','./monthly-activities.mjs','./advent-calendar.mjs','./private-special-events.mjs','./onboarding.mjs','./wellbeing.mjs',
  './config.js','./home-install.mjs','./couple-dashboard.mjs','./manifest.webmanifest','./assets/loveroll-hero.webp'];
