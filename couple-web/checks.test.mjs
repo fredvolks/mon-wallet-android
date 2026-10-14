@@ -432,7 +432,7 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("save_love_card_with_roles"));
  assert.ok(app.includes("button('tab:library','♡ Gérer mes 70 cartes')"));
  assert.ok(app.includes("renderInvitePanel()"));
- assert.ok(app.includes("button('invite',latest?'Créer un nouveau lien d’invitation'"));
+ assert.ok(app.includes("button('invite',latest?'Renvoyer une invitation (nouveau lien)'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
  assert.ok(app.includes("button('tab:personal-journal','Ouvrir mon calendrier personnel')"));
  assert.ok(!app.includes("if(verb==='skip-couple')"));
