@@ -807,7 +807,9 @@ function renderSession(){
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
-   challengeOverlay:overlay,lastEvening
+   challengeOverlay:overlay,lastEvening,
+   lastD35Face:[...(state.challenges||[])].reverse().find(c=>
+    c.face!=null&&Number.isInteger(Number(c.face))&&Number(c.face)>=1&&Number(c.face)<=35)?.face??null
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
 function optionalRolledTimer(roll){
