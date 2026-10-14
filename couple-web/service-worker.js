@@ -1,5 +1,5 @@
-const CACHE='loveroll-static-v27';
-const SHELL=['./','./index.html','./app.js','./styles.css','./premium-theme.css','./discover.css','./approved-artwork.css','./demo-couple.css','./demo-couple.mjs','./assets/loveroll-die-approved.webp','./discover.mjs','./invite-links.mjs','./email-auth.mjs','./dice3d.js',
+const CACHE='loveroll-static-v28';
+const SHELL=['./','./index.html','./app.js','./styles.css','./premium-theme.css','./premium-home.css','./premium-home.mjs','./discover.css','./approved-artwork.css','./demo-couple.css','./demo-couple.mjs','./assets/loveroll-die-approved.webp','./discover.mjs','./invite-links.mjs','./email-auth.mjs','./dice3d.js',
  './special-occasions.mjs','./evening-challenges.mjs','./monthly-activities.mjs','./advent-calendar.mjs','./private-special-events.mjs','./onboarding.mjs','./evening-turns.mjs','./wellbeing.mjs',
  './config.js','./invite-email.mjs','./push-notifications.mjs','./home-install.mjs','./couple-dashboard.mjs','./manifest.webmanifest','./assets/loveroll-hero.webp','./assets/loveroll-premium-scene.png'];
 const root=new URL('./',self.registration.scope);
