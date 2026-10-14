@@ -22,8 +22,10 @@ export function sixSpecialEvents(now,settings={},members=[]){
   return {...entry,date:upcoming?.date||null,daysLeft:days,year:upcoming?.year||null};
  });
 }
-export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new Date(),activity=null,rolling=false,showActivity=false}={}){
+export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new Date(),activity=null,rolling=false,rollingKind=null,rollFace=1,showActivity=false}={}){
  const a=monthly.monthly_activity,h=monthly.monthly_host,r=monthly.monthly_restaurant;
+ const rollingActivity=rolling&&rollingKind==='monthly_activity';
+ const rollingHost=rolling&&rollingKind==='monthly_host';
  const host=h?members[h.face<=3?0:1]:null;
  const cards=sixSpecialEvents(now,settings,members);
  const drawText=a?'Voir notre activité':'Brasser le dé 20 faces';
@@ -37,14 +39,14 @@ export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new D
   '<strong>Quel sera notre prochain rendez-vous ?</strong>'+
   '<small>Brasse le dé 20 faces pour découvrir l’activité du mois.</small>')+'</div>'+
  '<div class="surprise-d20-scene"><span class="surprise-scene-heart">♡</span>'+
-  premiumPolyDie(20,a?.face||null,'Dé 20 faces, activité du mois',rolling)+'</div>'+
+  premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity)+'</div>'+
  (a?button('surprise-activity','♡ Voir notre activité','surprise-primary'):
   button('roll:monthly_activity','🎲 '+drawText,'surprise-primary',rolling))+'</section>'+
  '<section class="surprise-host"><div class="surprise-headline"><strong>🎲 QUI PRÉPARE L’ADDITION ?</strong></div>'+
  '<p>Le dé décide qui organise et règle notre rendez-vous.</p>'+
  '<div class="surprise-host-grid"><div class="surprise-host-partner"><b>1 · 2 · 3</b>'+
   '<span>♡ '+esc(members[0]?.name?.split(' ')[0]||'Partenaire 1')+'</span></div>'+
-  premiumPolyDie(6,h?.face||null,'D6 qui prépare notre rendez-vous',rolling)+
+  premiumPolyDie(6,rollingHost?rollFace:h?.face||null,'D6 qui prépare notre rendez-vous',rollingHost)+
   '<div class="surprise-host-partner"><b>4 · 5 · 6</b>'+
   '<span>♡ '+esc(members[1]?.name?.split(' ')[0]||'Partenaire 2')+'</span></div></div>'+
  (h?'<div class="surprise-winner">♥ '+esc(host?.name?.split(' ')[0]||'Partenaire')+' prépare notre rendez-vous !</div>':
