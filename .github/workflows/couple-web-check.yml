@@ -17,6 +17,7 @@ jobs:
         run: |
           node --check couple-web/app.js
           node --check couple-web/onboarding.mjs
+          node --check couple-web/discover.mjs
           node --check couple-web/wellbeing.mjs
           node --check couple-web/config.js
           node --check couple-web/couple-dashboard.mjs
@@ -44,7 +45,7 @@ jobs:
           assert scene.stat().st_size>30000
           PY
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |

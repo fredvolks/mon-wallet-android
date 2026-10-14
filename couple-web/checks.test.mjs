@@ -243,7 +243,7 @@ test('Birthday inputs reject invalid dates, and support leap day',()=>{
 test('New couple match uses two individual sign-ups',()=>{
  assert.match(matchHtml('Camille',false),/signup-couple-month/);
  assert.match(matchHtml('Camille',false),/Créer notre espace à deux/);
- assert.match(matchHtml('Alex',true),/ACCEPTER L’INVITATION/);
+ assert.match(matchHtml('Alex',true),/CONFIRMER NOTRE MATCH/);
  assert.match(app,/create_love_match/);
  assert.match(app,/accept_love_match/);
  assert.match(app,/parseMonthDay\('signup-couple',false\)/);
@@ -359,7 +359,7 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(matchHtml('Camille',false),/prepare-cards/);
  assert.match(app,/function renderWaitingPartner\(/);
  assert.doesNotMatch(app,/function renderSolo\(/);
- assert.match(app,/Retirer mon partenaire/);
+ assert.match(app,/Dissocier mon partenaire/);
  assert.match(app,/Préparer mon couple/);
  assert.match(app,/function ideaHtml\(/);
  assert.match(app,/Chacun peut dire non/);

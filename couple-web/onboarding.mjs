@@ -91,7 +91,7 @@ export function authHtml(invitation=false){
  '<label>Code à 6 chiffres (si présent dans le courriel)<input id="signin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></label>'+
  button('verify-email-code','Me connecter avec mon code','subtle')+'</details>'+ 
  '<p class="tiny-note">Connexion sécurisée · Votre invitation reste personnelle pendant 7 jours.</p>'+
- button('show-landing','Découvrir LoveRoll','text-link')+'</div>';
+ button('discover-loveroll','♡ Découvrir LoveRoll','text-link')+ (invitation?button('invite-return','← Retour à l’invitation','text-link'):'')+'</div>';
 }
 // Custom in-app chooser: Android WebView's native <select> popup uses the OS
 // light theme and ignores CSS. Use a themed modal for both wellbeing questions.
@@ -149,7 +149,7 @@ export function matchHtml(name,invitation){
  '<h2>Bienvenue '+esc(name)+' ♡</h2>'+
  (invitation?
  '<p>Votre espace à deux est prêt à être créé. Vous choisissez de le rejoindre avec votre propre compte.</p>'+
- button('accept-invite','♡ ACCEPTER L’INVITATION ❤️'):
+ button('accept-invite','♡ CONFIRMER NOTRE MATCH ❤️'):
  '<p>Créez votre duo, puis invitez votre partenaire par courriel. Elle ou il remplira son propre profil.</p>'+
  '<h3>🥂 Anniversaire de votre couple</h3>'+
  monthDayInputs('signup-couple','',true)+
