@@ -35,13 +35,13 @@ test('Rejects malformed references and supports legacy token links',()=>{
 
 test('Client guards against premature sign-in and wrong-account pairing',()=>{
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.ok(app.indexOf('if(pendingInvite&&!state.inviteAccepted)')<
-  app.indexOf('if(!state.user){',app.indexOf('function render(){')));
+ assert.ok(app.indexOf('if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted)))')<
+  app.indexOf('if(!state.user||state.passwordRecovery){',app.indexOf('function render(){')));
  assert.match(app,/if\(pendingInvite&&state\.user&&state\.coupleId\)/);
  assert.match(app,/verb==='switch-account-invite'/);
  assert.match(app,/accept_love_match_by_id/);
  assert.match(app,/resolve_love_invite_reference/);
- assert.match(app,/redirectUrl\.searchParams\.set\('invite_id',pendingId\)/);
+ assert.match(app,/pendingInviteUrl\(/);
  const sql=readFileSync(new URL('./migrations/20261014_messenger_invite_id.sql',import.meta.url),'utf8');
  assert.match(sql,/lower\(email\)/);
  assert.match(sql,/email_confirmed_at is not null/);
