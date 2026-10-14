@@ -25,7 +25,7 @@ import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,instal
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
-const WEB_RELEASE='2026-10-14.35';
+const WEB_RELEASE='2026-10-14.36';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -34,6 +34,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
 const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
+let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('loveroll-settings-section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
@@ -109,6 +110,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.classList.toggle('loveroll-real-home',realHome);
  root.classList.toggle('loveroll-evening-page',realEvening);
  root.classList.toggle('loveroll-surprise-page',realSurprise);
+ root.classList.toggle('loveroll-settings-page',connected&&state.tab==='settings');
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
  const installation=connected&&(state.forceInstallGuide||shouldOfferInstall(state.user?.id))?
@@ -123,7 +125,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   '<svg viewBox="0 0 32 32" width="27" height="27" aria-hidden="true"><circle cx="12" cy="10" r="4" fill="none" stroke="#ffbcdb" stroke-width="2"/><circle cx="23" cy="11" r="3.5" fill="none" stroke="#ffbcdb" stroke-width="2"/><path d="M3 28c0-12 18-12 18 0m0-11c5 1 8 4 8 11" fill="none" stroke="#ffbcdb" stroke-width="2"/></svg>'+
   '</button></div></header>';
  const usualHeader='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
-  (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+'</header>';
+  (state.user&&state.tab!=='settings'?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+'</header>';
  const notifications=realHome&&state.homeNotices?'<div class="home-notification-popover" role="dialog" aria-label="Activités du couple">'+
   '<strong>♡ Activités récentes</strong>'+
   (state.events?.length?state.events.slice(0,4).map(e=>'<p>'+safe(e.title||'Une activité')+' · '+safe(e.happened_at?.slice(0,10)||'')+'</p>').join(''):
@@ -1169,44 +1171,82 @@ function renderMonthlyLibrary(){
   button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
  frame(body,'MES ACTIVITÉS','20 sorties personnalisables et privées');
 }
+function settingsIcon(key){
+ const strokes={
+  compte:'<circle cx="12" cy="7.5" r="3.5"/><path d="M5 21v-2c0-4 3-6 7-6s7 2 7 6v2"/>',
+  couple:'<path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11Z"/>',
+  notifications:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10ZM10 21h4"/>',
+  jeu:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r=".8" fill="currentColor"/><circle cx="16" cy="16" r=".8" fill="currentColor"/><circle cx="12" cy="12" r=".8" fill="currentColor"/>',
+  admin:'<path d="M12 2 20 5v6c0 5-3.3 8.6-8 11-4.7-2.4-8-6-8-11V5Z"/>',
+  application:'<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>',
+  confidentialite:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  aide:'<circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.6 2.6 0 1 1 4.5 2c-1.4 1-2 1.6-2 3M12 18h.01"/>'
+ };
+ return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+strokes[key]+'</svg>';
+}
 function settingGroup(title,icon,description,body,opened=false){
- return '<details class="settings-group"'+(opened?' open':'')+'><summary>'+
-  '<span class="settings-group-icon">'+icon+'</span>'+
+ const sections={'Compte':'compte','Couple':'couple','Notifications':'notifications','Jeu et personnalisation':'jeu','Administration':'admin','Application':'application','Confidentialité':'confidentialite','Aide':'aide'};
+ const section=sections[title]||'';
+ return '<details class="settings-group" data-settings-section="'+section+'"'+(settingsOpenSection===section?' open':'')+'><summary>'+
+  '<span class="settings-group-icon">'+(sections[title]?settingsIcon(section):icon)+'</span>'+
   '<span class="settings-group-heading"><strong>'+safe(title)+'</strong><small>'+safe(description)+'</small></span>'+
   '<span aria-hidden="true" class="settings-chevron">⌄</span></summary>'+
   '<div class="settings-group-content">'+body+'</div></details>';
 }
 function settingRow(title,detail,action,label='Ouvrir'){
- return '<div class="settings-item"><div><strong>'+safe(title)+'</strong><p>'+safe(detail)+'</p></div>'+
-   button(action,label,'class="subtle settings-mini-button"')+'</div>';
+ return '<button type="button" class="settings-link-row" data-action="'+safe(action)+'">'+
+  '<span class="settings-link-copy"><strong>'+safe(title)+'</strong><small>'+safe(detail)+'</small></span>'+
+  '<span class="settings-link-affordance">'+safe(label)+' <b aria-hidden="true">›</b></span></button>';
 }
 function renderCoupleDateSetting(){
  const started=state.occasionSettings?.relationship_started_on||'';
- return '<div class="settings-item"><div><strong>Notre date de couple</strong>'+
-  '<p>La date à laquelle votre histoire a commencé.</p></div></div>'+
- (isLoveAdmin()?'<label>Date de début<input id="couple-started-on" type="date" max="'+safe(today())+
-  '" value="'+safe(started)+'"></label>'+
-  button('save-couple-date','Enregistrer notre date','class="subtle"'):
-  '<p>'+safe(formatCoupleDate(started))+'</p>')+
- '<p class="tiny-note">Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>';
+ return (isLoveAdmin()?
+  '<label class="settings-date-field"><span>Date de début</span><input id="couple-started-on" type="date" max="'+safe(today())+
+  '" value="'+safe(started)+'"></label>':
+  '<div class="settings-date-field"><strong>Date de début</strong><p>'+safe(formatCoupleDate(started))+'</p></div>')+
+  '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>';
+}
+function initSettingsAccordion(){
+ const groups=[...root.querySelectorAll('details.settings-group[data-settings-section]')];
+ const saveOpen=section=>{
+  try{
+   if(section)sessionStorage.setItem('loveroll-settings-section',section);
+   else sessionStorage.removeItem('loveroll-settings-section');
+  }catch(error){console.warn('Préférence locale non disponible',error);}
+ };
+ for(const group of groups){
+  group.addEventListener('toggle',()=>{
+   if(group.open){
+    for(const other of groups)if(other!==group&&other.open)other.open=false;
+    settingsOpenSection=group.dataset.settingsSection;
+    saveOpen(settingsOpenSection);
+   }else if(!groups.some(item=>item.open)){
+    settingsOpenSection='';
+    saveOpen('');
+   }
+  });
+ }
 }
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
- const account='<div class="settings-item"><div><strong>Compte connecté</strong><p>'+
-  safe(state.user.email||'Courriel privé')+'</p></div></div>'+
-  '<label>Prénom affiché<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
-  button('profile','Enregistrer mon prénom','class="subtle"')+
-  '<p class="tiny-note">Anniversaire du profil : '+safe(state.profile.birthday_md)+
-  ' · Connexion Google ou courriel liée à ce compte.</p>'+
-  settingRow('Se déconnecter','Déconnecte uniquement cet appareil.','signout','Déconnexion');
+ const account='<div class="settings-split settings-account-top">'+
+  '<div class="settings-identity"><strong>Compte connecté</strong><p>'+safe(state.user.email||'Courriel privé')+'</p></div>'+
+  '<label class="settings-inline-name"><span>Prénom affiché</span>'+
+  '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label></div>'+
+  '<div class="settings-actions">'+
+  button('profile','Enregistrer mon prénom','class="settings-primary"')+
+  button('signout','Déconnexion','class="subtle settings-secondary"')+'</div>'+
+  '<p class="tiny-note settings-footer-hint">Anniversaire du profil : '+safe(state.profile.birthday_md||'Non renseigné')+'</p>';
  let partner='';
  if(hasPartner){
-  partner='<div class="settings-item"><div><strong>♥ Couple connecté</strong>'+
-  '<p>'+safe(state.profile.display_name)+' et '+safe(other()?.name||'Votre partenaire')+
-  ' · Invitation acceptée</p></div></div>'+
-  renderCoupleDateSetting()+
-  '<p class="tiny-note">Dissocier le partenaire ne supprime aucun compte ni défi. Vos cartes personnalisées sont sauvegardées.</p>'+
-  button('end-couple','Dissocier mon partenaire','class="subtle danger-action"');
+  partner='<div class="settings-split settings-couple-top"><div class="settings-couple-status">'+
+   '<strong>♡ Couple connecté</strong><p>'+safe(state.profile.display_name)+' et '+safe(other()?.name||'Votre partenaire')+'</p>'+
+   '<span class="settings-confirmation">✓ Invitation acceptée</span></div>'+
+   '<div class="settings-date-outer">'+renderCoupleDateSetting()+'</div></div>'+
+   '<div class="settings-actions">'+
+   (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
+   button('end-couple','Dissocier mon partenaire','class="subtle danger-action settings-secondary"')+'</div>'+
+   '<p class="tiny-note settings-footer-hint">La dissociation conserve les comptes et les défis.</p>';
  }else if(linked){
   partner=renderInvitePanel()+
    '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
@@ -1227,10 +1267,10 @@ function renderSettings(){
     '</div></div>';
   }).join(''):'';
  const game=isLoveAdmin()?
-  settingRow('Cartes et défis','Personnaliser les 70 cartes et les règles de tirage.','tab:library','Mes cartes')+
-  settingRow('Activités du mois','Modifier les 20 idées de sortie.','tab:monthly-library','Modifier')+
-  settingRow('Calendrier de l’Avent','Configurer les 25 journées privées.','tab:advent-editor','Modifier')+
-  settingRow('Événements spéciaux','Gérer les fêtes et leurs deux surprises.','tab:special-editor','Modifier')+
+  settingRow('Mes cartes','70 défis · 35 Sensuel et 35 Sexuel.','tab:library','Modifier')+
+  settingRow('Activités du mois','20 activités du dé D20.','tab:monthly-library','Modifier')+
+  settingRow('Calendrier de l’Avent','25 surprises du calendrier partagé.','tab:advent-editor','Modifier')+
+  settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
   celebrants:
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
  const adminWeekly=isLoveAdmin()&&hasPartner?
@@ -1245,41 +1285,54 @@ function renderSettings(){
   button('admin-reset-weekly','↺ Reset hebdomadaire','class="subtle danger-action" '+(!state.weekly?'disabled':'')):'';
  const notifications=notificationSettingsMarkup(state.pushPrefs||{});
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
+ const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
+  window.LoveRollNativeAuth.appVersion():'';
  const appSettings=(nativeApp?
-  '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>L’application Android utilise les mêmes écrans que les versions iPhone et iPad.</p></div></div>'+
+  '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>Version Android : '+
+  safe(nativeVersion||'non fournie par cette version APK')+'</p></div></div>'+
   settingRow('Vérifier les mises à jour APK','Rechercher une version Android signée plus récente.','native-update','Vérifier'):
   settingRow('Ajouter LoveRoll à l’écran d’accueil',
     'Installation recommandée sur Safari iPhone et iPad.','show-install-guide','Afficher'))+
   '<div class="settings-item"><div><strong>Version Web '+WEB_RELEASE+'</strong>'+
-  '<p>Vérification automatique des mises à jour et cache réseau renouvelé.</p></div></div>'+
+  '<p>Version du contenu Web actuellement chargé.</p></div></div>'+
   settingRow('Actualiser LoveRoll maintenant',
    'Force le chargement de la dernière version sans supprimer votre compte ni vos défis.',
    'reload-web','Actualiser')+
   '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
- const privacy='<p>Votre journal commun est chiffré. Vos réponses individuelles sur le ressenti restent privées.</p>'+
+ const privacy=(linked?settingRow('Journal partagé','Consulter le journal commun et son calendrier.','tab:journal','Ouvrir'):'')+
   (nativeApp?settingRow('Mes anciennes données hors ligne',
    'Ouvrir volontairement le journal Android local non synchronisé.','native-legacy','Ouvrir'):'')+
   (linked?button('lock','Verrouiller le journal partagé','class="subtle"'):'')+
   '<div class="settings-item"><div><strong>Mon ressenti</strong><p>Réglages personnels et confidentiels.</p></div></div>'+
   wellbeingFields(state.wellbeing)+button('save-wellbeing','Enregistrer mon ressenti','class="subtle"');
- const support='<div class="settings-item"><div><strong>Aide et informations</strong>'+
-  '<p>Invitation par SMS, Messenger ou courriel. Le lien est privé et expire après 7 jours.</p>'+
-  '<p>Vous pouvez toujours refuser un défi et faire une pause.</p>'+
-  '<p>Même expérience sur Android, iPhone et iPad. Les écrans s’adaptent à la taille de chaque appareil.</p></div></div>';
- frame('<div class="settings-head"><div class="eyebrow">♡ VOTRE ESPACE À DEUX</div>'+
-   '<p>Vos réglages LoveRoll, identiques sur Android, iPhone et iPad.</p></div>'+
-   '<div class="settings-grid">'+
-   settingGroup('Compte','♙','Prénom, connexion et appareils',account,requestedSettingsSection==='compte')+
+ const helpEntries=[
+  ['Association des comptes','Une invitation privée relie deux comptes distincts après acceptation.'],
+  ['Dé hebdomadaire','Un seul tirage officiel par couple et par semaine, renouvelé le lundi.'],
+  ['Soirée et défis','Chacun joue les défis qui lui sont attribués et peut les refuser.'],
+  ['Cadeaux','Les cadeaux restent dans l’historique commun prévu pour le couple.'],
+  ['Rendez-vous surprise','Les dés vous proposent une activité et déterminent qui invite.'],
+  ['Événements spéciaux','Les occasions et leurs variantes se gèrent dans Jeu et personnalisation.'],
+  ['Calendrier de l’Avent','Une seule ouverture officielle par journée pour le couple.'],
+  ['Synchronisation','Les données partagées se mettent à jour entre les comptes connectés.'],
+  ['Confidentialité','Le ressenti de chaque personne demeure individuel.'],
+  ['Mises à jour','Vérifiez les versions Android et actualisez le contenu Web dans Application.']
+ ];
+ const support='<div class="settings-help-list">'+helpEntries.map(([title,answer])=>
+  '<details class="settings-help-item"><summary>'+safe(title)+'<span aria-hidden="true">⌄</span></summary>'+
+  '<p>'+safe(answer)+'</p></details>').join('')+'</div>';
+ frame('<div class="settings-grid">'+
+   settingGroup('Compte','♙','Gérez votre compte et votre appareil',account,requestedSettingsSection==='compte')+
    settingGroup('Couple','♥',hasPartner?'Votre espace partagé et vos dates':'Invitations et état de la demande',partner,
      !requestedSettingsSection||requestedSettingsSection==='couple')+
    settingGroup('Notifications','♧','Rappels et préférences',notifications,requestedSettingsSection==='notifications')+
-   settingGroup('Jeu et personnalisation','🎲','Modifier les cartes et activités',game,requestedSettingsSection==='jeu')+
-   (adminWeekly?settingGroup('Administration','♛','Reset hebdomadaire réservé au créateur du couple',adminWeekly,
-     requestedSettingsSection==='admin'):'')+
-   settingGroup('Application','▣','Installation et mises à jour',appSettings,requestedSettingsSection==='application')+
-   settingGroup('Confidentialité','♙','Journal chiffré et données personnelles',privacy,requestedSettingsSection==='confidentialite')+
+   settingGroup('Jeu et personnalisation','🎲','Cartes, activités et surprises',game,requestedSettingsSection==='jeu')+
+   settingGroup('Administration','♛','Gestion des tirages',adminWeekly||'<p class="settings-limited">Réservé au créateur du couple. Aucun accès aux commandes administrateur.</p>',
+     requestedSettingsSection==='admin')+
+   settingGroup('Application','▣','Version et mises à jour',appSettings,requestedSettingsSection==='application')+
+   settingGroup('Confidentialité','♙','Journal, données et ressenti',privacy,requestedSettingsSection==='confidentialite')+
    settingGroup('Aide','?','Informations et fonctionnement',support,requestedSettingsSection==='aide')+'</div>',
   'RÉGLAGES','Compte, couple, notifications et confidentialité');
+ initSettingsAccordion();
 }
 async function refreshAndShow(){await refreshShared();render();}
 async function animateRoll(fn,kind='general'){
