@@ -1,16 +1,16 @@
-import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-settings36';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-settings36';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-settings36';
-import {loginEmail,loginCode,emailAuthMessage} from './email-auth.mjs';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-invite37';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-invite37';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-invite37';
+import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
 import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-settings36';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-invite37';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -25,7 +25,7 @@ import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,instal
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
-const WEB_RELEASE='2026-10-14.36';
+const WEB_RELEASE='2026-10-14.37';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -38,7 +38,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -135,7 +135,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-settings36').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-invite37').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -177,7 +177,59 @@ function bindActions(){
    notify('Préférence enregistrée.');
   }catch(err){input.checked=!input.checked;fail(err);}
  }));
+ document.querySelector('#invite-auth-form')?.addEventListener('submit',event=>event.preventDefault());
+ const passwordField=id('signin-password');
+ passwordField?.addEventListener('input',()=>{
+  const quality=passwordQuality(passwordField.value),meter=document.querySelector('.invite-password-meter');
+  if(!meter)return;
+  meter.dataset.level=String(quality.met);
+  const hint=id('auth-password-hint');
+  if(hint)hint.textContent=quality.valid?'✓ Mot de passe prêt':'Au moins 8 caractères, avec une majuscule, une minuscule et un chiffre.';
+ });
  bindWellbeingMenus();
+}
+
+let inviteAcceptanceBusy=false;
+function pendingInviteUrl(recover=false){
+ const url=new URL(CONFIG.siteUrl||location.href);
+ const pending=pendingInviteReference(sessionStorage);
+ if(pending?.kind==='id'){url.searchParams.set('invite_id',pending.value);url.searchParams.set('v',INVITATION_REVISION);}
+ if(pending?.kind==='token')url.hash='invite='+pending.value;
+ url.searchParams.set('auth',recover?'recover':'account');
+ return url.toString();
+}
+function finishInviteReference(){
+ sessionStorage.removeItem('pendingInvite');
+ sessionStorage.removeItem('pendingInviteId');
+ sessionStorage.removeItem('loverollInviteAccepted');
+ const clean=new URL(location.href);
+ for(const key of ['invite_id','v','auth','type','token'])clean.searchParams.delete(key);
+ clean.hash='';
+ history.replaceState(null,'',clean.pathname+clean.search);
+ state.inviteAccepted=false;state.inviteError=null;state.inviteAttemptKey=null;
+}
+async function autoAcceptPendingInvite(){
+ const invite=pendingInviteReference(sessionStorage);
+ if(!invite||!state.inviteAccepted||!state.user||state.passwordRecovery||
+    !state.profile?.birthday_md||!state.wellbeing)return;
+ if(!verifiedLoveEmail(state.user)){
+  state.inviteError='Confirmez votre adresse courriel pour terminer l’invitation.';return;
+ }
+ const key=state.user.id+':'+invite.kind+':'+invite.value;
+ if(inviteAcceptanceBusy||state.inviteAttemptKey===key)return;
+ state.inviteAttemptKey=key;inviteAcceptanceBusy=true;state.inviteError=null;
+ try{
+  if(invite.kind==='id')await rpc('accept_love_match_by_id',{p_invitation:invite.value});
+  else await rpc('accept_love_match',{p_token_hash:await hashToken(invite.value)});
+  finishInviteReference();
+  state.inviteWelcome=true;state.tab='home';state.showAuth=false;
+ }catch(error){state.inviteError=invitationAuthMessage(error);}
+ finally{inviteAcceptanceBusy=false;}
+}
+function authMessage(message){
+ const feedback=id('auth-form-feedback');
+ if(feedback){feedback.textContent=message;feedback.setAttribute('role','alert');}
+ else{state.authNotice=message;notify(message);}
 }
 function render(){
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
@@ -186,14 +238,16 @@ function render(){
  // Discover always shows a visual tour, never a second sign-in page.
  // The approved premium discovery IS the first invitation screen.
  // Consent is mandatory before the connection controls appear.
- if(state.showDiscover||(pendingInvite&&!state.inviteAccepted)){
+ if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted))){
   root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
  }
- if(!state.user){
-  if(!state.showAuth){
-   root.innerHTML=discoverHtml(false);bindActions();
-  }else frame((state.authNotice?'<p class="auth-callback-notice" role="alert">'+safe(state.authNotice)+'</p>':'')+authHtml(!!pendingInvite)+inviteBrowserHelp(),
- 'LOVEROLL',pendingInvite?'Connexion après acceptation':'Votre espace privé à deux');
+ if(!state.user||state.passwordRecovery){
+  if(!state.user&&!state.showAuth){root.innerHTML=discoverHtml(false);bindActions();}
+  else{
+   root.innerHTML=authHtml(!!pendingInvite,state.passwordRecovery?'recover':state.authMode,
+    state.authNotice||'',state.authDraftEmail)+inviteBrowserHelp();
+   bindActions();
+  }
   return;
  }
  if(pendingInvite&&state.user&&state.coupleId){
@@ -208,11 +262,29 @@ function render(){
   bindActions();return;
  }
  if(!state.profile||!state.profile.birthday_md){
-  frame(profileHtml(state.user,state.profile),'♡ MON PROFIL','Première connexion : inscription');
+  if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteProfileHtml(state.user,state.profile);bindActions();}
+  else frame(profileHtml(state.user,state.profile),'♡ MON PROFIL','Première connexion : inscription');
   return;
  }
  if(!state.wellbeing){
-  frame(wellbeingHtml(),'♡ MON RESSENTI','Vos réponses sont personnelles');return;
+  if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteWellbeingHtml();bindActions();}
+  else frame(wellbeingHtml(),'♡ MON RESSENTI','Vos réponses sont personnelles');
+  return;
+ }
+ if(state.inviteWelcome){
+  root.innerHTML='<div class="invite-welcome" role="status"><div>♡</div><h1>Bienvenue dans LoveRoll</h1>'+
+   '<p>Votre espace à deux est prêt !</p></div>';
+  state.inviteWelcome=false;
+  setTimeout(()=>{state.tab='home';render();},1300);return;
+ }
+ if(pendingInvite&&state.inviteError&&!state.coupleId){
+  root.innerHTML='<div class="invite-account-screen"><section class="invite-auth-card invite-error-card">'+
+   '<h1>Invitation à vérifier ♡</h1><p>'+safe(state.inviteError)+'</p>'+
+   '<p>Compte connecté : '+safe(state.user.email||'')+'</p>'+
+   button('switch-account-invite','Utiliser un autre compte')+
+   button('retry-invite','Réessayer','class="subtle"')+
+   button('invite-return','← Revoir l’invitation','class="subtle"')+'</section></div>';
+  bindActions();return;
  }
  if(state.demoMode){
   for(const dispose of diceCleanup)dispose();diceCleanup=[];
@@ -225,10 +297,11 @@ function render(){
  // owns the private card editor and personal journal before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
   if(!state.coupleId&&pendingInvite){
-   frame(invitationLandingHeader(false)+matchHtml(state.profile.display_name,true)+
-    '<p class="tiny-note">Compte utilisé : '+safe(state.user.email||'Compte connecté')+'</p>'+
-    button('switch-account-invite','Utiliser un autre compte','class="subtle"')+inviteBrowserHelp(),
-    'LOVEROLL','Votre invitation privée');return;
+   root.innerHTML='<div class="invite-account-screen"><section class="invite-auth-card invite-error-card">'+
+    '<h1>Votre invitation ♡</h1><p>'+safe(state.inviteError||'Association en attente.')+'</p>'+
+    button('retry-invite','Réessayer l’association')+
+    button('switch-account-invite','Utiliser un autre compte','class="subtle"')+'</section></div>';
+   bindActions();return;
   }
   if(state.tab==='settings')renderSettings();
   else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
@@ -276,6 +349,7 @@ async function reload(){
  state.profile=profiles[0]||null;
  state.wellbeing=assessments[0]||null;
  state.personalJournal=personal;
+ await autoAcceptPendingInvite();
  const membership=await query('couple_members',{eq:{user_id:state.user.id}});
  const previousCouple=state.coupleId;
  state.coupleId=membership[0]?.couple_id||null;
@@ -1469,7 +1543,8 @@ async function handle(action,element){
   if(!invite)throw Error('Invitation introuvable.');
   state.inviteAccepted=true;state.showAuth=true;state.showDiscover=false;
   sessionStorage.setItem('loverollInviteAccepted',invite.kind+':'+invite.value);
-  render();return;
+  if(state.user)await reload();else render();
+  return;
  }
  if(verb==='discover-loveroll'){state.showDiscover=true;render();return;}
  if(verb==='discover-back'||verb==='invite-return'){
@@ -1495,7 +1570,7 @@ async function handle(action,element){
   const {error}=await client.auth.signOut();
   if(error)throw error;
   state.user=null;state.profile=null;state.coupleId=null;state.members=[];
-  state.inviteAccepted=true;state.showAuth=true;render();return;
+  state.inviteAccepted=true;state.showAuth=true;state.inviteError=null;state.inviteAttemptKey=null;render();return;
  }
  if(verb==='native-update'){
   if(!window.LoveRollNativeAuth?.checkForUpdates)throw Error('Vérification des mises à jour disponible dans l’APK Android.');
@@ -1700,52 +1775,81 @@ async function handle(action,element){
   const {error}=await client.auth.signInWithOAuth({provider:verb,options:{redirectTo}});
   if(error)throw error;return;
  }
- if(verb==='email-login'){
-  const email=loginEmail(id('signin-email')?.value);
-  const lastAttempt=Number(sessionStorage.getItem('loverollEmailSentAt')||0);
-  // Avoid a repeat click immediately exhausting Supabase's email quota.
-  if(lastAttempt&&Date.now()-lastAttempt<60000){
-   const msg="Un courriel a déjà été demandé. Vérifie le message reçu et ouvre son lien de confirmation plutôt que de renvoyer un autre courriel.";
-   const help=id('auth-email-help');if(help)help.textContent=msg;
-   notify(msg);return;
-  }
-  const redirectUrl=new URL(CONFIG.siteUrl||location.origin+location.pathname);
-  const pendingId=sessionStorage.getItem('pendingInviteId');
-  if(pendingId){redirectUrl.searchParams.set('invite_id',pendingId);redirectUrl.searchParams.set('v',INVITATION_REVISION);}
-  const redirectTo=redirectUrl.toString();
-  const buttonElement=element;
-  if(buttonElement)buttonElement.disabled=true;
-  try{
-   const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
-   if(error){
-    const msg=emailAuthMessage(error);
-    const help=id('auth-email-help');if(help)help.textContent=msg;
-    notify(msg);return;
-   }
-   sessionStorage.setItem('loverollEmailSentAt',String(Date.now()));
-   const msg="Courriel demandé. Ouvre le message de Supabase Auth et clique sur « Confirm email address » ou sur le lien de connexion. S'il n'y a pas de code à 6 chiffres, c'est normal.";
-   const help=id('auth-email-help');if(help)help.textContent=msg;
-   notify('Courriel envoyé : ouvre le lien de confirmation reçu.');
-  }finally{if(buttonElement)buttonElement.disabled=false;}
+ if(verb==='auth-mode'){
+  state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
+  state.authMode=parts[0]==='signin'?'signin':'signup';
+  state.authNotice=null;state.passwordRecovery=false;render();return;
+ }
+ if(verb==='auth-eye'){
+  const field=id('signin-password');if(!field)return;
+  field.type=field.type==='password'?'text':'password';
+  element?.setAttribute('aria-pressed',String(field.type==='text'));
+  element?.setAttribute('aria-label',field.type==='password'?'Afficher le mot de passe':'Masquer le mot de passe');
   return;
  }
- if(verb==='verify-email-code'){
-  const email=loginEmail(id('signin-email')?.value);
-  const token=loginCode(id('signin-code')?.value);
-  const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});
-  if(error){
-   const msg=emailAuthMessage(error);
-   const help=id('auth-email-help');if(help)help.textContent=msg;
-   notify(msg);return;
-  }
-  if(data?.user){state.user=data.user;state.showAuth=false;await reload();}
+ if(verb==='auth-signup-password'||verb==='auth-signin-password'){
+  let email,password;
+  try{email=loginEmail(id('signin-email')?.value);
+    password=id('signin-password')?.value||'';
+    if(verb==='auth-signup-password')requireLovePassword(password);
+    else if(!password)throw Error('Entrez votre mot de passe.');
+  }catch(error){authMessage(error.message);return;}
+  const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
+  try{
+   if(verb==='auth-signup-password'){
+    const {data,error}=await client.auth.signUp({email,password,
+     options:{emailRedirectTo:pendingInviteUrl()}});
+    if(error){authMessage(passwordAuthMessage(error));return;}
+    state.authDraftEmail=email;
+    if(data?.session?.user&&verifiedLoveEmail(data.session.user)){
+     state.user=data.session.user;state.showAuth=false;await reload();return;
+    }
+    authMessage('Vérifiez votre courriel : ouvrez le lien de confirmation puis revenez dans LoveRoll. Votre invitation est conservée.');
+   }else{
+    const {data,error}=await client.auth.signInWithPassword({email,password});
+    if(error){authMessage(passwordAuthMessage(error));return;}
+    if(!data?.user)throw Error('Aucune session ouverte.');
+    state.user=data.user;state.authNotice=null;state.showAuth=false;
+    await reload();
+   }
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
+  return;
+ }
+ if(verb==='auth-reset-request'){
+  let email;
+  try{email=loginEmail(id('signin-email')?.value);}catch(error){authMessage(error.message);return;}
+  const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
+  try{
+   const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pendingInviteUrl(true)});
+   if(error){authMessage(passwordAuthMessage(error));return;}
+   authMessage('Si cette adresse possède un compte, un lien de réinitialisation a été envoyé. Vérifiez votre courriel.');
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
+  return;
+ }
+ if(verb==='auth-update-password'){
+  if(!state.passwordRecovery||!state.user){authMessage('Ouvrez le lien sécurisé reçu par courriel.');return;}
+  let password;
+  try{password=requireLovePassword(id('signin-password')?.value);}
+  catch(error){authMessage(error.message);return;}
+  const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
+  try{
+   const {error}=await client.auth.updateUser({password});
+   if(error){authMessage(passwordAuthMessage(error));return;}
+   state.passwordRecovery=false;state.authMode='signin';state.authNotice=null;
+   const url=new URL(location.href);url.searchParams.delete('auth');url.searchParams.delete('type');
+   history.replaceState(null,'',url.pathname+url.search+url.hash);
+   await reload();
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
   return;
  }
  if(verb==='signout'){
   state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
-  state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;render();return;
+  state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;state.passwordRecovery=false;render();return;
  }
  if(verb==='complete-registration'){
   const name=id('profile-name')?.value.trim();
@@ -1832,21 +1936,9 @@ async function handle(action,element){
   await rpc('set_love_relationship_date',{p_couple:state.coupleId,p_date:value});
   await refreshShared();render();notify('Date du couple enregistrée.');return;
  }
- if(verb==='accept-invite'){
-  const invite=pendingInviteReference(sessionStorage);
-  if(!invite)throw Error('Invitation introuvable.');
-  if(invite.kind==='id')
-   await rpc('accept_love_match_by_id',{p_invitation:invite.value});
-  else
-   await rpc('accept_love_match',{p_token_hash:await hashToken(invite.value)});
-  sessionStorage.removeItem('pendingInvite');
-  sessionStorage.removeItem('pendingInviteId');
-  sessionStorage.removeItem('loverollInviteAccepted');
-  const clean=new URL(location.href);
-  clean.searchParams.delete('invite_id');clean.searchParams.delete('v');
-  clean.hash='';
-  history.replaceState(null,'',clean.pathname+clean.search);
-  state.inviteAccepted=false;await reload();return;
+ if(verb==='accept-invite'||verb==='retry-invite'){
+  state.inviteAttemptKey=null;state.inviteError=null;
+  await reload();return;
  }
  if(verb==='tab'){
   const ready=isSharedCoupleReady(state.coupleId,state.members);
@@ -2145,7 +2237,11 @@ async function start(){
    state.user=session.user;
    setTimeout(()=>reload().catch(fail),0);
   }
-  if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];render();}
+  if(event==='PASSWORD_RECOVERY'){
+    state.passwordRecovery=true;state.showAuth=true;
+    state.user=session?.user||state.user;render();
+   }
+   if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];render();}
  });
 }
 // Version probe bypasses WebView/Chrome and service worker HTTP cache.
@@ -2220,6 +2316,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-settings36',
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-invite37',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }

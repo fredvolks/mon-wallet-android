@@ -78,22 +78,57 @@ export function marketingHtml(){
  '</footer>'+
  '</div>';
 }
-export function authHtml(invitation=false){
- return '<div class="auth-panel premium-auth-panel"><div class="eyebrow">'+
- (invitation?'♡ REJOINDRE VOTRE ESPACE':'♡ CONNEXION SÉCURISÉE')+'</div>'+
- '<h2>'+(invitation?'Comment souhaitez-vous continuer ?':'Bienvenue sur LoveRoll ❤️')+'</h2>'+
- '<p>'+(invitation?'Connectez-vous pour accepter votre invitation privée.':'Un compte par personne. Vos informations restent privées.')+'</p>'+
- button('google','◉ Continuer avec Google')+
- (typeof window!=='undefined'&&window.LoveRollNativeAuth?'':button('apple','Continuer avec Apple','subtle'))+
- '<details class="premium-email-disclosure"><summary>✉ Continuer avec mon courriel</summary>'+
- '<label>Courriel<input id="signin-email" type="email" autocomplete="email" placeholder="vous@exemple.com"></label>'+
- button('email-login','Recevoir mon lien de connexion','subtle')+
- '<p class="tiny-note" id="auth-email-help" role="status" aria-live="polite">Vous recevrez un courriel de Supabase Auth. S’il contient « Confirm email address », appuyez sur ce lien pour confirmer votre compte. Aucun code à 6 chiffres n’est nécessaire.</p>'+
- '<details class="premium-otp-disclosure"><summary>J’ai reçu un code à 6 chiffres</summary>'+
- '<label>Code reçu dans le courriel<input id="signin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></label>'+
- button('verify-email-code','Me connecter avec le code','subtle')+'</details></details>'+ 
- '<p class="tiny-note">Connexion sécurisée · Votre invitation reste personnelle pendant 7 jours.</p>'+
- (invitation?button('invite-return','← Retour à l’invitation','text-link'):button('show-landing','← Retour à l’accueil','text-link'))+'</div>';
+export function authHtml(invitation=false,mode='signup',notice='',emailValue=''){
+ const recovering=mode==='recover',signingIn=mode==='signin';
+ const title=recovering?'Nouveau mot de passe':signingIn?'Bienvenue dans LoveRoll':'Créez votre compte';
+ const helper=recovering?'Choisissez un nouveau mot de passe pour retrouver votre compte.':
+  signingIn?'Retrouvez votre espace privé et vos surprises.':
+  'Utilisez votre courriel et un mot de passe, ou connectez-vous avec Google.';
+ const icon=kind=>kind==='mail'?'✉':kind==='lock'?'♙':'♡';
+ const progress=invitation?'<div class="invite-account-progress" aria-label="Invitation acceptée · étape 2 sur 2">'+
+  '<div class="invite-progress-item is-done"><b>✓</b><span>Invitation<br>acceptée</span></div>'+
+  '<div class="invite-progress-line"><i></i></div>'+
+  '<div class="invite-progress-item is-current"><b>2</b><span>Votre compte</span></div></div>':'';
+ const segment=recovering?'':'<div class="invite-auth-segments" role="group" aria-label="Choisir un mode">'+
+  '<button type="button" data-action="auth-mode:signup" class="'+(!signingIn?'is-active':'')+'" aria-pressed="'+(!signingIn)+'">Créer un compte</button>'+
+  '<button type="button" data-action="auth-mode:signin" class="'+(signingIn?'is-active':'')+'" aria-pressed="'+signingIn+'">Se connecter</button></div>';
+ const email='<label class="invite-auth-field"><span class="invite-field-icon" aria-hidden="true">✉</span>'+
+  '<span class="invite-field-body"><span>Votre courriel</span><input id="signin-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" placeholder="exemple@courriel.com" maxlength="254" value="'+esc(emailValue)+'" required></span></label>';
+ const pass='<label class="invite-auth-field"><span class="invite-field-icon" aria-hidden="true">♙</span>'+
+  '<span class="invite-field-body"><span>'+(recovering?'Nouveau mot de passe':signingIn?'Votre mot de passe':'Choisissez un mot de passe')+'</span>'+
+  '<input id="signin-password" name="password" type="password" autocomplete="'+(signingIn?'current-password':'new-password')+'" placeholder="••••••••" minlength="8" required></span>'+
+  '<button type="button" class="invite-password-eye" data-action="auth-eye" aria-label="Afficher le mot de passe" aria-pressed="false">'+
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></label>';
+ const meter=!signingIn?'<div class="invite-password-meter" aria-label="Robustesse du mot de passe">'+
+  '<div class="invite-meter-bars"><i></i><i></i><i></i><i></i></div>'+
+  '<p id="auth-password-hint">'+(recovering?'Créez un nouveau mot de passe robuste.':'Au moins 8 caractères, avec une majuscule, une minuscule et un chiffre.')+'</p></div>':'';
+ const actions=recovering?button('auth-update-password','Enregistrer mon nouveau mot de passe ♡','invite-auth-submit'):
+  button(signingIn?'auth-signin-password':'auth-signup-password',
+   signingIn?'Se connecter ♡':'Créer mon compte <small>et rejoindre notre univers ♡</small><span aria-hidden="true">›</span>',
+   'invite-auth-submit');
+ const misc=recovering?button('auth-mode:signin','← Retour à la connexion','invite-auth-link'):
+  (signingIn?button('auth-reset-request','Mot de passe oublié ?','invite-auth-link'):'')+
+  '<div class="invite-or"><span>ou</span></div>'+
+  '<button type="button" data-action="google" class="invite-google"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true">'+
+ '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/>'+
+ '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.28 5.48-4.81 7.18l7.75 6.01C44.4 38.03 46.98 31.84 46.98 24.55Z"/>'+
+ '<path fill="#FBBC05" d="M10.53 28.59A14.3 14.3 0 0 1 9.75 24c0-1.59.27-3.13.77-4.59l-7.98-6.2A23.84 23.84 0 0 0 0 24c0 3.87.93 7.52 2.56 10.78l7.97-6.19Z"/>'+
+ '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.79l-7.75-6.01c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.97 6.19C6.51 42.62 14.62 48 24 48Z"/></svg> Continuer avec Google</button>';
+ return '<div class="invite-account-screen'+(recovering?' invite-recover':'')+'" aria-label="Compte LoveRoll">'+
+  '<header class="invite-account-hero"><div class="invite-decor-heart" aria-hidden="true">♡</div>'+
+  '<div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
+  '<p>LA COMPLICITÉ SE JOUE À DEUX</p>'+progress+'</header>'+
+  '<section class="invite-auth-card"><div class="invite-auth-title">'+
+  '<span class="invite-account-icon" aria-hidden="true">♙</span><div><h1>'+title+'</h1>'+
+  '<h2>'+(invitation?'et rejoignez votre partenaire ♡':'Votre espace privé ♡')+'</h2></div></div>'+
+  '<p class="invite-auth-lead">'+helper+'</p>'+segment+
+  '<form id="invite-auth-form" autocomplete="on"><div class="invite-auth-fields">'+(recovering?'':email)+pass+'</div>'+
+  meter+'<div class="invite-auth-feedback" id="auth-form-feedback" role="status" aria-live="polite">'+esc(notice)+'</div>'+
+  actions+'</form>'+misc+
+  '<div class="invite-auth-trust"><span aria-hidden="true">♢</span><p>Vos données restent privées. Chaque personne utilise son propre compte.</p></div>'+
+  (invitation?button('invite-return','← Revenir à l’invitation','invite-auth-back'):
+   button('show-landing','← Retour à l’accueil','invite-auth-back'))+
+  '</section></div>';
 }
 // Custom in-app chooser: Android WebView's native <select> popup uses the OS
 // light theme and ignores CSS. Use a themed modal for both wellbeing questions.
@@ -130,6 +165,33 @@ export function wellbeingHtml(current=null){
  button('save-wellbeing','Enregistrer mes réponses')+
  '<p class="tiny-note">Vos réponses sont modifiables à tout moment dans Réglages.</p></div>';
 }
+
+export function inviteProfileHtml(user,profile){
+ const name=profile?.display_name||user?.user_metadata?.given_name||
+  user?.user_metadata?.full_name||user?.user_metadata?.name||'';
+ return '<div class="invite-account-screen invite-profile-screen">'+
+  '<header class="invite-account-hero"><div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
+  '<p>LA COMPLICITÉ SE JOUE À DEUX</p>'+
+  '<div class="invite-account-progress"><div class="invite-progress-item is-done"><b>✓</b><span>Invitation acceptée</span></div>'+
+  '<div class="invite-progress-line"><i></i></div><div class="invite-progress-item is-current"><b>2</b><span>Votre profil</span></div></div></header>'+
+  '<section class="invite-auth-card invite-profile-card"><h1>Un peu plus sur vous ♡</h1>'+
+  '<p>Ces informations terminent votre inscription personnelle avant de rejoindre votre partenaire.</p>'+
+  '<label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+
+  '<h3>Votre anniversaire</h3>'+monthDayInputs('signup-birth',profile?.birthday_md||'')+
+  wellbeingFields()+
+  '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+
+  button('complete-registration','Terminer et rejoindre LoveRoll ♡','invite-auth-submit')+
+  '<p class="invite-small-note">Le mot de passe du compte et la phrase secrète du journal sont distincts.</p>'+
+  '</section></div>';
+}
+export function inviteWellbeingHtml(current=null){
+ return '<div class="invite-account-screen invite-profile-screen"><header class="invite-account-hero">'+
+  '<div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
+  '<p>LA COMPLICITÉ SE JOUE À DEUX</p></header>'+
+  '<section class="invite-auth-card invite-profile-card"><h1>Votre ressenti ♡</h1>'+
+  wellbeingFields(current)+button('save-wellbeing','Continuer vers LoveRoll ♡','invite-auth-submit')+
+  '</section></div>';
+}
 export function profileHtml(user,profile){
  const name=profile?.display_name||user?.user_metadata?.full_name||
  user?.user_metadata?.name||'';
@@ -150,8 +212,7 @@ export function matchHtml(name,invitation){
  return '<div class="auth-panel"><div class="eyebrow">ÉTAPE 2 SUR 2 · NOTRE MATCH</div>'+
  '<h2>Bienvenue '+esc(name)+' ♡</h2>'+
  (invitation?
- '<p>Votre espace à deux est prêt à être créé. Vous choisissez de le rejoindre avec votre propre compte.</p>'+
- button('accept-invite','♡ CONFIRMER NOTRE MATCH ❤️'):
+ '<p>Votre invitation sera associée automatiquement après la vérification du compte.</p>':
  '<p>Créez votre duo, puis invitez votre partenaire par courriel. Elle ou il remplira son propre profil.</p>'+
  '<h3>🥂 Anniversaire de votre couple</h3>'+
  monthDayInputs('signup-couple','',true)+

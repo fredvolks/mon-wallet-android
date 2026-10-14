@@ -53,7 +53,7 @@ export function discoverHtml(hasInvitation=false){
  <section class="discover-gallery" aria-label="Votre univers LoveRoll">
   ${feature('<span class="discover-icon-dice">🎲</span>','Jeux','Des jeux ludiques pour pimenter votre quotidien.','discover-games')}
   ${feature('♡','Défis','Des défis sensuels ou coquins, à votre rythme.','discover-challenges')}
-  ${feature('▦','Dates','Des idées de rendez-vous et des occasions spéciales.','discover-dates')}
+  ${feature('▦','Rendez-vous','Des idées de rendez-vous et des occasions spéciales.','discover-dates')}
   ${feature('🎁','Surprises','Des attentions uniques et des souvenirs à partager.','discover-surprises')}
  </section>
  <section class="discover-finale"><span class="discover-finale-art" aria-hidden="true">♡</span>
