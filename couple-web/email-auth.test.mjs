@@ -39,3 +39,11 @@ test('email verification calls the correct validator, not broken over-escaped re
  assert.match(app,/client\.auth\.verifyOtp\(\{email,token,type:'email'\}\)/);
  assert.doesNotMatch(app,/!\s*\/\^\[\^@\\\\s\]\+/);
 });
+
+test('expired Supabase signup redirect shows a persistent explanation, not a blank login',()=>{
+ assert.match(app,/errorCode=currentUrl\.searchParams\.get\('error_code'\)/);
+ assert.match(app,/state\.authNotice=/);
+ assert.match(app,/auth-callback-notice/);
+ assert.match(app,/state\.showAuth=true/);
+ assert.match(app,/history\.replaceState\(null,''/);
+});
