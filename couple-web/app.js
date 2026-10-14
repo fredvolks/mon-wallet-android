@@ -1,5 +1,6 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
+import {premiumHomeHtml} from './premium-home.mjs';
 import {loginEmail,loginCode,emailAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -32,7 +33,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -96,13 +97,26 @@ async function query(table,options={}){
 }
 function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
  const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
+ const realHome=connected&&state.tab==='home'&&isSharedCoupleReady(state.coupleId,state.members);
+ root.classList.toggle('loveroll-real-home',realHome);
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
  const installation=connected&&(state.forceInstallGuide||shouldOfferInstall(state.user?.id))?
   (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
- root.innerHTML='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
-  (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+
-  '</header>'+body+(connected?nav():'')+installation;
+ const homeHeader='<header class="home-brandbar"><div class="home-brand"><b>♡ Love<em>Roll</em>♡</b>'+
+  '<small>LA COMPLICITÉ SE JOUE À DEUX</small></div>'+
+  '<div class="home-brand-actions">'+
+  '<button type="button" data-action="home-notices" aria-label="Notifications du couple">♧'+
+  (state.events?.length?'<b aria-label="Nouvelles activités"></b>':'')+'</button>'+
+  '<button type="button" data-action="tab:settings" aria-label="Ouvrir le profil du couple">♙</button></div></header>';
+ const usualHeader='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
+  (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+'</header>';
+ const notifications=realHome&&state.homeNotices?'<div class="home-notification-popover" role="dialog" aria-label="Activités du couple">'+
+  '<strong>♡ Activités récentes</strong>'+
+  (state.events?.length?state.events.slice(0,4).map(e=>'<p>'+safe(e.title||'Une activité')+' · '+safe(e.happened_at?.slice(0,10)||'')+'</p>').join(''):
+  '<p>Aucune notification pour le moment.</p>')+
+  '<button data-action="home-notices" class="subtle">Fermer</button></div>':'';
+ root.innerHTML=(realHome?homeHeader:usualHeader)+body+notifications+(connected?nav():'')+installation;
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
@@ -450,27 +464,17 @@ function renderWaitingPartner(){
   renderInvitePanel(),'MON ESPACE','Votre aventure à deux commence ici');
 }
 function renderHome(){
- const name=state.profile.display_name,partner=other()?.name;
- frame('<section class="premium-intro"><div class="premium-eyebrow">♡ NOTRE RITUEL À DEUX</div>'+
- '<h2>'+safe(name)+' <span>♥</span> '+safe(partner)+'</h2>'+
- '<p>Une semaine, un dé, de nouvelles surprises à partager.</p></section>'+
- '<section class="card hero-game-card"><div class="premium-eyebrow">♡ NOTRE RITUEL DE LA SEMAINE</div>'+
- '<h2>Notre dé de la semaine</h2><p>Découvrez combien de soirées partager cette semaine.</p>'+
- heroDice(state.weekly?.face,6,'Rituel de la semaine')+
- (state.weekly?'<div class="result">'+state.weekly.face+' soirée(s) cette semaine</div>'+
- '<p>Ce résultat a été brassé par '+safe(person(state.weekly.actor))+'. Prochain tirage lundi.</p>':
- button('roll:weekly','🎲 LANCER LE DÉ DE LA SEMAINE'))+'</section>'+
- ideaPreview()+
- '<section class="card"><h3>♥ Notre soirée</h3>'+statsRow()+
- button('tab:session','🎲 RETROUVER NOS DÉFIS')+'</section>'+
- '<section class="card"><h3>✦ Activité du mois</h3><p>'+
- (state.monthly.monthly_activity?safe(monthlyActivityForRoll(state.monthly.monthly_activity).title):'Surprise à découvrir')+
- '</p>'+button('tab:special','✦ NOTRE RENDEZ-VOUS SURPRISE')+'</section>'+
- '<section class="card"><h3>Vos notifications</h3>'+
- (state.events.length?state.events.slice(0,4).map(e=>'<p>'+safe(person(e.actor_id))+' · '+safe(e.title)+' · '+safe(e.happened_at.slice(0,10))+'</p>').join(''):
- '<p>Les tirages et les réponses de votre partenaire apparaîtront ici pendant que vous utilisez l’application.</p>')+
- '</section>');
+ const members=state.members||[];
+ frame(premiumHomeHtml({
+  weekly:state.weekly,
+  rolling:state.diceStatus==='rolling',
+  disabled:!!state.diceStatus,
+  members,
+  challenges:state.session?state.challenges:[],
+  events:state.events||[]
+ }),'LOVEROLL','La complicité se joue à deux');
 }
+
 function activeTimer(challenge,minutes){
  const millis=minutes*60000;
  if(challengeTimer.id!==challenge.id){
@@ -1382,6 +1386,9 @@ async function ensureInviteDraft(forceNew=false){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='home-notices'){
+  state.homeNotices=!state.homeNotices;render();return;
+ }
  // All demo actions are local, never database writes or new memberships.
  if(verb==='demo-enter'){
   if(!state.user||!state.profile?.birthday_md||!state.wellbeing)
@@ -1854,6 +1861,25 @@ async function handle(action,element){
  }
  if(verb==='roll'){
   const kind=parts[0];
+  if(kind==='weekly'){
+   if(!isSharedCoupleReady(state.coupleId,state.members))
+    throw Error('Associez deux comptes pour le dé hebdomadaire.');
+   if(state.weekly)throw Error('Le dé a déjà été brassé cette semaine.');
+   if(state.diceStatus)return;
+   state.diceStatus='pending';render();
+   try{
+    // Supabase selects and persists the one true face under a couple row lock;
+    // only after the response do we animate the ACTUAL server result.
+    const result=await rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:'weekly'});
+    state.weekly=result;
+    state.diceStatus='rolling';render();
+    await new Promise(resolve=>setTimeout(resolve,2750));
+    state.diceStatus=null;
+    await refreshAndShow();
+    notify('Résultat officiel : '+result.face+' · tirage de '+person(result.actor));
+   }catch(error){state.diceStatus=null;await refreshAndShow();throw error;}
+   return;
+  }
   const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}));
   notify('Résultat officiel : '+result.face+' · tirage de '+person(result.actor));return;
  }
