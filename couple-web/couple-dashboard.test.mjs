@@ -59,11 +59,11 @@ test('Invitation status APIs and native SMS open only a composer',()=>{
 });
 
 test('Messenger share is concise while secure link and acceptance remain functional',()=>{
- const link='https://fredvolks.github.io/mon-wallet-android/?share=3#invite='+'a'.repeat(64);
+ const link='https://fredvolks.github.io/mon-wallet-android/?invite_id=72aa640b-2644-4d0d-bcf7-575587d27f31&v=20261014-messenger-v4';
  const text=invitationMessengerText(link);
  assert.ok(text.length<link.length+160);
  assert.match(text,/quelque chose de spécial/);
- assert.match(text,/\?share=3#invite=/);
+ assert.equal(text,link,'Messenger share has no duplicate caption or second URL');
  assert.ok(text.includes(link));
  assert.doesNotMatch(text,/ACCEPTER L’INVITATION/);
  assert.doesNotMatch(text,/Connecte-toi avec la même adresse/);
