@@ -32,7 +32,7 @@ const {chromium}=require('playwright');
  };
  let content='';
  const ctx={window:global.window,sessionStorage:{getItem:()=>null,setItem(){},removeItem(){}},
-  settingsOpenSection:'',WEB_RELEASE:'2026-10-14.36',
+  settingsOpenSection:'',requestedSettingsSection:'',WEB_RELEASE:'2026-10-14.36',
   state,root:{querySelectorAll:()=>[]},console,Date,
   safe:escape,button:(action,title,attrs='')=>'<button data-action="'+escape(action)+'" '+attrs+'>'+escape(title)+'</button>',
   isLoveAdmin:()=>true,other:()=>({name:'Partenaire B'}),person:user=>user==='a'?'Partenaire A':'Partenaire B',

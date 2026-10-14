@@ -26,22 +26,28 @@ test('Opening a settings section closes the previous one and saves state',()=>{
  const storage={setItem:(key,value)=>saved.set(key,value),
   removeItem:key=>saved.delete(key)};
  const sections=['compte','couple','notifications','jeu','admin','application','confidentialite','aide'];
- const groups=sections.map(section=>({dataset:{settingsSection:section},open:false,
-  addEventListener(_,listener){this.onToggle=listener;}}));
+ const groups=sections.map(section=>{
+  const summary={addEventListener(_,callback){this.activate=callback;}};
+  return {dataset:{settingsSection:section},open:false,summary,
+   querySelector:key=>key==='summary'?summary:null};
+ });
  const root={querySelectorAll:()=>groups};
  const module=new Function('root','sessionStorage','console','settingsOpenSection',
   source+'\nreturn {initSettingsAccordion,getOpen:()=>settingsOpenSection};'
  )(root,storage,console,'');
  module.initSettingsAccordion();
+ const click=group=>group.summary.activate({preventDefault(){}});
  assert.equal(groups.filter(group=>group.open).length,0);
- groups[0].open=true;groups[0].onToggle();
+ click(groups[0]);
+ assert.equal(groups[0].open,true);
  assert.equal(saved.get('loveroll-settings-section'),'compte');
- groups[1].open=true;groups[1].onToggle();
+ click(groups[1]);
  assert.equal(groups[0].open,false);
+ assert.equal(groups[1].open,true);
+ assert.equal(groups.filter(group=>group.open).length,1);
  assert.equal(saved.get('loveroll-settings-section'),'couple');
- groups[0].onToggle();
- assert.equal(saved.get('loveroll-settings-section'),'couple');
- groups[1].open=false;groups[1].onToggle();
+ click(groups[1]);
+ assert.equal(groups.filter(group=>group.open).length,0);
  assert.equal(saved.has('loveroll-settings-section'),false);
 });
 
