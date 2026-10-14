@@ -1,7 +1,7 @@
 // Écran vitrine public : aucune authentification et aucune donnée de couple.
 export function discoverHtml(hasInvitation=false){
  const back=hasInvitation?'Revenir à mon invitation':'Retour';
- return `<main class="love-discover" aria-label="Découvrir LoveRoll, aperçu de l’application">
+ return `<div class="love-discover" aria-label="Découvrir LoveRoll, aperçu de l’application">
   <header class="discover-header">
    <div class="discover-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>
    <span class="discover-kicker">LA COMPLICITÉ SE JOUE À DEUX</span>
@@ -42,5 +42,5 @@ export function discoverHtml(hasInvitation=false){
   <div class="discover-footer-note">♡ Votre rythme · Votre complicité · Votre intimité</div>
   <button class="discover-back" type="button" data-action="discover-back">♡ ${back} ←</button>
   <p class="discover-privacy">Aucune connexion nécessaire pour consulter cet aperçu. Pour adultes de 18 ans et plus.</p>
- </main>`;
+ </div>`;
 }
