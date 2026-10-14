@@ -1209,7 +1209,9 @@ async function ensureInviteDraft(forceNew=false){
  if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
  const token=randomInviteToken(),digest=await hashToken(token);
  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
- const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
+ const url=new URL(CONFIG.siteUrl);
+ // Separate OG crawler cache from old pixelated previews; token stays in URL fragment.
+ url.searchParams.set('share','2');url.hash='invite='+token;
  state.inviteDraft={id:invitationId,email,link:url.toString()};
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
@@ -1247,7 +1249,7 @@ async function handle(action,element){
  if(verb==='copy-invite-for-browser'){
   const token=sessionStorage.getItem('pendingInvite');
   if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Lien d’invitation introuvable.');
-  const u=new URL(CONFIG.siteUrl);u.hash='invite='+token;
+  const u=new URL(CONFIG.siteUrl);u.searchParams.set('share','2');u.hash='invite='+token;
   await navigator.clipboard.writeText(u.toString());
   notify('Lien copié. Ouvrez Safari et collez ce lien dans la barre d’adresse.');return;
  }
