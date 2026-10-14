@@ -24,3 +24,7 @@ create policy feedback_read on public.couple_feedback
      or couple_private.feedback_both_submitted(session_id)
    )
  );
+
+-- The helper exists only for RLS evaluation and is callable by signed-in users.
+revoke all on function couple_private.feedback_both_submitted(uuid) from public, anon;
+grant execute on function couple_private.feedback_both_submitted(uuid) to authenticated;
