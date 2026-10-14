@@ -10,6 +10,7 @@ import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './w
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
+import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
 import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
@@ -1196,9 +1197,7 @@ function randomInviteToken(){
 async function ensureInviteDraft(forceNew=false){
  if(!forceNew&&state.inviteDraft)return state.inviteDraft;
  if(!state.coupleId||state.members.length===2)throw Error('Le couple est déjà connecté.');
- const email=id('invite-email')?.value?.trim()?.toLowerCase();
- if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))
-  throw Error('Indiquez le courriel Google valide de votre partenaire.');
+ const email=normalizeInviteEmail(id('invite-email')?.value);
  if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
  const token=randomInviteToken(),digest=await hashToken(token);
  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
@@ -1497,9 +1496,9 @@ async function handle(action,element){
     window.location.href='sms:'+(isApple?'&':'?')+'body='+encodeURIComponent(text);
    }
   }else{
-   const mail='mailto:'+encodeURIComponent(d.email)+'?subject='+encodeURIComponent('LoveRoll ❤️ Une invitation juste pour nous deux')+
-    '&body='+encodeURIComponent(text);
-   window.location.href=mail;
+   const subject='LoveRoll ❤️ Une invitation juste pour nous deux';
+   if(window.LoveRollNativeAuth?.openEmail)window.LoveRollNativeAuth.openEmail(d.email,subject,text);
+   else window.location.href=composeInviteEmail(d.email,subject,text);
   }
   notify('Choisissez le destinataire et confirmez vous-même le partage.');
   return;
