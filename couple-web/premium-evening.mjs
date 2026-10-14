@@ -26,7 +26,7 @@ export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
- lastEvening=null
+ lastEvening=null,lastD35Face=null
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
  partner=members.find(m=>m.user_id!==me)||members[1]||{},
@@ -42,6 +42,14 @@ export function premiumEveningHtml({
  const help='35 défis Sensuel et 35 défis Sexuel · résultats synchronisés';
  const stateText=ready?'✓ Étape 2 débloquée':(status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':'Chaque partenaire brasse son propre dé.');
  const currentStatus=turn.finished?'♡ Tous nos défis sont terminés':pending?'♡ Défi en cours · réponse attendue':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
+ // An official challenge is persisted in Supabase; never show a provisional
+ // animation face or guess a result while a D35 is being rolled.
+ const d35Candidate=pending?.face??turn?.pending?.face??lastD35Face;
+ const d35Number=Number(d35Candidate);
+ const officialD35=ready&&!rolling&&d35Candidate!=null&&
+  Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=35?d35Number:null;
+ const d35Result=rolling&&rollingKind==='new-challenge'?'Brassage en cours…':
+  officialD35!==null?'Résultat D35 · N° '+officialD35:'Résultat D35 · —';
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view">'+
  '<header class="evening-topline"><span class="heartline">♡</span><div><h1>NOTRE SOIRÉE</h1><p>Un jeu synchronisé sur nos deux comptes</p></div>'+
@@ -59,7 +67,8 @@ export function premiumEveningHtml({
   '<div class="evening-progress"><span>'+esc(mine.name?.split(' ')[0]||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span>'+esc(partner.name?.split(' ')[0]||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div></div>'+
   '<div class="evening-play">'+
-    '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:pending?.face||null,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
+    '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
+       '<div class="evening-d35-result" role="status" aria-live="polite">'+esc(d35Result)+'</div>'+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
     '<div class="evening-play-controls"><p>Le D35 révèle un défi parmi 70 cartes, à tour de rôle.</p>'+
     '<div class="evening-choice">'+

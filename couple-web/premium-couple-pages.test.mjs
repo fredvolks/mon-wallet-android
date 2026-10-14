@@ -49,6 +49,33 @@ test('D35 always visible and rolling face not displayed as text before settling'
  assert.match(die,/canvas\.dataset\.diceZoom/);
  assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,3250\)\)/);
 });
+test('D35 always shows the official saved result below the die after rolling',()=>{
+ const live=premiumEveningHtml({session,members:people,me:'first',
+  turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
+ assert.match(live,/Résultat D35 · N° 21/);
+ assert.match(live,/data-dice-sides="35" data-face="21"/);
+ assert.match(live,/class="evening-d35-result" role="status" aria-live="polite"/);
+ // After closing a challenge, the last officially stored face remains visible.
+ const last=premiumEveningHtml({session,members:people,me:'first',
+  turn:turns,status:{both_ready:true},lastD35Face:17});
+ assert.match(last,/Résultat D35 · N° 17/);
+ assert.match(last,/data-dice-sides="35" data-face="17"/);
+ // Never reveal a number until the server draw has settled.
+ const spinning=premiumEveningHtml({session,members:people,me:'first',
+  turn:{...turns,pending:{face:21}},status:{both_ready:true},lastD35Face:17,
+  rolling:true,rollingKind:'new-challenge',rollFace:11});
+ assert.match(spinning,/Brassage en cours…/);
+ assert.doesNotMatch(spinning,/Résultat D35 · N°/);
+ const waiting=premiumEveningHtml({session,members:people,me:'first',
+  turn:turns,status:{both_ready:true}});
+ assert.match(waiting,/Résultat D35 · —/);
+ assert.doesNotMatch(waiting,/Résultat D35 · N°/);
+ const locked=premiumEveningHtml({session,members:people,me:'first',
+  turn:{ready:false},status:{both_ready:false},lastD35Face:12});
+ assert.doesNotMatch(locked,/Résultat D35 · N°/);
+ assert.match(css,/\.evening-d35-result\{/);
+ assert.match(app,/lastD35Face:/);
+});
 test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:turns,
    status:{both_ready:true},giftCount:3});
