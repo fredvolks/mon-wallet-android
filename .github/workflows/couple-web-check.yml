@@ -45,6 +45,22 @@ jobs:
           with Image.open(scene) as graphic: assert graphic.size==(1200,630)
           assert scene.stat().st_size>30000
           PY
+      - name: Validate approved premium die artwork
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          asset=Path('couple-web/assets/loveroll-die-approved.webp')
+          with Image.open(asset) as im:
+              im.verify()
+          with Image.open(asset) as im:
+              assert im.width>=160 and im.height>=150 and im.format=='WEBP'
+          assert asset.stat().st_size>2000
+          page=Path('couple-web/discover.mjs').read_text(encoding='utf8')
+          styles=Path('couple-web/approved-artwork.css').read_text(encoding='utf8')
+          assert 'loveroll-die-approved.webp' in page
+          assert '.discover-approved-die' in styles
+          PY
       - name: Static security and logic contracts
         run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs
 
