@@ -62,6 +62,20 @@ public final class ConnectedLoveRollActivity extends Activity {
   @JavascriptInterface public void closeLoveRoll() {
    runOnUiThread(() -> finish());
   }
+  @JavascriptInterface public void openLegacyOffline() {
+   runOnUiThread(() -> {
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    Intent previous=new Intent(ConnectedLoveRollActivity.this,MainActivity.class)
+     .setData(Uri.parse("loveroll://offline"));
+    startActivity(previous);
+   });
+  }
+  @JavascriptInterface public void checkForUpdates() {
+   runOnUiThread(() -> {
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    UpdateManager.check(ConnectedLoveRollActivity.this,false);
+   });
+  }
   // Android shares the personal invitation using the system chooser (Messenger supported).
   @JavascriptInterface public void openShare(String message) {
    runOnUiThread(() -> {
@@ -93,32 +107,7 @@ public final class ConnectedLoveRollActivity extends Activity {
   LinearLayout layout = new LinearLayout(this);
   layout.setOrientation(LinearLayout.VERTICAL);
   layout.setBackgroundColor(Color.rgb(16,7,20));
-  LinearLayout bar = new LinearLayout(this);
-  bar.setGravity(Gravity.CENTER_VERTICAL);
-  bar.setPadding(dp(10),0,dp(10),0);
-  bar.setBackgroundColor(Color.rgb(35,14,34));
-  Button back = new Button(this);
-  back.setAllCaps(false);
-  back.setText("‹");
-  back.setTextSize(24);
-  back.setTextColor(Color.WHITE);
-  back.setBackgroundColor(Color.TRANSPARENT);
-  bar.addView(back,new LinearLayout.LayoutParams(dp(48),dp(48)));
-  back.setOnClickListener(v -> onBackPressed());
-  TextView title = new TextView(this);
-  title.setText("♡  LoveRoll");
-  title.setTextSize(19);
-  title.setTextColor(0xFFFFB3D7);
-  title.setGravity(Gravity.CENTER_VERTICAL);
-  bar.addView(title,new LinearLayout.LayoutParams(0,dp(48),1));
-  Button close = new Button(this);
-  close.setAllCaps(false);
-  close.setText("✕");
-  close.setTextColor(Color.WHITE);
-  close.setBackgroundColor(Color.TRANSPARENT);
-  bar.addView(close,new LinearLayout.LayoutParams(dp(42),dp(48)));
-  close.setOnClickListener(v -> finish());
-  layout.addView(bar,new LinearLayout.LayoutParams(-1,dp(48)));
+  // Shared LoveRoll web app is the only visible UI; no duplicate native header or tabs.
   web = new WebView(this);
   web.setBackgroundColor(Color.rgb(17,8,21));
   web.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -165,8 +154,17 @@ public final class ConnectedLoveRollActivity extends Activity {
   layout.addView(web,new LinearLayout.LayoutParams(-1,0,1));
   setContentView(layout);
   String destination=getIntent().getStringExtra("destination");
-  String suffix="settings".equals(destination)?"?settings=1":"?auth=1";
+  String suffix="";
+  if(destination!=null&&destination.startsWith("settings")){
+   String section=destination.contains(":")?destination.substring(destination.indexOf(":")+1):"";
+   if(section.matches("[a-z]{0,24}"))
+    suffix="?settings=1"+(section.isEmpty()?"":"&section="+section);
+   else suffix="?settings=1";
+  } else if("auth".equals(destination))suffix="?auth=1";
+  // Android launcher defaults to the exact same LoveRoll home as iPhone and iPad.
   web.loadUrl(SITE+suffix);
+  if(getSharedPreferences("des_a_deux_game",MODE_PRIVATE).getBoolean("auto_update",true))
+   UpdateManager.check(this,true);
  }
  private boolean isTrusted(Uri url) {
   return url!=null&&"https".equals(url.getScheme())&&TRUSTED_HOST.equals(url.getHost())

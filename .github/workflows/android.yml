@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.12.9
+      TAG: des-a-deux-v0.13.0
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -37,15 +37,15 @@ jobs:
           assert '{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"special","✦","Défi spécial"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}' in src
           assert '{"library","♡","Défis"}' not in src
           assert 'CONSULTER LES DÉFIS' not in src
-          assert 'MES CARTES ET ACTIVITÉS' in src
-          assert 'openConnectedLoveRoll("settings")' in src
+          assert 'settingsRow(game,"♡","Cartes et défis personnalisés"' in src
+          assert 'openConnectedLoveRoll("settings:couple")' in src
           assert 'void drawSpecial()' in src
           assert 'CONSULTER LES 20 IDÉES' not in src
           assert 'showSpecialCatalogue' not in src
           assert 'SpecialDateData.draw()' in src
           assert 'SpecialDateData.title(pick)' in src
           assert 'SpecialDateData.description(saved)' in src
-          assert 'MES CARTES ET ACTIVITÉS' in src
+          assert 'settingsRow(game,"♡","Cartes et défis personnalisés"' in src
           assert 'void drawWelcome()' in src
           assert 'welcomeAvailableDp()' in src
           assert 'Plus qu\'un jeu, votre histoire à deux.' in src
@@ -65,6 +65,13 @@ jobs:
           assert 'LOVEROLL_WEB' in src
           assert 'new Intent(this,ConnectedLoveRollActivity.class)' in src
           assert 'android:name=".ConnectedLoveRollActivity"' in Path('app/src/main/AndroidManifest.xml').read_text()
+          manifest_text=Path('app/src/main/AndroidManifest.xml').read_text()
+          assert 'android:name=".ConnectedLoveRollActivity" android:exported="true"' in manifest_text
+          assert manifest_text.index('android:name=".ConnectedLoveRollActivity"')<manifest_text.index('android.intent.category.LAUNCHER')
+          assert 'android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize"' not in manifest_text
+          assert 'web.loadUrl(SITE+suffix)' in Path('app/src/main/java/ca/desadeux/jeu/ConnectedLoveRollActivity.java').read_text()
+          assert 'openLegacyOffline()' in Path('app/src/main/java/ca/desadeux/jeu/ConnectedLoveRollActivity.java').read_text()
+
           native=Path('app/src/main/java/ca/desadeux/jeu/ConnectedLoveRollActivity.java').read_text()
           assert 'getCredentialAsync(' in native
           assert 'GoogleNonce.sha256Hex(nonce)' in native
@@ -116,7 +123,7 @@ jobs:
           assert '@drawable/ic_desadeux' in manifest
           assert Path('app/src/main/res/drawable-nodpi/ic_desadeux.webp').is_file()
           assert 'tab="library";draw();' not in src
-          assert 'settingTile("Cartes, défis et activités"' in src
+          assert 'settingsGroup("♙","Compte"' in src
           assert 'showResultDialog("♥"' in src
           assert 'RÉSULTAT OFFICIEL' in src
           assert 'float screenDp=' in src
@@ -143,15 +150,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/LoveRoll-v0.12.9.apk "$RUNNER_TEMP/aligned.apk"
-          cp dist/LoveRoll-v0.12.9.apk dist/Des-a-Deux-v0.12.9.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.12.9.apk
-          sha256sum dist/LoveRoll-v0.12.9.apk dist/Des-a-Deux-v0.12.9.apk
+            --out dist/LoveRoll-v0.13.0.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.13.0.apk dist/Des-a-Deux-v0.13.0.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.13.0.apk
+          sha256sum dist/LoveRoll-v0.13.0.apk dist/Des-a-Deux-v0.13.0.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: LoveRoll-v0.12.9
+          name: LoveRoll-v0.13.0
           path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
@@ -160,9 +167,9 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/LoveRoll-v0.12.9.apk dist/Des-a-Deux-v0.12.9.apk --clobber
+            gh release upload "$TAG" dist/LoveRoll-v0.13.0.apk dist/Des-a-Deux-v0.13.0.apk --clobber
           else
-            gh release create "$TAG" dist/LoveRoll-v0.12.9.apk dist/Des-a-Deux-v0.12.9.apk \
+            gh release create "$TAG" dist/LoveRoll-v0.13.0.apk dist/Des-a-Deux-v0.13.0.apk \
               --target "$GITHUB_SHA" --title "LoveRoll v0.12.8" \
               --notes "LoveRoll v0.12.8 : les 20 idées de sortie du mois sont masquées avant le tirage pour préserver la surprise. Le D20 et les résultats déjà enregistrés restent inchangés. Les modifications administrateur restent disponibles dans l’espace connecté. Journal et cartes conservés."
           fi

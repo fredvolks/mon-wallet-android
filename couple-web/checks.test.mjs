@@ -302,7 +302,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v18/);
+ assert.match(sw,/loveroll-static-v19/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -899,4 +899,26 @@ test('Settings groups remain settings-only; after-party forms live under Soirée
  assert.match(app,/if\(verb==='send-messenger'\)/);
  assert.match(app,/LoveRollNativeAuth\?\.openShare/);
  assert.match(app,/navigator\.share/);
+});
+
+test('Android APK and Web use one shared LoveRoll interface; iPad layout is adaptive',()=>{
+ const manifest=readFileSync(new URL('../app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
+ const native=readFileSync(new URL('../app/src/main/java/ca/desadeux/jeu/ConnectedLoveRollActivity.java',import.meta.url),'utf8');
+ const css=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
+ const install=readFileSync(new URL('./home-install.mjs',import.meta.url),'utf8');
+ assert.ok(manifest.includes('<activity android:name=".ConnectedLoveRollActivity" android:exported="true"'));
+ assert.match(manifest,/<intent-filter><action android:name="android.intent.action.MAIN"\/><category android:name="android.intent.category.LAUNCHER"\/><\/intent-filter>/);
+ const mainBlock=manifest.slice(manifest.indexOf('<activity android:name=".MainActivity"'),manifest.indexOf('</activity>',manifest.indexOf('<activity android:name=".MainActivity"')));
+ assert.doesNotMatch(mainBlock,/android.intent.category.LAUNCHER/);
+ assert.doesNotMatch(native,/Button back = new Button/);
+ assert.match(native,/web.loadUrl\(SITE\+suffix\)/);
+ assert.match(native,/openLegacyOffline/);
+ assert.match(native,/checkForUpdates/);
+ assert.match(app,/settings-grid/);
+ assert.match(app,/native-legacy/);
+ assert.match(app,/native-update/);
+ assert.match(css,/@media \(min-width:768px\)/);
+ assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(install,/navigator.platform==='MacIntel'/);
 });

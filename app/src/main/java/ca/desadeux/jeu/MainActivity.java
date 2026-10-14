@@ -1418,37 +1418,119 @@ public final class MainActivity extends Activity {
   LinearLayout c=card(title,description);
   addButton(c,action,false,click);
  }
+ // Compact premium settings rows. Every tappable item performs an action.
+ LinearLayout settingsGroup(String symbol,String title,String subtitle){
+  LinearLayout group=vertical();
+  group.setBackground(shape(0xFF371B32,0xFF211325,19,0x995E3451));
+  LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,-2);
+  gp.bottomMargin=dp(11);page.addView(group,gp);
+  LinearLayout header=horizontal();header.setPadding(dp(11),dp(8),dp(11),dp(8));
+  header.setMinimumHeight(dp(57));
+  TextView glyph=text(symbol,24,PINK,true);glyph.setGravity(Gravity.CENTER);
+  glyph.setBackground(shape(0xFF512341,0xFF35192F,11,0x775B3450));
+  header.addView(glyph,new LinearLayout.LayoutParams(dp(39),dp(39)));
+  LinearLayout names=vertical();names.setPadding(dp(10),0,0,0);
+  addText(names,title,16,WHITE,true,1);
+  if(subtitle!=null)addText(names,subtitle,11,MUTED,false,0);
+  header.addView(names,new LinearLayout.LayoutParams(0,-2,1));
+  TextView chevron=text("⌃",22,PINK,true);chevron.setGravity(Gravity.CENTER);
+  header.addView(chevron,new LinearLayout.LayoutParams(dp(30),dp(38)));
+  group.addView(header);
+  View separator=new View(this);separator.setBackgroundColor(0x55684259);
+  group.addView(separator,new LinearLayout.LayoutParams(-1,dp(1)));
+  LinearLayout content=vertical();content.setPadding(dp(10),dp(2),dp(10),dp(8));
+  group.addView(content);
+  header.setClickable(true);header.setFocusable(true);
+  header.setContentDescription(title+" : afficher ou masquer les options");
+  header.setOnClickListener(v->{
+   boolean shown=content.getVisibility()==View.VISIBLE;
+   content.setVisibility(shown?View.GONE:View.VISIBLE);
+   chevron.setText(shown?"⌄":"⌃");
+   separator.setVisibility(shown?View.GONE:View.VISIBLE);
+  });
+  return content;
+ }
+ void settingsRow(LinearLayout section,String symbol,String title,String description,Runnable action){
+  LinearLayout row=horizontal();row.setGravity(Gravity.CENTER_VERTICAL);
+  row.setPadding(dp(3),dp(7),dp(2),dp(7));row.setMinimumHeight(dp(55));
+  TextView glyph=text(symbol,20,0xFFFF93C5,true);glyph.setGravity(Gravity.CENTER);
+  glyph.setBackground(shape(0xFF4B253E,0xFF311928,10,0x555B3C53));
+  row.addView(glyph,new LinearLayout.LayoutParams(dp(36),dp(36)));
+  LinearLayout detail=vertical();detail.setPadding(dp(10),0,dp(3),0);
+  addText(detail,title,14,WHITE,true,2);
+  addText(detail,description,11,MUTED,false,0);
+  row.addView(detail,new LinearLayout.LayoutParams(0,-2,1));
+  TextView arrow=text(action==null?"":"›",23,0xFFF5A9D1,false);
+  arrow.setGravity(Gravity.CENTER);
+  row.addView(arrow,new LinearLayout.LayoutParams(dp(24),dp(38)));
+  section.addView(row,new LinearLayout.LayoutParams(-1,-2));
+  if(action!=null){
+   row.setClickable(true);row.setFocusable(true);
+   row.setBackground(new RippleDrawable(ColorStateList.valueOf(0x44FF77B4),null,null));
+   row.setContentDescription(title+". "+description);
+   row.setOnClickListener(v->{if(!rolling)action.run();});
+  }
+  View line=new View(this);line.setBackgroundColor(0x445F3750);
+  LinearLayout.LayoutParams lineLp=new LinearLayout.LayoutParams(-1,dp(1));
+  lineLp.leftMargin=dp(46);section.addView(line,lineLp);
+ }
+ void openDeviceNotificationSettings(){
+  try{
+   Intent intent=new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+   intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName());
+   startActivity(intent);
+  }catch(Exception e){
+   PremiumDialog.info(this,"Notifications","Impossible d’ouvrir les paramètres Android. Ouvrez Paramètres du téléphone, Applications, LoveRoll, Notifications.");
+  }
+ }
+ void pushNotReady(){
+  PremiumDialog.info(this,"Notifications LoveRoll",
+   "Les rappels automatiques ne sont pas encore disponibles. Vos préférences ne seront pas présentées comme activées avant la configuration du service push gratuit. Aucun SMS automatique payant n’est utilisé.");
+ }
  void drawSettings(){
-  heading("⚙  Réglages","Compte, couple, application et confidentialité");
-  section("♡  Compte et couple");
-  LinearLayout connected=card("♥  Mon espace connecté",
-   "Gérez votre profil, votre partenaire, vos invitations et votre date de couple.");
-  addButton(connected,"OUVRIR MES RÉGLAGES LOVEROLL",true,()->openConnectedLoveRoll("settings"));
-  section("♧  Notifications");
-  LinearLayout reminders=card("Rappels de LoveRoll",
-   "Dé hebdomadaire, événements et invitation acceptée.");
-  addText(reminders,"Aucun SMS payant. Les notifications automatiques ne seront activées qu’une fois le service push configuré.",
-   12,MUTED,false,2);
-  section("🎲  Personnalisation du jeu");
-  settingTile("Cartes, défis et activités",
-   "Les réglages des cartes privées sont gérés dans votre espace LoveRoll sécurisé.",
-   "MES CARTES ET ACTIVITÉS",()->openConnectedLoveRoll("settings"));
-  settingTile("Règles des dés","Probabilités, rejouer et réinitialisation des tirages hors ligne.",
-   "VOIR LES RÈGLES HORS LIGNE",()->{tab="rules";draw();});
-  section("▣  Application");
-  settingTile("Mises à jour Android",
-   "Vérifier les nouvelles versions APK signées et les paramètres de mise à jour.",
-   "GÉRER LES MISES À JOUR",()->{tab="updater";draw();});
-  section("🔒  Confidentialité");
-  settingTile("Journal et données locales",
-   "Verrouillage, suppression et sécurité de votre ancien espace hors ligne.",
-   "CONFIDENTIALITÉ",()->{tab="privacy";draw();});
-  section("?  Aide");
-  LinearLayout help=card("LoveRoll",
-   "Pour inviter votre partenaire : ouvrez Mon espace connecté, puis Couple.");
-  addText(help,"Partage gratuit par SMS, Messenger ou courriel. L’envoi doit être confirmé dans votre messagerie.",
-   12,MUTED,false,3);
-  addText(page,"LoveRoll · version "+BuildConfig.VERSION_NAME,12,MUTED,false,5);
+  heading("⚙  Réglages","Compte, couple, notifications et confidentialité");
+
+  LinearLayout account=settingsGroup("♙","Compte","Votre identité et vos connexions");
+  settingsRow(account,"♙","Profil et prénom","Gérer mon nom et les informations de mon compte",()->openConnectedLoveRoll("settings:compte"));
+  settingsRow(account,"▣","Connexion Google / courriel","Ouvrir mon compte connecté sans Chrome",()->openConnectedLoveRoll("settings:compte"));
+  settingsRow(account,"◎","Langue","Français (Canada)",()->PremiumDialog.info(this,"Langue","LoveRoll est actuellement disponible en français (Canada)."));
+
+  LinearLayout couple=settingsGroup("♥","Couple","Partenaire, invitations et anniversaires");
+  settingsRow(couple,"♡","Mon couple et invitations","Statut, envoi SMS, Messenger ou courriel",()->openConnectedLoveRoll("settings:couple"));
+  settingsRow(couple,"▦","Date du couple","Gérer notre date et nos anniversaires",()->openConnectedLoveRoll("settings:couple"));
+  settingsRow(couple,"▤","Journal partagé et accès","Consulter les règles de synchronisation",()->openConnectedLoveRoll("settings:confidentialite"));
+
+  LinearLayout alerts=settingsGroup("♧","Notifications","Rappels et autorisations");
+  settingsRow(alerts,"♧","Autorisations Android","Ouvrir les notifications de LoveRoll sur le téléphone",this::openDeviceNotificationSettings);
+  settingsRow(alerts,"⚄","Rappel du dé hebdomadaire","Push automatique à configurer",this::pushNotReady);
+  settingsRow(alerts,"♥","Activités et événements","Push automatique à configurer",this::pushNotReady);
+  settingsRow(alerts,"✉","Invitation acceptée","Push automatique à configurer",this::pushNotReady);
+
+  LinearLayout application=settingsGroup("▦","Application","Mises à jour et affichage");
+  settingsRow(application,"⌂","Écran d’accueil","LoveRoll est déjà installé comme application Android",()->
+   PremiumDialog.info(this,"LoveRoll sur Android","L’APK LoveRoll est déjà installé. Vous pouvez lancer l’application depuis son icône, sans l’ajouter une deuxième fois."));
+  settingsRow(application,"↻","Mises à jour de l’APK","Rechercher une version signée plus récente",()->{tab="updater";draw();});
+  settingsRow(application,"◉","Apparence et thème","Thème LoveRoll bourgogne et rose",()->
+   PremiumDialog.info(this,"Apparence","Thème sombre premium LoveRoll. D’autres thèmes pourront être ajoutés dans une future version."));
+
+  LinearLayout privacy=settingsGroup("♢","Confidentialité et sécurité","Protéger votre journal et votre espace");
+  settingsRow(privacy,"♢","Journal chiffré local","Sécurité et conservation des anciennes données",()->{tab="privacy";draw();});
+  settingsRow(privacy,"♡","Protection du journal partagé","Accès au journal du couple connecté",()->openConnectedLoveRoll("settings:confidentialite"));
+  settingsRow(privacy,"▤","Suppression des données","Gérer les données stockées sur ce téléphone",()->{tab="privacy";draw();});
+
+  LinearLayout game=settingsGroup("⚄","Jeu et personnalisation","Règles et cartes du couple");
+  settingsRow(game,"⚄","Règles des dés","Tirages, probabilités et réinitialisation",()->{tab="rules";draw();});
+  settingsRow(game,"♡","Cartes et défis personnalisés","Configurer la bibliothèque du couple",()->openConnectedLoveRoll("settings:jeu"));
+
+  LinearLayout help=settingsGroup("?","Aide","Informations et assistance");
+  settingsRow(help,"?","Comment inviter mon partenaire","Guide pour SMS, Messenger et courriel",()->
+   PremiumDialog.info(this,"Inviter votre partenaire",
+    "Dans Réglages > Couple, choisissez Mon couple et invitations. Préparez un lien personnel, puis partagez-le par Messenger, SMS ou courriel. Votre partenaire l’ouvre sur iPhone, se connecte avec le courriel invité et accepte. L’envoi doit être confirmé dans la messagerie."));
+  settingsRow(help,"♡","Compte connecté et iPhone","Comment fonctionne la synchronisation",()->
+   PremiumDialog.info(this,"LoveRoll à deux",
+    "Android et iPhone utilisent le même espace de couple Supabase. Vos anciennes données hors ligne restent distinctes. Utilisez l’espace connecté pour les éléments partagés."));
+  settingsRow(help,"ⓘ","Version de LoveRoll","v"+BuildConfig.VERSION_NAME+" · APK Android",()->
+   PremiumDialog.info(this,"LoveRoll","Version Android "+BuildConfig.VERSION_NAME+". Vérifiez les mises à jour dans Réglages > Application."));
  }
  void drawRules(){
   heading("🎲  Règles du jeu","Comment fonctionnent nos tirages");
