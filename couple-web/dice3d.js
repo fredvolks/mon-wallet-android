@@ -244,52 +244,69 @@ export function dieOn(canvas,sides,value,rolling){
  const built=geometry(sides,canvas.dataset.diceMarkers==='pips');scene.add(built.group);
  const target=new THREE.Quaternion().setFromUnitVectors(built.normals.get(Number(value)||1),
   new THREE.Vector3(0,0,1));
- if(sides===6){const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.49,-.52,-.07));target.premultiply(tilt);}
+ // Face officielle presque directement vers la caméra, léger volume visible.
+ const tilt=new THREE.Quaternion().setFromEuler(sides===6?
+  new THREE.Euler(.16,-.18,-.02):new THREE.Euler(.075,-.09,0));
+ target.premultiply(tilt);
  built.group.quaternion.copy(target);
- let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true;
- const start=performance.now(),duration=rolling?2650:0;
- // An animated throw MUST NEVER begin already displaying the winning face.
- // Uniform random initial rotation, independent of the server-issued face.
- if(rolling){
-  // Randomness is for the camera-side tumble only; server decides the result.
+ let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true,lastFrame=0;
+ const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
+ const duration=rolling&&!reduceMotion?3100:0,start=performance.now();
+ let orientationAtSettle=null,settleStart=.56;
+ if(duration){
   const seed=new Uint32Array(3);crypto.getRandomValues(seed);
   built.group.quaternion.setFromEuler(new THREE.Euler(
    ...Array.from(seed,n=>n/4294967296*Math.PI*2)));
   built.group.position.y=0;
  }
+ const axis=new THREE.Vector3(.63,.78,.42).normalize();
  function step(now){
   frame=0;if(!shown||document.hidden)return;
+  const dt=lastFrame?Math.min(.05,Math.max(0,(now-lastFrame)/1000)):0;
+  lastFrame=now;
   const t=duration?Math.min(1,(now-start)/duration):1;
   if(t<1){
-   if(t<.77){
-    // Rotates in actual 3D space with multiple axes, gradually decreasing
-    // angular speed. The backend result never comes from the animation.
-    const f=Math.pow(1-t,.32);
-    built.group.rotateY(.24*f);
-    built.group.rotateX(.21*f);
-    built.group.rotateZ(.065*f);
+   if(t<.56){
+    // Impulse → free 3D tumble → angular damping, independent of frame rate.
+    const rise=Math.min(1,t/.1);
+    const decay=Math.pow(Math.max(0,1-t/.78),1.7);
+    const angle=(11.5*rise*decay+.4)*dt;
+    axis.set(.63+.12*Math.sin(now*.001),.78,.42+.15*Math.cos(now*.0008)).normalize();
+    built.group.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(axis,angle));
    }else{
-    const p=Math.min(1,(t-.77)/.23),smooth=p*p*(3-2*p);
-    built.group.quaternion.slerp(target,smooth);
+    if(!orientationAtSettle){
+     settleStart=t;orientationAtSettle=built.group.quaternion.clone();
+    }
+    const p=Math.min(1,(t-settleStart)/(1-settleStart));
+    // Interpolate from actual current orientation, never jump at 77%.
+    const eased=1-Math.pow(1-p,3);
+    built.group.quaternion.slerpQuaternions(orientationAtSettle,target,eased);
    }
-   built.group.position.y=.19*Math.sin(Math.PI*t);
-  }else{
-   if(duration){built.group.quaternion.copy(target);built.group.position.y=0;}
-   if(!drag){built.group.rotateY(vx);built.group.rotateX(vy);vx*=.87;vy*=.87;}
+   built.group.position.y=.16*Math.pow(Math.sin(Math.PI*t),2);
+  }else if(duration){
+   built.group.quaternion.copy(target);built.group.position.y=0;
+  }else if(!drag){
+   built.group.rotateY(vx);built.group.rotateX(vy);
+   const dragFactor=Math.exp(-5*dt);vx*=dragFactor;vy*=dragFactor;
   }
   renderer.render(scene,camera);
   if(t<1||drag||Math.abs(vx)+Math.abs(vy)>.003)request();
  }
  const request=()=>{if(!frame)frame=requestAnimationFrame(step);};
- const down=e=>{drag=true;x=e.clientX;y=e.clientY;vx=vy=0;canvas.setPointerCapture(e.pointerId);request();};
+ const down=e=>{
+  if(duration&&performance.now()-start<duration)return;
+  drag=true;x=e.clientX;y=e.clientY;vx=vy=0;canvas.setPointerCapture(e.pointerId);request();
+ };
  const move=e=>{if(!drag)return;const dx=e.clientX-x,dy=e.clientY-y;x=e.clientX;y=e.clientY;
   vx=dx*.013;vy=dy*.013;built.group.rotateY(vx);built.group.rotateX(vy);request();};
  const up=()=>{drag=false;request();};
  canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);
  canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
- const obs=new IntersectionObserver(a=>{shown=a[0]?.isIntersecting!==false;if(shown)request();});
+ const obs=new IntersectionObserver(entries=>{const old=shown;
+  shown=entries[0]?.isIntersecting!==false;if(shown&&!old){lastFrame=0;request();}
+ });
  obs.observe(canvas);
- const onVisible=()=>{if(!document.hidden)request();};
+ const onVisible=()=>{if(!document.hidden){lastFrame=0;request();}};
  document.addEventListener('visibilitychange',onVisible);request();
  const clean=()=>{if(frame)cancelAnimationFrame(frame);obs.disconnect();
   document.removeEventListener('visibilitychange',onVisible);

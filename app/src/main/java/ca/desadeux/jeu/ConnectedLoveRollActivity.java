@@ -38,6 +38,9 @@ import androidx.core.content.ContextCompat;
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import org.json.JSONObject;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.security.SecureRandom;
 import android.util.Base64;
@@ -63,6 +66,38 @@ public final class ConnectedLoveRollActivity extends Activity {
  private String pendingGoogleResult;
  private final SecureRandom random = new SecureRandom();
 
+ private boolean firebaseReady=false;
+ private void initializeLoveRollFirebase(){
+  try{
+   if(BuildConfig.FIREBASE_APP_ID.isEmpty()||BuildConfig.FIREBASE_API_KEY.isEmpty()||
+     BuildConfig.FIREBASE_SENDER_ID.isEmpty()||BuildConfig.FIREBASE_PROJECT_ID.isEmpty())return;
+   FirebaseOptions options=new FirebaseOptions.Builder()
+    .setApplicationId(BuildConfig.FIREBASE_APP_ID)
+    .setApiKey(BuildConfig.FIREBASE_API_KEY)
+    .setGcmSenderId(BuildConfig.FIREBASE_SENDER_ID)
+    .setProjectId(BuildConfig.FIREBASE_PROJECT_ID).build();
+   if(FirebaseApp.getApps(this).isEmpty())FirebaseApp.initializeApp(this,options);
+   firebaseReady=true;
+  }catch(Exception ex){firebaseReady=false;}
+ }
+ private void requestRemotePushToken(){
+  if(!firebaseReady){show("Firebase n’est pas encore configuré pour cet APK.");return;}
+  if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+    !=android.content.pm.PackageManager.PERMISSION_GRANTED){
+   requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},6832);return;
+  }
+  FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task->{
+   if(!task.isSuccessful()||task.getResult()==null){
+    show("Impossible d’obtenir le jeton de notifications Firebase.");return;
+   }
+   String token=task.getResult();
+   getSharedPreferences("loveroll_native_push",MODE_PRIVATE).edit()
+     .putString("device_token",token).apply();
+   if(web!=null&&pageReady&&isTrusted(Uri.parse(web.getUrl())))
+    web.evaluateJavascript("window.dispatchEvent(new CustomEvent('loveroll-native-push-token',{detail:{token:"+
+      JSONObject.quote(token)+"}}));",null);
+  });
+ }
  private final class NativeAuthBridge {
   @JavascriptInterface public void googleSignIn() {
    runOnUiThread(() -> beginGoogleSignIn());
@@ -126,6 +161,26 @@ public final class ConnectedLoveRollActivity extends Activity {
     }catch(Exception e){show("Export JSON impossible : "+e.getMessage());}
    });
   }
+  @JavascriptInterface public boolean nativePushConfigured(){return firebaseReady;}
+  @JavascriptInterface public String nativePushToken(){
+   if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return "";
+   return getSharedPreferences("loveroll_native_push",MODE_PRIVATE)
+    .getString("device_token","");
+  }
+  @JavascriptInterface public void enableRemotePush(){
+   runOnUiThread(()->{
+    if(web!=null&&pageReady&&isTrusted(Uri.parse(web.getUrl())))requestRemotePushToken();
+   });
+  }
+  @JavascriptInterface public void disableRemotePush(){
+   runOnUiThread(()->{
+    if(!firebaseReady)return;
+    FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(task->{
+     if(task.isSuccessful())getSharedPreferences("loveroll_native_push",MODE_PRIVATE)
+       .edit().remove("device_token").apply();
+    });
+   });
+  }
   @JavascriptInterface public void enableWeeklyReminder(){
    runOnUiThread(()->{
     if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
@@ -175,6 +230,7 @@ public final class ConnectedLoveRollActivity extends Activity {
  }
  @Override public void onCreate(Bundle savedInstanceState) {
   super.onCreate(savedInstanceState);
+  initializeLoveRollFirebase();
   getWindow().setStatusBarColor(Color.rgb(19,8,22));
   getWindow().setNavigationBarColor(Color.rgb(19,8,22));
   LinearLayout layout = new LinearLayout(this);
@@ -240,6 +296,7 @@ public final class ConnectedLoveRollActivity extends Activity {
   });
   layout.addView(web,new LinearLayout.LayoutParams(-1,0,1));
   setContentView(layout);
+  String pushed=getIntent().getStringExtra("push_section");
   String destination=getIntent().getStringExtra("destination");
   String suffix="";
   if(destination!=null&&destination.startsWith("settings")){
@@ -248,18 +305,33 @@ public final class ConnectedLoveRollActivity extends Activity {
     suffix="?settings=1"+(section.isEmpty()?"":"&section="+section);
    else suffix="?settings=1";
   } else if("auth".equals(destination))suffix="?auth=1";
-  // Android launcher defaults to the exact same LoveRoll home as iPhone and iPad.
+  // Route notification taps only to known sections, never to remote URLs.
+  if(pushed!=null&&pushed.matches("home|session|special|advent"))
+   suffix="?open="+pushed;
   web.loadUrl(SITE+suffix);
   if(getSharedPreferences("des_a_deux_game",MODE_PRIVATE).getBoolean("auto_update",true))
    UpdateManager.check(this,true);
  }
  @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grants){
   super.onRequestPermissionsResult(requestCode,permissions,grants);
+  if(requestCode==6832){
+   if(grants.length>0&&grants[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)
+    requestRemotePushToken();
+   else show("Autorisation Android des notifications refusée.");
+   return;
+  }
   if(requestCode==6831){
    if(grants.length>0&&grants[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)
     LoveRollWeeklyReminderReceiver.setEnabled(this,true);
    else show("Notifications non autorisées. Modifiez les réglages Android.");
   }
+ }
+ @Override protected void onNewIntent(Intent intent){
+  super.onNewIntent(intent);
+  setIntent(intent);
+  String section=intent.getStringExtra("push_section");
+  if(web!=null&&section!=null&&section.matches("home|session|special|advent"))
+   web.loadUrl(SITE+"?open="+section);
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
   super.onActivityResult(requestCode,resultCode,data);

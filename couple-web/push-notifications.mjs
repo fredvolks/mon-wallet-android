@@ -17,7 +17,28 @@ const decodeBase64Url=(value)=>{
 const encodeB64=buffer=>btoa(String.fromCharCode(...new Uint8Array(buffer)));
 export async function enablePush(client,userId){
  const e=pushEnvironment();
- if(e.native)throw Error('La version APK utilise les rappels natifs. Activez-les dans cette section.');
+ if(e.native){
+  if(!window.LoveRollNativeAuth?.nativePushConfigured?.())
+   throw Error('FCM n’est pas configuré dans cette version APK. Les identifiants Firebase publics sont nécessaires.');
+  const token=await new Promise((resolve,reject)=>{
+   const listener=event=>{clearTimeout(timeout);window.removeEventListener('loveroll-native-push-token',listener);resolve(event.detail?.token);};
+   const timeout=setTimeout(()=>{
+    window.removeEventListener('loveroll-native-push-token',listener);
+    reject(Error('Jeton Firebase non reçu. Vérifiez les autorisations et votre connexion.'));
+   },25000);
+   window.addEventListener('loveroll-native-push-token',listener,{once:true});
+   window.LoveRollNativeAuth.enableRemotePush();
+  });
+  if(!token)throw Error('Firebase n’a pas fourni de jeton.');
+  const {error:claimError}=await client.rpc('love_claim_native_push_token',{p_token:token});
+  if(claimError)throw claimError;
+  const {error:prefError}=await client.from('love_push_preferences')
+   .upsert({user_id:userId,enabled:true},{onConflict:'user_id'});
+  if(prefError)throw prefError;
+  // The remote weekly push replaces the local Monday reminder: no doubles.
+  window.LoveRollNativeAuth?.disableWeeklyReminder?.();
+  return true;
+ }
  if(!e.supported)throw Error('Ce navigateur ne prend pas en charge les notifications push.');
  if(e.apple&&!e.standalone)throw Error('Sur iPhone/iPad, ajoutez LoveRoll à l’écran d’accueil depuis Safari, puis rouvrez-le.');
  const permission=await Notification.requestPermission();
@@ -45,7 +66,15 @@ export async function enablePush(client,userId){
 }
 export async function disablePush(client,userId){
  const e=pushEnvironment();
- if(e.supported){
+ if(e.native){
+  const token=window.LoveRollNativeAuth?.nativePushToken?.();
+  if(token){
+   const {error:rm}=await client.from('love_push_native_devices')
+    .delete().eq('user_id',userId).eq('device_token',token);
+   if(rm)throw rm;
+  }
+  window.LoveRollNativeAuth?.disableRemotePush?.();
+ }else if(e.supported){
   try{const reg=await navigator.serviceWorker.ready;await (await reg.pushManager.getSubscription())?.unsubscribe();}catch{}
  }
  const {error:a}=await client.from('love_push_subscriptions').delete().eq('user_id',userId);
@@ -76,12 +105,21 @@ export function notificationSettingsMarkup(prefs={}){
  ];
  let status='',actions='';
  if(e.native){
-  const active=!!window.LoveRollNativeAuth?.weeklyReminderEnabled?.();
-  status='<strong>'+(active?'✓ Rappel Android activé':'Rappel Android inactif')+'</strong>'+
-  '<p>L’APK peut vous rappeler le dé chaque lundi à 9 h (heure de Québec). Les autres alertes à distance exigent Firebase Cloud Messaging et ne sont pas encore actives dans l’APK.</p>';
-  actions=active?
-   '<button class="subtle" data-action="native-notify-disable">Désactiver le rappel hebdomadaire</button>':
-   '<button data-action="native-notify-enable">Activer le rappel hebdomadaire</button>';
+  const local=!!window.LoveRollNativeAuth?.weeklyReminderEnabled?.();
+  const configured=!!window.LoveRollNativeAuth?.nativePushConfigured?.();
+  const token=window.LoveRollNativeAuth?.nativePushToken?.()||'';
+  const active=configured&&!!token&&enabled;
+  status='<strong>'+(active?'✓ Notifications Android enregistrées':
+   configured?'Autorisation ou inscription nécessaire':'Notifications distantes non disponibles')+'</strong>'+
+   '<p>'+(configured?'Service Firebase disponible sur cet APK. ':
+   'FCM nécessite la configuration Firebase native dans une prochaine version signée. ')+
+   (local?'Rappel local du lundi 9 h actif.':'Rappel local du lundi 9 h inactif.')+'</p>';
+  actions=(configured?(active?
+   '<button class="subtle" data-action="push-disable">Désactiver les notifications</button>'+
+   '<button data-action="push-test">Envoyer une notification de test</button>':
+   '<button data-action="push-enable">Activer les notifications</button>'):'')+
+   (local?'<button class="subtle" data-action="native-notify-disable">Désactiver le rappel local</button>':
+   '<button data-action="native-notify-enable">Activer le rappel local</button>');
  }else if(e.apple&&!e.standalone){
   status='<strong>Installer LoveRoll pour les push iPhone/iPad</strong><p>Ouvrez le site dans Safari, puis Partager → Sur l’écran d’accueil. Rouvrez LoveRoll pour activer les notifications.</p>';
   actions='<button data-action="show-install-guide">Voir comment ajouter LoveRoll</button>';
@@ -97,10 +135,10 @@ export function notificationSettingsMarkup(prefs={}){
  return '<div class="invite-status push-status">'+status+'</div>'+
  '<div class="push-actions">'+actions+'</div>'+
  '<div class="push-options">'+categories.map(([key,title,desc])=>{
- const available=!e.native&&e.supported&&enabled&&e.permission==='granted';
+ const available=e.native?e.native&&!!window.LoveRollNativeAuth?.nativePushConfigured?.()&&enabled&&!!window.LoveRollNativeAuth?.nativePushToken?.():e.supported&&enabled&&e.permission==='granted';
  return '<label class="push-option"><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
  '<input type="checkbox" data-push-option="'+key+'"'+(available&&prefs[key]!==false?' checked':'')+
  (!available?' disabled':'')+' aria-label="'+title+'"></label>';
  }).join('')+'</div>'+
- '<p class="tiny-note">Aucun SMS payant. Les messages ne décrivent jamais votre journal ni les défis intimes. Le service Web vérifie les rappels toutes les 15 minutes.</p>';
+ '<p class="tiny-note">Les alertes ne dévoilent aucun contenu intime. Une demande de test acceptée ne garantit pas la réception sur votre appareil.</p>';
 }
