@@ -73,5 +73,5 @@ test('Messenger share is concise while secure link and acceptance remain functio
  assert.match(html,/loveroll-invite-og.png\?v=3/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert.match(app,/verb==='send-messenger'\?invitationMessengerText\(d.link\)/);
- assert.match(app,/url.searchParams.set\('share','2'\)/);
+ assert.match(app,/url.searchParams.set\('share','3'\)/);
 });
