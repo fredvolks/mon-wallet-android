@@ -36,7 +36,7 @@ const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
 let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('loveroll-settings-section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
+ tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
@@ -381,6 +381,12 @@ async function reload(){
   query('love_push_preferences',{eq:{user_id:state.user.id}})
  ]);
  state.pushPrefs=pushSettings[0]||{enabled:false,weekly:true,invitation:true,monthly:true,special:true};
+ const nativeToken=window.LoveRollNativeAuth?.nativePushToken?.();
+ if(state.pushPrefs.enabled&&nativeToken){
+  client.rpc('love_claim_native_push_token',{p_token:nativeToken})
+   .then(({error})=>{if(error)console.warn('Enregistrement FCM impossible',error.code||'');});
+ }
+
  state.profile=profiles[0]||null;
  state.wellbeing=assessments[0]||null;
  state.personalJournal=personal;
@@ -1557,7 +1563,7 @@ async function handle(action,element){
  }
  if(verb==='push-test'){
   const result=await sendTestPush(client);
-  notify(result?'Notification test planifiée.':'Impossible de préparer le test.');
+  notify(result?'Demande de test acceptée. L’envoi et la réception restent à vérifier sur votre appareil.':'Demande de test refusée par le serveur.');
   return;
  }
  if(verb==='native-notify-enable'){
@@ -1599,6 +1605,9 @@ async function handle(action,element){
   notify('Lien complet copié. Collez-le dans Chrome ou Safari.');return;
  }
  if(verb==='switch-account-invite'){
+  if(state.user&&window.LoveRollNativeAuth?.nativePushToken?.()){
+   try{await disablePush(client,state.user.id);}catch(error){console.warn('Déconnexion FCM',error.code||'');}
+  }
   if(!pendingInviteReference(sessionStorage))throw Error('Invitation introuvable.');
   state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
@@ -1909,6 +1918,9 @@ async function handle(action,element){
   return;
  }
  if(verb==='signout'){
+  if(state.user&&window.LoveRollNativeAuth?.nativePushToken?.()){
+   try{await disablePush(client,state.user.id);}catch(err){console.warn('Désinscription FCM',err.code||'');}
+  }
   state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
