@@ -511,3 +511,26 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
  .waiting-actions,.json-tool-buttons{grid-template-columns:1fr}
  .waiting-hero{padding:22px 12px}
 }
+
+
+/* LoveRoll: portable JSON challenge libraries (mobile / iPhone / iPad). */
+.json-tools{border-color:#8a446c;background:linear-gradient(145deg,#39192f,#211324)}
+.json-tools h3{color:#ffe1f1}
+.json-tool-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.json-tool-buttons>button,.json-tool-buttons>.json-file-button{
+ min-width:0;min-height:49px;padding:11px 8px;display:flex;justify-content:center;align-items:center;
+ text-align:center;border:1px solid #ab5480;border-radius:12px;color:#fff6fb;
+ font-size:.88rem;font-weight:750;background:linear-gradient(125deg,#b82d73,#7f245f);
+ cursor:pointer;line-height:1.2}
+.json-file-button{position:relative}
+.json-file-button input[type=file]{
+ opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;
+ font-size:0;z-index:1}
+.json-preview{border-radius:15px;padding:14px;margin:10px 0;background:#452038;border:1px solid #da5a98}
+.json-preview strong{color:#ffd9ed}
+.json-preview p{font-size:.87rem}
+.json-tools textarea{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.81rem}
+@media(max-width:365px){.json-tool-buttons{grid-template-columns:1fr}}
+/* Make navigation distribution exact for both four- and five-item modes. */
+.nav-inner{width:100%;display:grid;justify-content:stretch}
+.nav-inner>button{min-width:0}
