@@ -508,9 +508,9 @@ function renderOccasions(){
  for(const ev of all.sort((a,b)=>(a.daysLeft===null?1:0)-(b.daysLeft===null?1:0))){
   const k=ev.key+(ev.actorId?':'+ev.actorId:'');
   const presetKey=privateSpecialKey(ev.key,ev.actorId,state.couple?.owner_user_id);
-  const custom=ev.year>=2027&&!!presetKey&&state.specialEventKeys.includes(presetKey);
-  const activity=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='activity');
   const prize=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='surprise');
+  const custom=ev.year>=2027&&!!presetKey&&state.specialEventKeys.includes(presetKey)&&!prize;
+  const activity=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='activity');
   const host=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='host');
   const modifier=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='modifier');
   const displayName=ev.actorId?person(ev.actorId):'';
