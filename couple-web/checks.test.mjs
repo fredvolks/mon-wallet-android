@@ -345,7 +345,8 @@ test('Removing a partner retains their own diary and removes access at the serve
 test('Optional partner linking, settings management and individualized tips',()=>{
  assert.doesNotMatch(matchHtml('Camille',false),/skip-couple|Explorer sans partenaire/);
  assert.match(matchHtml('Camille',false),/prepare-cards/);
- assert.match(app,/function renderSolo\(/);
+ assert.match(app,/function renderWaitingPartner\(/);
+ assert.doesNotMatch(app,/function renderSolo\(/);
  assert.match(app,/Retirer mon conjoint ou ma conjointe/);
  assert.match(app,/Ajouter un conjoint ou une conjointe/);
  assert.match(app,/function ideaHtml\(/);
@@ -575,7 +576,7 @@ test('Challenge D35 gives 35 physical numbered faces without changing monthly D2
  assert.ok(db.includes("cc.drawer_role='owner'"));
  assert.ok(db.includes("cc.recipient_role='partner'"));
  assert.ok(db.includes('love_card_draw_history'));
- assert.ok(app.includes("heroDice(demo.challenge,35,'D35"));
+ assert.ok(!app.includes("heroDice(demo.challenge,35,'D35"));
  assert.ok(app.includes('Brasser le D35 pour'));
  assert.ok(app.includes('D35 :'));
  assert.ok(app.includes("heroDice(a.face,20,'Activité officielle')"));
