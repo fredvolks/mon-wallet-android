@@ -1299,8 +1299,11 @@ function renderSettings(){
   button('admin-reset-weekly','↺ Reset hebdomadaire','class="subtle danger-action" '+(!state.weekly?'disabled':'')):'';
  const notifications=notificationSettingsMarkup(state.pushPrefs||{});
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
+ const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
+  window.LoveRollNativeAuth.appVersion():'';
  const appSettings=(nativeApp?
-  '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>L’application Android utilise les mêmes écrans que les versions iPhone et iPad.</p></div></div>'+
+  '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>Version Android : '+
+  safe(nativeVersion||'non fournie par cette version APK')+'</p></div></div>'+
   settingRow('Vérifier les mises à jour APK','Rechercher une version Android signée plus récente.','native-update','Vérifier'):
   settingRow('Ajouter LoveRoll à l’écran d’accueil',
     'Installation recommandée sur Safari iPhone et iPad.','show-install-guide','Afficher'))+
