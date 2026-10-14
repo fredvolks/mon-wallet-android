@@ -308,7 +308,7 @@ function renderInvitePanel(){
  if(!ready){
   html+='<label>Courriel Google de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   button('invite',latest?'Créer un nouveau lien d’invitation':'Préparer une invitation');
+   button('invite',latest?'Renvoyer une invitation (nouveau lien)':'Préparer une invitation');
   if(draft){
    html+='<details class="invite-preview"><summary>♡ Aperçu de l’invitation LoveRoll</summary>'+invitationPreviewMarkup()+'</details>';
    html+='<div class="invite-actions">'+button('send-sms','💬 Texto SMS')+
@@ -1375,7 +1375,7 @@ async function handle(action,element){
   if(verb==='send-messenger'){
    if(window.LoveRollNativeAuth?.openShare)window.LoveRollNativeAuth.openShare(text);
    else if(navigator.share){
-    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:invitationEmailText(''),url:d.link});}
+    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:'Je t’invite à rejoindre notre espace LoveRoll ❤️ Une invitation juste pour nous deux !',url:d.link});}
     catch(error){if(error.name!=='AbortError')throw error;}
    }else{
     await navigator.clipboard.writeText(d.link);
