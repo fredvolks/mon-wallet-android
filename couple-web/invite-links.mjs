@@ -8,7 +8,6 @@ export function inviteLinkForId(siteUrl,invitationId){
  if(!UUID.test(invitationId||''))throw Error('Référence d’invitation invalide.');
  const url=new URL(siteUrl);
  url.searchParams.set('invite_id',invitationId);
- url.searchParams.set('v',INVITATION_REVISION);
  url.hash='';
  return url.toString();
 }
