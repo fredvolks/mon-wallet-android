@@ -153,8 +153,7 @@ export function matchHtml(name,invitation){
  '<h3>🥂 Anniversaire de votre couple</h3>'+
  monthDayInputs('signup-couple','',true)+
  button('prepare-cards','♡ Préparer mes défis avant l’invitation')+
- button('create-couple','♡ Créer notre espace à deux')+
- button('skip-couple','Plus tard · Explorer sans partenaire','subtle'))+
+ button('create-couple','♡ Créer notre espace à deux'))+
  '</div>';
 }
 
