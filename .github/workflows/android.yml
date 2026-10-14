@@ -105,7 +105,8 @@ jobs:
           assert 'android:label="LoveRoll"' in manifest
           assert '@drawable/ic_desadeux' in manifest
           assert Path('app/src/main/res/drawable-nodpi/ic_desadeux.webp').is_file()
-          assert 'tab="library";draw();' in src
+          assert 'tab="library";draw();' not in src
+          assert 'settingTile("♡  Cartes et défis personnels"' in src
           assert 'showResultDialog("♥"' in src
           assert 'RÉSULTAT OFFICIEL' in src
           assert 'float screenDp=' in src
