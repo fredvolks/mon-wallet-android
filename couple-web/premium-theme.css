@@ -1,0 +1,104 @@
+/* LoveRoll premium design system — all authenticated pages and tabs.
+   Visual-only: never changes data, navigation, roles, session logic or cards. */
+:root{
+ --bg:#0c0610;--panel:#301328;--edge:#a94b78;--pink:#ff68ac;
+ --text:#fff3fa;--mute:#dfbfd1;--love-rose:#ff78b5;--love-wine:#42122e;
+ --love-border:#e278a166;--love-glass:linear-gradient(145deg,#491b38e8,#261025f5 70%,#1c0b1c);
+ --love-glow:0 12px 32px #09020ec9,inset 0 1px #ffd5eb2c;
+}
+body:not(:has(.love-discover)){
+ background:radial-gradient(ellipse at 50% -12%,#711e515e,transparent 40%),
+  radial-gradient(ellipse at 2% 57%,#4f163a48,transparent 43%),#0d0711;
+}
+body:not(:has(.love-discover)) main{position:relative}
+body:not(:has(.love-discover)) main>.header h1,
+body:not(:has(.love-discover)) .waiting-hero h1,
+body:not(:has(.love-discover)) .auth-panel h2{
+ font-family:Georgia,'Times New Roman',serif;letter-spacing:-.025em;
+}
+body:not(:has(.love-discover)) .header{border-bottom:1px solid #d0619240;margin-bottom:12px;padding:9px 0 14px}
+body:not(:has(.love-discover)) .header h1{color:#fff5fc;text-shadow:0 5px 22px #fe589f1c}
+body:not(:has(.love-discover)) .header p{color:#e8b6d0}
+body:not(:has(.love-discover)) .eyebrow{color:#ff99c7;letter-spacing:.15em}
+body:not(:has(.love-discover)) .card,
+body:not(:has(.love-discover)) .auth-panel,
+body:not(:has(.love-discover)) .settings-group,
+body:not(:has(.love-discover)) .waiting-hero,
+body:not(:has(.love-discover)) .settings-item{
+ background:var(--love-glass);border-color:var(--love-border);
+ box-shadow:var(--love-glow);border-radius:21px;
+}
+body:not(:has(.love-discover)) .card::selection{background:#dc267f}
+body:not(:has(.love-discover)) .card h2,
+body:not(:has(.love-discover)) .card h3,
+body:not(:has(.love-discover)) .settings-group-heading strong{
+ color:#fff4fa;
+}
+body:not(:has(.love-discover)) .card p,
+body:not(:has(.love-discover)) .tiny-note{color:#dfbdd1}
+body:not(:has(.love-discover)) button:not(.subtle):not(.pill):not(.nav button):not(.text-link):not(.love-answer-option){
+ background:linear-gradient(132deg,#ff76b7,#ec3c8c 58%,#ae1c64);
+ border:1px solid #ffb5d6aa;border-radius:16px;
+ box-shadow:inset 0 2px 2px #fff5,0 6px 20px #d41c7440;
+}
+body:not(:has(.love-discover)) button.subtle{
+ background:linear-gradient(140deg,#4b2341,#30172f);
+ border:1px solid #975878;color:#fce0ef;border-radius:15px;
+}
+body:not(:has(.love-discover)) input,
+body:not(:has(.love-discover)) select,
+body:not(:has(.love-discover)) textarea{
+ background:linear-gradient(145deg,#231021,#170e1c);border:1px solid #a24b7c;
+ border-radius:14px;color:#fff7fc;
+}
+body:not(:has(.love-discover)) input:focus-visible,
+body:not(:has(.love-discover)) select:focus-visible,
+body:not(:has(.love-discover)) textarea:focus-visible,
+body:not(:has(.love-discover)) button:focus-visible{
+ outline:2px solid #ffbfdf;outline-offset:2px;
+}
+body:not(:has(.love-discover)) .nav{
+ background:linear-gradient(180deg,#251025f2,#120918f5);
+ border-top:1px solid #de6b9f66;
+ box-shadow:0 -7px 30px #08040dc2,0 -1px 12px #f44b952b;
+ backdrop-filter:blur(22px);
+}
+body:not(:has(.love-discover)) .nav button{
+ color:#dcbbd0;border:1px solid transparent;border-radius:17px;
+}
+body:not(:has(.love-discover)) .nav button.active{
+ color:#fff0f8;border-color:#f79bc14d;
+ background:linear-gradient(140deg,#7c2456,#4a1d42);
+ box-shadow:inset 0 1px #ffd2e344,0 0 20px #f36aaa27;
+}
+body:not(:has(.love-discover)) .pill.selected{
+ background:linear-gradient(130deg,#d02a7d,#8f225b);border-color:#f38ebd;
+ box-shadow:0 2px 10px #ca207147;
+}
+body:not(:has(.love-discover)) .stat,
+body:not(:has(.love-discover)) .banner,
+body:not(:has(.love-discover)) .invite-status{
+ background:linear-gradient(135deg,#4a1937,#32162e);
+ border:1px solid #a74c7b66;border-radius:17px;
+}
+body:not(:has(.love-discover)) .die{
+ background:radial-gradient(ellipse at 36% 17%,#9e205b,#34132d 60%,#14091a);
+ border-color:#e879b2aa;border-radius:21px;
+ box-shadow:0 13px 28px #0a0415ae,inset 0 0 31px #fa3e914a;
+}
+body:not(:has(.love-discover)) .calendar button.marked,
+body:not(:has(.love-discover)) .day-grid button:not(.locked){
+ border:1px solid #eb8db866;box-shadow:inset 0 1px #ffabd02b;
+}
+body:not(:has(.love-discover)) .settings-group>summary{background:transparent;color:#ffe3f2}
+body:not(:has(.love-discover)) .settings-group-content{border-top:1px solid #b8638b61}
+body:not(:has(.love-discover)) .settings-group-icon{
+ background:linear-gradient(130deg,#672248,#341634);border:1px solid #d65e97a1;color:#ffa8d1;
+ box-shadow:0 0 16px #ef479034;
+}
+body:not(:has(.love-discover)) #toast{background:#461735;border:1px solid #ff92c4;box-shadow:0 11px 35px #06010a}
+@media(prefers-reduced-motion:no-preference){
+ body:not(:has(.love-discover)) .card,body:not(:has(.love-discover)) button{
+  transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease;
+ }
+}
