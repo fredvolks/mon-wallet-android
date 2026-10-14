@@ -22,8 +22,8 @@ test('Discover is a public premium visual tour, not another authentication page'
 
 test('Invitation ACCEPT action is gated before auth in both logged-out and logged-in paths',()=>{
  assert.ok(app.indexOf("if(pendingInvite&&!state.inviteAccepted)")<app.indexOf("if(!state.user){",app.indexOf("function render(){")));
- assert.match(app,/sessionStorage\.setItem\('loverollInviteAccepted',token\)/);
- assert.match(app,/state\.inviteAccepted=sessionStorage\.getItem\('loverollInviteAccepted'\)===invite/);
+ assert.match(app,/sessionStorage\.setItem\('loverollInviteAccepted',invite\.kind\+':'\+invite\.value\)/);
+ assert.match(app,/state\.inviteAccepted=sessionStorage\.getItem\('loverollInviteAccepted'\)===key/);
  assert.match(app,/frame\(invitationLandingHeader\(true\)/);
  assert.match(app,/frame\(authHtml\(!!pendingInvite\)/);
  assert.match(app,/if\(verb==='discover-loveroll'\)/);
