@@ -282,13 +282,36 @@ export function customCardSlots(category,cards=[]){
    minutes:found?.timer_minutes??null,recipientId:found?.recipient_user_id||null,filled:!!found};
  });
 }
+// Slot IDs are private editor metadata, never shown with the drawn card.
+export function editableCardSlots(category,cards=[]){
+ if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
+ return Array.from({length:35},(_,i)=>{
+  const cardId=i+1;
+  const original=cardId<=25?eveningCard(category,cardId):null;
+  const saved=cards.find(c=>c.category===category&&c.card_id===cardId);
+  return {category,cardId,
+    title:saved?.title??original?.title??'',
+    description:saved?.description??original?.description??'',
+    minutes:saved?saved.timer_minutes:original?.minutes??null,
+    recipientId:saved?.recipient_user_id??null,
+    drawerId:saved?.drawer_user_id??null,
+    filled:!!saved||!!original,saved:!!saved,isOriginal:cardId<=25};
+ });
+}
 export function resolvedCard(draw){
- if(!EVENING_CATEGORIES.includes(draw.category))return {title:'Défi historique',description:'Retrouvez votre ancien défi dans l’historique.',minutes:null,cardId:draw.card_id||draw.face};
+ if(!EVENING_CATEGORIES.includes(draw.category))return {
+  title:'Défi historique',description:'Retrouvez votre ancien défi dans l’historique.',
+  minutes:null,cardId:draw.card_id||draw.face};
  const cardId=draw.card_id||draw.face;
- if(cardId>=CUSTOM_CARD_START){
-  return {category:draw.category,cardId,title:draw.card_title||'Défi surprise',
+ if(draw.card_title!==null&&draw.card_title!==undefined){
+  return {category:draw.category,cardId,
+   title:draw.card_title||'Défi surprise',
    description:draw.card_description||'Consigne momentanément indisponible.',
    minutes:draw.card_timer_minutes??null};
+ }
+ if(cardId>=CUSTOM_CARD_START){
+  return {category:draw.category,cardId,title:'Défi surprise',
+   description:'Consigne momentanément indisponible.',minutes:null};
  }
  return {...eveningCard(draw.category,cardId),cardId};
 }
