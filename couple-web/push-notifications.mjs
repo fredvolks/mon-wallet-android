@@ -76,9 +76,12 @@ export function notificationSettingsMarkup(prefs={}){
  ];
  let status='',actions='';
  if(e.native){
-  status='<strong>APK Android : rappels natifs</strong><p>Le rappel du dé fonctionne sur ce téléphone une fois autorisé. Les alertes instantanées nécessitent encore Firebase Cloud Messaging.</p>';
-  actions='<button data-action="native-notify-enable">Activer le rappel hebdomadaire</button>'+
-   '<button class="subtle" data-action="native-notify-disable">Désactiver le rappel</button>';
+  const active=!!window.LoveRollNativeAuth?.weeklyReminderEnabled?.();
+  status='<strong>'+(active?'✓ Rappel Android activé':'Rappel Android inactif')+'</strong>'+
+  '<p>L’APK peut vous rappeler le dé chaque lundi à 9 h (heure de Québec). Les autres alertes à distance exigent Firebase Cloud Messaging et ne sont pas encore actives dans l’APK.</p>';
+  actions=active?
+   '<button class="subtle" data-action="native-notify-disable">Désactiver le rappel hebdomadaire</button>':
+   '<button data-action="native-notify-enable">Activer le rappel hebdomadaire</button>';
  }else if(e.apple&&!e.standalone){
   status='<strong>Installer LoveRoll pour les push iPhone/iPad</strong><p>Ouvrez le site dans Safari, puis Partager → Sur l’écran d’accueil. Rouvrez LoveRoll pour activer les notifications.</p>';
   actions='<button data-action="show-install-guide">Voir comment ajouter LoveRoll</button>';
@@ -96,6 +99,6 @@ export function notificationSettingsMarkup(prefs={}){
  '<div class="push-options">'+categories.map(([key,title,desc])=>
  '<label class="push-option"><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
  '<input type="checkbox" data-push-option="'+key+'"'+(prefs[key]!==false?' checked':'')+
- ((!enabled&&!e.native)?' disabled':'')+'></label>').join('')+'</div>'+
+ (e.native||!enabled?' disabled':'')+'></label>').join('')+'</div>'+
  '<p class="tiny-note">Aucun SMS payant. Les messages ne décrivent jamais votre journal ni les défis intimes. Le service Web vérifie les rappels toutes les 15 minutes.</p>';
 }
