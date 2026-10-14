@@ -2,7 +2,7 @@ import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWe
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS} from './private-special-events.mjs';
+import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
@@ -20,7 +20,7 @@ const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -174,7 +174,7 @@ async function reload(){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
-  state.feedback=[];state.advent=[];state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.unlockKey=null;
+  state.feedback=[];state.advent=[];state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
   render();return;
@@ -208,17 +208,19 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
  query('couple_events',{eq:{couple_id:c},order:'happened_at'}),
  query('couple_intimacy',{eq:{couple_id:c}}),
  query('couple_occasion_settings',{eq:{couple_id:c}}),
- query('couple_occasion_rolls',{eq:{couple_id:c}})
+ query('couple_occasion_rolls',{eq:{couple_id:c}}),
+ rpc('my_love_special_event_keys',{p_couple:c})
  ]);
  state.occasionSettings=occasionSettings[0]||null;
  state.occasionRolls=occasionRolls;
+ state.specialEventKeys=Array.isArray(keys)?keys:[];
  state.weekly=rolls.find(r=>r.kind==='weekly'&&r.key===week());
  state.monthly={};
  for(const r of rolls.filter(r=>r.key===month()))state.monthly[r.kind]=r;
@@ -505,6 +507,9 @@ function renderOccasions(){
   '<p>Chaque idée est facultative : vous pouvez en discuter, la modifier ou la refuser.</p></section>';
  for(const ev of all.sort((a,b)=>(a.daysLeft===null?1:0)-(b.daysLeft===null?1:0))){
   const k=ev.key+(ev.actorId?':'+ev.actorId:'');
+  const presetKey=privateSpecialKey(ev.key,ev.actorId,state.couple?.owner_user_id);
+  const custom=ev.year>=2027&&!!presetKey&&state.specialEventKeys.includes(presetKey);
+  const activity=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='activity');
   const prize=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='surprise');
   const host=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='host');
   const modifier=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='modifier');
@@ -525,6 +530,26 @@ function renderOccasions(){
   }
   if(!ev.date)body+='<p>Ajoutez cette date dans Réglages pour activer le tirage.</p>';
   else if(ev.daysLeft===null)body+='<p>Ouverture 14 jours avant la fête, fermeture 7 jours après. Cela laisse le temps de trouver une gardienne.</p>';
+  else if(custom){
+   if(!activity){
+    if(role.shared||role.receiver)
+     body+=heroDice(null,6,'D6 · Activité spéciale')+
+       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':activity','🎲 Brasser le D6 de l’activité');
+   }else{
+    body+=heroDice(activity.face,6,'D6 · Activité spéciale')+
+      '<div class="card"><div class="eyebrow">ACTIVITÉ · FACE '+activity.face+'</div>'+
+      '<p>'+safe(activity.special_description||'')+'</p>'+
+      '<p class="tiny-note">Une proposition à accepter, modifier ou passer ensemble.</p></div>';
+    if(!modifier){
+     body+=heroDice(null,6,'D6 · Règle supplémentaire')+
+       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','🎲 Brasser le D6 du modificateur');
+    }else{
+     body+=heroDice(modifier.face,6,'D6 · Règle supplémentaire')+
+       '<div class="card"><div class="eyebrow">RÈGLE · FACE '+modifier.face+'</div>'+
+       '<p>'+safe(modifier.modifier_text||'')+'</p></div>';
+    }
+   }
+  }
   else if(!prize){if(role.shared||role.receiver)body+=heroDice(null,20,'Dé de fête')+
     button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 Brasser le D20 de la surprise');}
   else{
@@ -563,8 +588,8 @@ function renderSpecialEventsEditor(){
  const current=state.specialEventsConfig;
  let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
   '<h2>Mes 6 événements spéciaux</h2>'+
-  '<p>Collez ici votre fichier JSON complet pour enregistrer les 6 fêtes, leurs résultats D20 et les 36 variations D6. Les descriptions seront conservées comme vous les avez écrites.</p>'+
-  '<p class="tiny-note">Votre partenaire ne voit pas cette bibliothèque. Il découvre la surprise pendant le tirage officiel, puis la règle D6 lorsqu’elle est tirée.</p>'+
+  '<p>Collez ici votre fichier JSON complet pour enregistrer les 6 fêtes, leurs 6 activités D6 et les 6 règles D6 pour chaque fête. Les descriptions seront conservées comme vous les avez écrites.</p>'+
+  '<p class="tiny-note">Votre partenaire ne voit pas cette bibliothèque. Il découvre une activité au premier D6, puis une règle supplémentaire au deuxième D6.</p>'+
   (current?'<p>✓ Vos 6 événements sont enregistrés.</p>':
     '<p>Aucun calendrier spécial personnalisé enregistré.</p>')+
   '<label>JSON de mes événements spéciaux<textarea id="special-events-json" rows="11"'+
@@ -579,11 +604,11 @@ function renderSpecialEventsEditor(){
     const item=current.evenements_speciaux[key];
     return '<div class="custom-card-tile"><span class="custom-tile-number">'+
       safe(item.evenement)+'</span><span class="custom-tile-name">'+
-      safe(item.surprise.D20_activite.titre)+'</span></div>';
+      safe('6 activités + 6 règles')+'</span></div>';
    }).join('')+'</div></section>';
  }
  body+='<section class="card">'+button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
- frame(body,'MES FÊTES','Importer 6 surprises et leurs 36 règles D6');
+ frame(body,'MES FÊTES','6 fêtes · deux D6 chacune');
 }
 function renderAdvent(){
  const now=today(),[year,mo,day]=now.split('-').map(Number);
@@ -1005,7 +1030,7 @@ async function handle(action,element){
   validateSpecialEventsJson(data);
   await rpc('import_love_special_events',{p_couple:state.coupleId,p_events:data});
   await reload();
-  notify('Les 6 événements spéciaux sont enregistrés.');
+  notify('Les 6 fêtes et leurs deux D6 sont enregistrés.');
   return;
  }
  if(verb==='import-advent-2026'){
