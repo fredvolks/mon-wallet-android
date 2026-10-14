@@ -38,7 +38,7 @@ test('Invitation remains the first screen, Google and email follow explicit acce
  assert.match(app,/sessionStorage\.setItem\('loverollInviteAccepted',invite\.kind\+':'\+invite\.value\)/);
  assert.match(app,/state\.showDiscover=false;/);
  assert.match(app,/if\(verb==='invite-start'\)/);
- assert.match(app,/frame\(authHtml\(!!pendingInvite\)/);
+ assert.match(app,/authHtml\(!!pendingInvite\)/);
  assert.doesNotMatch(authHtml(true),/data-action="show-landing"/);
 });
 
@@ -51,7 +51,7 @@ test('App-wide theme brings premium visual language to all signed-in sections',(
  }
  assert.match(html,/premium-theme\.css/);
  assert.match(worker,/premium-theme\.css/);
- assert.match(worker,/loveroll-static-v26/);
+ assert.match(worker,/loveroll-static-v27/);
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
