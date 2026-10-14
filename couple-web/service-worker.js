@@ -1,17 +1,26 @@
-const CACHE='loveroll-static-v31';
+const CACHE='loveroll-static-v32';
 const SHELL=['./','./index.html','./app.js','./styles.css','./premium-theme.css','./premium-home.css','./satin-reference.css','./premium-home.mjs','./discover.css','./approved-artwork.css','./demo-couple.css','./demo-couple.mjs','./assets/loveroll-die-approved.webp','./discover.mjs','./invite-links.mjs','./email-auth.mjs','./dice3d.js',
  './special-occasions.mjs','./evening-challenges.mjs','./monthly-activities.mjs','./advent-calendar.mjs','./private-special-events.mjs','./onboarding.mjs','./evening-turns.mjs','./wellbeing.mjs',
- './config.js','./invite-email.mjs','./push-notifications.mjs','./home-install.mjs','./couple-dashboard.mjs','./manifest.webmanifest','./assets/loveroll-hero.webp','./assets/loveroll-premium-scene.png'];
+ './config.js','./invite-email.mjs','./push-notifications.mjs','./home-install.mjs','./couple-dashboard.mjs','./web-version.json','./manifest.webmanifest','./assets/loveroll-hero.webp','./assets/loveroll-premium-scene.png'];
 const root=new URL('./',self.registration.scope);
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(names=>
  Promise.all(names.filter(n=>n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
  const req=e.request,u=new URL(req.url);
- if(req.method!=='GET'||u.origin!==root.origin||u.search)return;
+ if(req.method!=='GET'||u.origin!==root.origin)return;
  const asset=SHELL.some(path=>new URL(path,root).pathname===u.pathname);
- if(!asset)return;
- e.respondWith(fetch(req).catch(()=>caches.match(req)));
+ const isHome=u.pathname===root.pathname&&req.mode==='navigate';
+ if(!asset&&!isHome)return;
+ // Always fetch current content from the network rather than Android WebView's
+ // stale HTTP cache; app assets are pre-cached strictly for offline fallback.
+ e.respondWith(fetch(req,{cache:'no-store'}).then(response=>{
+  if(!response.ok)throw Error('Asset temporarily unavailable: '+response.status);
+  return response;
+ }).catch(async()=>{
+  const fallback=new URL(isHome?'./index.html':u.pathname,root);
+  return (await caches.match(fallback.href))||Response.error();
+ }));
 });
 // Incoming Web Push notifications (iOS/iPadOS home-screen PWA and supported browsers).
 self.addEventListener('push',event=>{
