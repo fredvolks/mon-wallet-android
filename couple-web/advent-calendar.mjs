@@ -20,6 +20,9 @@ export function validateAdventJson(payload){
     item[field].length>max)
     throw Error('Champ invalide au jour '+item.day+' : '+field);
   }
+  if(item.timer_minutes!==undefined&&item.timer_minutes!==null&&
+    (!Number.isInteger(item.timer_minutes)||item.timer_minutes<1||item.timer_minutes>60))
+    throw Error('Minuteur du jour '+item.day+' : 1 à 60 minutes ou null.');
  }
  return payload;
 }
