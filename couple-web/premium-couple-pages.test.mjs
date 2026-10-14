@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {premiumEveningHtml,premiumPolyDie} from './premium-evening.mjs';
 import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs';
 const read=p=>readFileSync(new URL('./'+p,import.meta.url),'utf8');
-const app=read('app.js'),css=read('premium-couple-pages.css'),sql=read('migrations/20261014_enable_existing_6x6_special_events.sql');
+const app=read('app.js'),css=read('premium-couple-pages.css'),die=read('dice3d.js'),sql=read('migrations/20261014_enable_existing_6x6_special_events.sql');
 const people=[{user_id:'first',name:'Camille'}, {user_id:'second',name:'Noémie'}];
 const session={id:'s',paired_turns:true,self_draws:true,starting_user_id:'first'};
 const turns={ready:true,first:'first',targets:{first:2,second:1},completed:{first:1,second:0},remaining:{first:1,second:1},next:'first',finished:false,pending:null};
@@ -42,9 +42,10 @@ test('Private personal D6 results remain hidden until BOTH partner rolls are com
 test('D35 always visible and rolling face not displayed as text before settling',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:{...turns,pending:{face:21}},rollFace:11,
   rollingKind:'new-challenge',rolling:true,category:'SENSUEL'});
- assert.match(html,/data-dice-sides="35" data-face="11" data-spinning="true"/);
+ assert.match(html,/data-dice-sides="35" data-face="11" data-dice-markers="numbers" data-spinning="true"/);
  assert.match(html,/class="dice-fallback" aria-hidden="true"><\/strong>/);
  assert.match(css,/\.love3d-stage\.is-rolling \.dice-fallback/);
+ assert.match(die, /canvas\.dataset\.diceMarkers==='pips'/);
  assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,2750\)\)/);
 });
 test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
