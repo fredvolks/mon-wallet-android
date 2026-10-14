@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-messenger44';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-messenger44';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-messenger44';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-profile45';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-profile45';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-profile45';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-messenger44';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-profile45';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -25,7 +25,7 @@ import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,instal
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
-const WEB_RELEASE='2026-10-14.44';
+const WEB_RELEASE='2026-10-14.45';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -135,7 +135,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-messenger44').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-profile45').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -303,8 +303,8 @@ function render(){
   return;
  }
  if(!state.wellbeing){
-  if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteWellbeingHtml();bindActions();}
-  else frame(wellbeingHtml(),'♡ MON RESSENTI','Vos réponses sont personnelles');
+  if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteWellbeingHtml(null,state.user);bindActions();}
+  else frame(wellbeingHtml(null,state.user),'♡ MON RESSENTI','Vos réponses sont personnelles');
   return;
  }
  if(state.inviteWelcome){
@@ -1614,6 +1614,26 @@ async function handle(action,element){
   await navigator.clipboard.writeText(url);
   notify('Lien complet copié. Collez-le dans Chrome ou Safari.');return;
  }
+ if(verb==='use-existing-account'){
+  // The profile step can also be reached with an old or wrong authenticated
+  // account. Never force the user to overwrite that account's personal profile.
+  // The pending invitation stays intact across this local sign-out.
+  const hadInvite=!!pendingInviteReference(sessionStorage);
+  const priorConsent=!!state.inviteAccepted;
+  if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
+  state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
+  // No profile, couple, challenge, invitation or user row is deleted.
+  const {error}=await client.auth.signOut({scope:'local'});
+  if(error)throw error;
+  state.user=null;state.profile=null;state.coupleId=null;state.couple=null;
+  state.members=[];state.wellbeing=null;state.emailVerificationPending=false;
+  state.passwordRecovery=false;state.showDiscover=false;state.showAuth=true;
+  state.authMode='signin';state.authDraftEmail='';state.inviteError=null;
+  state.inviteAttemptKey=null;
+  state.inviteAccepted=hadInvite&&priorConsent;
+  state.authNotice='Connectez-vous à votre compte existant avec votre mot de passe ou « Continuer avec Google ».';
+  render();return;
+ }
  if(verb==='switch-account-invite'){
   if(state.user&&window.LoveRollNativeAuth?.nativePushToken?.()){
    try{await disablePush(client,state.user.id);}catch(error){console.warn('Déconnexion FCM',error.code||'');}
@@ -2420,6 +2440,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-messenger44',
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-profile45',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
