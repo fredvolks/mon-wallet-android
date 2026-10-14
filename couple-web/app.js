@@ -1,6 +1,6 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-refresh32';
 import {loginEmail,loginCode,emailAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -22,6 +22,7 @@ import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,instal
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
+const WEB_RELEASE='2026-10-14.32';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -123,7 +124,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-refresh32').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -1345,8 +1346,11 @@ function renderSettings(){
   settingRow('Vérifier les mises à jour APK','Rechercher une version Android signée plus récente.','native-update','Vérifier'):
   settingRow('Ajouter LoveRoll à l’écran d’accueil',
     'Installation recommandée sur Safari iPhone et iPad.','show-install-guide','Afficher'))+
-  '<div class="settings-item"><div><strong>Version Web</strong>'+
-  '<p>Actualisation automatique du contenu à la réouverture avec connexion Internet.</p></div></div>'+
+  '<div class="settings-item"><div><strong>Version Web '+WEB_RELEASE+'</strong>'+
+  '<p>Vérification automatique des mises à jour et cache réseau renouvelé.</p></div></div>'+
+  settingRow('Actualiser LoveRoll maintenant',
+   'Force le chargement de la dernière version sans supprimer votre compte ni vos défis.',
+   'reload-web','Actualiser')+
   '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
  const privacy='<p>Votre journal commun est chiffré. Vos réponses individuelles sur le ressenti restent privées.</p>'+
   (nativeApp?settingRow('Mes anciennes données hors ligne',
@@ -1406,6 +1410,9 @@ async function handle(action,element){
  const [verb,...parts]=action.split(':');
  if(verb==='home-notices'){
   state.homeNotices=!state.homeNotices;render();return;
+ }
+ if(verb==='reload-web'){
+  await reloadWebAssets(true);return;
  }
  if(verb==='admin-reset-weekly'){
   if(!isLoveAdmin()||!isSharedCoupleReady(state.coupleId,state.members))
@@ -2127,9 +2134,44 @@ async function start(){
   if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];render();}
  });
 }
+// Version probe bypasses WebView/Chrome and service worker HTTP cache.
+// Keep account/session data intact; update the HTML URL, never storage or Supabase.
+let versionProbeRunning=false;
+async function reloadWebAssets(force=false){
+ if(versionProbeRunning||(!force&&document.hidden))return;
+ if(!force&&state.diceStatus)return;
+ versionProbeRunning=true;
+ try{
+  const response=await fetch('./web-version.json?fresh='+Date.now(),{
+   cache:'no-store',headers:{'Cache-Control':'no-cache'}
+  });
+  if(!response.ok){if(force)notify('Impossible de vérifier la version : réessaie avec Internet.');return;}
+  const data=await response.json();
+  const newest=String(data?.build||'');
+  if(!/^\d{4}-\d{2}-\d{2}\.\d+$/.test(newest))return;
+  if(!force&&newest===WEB_RELEASE)return;
+  if(!force&&sessionStorage.getItem('loveroll-auto-loaded-'+newest))return;
+  // Do not interrupt a live throw, evening or unsaved form.
+  if(!force&&(state.session||
+      document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))){
+   notify('Une mise à jour LoveRoll est disponible dans Réglages → Application.');
+   return;
+  }
+  sessionStorage.setItem('loveroll-auto-loaded-'+newest,'1');
+  const latest=new URL(location.href);
+  latest.searchParams.set('web_build',newest);
+  if(force)latest.searchParams.set('reload',String(Date.now()));
+  location.replace(latest.toString());
+ }catch(error){
+  console.warn('Vérification des mises à jour LoveRoll impossible',error);
+  if(force)notify('Vérification impossible. Réessaie lorsque la connexion est disponible.');
+ }finally{versionProbeRunning=false;}
+}
+window.addEventListener('load',()=>{reloadWebAssets().catch(console.warn);});
 document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&state.user){
   reload().catch(fail);
+  reloadWebAssets().catch(console.warn);
  }
 });
 // Android native Google chooser passes the selected ID token to Supabase.
@@ -2149,5 +2191,7 @@ window.addEventListener('loveroll-native-google-result',async event=>{
 start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js', {scope:'./'}).catch(console.warn));
+  window.addEventListener('load', () =>
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-refresh32',
+     {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
