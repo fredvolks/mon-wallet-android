@@ -593,7 +593,7 @@ function renderLegacySession(){
 }
 function renderSession(){
  const session=state.session,partner=other(),me=state.user.id;
- if(session&&!session.paired_turns)return renderLegacySession();
+ if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  let body='<section class="premium-intro"><div class="premium-eyebrow">♥ NOTRE SOIRÉE PARTAGÉE</div>'+
   '<h2>Nos 70 défis</h2><p>Deux univers de 35 surprises. Chaque tour et chaque résultat sont partagés sur vos deux comptes.</p></section>';
  if(!session){
@@ -640,7 +640,7 @@ function renderSession(){
       turn.next===me?'♡ C’est ton tour de lancer !':'⏳ Au tour de '+safe(partner.name))+'</div></section>';
    body+='<section class="card gift-card"><div class="premium-eyebrow">🎁 UN PETIT CADEAU</div>'+
     '<h3>Donner un défi à '+safe(partner.name)+'</h3>'+
-    '<p>Offre un de tes tirages restants. Ton partenaire aura un tour supplémentaire et choisira sa catégorie. Aucun minimum de défis n’est exigé.</p>'+
+    '<p>Transfère un de tes défis non commencés à ton partenaire. Il ou elle recevra un défi supplémentaire et choisira sa catégorie au moment de le lancer. Aucun minimum n’est exigé.</p>'+
     '<p class="tiny-note">Mes dons ce mois : '+monthGiftCount+'/3 · Dons reçus ce soir : '+receivedGiftCount+
     ' · Mes défis disponibles à donner : '+turn.remaining[me]+'</p>'+
     ((monthGiftCount<3&&turn.remaining[me]>0)?
@@ -653,7 +653,7 @@ function renderSession(){
     body+='<section class="card challenge-present"><div class="premium-eyebrow">♡ NOTRE DÉFI EN COURS</div>'+
      '<div class="eyebrow">'+safe(names[pending.category])+' · surprise '+safe(pending.card_id||pending.face)+'/35</div>'+
      heroDice(pending.face,35,'Notre défi surprise')+
-     '<div class="challenge-roles">♡ '+safe(person(pending.offered_by))+' OFFRE → '+safe(person(receiver))+' REÇOIT</div>'+
+     '<div class="challenge-roles">♡ DÉFI REÇU PAR '+safe(person(receiver)).toUpperCase()+'</div>'+
      '<h3>'+safe(card.title)+'</h3><p>'+safe(card.description)+'</p>'+
      timerWidget(pending,card.minutes);
     if(receiver===me){
@@ -666,7 +666,7 @@ function renderSession(){
    }else if(!turn.finished){
     if(turn.next===me){
      body+='<section class="card hero-game-card"><div class="premium-eyebrow">🎲 À TOI DE JOUER</div>'+
-      '<h2>À ton tour d’offrir un défi</h2><p>Choisis la catégorie pour ce tirage. Si tu as reçu un tour en cadeau, tu choisis aussi librement sa catégorie.</p>'+
+      '<h2>À toi de découvrir ton défi</h2><p>Choisis la catégorie de ton prochain défi. Les défis reçus en cadeau sont aussi à ton choix.</p>'+
       heroDice(null,35,'Une surprise parmi nos 70 défis')+
       '<div class="chipline">'+EVENING_CATEGORIES.map(category=>
        '<button class="pill '+(state.category===category?'selected':'')+
@@ -1772,7 +1772,7 @@ async function handle(action,element){
    updateChallengeClock();return;
  }
  if(verb==='give-challenge'){
-  if(!state.session?.paired_turns||!state.rollStatus?.both_ready)
+  if(!state.session?.paired_turns||!state.session?.self_draws||!state.rollStatus?.both_ready)
    throw Error('Attendez vos deux tirages personnels pour donner un défi.');
   const me=state.user.id,otherPerson=other();
   const turn=sharedEveningTurns(state.session,state.members,state.personal,state.challenges,state.gifts);
@@ -1781,10 +1781,10 @@ async function handle(action,element){
   const monthCount=state.gifts.filter(g=>g.donor_user_id===me&&g.month_key?.slice(0,7)===month()).length;
   if(monthCount>=3)throw Error('Vos 3 dons du mois sont utilisés.');
   if(!confirm('Offrir un de tes défis restants à '+otherPerson.name+
-   ' ? Son nombre de tirages augmentera de 1 et tu auras un tirage de moins.'))return;
+   ' ? Son nombre de défis à recevoir augmentera de 1 et le tien diminuera de 1.'))return;
   await rpc('give_love_challenge',{p_session:state.session.id});
   await refreshAndShow();
-  notify('♥ Défi offert ! '+otherPerson.name+' choisira sa catégorie lors de son tour.');
+  notify('♥ Défi transféré ! '+otherPerson.name+' choisira la catégorie de son prochain défi.');
   return;
  }
  if(verb==='new-challenge'){
