@@ -75,7 +75,7 @@ test('Surprise content is escaped rather than interpreted as markup',()=>{
  assert.match(h,/&lt;img src=x/);
  assert.match(h,/&lt;script&gt;attack/);
 });
-test('Atomic SQL allows only today's exact door, no destructive deletion, uses same couple lock',()=>{
+test("Atomic SQL allows only today's exact door, no destructive deletion, uses same couple lock",()=>{
  assert.match(db,/p_day is distinct from extract\(day from d\)::int/);
  assert.match(db,/time zone 'America\/Toronto'/);
  assert.match(db,/perform 1 from public\.couples where id=p_couple for update/);
