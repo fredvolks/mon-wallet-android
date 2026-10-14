@@ -218,7 +218,7 @@ test('Marketing page before OAuth or email signup',()=>{
  assert.match(h,/Votre aventure à deux/);
  assert.match(h,/CRÉER MON COMPTE GRATUITEMENT/);
  assert.match(h,/Android et iPhone/);
- assert.match(app,/root\.innerHTML=marketingHtml\(\)/);
+ assert.match(app,/root\.innerHTML=discoverHtml\(false\)/);
  assert.match(app,/if\(!state\.showAuth\)/);
  assert.match(app,/if\(verb==='show-auth'\)/);
 });
@@ -303,7 +303,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v23/);
+ assert.match(sw,/loveroll-static-v24/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
