@@ -20,6 +20,12 @@ test('Invitation immediately renders the approved premium visual, not authentica
  assert.match(h,/discover-premium-die/);
  assert.match(css,/\.discover-premium-die/);
  assert.match(css,/\.discover-accept/);
+ assert.match(h,/loveroll-invitation-hero-hd\.webp/);
+ assert.match(h,/fetchpriority="high"/);
+ assert.match(css,/\.discover-hero-premium/);
+ assert.match(css,/aspect-ratio:1630\/870/);
+ const shell=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ assert.match(shell,/loveroll-invitation-hero-hd\.webp/);
 });
 
 test('Public homepage shares the same premium visual while retaining account entry',()=>{
@@ -51,7 +57,7 @@ test('App-wide theme brings premium visual language to all signed-in sections',(
  }
  assert.match(html,/premium-theme\.css/);
  assert.match(worker,/premium-theme\.css/);
- assert.match(worker,/loveroll-static-v37/);
+ assert.match(worker,/loveroll-static-v38/);
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
