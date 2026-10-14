@@ -1,4 +1,4 @@
-// LoveRoll — 60 propositions à sens unique, sans minuterie obligatoire.
+// LoveRoll — 50 propositions à sens unique, plus 20 emplacements personnalisés, sans minuterie obligatoire.
 // Sur une carte, l’offrant propose l’activité; le destinataire peut accepter, adapter ou passer.
 export const EVENING_CATEGORIES=['SENSUEL','SEXUEL'];
 export const EVENING_CHALLENGES={
@@ -127,31 +127,6 @@ export const EVENING_CHALLENGES={
       "Le massage des mains",
       7,
       "Offre une attention aux mains, avec une crème adaptée si souhaitée."
-    ],
-    [
-      "La danse surprise",
-      3,
-      "Lance une musique inattendue et invite l’autre à une petite danse privée."
-    ],
-    [
-      "L’enveloppe romantique",
-      0,
-      "Écris trois idées de rendez-vous; laisse l’autre en choisir une pour plus tard."
-    ],
-    [
-      "La pause des cinq sens",
-      5,
-      "Fais découvrir une odeur, une texture et une musique choisies avec soin."
-    ],
-    [
-      "Le souvenir photographique",
-      0,
-      "Montre une photo commune et raconte un détail que l’autre ignore."
-    ],
-    [
-      "Le dernier mot",
-      2,
-      "Termine ce défi en disant une chose que tu aimerais préserver dans votre relation."
     ]
   ],
   "SEXUEL": [
@@ -279,36 +254,11 @@ export const EVENING_CHALLENGES={
       "La question audacieuse",
       0,
       "Demande à l’autre quelle nouveauté intime l’intrigue et ce qu’il ou elle préfère éviter."
-    ],
-    [
-      "La séduction sans paroles",
-      4,
-      "Offre une petite scène de séduction silencieuse, en gardant le droit de faire une pause."
-    ],
-    [
-      "La soirée des possibles",
-      0,
-      "Fais découvrir trois thèmes de rendez-vous audacieux et laisse l’autre choisir celui qu’il souhaite explorer."
-    ],
-    [
-      "Le miroir complice",
-      3,
-      "Invite l’autre à reproduire librement un geste de séduction choisi ensemble."
-    ],
-    [
-      "La carte inspiration",
-      0,
-      "Propose de regarder ensemble des idées de jeux ou de positions de couple et de retenir seulement celles qui semblent confortables."
-    ],
-    [
-      "La finale surprise",
-      0,
-      "Offre à l’autre le choix de conclure par une attention douce, un autre jeu ou simplement une pause."
     ]
   ]
 };
 export function eveningCard(category,cardId){
- if(!EVENING_CATEGORIES.includes(category)||!Number.isInteger(cardId)||cardId<1||cardId>30)
+ if(!EVENING_CATEGORIES.includes(category)||!Number.isInteger(cardId)||cardId<1||cardId>25)
   throw new Error('Carte de défi invalide');
  const [title,minutes,description]=EVENING_CHALLENGES[category][cardId-1];
  return {category,face:cardId,title,minutes,description};
@@ -320,4 +270,25 @@ export function availableEveningCategories(preferred){
 export function formatCountdown(milliseconds){
  const seconds=Math.max(0,Math.ceil(milliseconds/1000));
  return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+}
+
+export const CUSTOM_CARD_START=26;
+export const CUSTOM_CARD_END=35;
+export function customCardSlots(category,cards=[]){
+ if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
+ return Array.from({length:10},(_,i)=>{
+  const cardId=26+i,found=cards.find(c=>c.category===category&&c.card_id===cardId);
+  return {category,cardId,title:found?.title||'',description:found?.description||'',
+   minutes:found?.timer_minutes??null,filled:!!found};
+ });
+}
+export function resolvedCard(draw){
+ if(!EVENING_CATEGORIES.includes(draw.category))return {title:'Défi historique',description:'Retrouvez votre ancien défi dans l’historique.',minutes:null,cardId:draw.card_id||draw.face};
+ const cardId=draw.card_id||draw.face;
+ if(cardId>=CUSTOM_CARD_START){
+  return {category:draw.category,cardId,title:draw.card_title||'Carte personnalisée',
+   description:draw.card_description||'Carte supprimée, contenu non disponible.',
+   minutes:draw.card_timer_minutes??null,custom:true};
+ }
+ return {...eveningCard(draw.category,cardId),cardId,custom:false};
 }
