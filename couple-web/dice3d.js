@@ -129,7 +129,7 @@ export function dieOn(canvas,sides,value,rolling){
  const built=geometry(sides);scene.add(built.group);
  const target=new THREE.Quaternion().setFromUnitVectors(built.normals.get(Number(value)||1),
   new THREE.Vector3(0,0,1));
- if(sides===6){const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.18,.21,-.08));target.premultiply(tilt);}
+ if(sides===6){const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.49,-.52,-.07));target.premultiply(tilt);}
  built.group.quaternion.copy(target);
  let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true;
  const start=performance.now(),duration=rolling?2650:0;
