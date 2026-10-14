@@ -390,6 +390,9 @@ jobs:
       - name: Verify 25 Advent doors and opened surprise on Galaxy S25 Ultra
         run: node couple-web/premium-advent-visual-check.cjs
 
+      - name: Verify premium eight-section Settings on Galaxy S25 Ultra and iPhone
+        run: node couple-web/premium-settings-visual-check.cjs
+
       - name: Publier les captures comparatives
         if: always()
         uses: actions/upload-artifact@v4
