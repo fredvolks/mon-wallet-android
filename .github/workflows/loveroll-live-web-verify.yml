@@ -19,10 +19,15 @@ jobs:
           python3 - <<'PY'
           import json
           with open('/tmp/loveroll-live.json', encoding='utf-8') as f: data=json.load(f)
-          assert data.get('build') == '2026-10-14.36', f"Live version does not match: {data}"
+          assert data.get('build') == '2026-10-14.37', f"Live version does not match: {data}"
           PY
           curl --fail --silent --show-error --location --max-time 20 "${SITE}index.html" -o /tmp/loveroll-live.html
-          grep -F 'settings-premium.css?v=20261014-settings36' /tmp/loveroll-live.html
+          grep -F 'settings-premium.css?v=20261014-invite37' /tmp/loveroll-live.html
           curl --fail --silent --show-error --location --max-time 20 "${SITE}settings-premium.css" -o /tmp/loveroll-settings.css
           grep -F 'main#app.loveroll-settings-page' /tmp/loveroll-settings.css
-          echo 'Verified latest LoveRoll web settings are publicly served.'
+          curl --fail --silent --show-error --location --max-time 20 "${SITE}invite-account.css" -o /tmp/loveroll-invite.css
+          grep -F '.invite-account-screen' /tmp/loveroll-invite.css
+          curl --fail --silent --show-error --location --max-time 20 "${SITE}app.js" -o /tmp/loveroll-invite-app.js
+          grep -F 'signInWithPassword' /tmp/loveroll-invite-app.js
+          grep -F 'autoAcceptPendingInvite' /tmp/loveroll-invite-app.js
+          echo 'Verified LoveRoll v37 premium account page and secure invite flow are live.'
