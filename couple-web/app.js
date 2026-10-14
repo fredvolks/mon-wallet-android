@@ -33,7 +33,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,diceStatus:null,rollAnimationFace:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -474,6 +474,9 @@ function renderHome(){
   disabled:!!state.diceStatus,
   members,
   challenges:state.session?state.challenges:[],
+  history:state.challengesHistory||[],
+  sessions:state.sessions||[],
+  rollFace:state.rollAnimationFace||1,
   events:state.events||[]
  }),'LOVEROLL','La complicité se joue à deux');
 }
@@ -1900,13 +1903,14 @@ async function handle(action,element){
     // Supabase selects and persists the one true face under a couple row lock;
     // only after the response do we animate the ACTUAL server result.
     const result=await rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:'weekly'});
-    state.weekly=result;
+    state.rollAnimationFace=result.face;
     state.diceStatus='rolling';render();
     await new Promise(resolve=>setTimeout(resolve,2750));
-    state.diceStatus=null;
+    state.diceStatus=null;state.rollAnimationFace=null;
+    state.weekly=result;
     await refreshAndShow();
     notify('Résultat officiel : '+result.face+' · tirage de '+person(result.actor));
-   }catch(error){state.diceStatus=null;await refreshAndShow();throw error;}
+    }catch(error){state.diceStatus=null;state.rollAnimationFace=null;await refreshAndShow();throw error;}
    return;
   }
   const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}));
