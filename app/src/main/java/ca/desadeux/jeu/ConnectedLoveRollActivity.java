@@ -119,6 +119,41 @@ public final class ConnectedLoveRollActivity extends Activity {
     }catch(Exception e){show("Export JSON impossible : "+e.getMessage());}
    });
   }
+  @JavascriptInterface public void enableWeeklyReminder(){
+   runOnUiThread(()->{
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(
+     "android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED){
+     requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},6831);
+    }else{
+     LoveRollWeeklyReminderReceiver.setEnabled(ConnectedLoveRollActivity.this,true);
+     show("Rappel LoveRoll activé chaque lundi à 9 h.");
+    }
+   });
+  }
+  @JavascriptInterface public void disableWeeklyReminder(){
+   runOnUiThread(()->LoveRollWeeklyReminderReceiver.setEnabled(ConnectedLoveRollActivity.this,false));
+  }
+  @JavascriptInterface public boolean weeklyReminderEnabled(){
+   return LoveRollWeeklyReminderReceiver.isEnabled(ConnectedLoveRollActivity.this);
+  }
+  // Email is composed in the user's chosen email app, never auto-sent.
+  @JavascriptInterface public void openEmail(String recipient,String subject,String body){
+   runOnUiThread(()->{
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    if(recipient==null||recipient.length()>254||!android.util.Patterns.EMAIL_ADDRESS.matcher(recipient).matches()){
+     show("Adresse courriel invalide.");return;
+    }
+    try {
+     Intent email=new Intent(Intent.ACTION_SENDTO);
+     email.setData(Uri.parse("mailto:"));
+     email.putExtra(Intent.EXTRA_EMAIL,new String[]{recipient});
+     email.putExtra(Intent.EXTRA_SUBJECT,subject==null?"Invitation LoveRoll":subject);
+     email.putExtra(Intent.EXTRA_TEXT,body==null?"":body);
+     startActivity(Intent.createChooser(email,"Envoyer mon invitation LoveRoll"));
+    }catch(Exception e){show("Aucune application courriel disponible. Utilisez Copier le lien.");}
+   });
+  }
   // Free SMS share: opens the system composer, never sends silently.
   @JavascriptInterface public void openSms(String message) {
    runOnUiThread(() -> {
@@ -210,6 +245,14 @@ public final class ConnectedLoveRollActivity extends Activity {
   web.loadUrl(SITE+suffix);
   if(getSharedPreferences("des_a_deux_game",MODE_PRIVATE).getBoolean("auto_update",true))
    UpdateManager.check(this,true);
+ }
+ @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grants){
+  super.onRequestPermissionsResult(requestCode,permissions,grants);
+  if(requestCode==6831){
+   if(grants.length>0&&grants[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)
+    LoveRollWeeklyReminderReceiver.setEnabled(this,true);
+   else show("Notifications non autorisées. Modifiez les réglages Android.");
+  }
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
   super.onActivityResult(requestCode,resultCode,data);
