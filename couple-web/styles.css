@@ -289,3 +289,9 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
  color:#f9dff0;background:#2b1830;text-align:center;font-size:.9rem;font-weight:650}
 .custom-slot-grid .custom-filled{color:#ffe3f4;background:#44233d;border-color:#a96b91}
 .custom-slot-grid .custom-active{color:white;border:2px solid #ff64ae;box-shadow:0 0 11px #db428c70;background:#69284f}
+
+
+.custom-receiver{margin:16px 0;padding:14px;background:#251329;border:1px solid #7c4365;border-radius:13px}
+.custom-receiver strong{display:block;margin-bottom:7px;color:#ffe4f2}
+.custom-receiver label{display:flex;align-items:center;gap:9px;padding:6px 3px;margin:0;font-size:.92rem;color:#efd2e7}
+.custom-receiver input[type="radio"]{accent-color:#ff64ad;width:18px;height:18px;flex-shrink:0}
