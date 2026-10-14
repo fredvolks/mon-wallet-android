@@ -419,3 +419,53 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
 .settings-group-content{padding:12px 10px}.settings-group-icon{width:34px;height:34px}
 .settings-item{flex-direction:column;align-items:stretch}.settings-mini-button{width:100%}
 .invite-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* One responsive LoveRoll UI: Android APK WebView, Safari iPhone and iPad. */
+.settings-grid{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:0}
+.settings-grid>.settings-group{min-width:0}
+@media (min-width:768px){
+ main{width:min(100%,1100px);max-width:1100px;padding:30px 30px calc(110px + env(safe-area-inset-bottom))}
+ .nav-inner{width:min(100%,950px);max-width:950px;gap:9px}
+ .nav button{font-size:.89rem;min-height:64px}
+ .nav span{font-size:1.48rem}
+ .header h1{font-size:2rem}
+ .header p{font-size:1.02rem}
+ .card{padding:22px;border-radius:23px}
+ .settings-head{padding:0 6px 12px}
+ .settings-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:start}
+ .settings-grid>.settings-group{margin:0;box-shadow:0 15px 40px #09040e58}
+ .settings-group>summary{min-height:76px}
+ .settings-group-content{padding:18px}
+ .settings-group-heading strong{font-size:1.06rem}
+ .settings-group-heading small{font-size:.81rem}
+ .settings-item{gap:13px}
+ .settings-item p{font-size:.84rem}
+ .two{gap:18px}
+ .dice-row{gap:22px;justify-content:center}
+ .stat-grid{gap:12px}
+ .install-modal{width:min(100%,510px)}
+ .marketing-shell.love-onepage{width:min(92vw,900px);max-width:900px;margin:0 auto}
+ .love-onepage .love-hero{padding-inline:clamp(18px,3vw,44px)}
+ .love-onepage .love-features{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .love-onepage .love-cta-group{max-width:670px;margin-inline:auto;width:100%}
+ .custom-card-tiles{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (min-width:1100px){
+ main{max-width:1160px}
+ .nav-inner{max-width:1080px}
+ .settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .settings-grid>.settings-group{height:auto}
+ .marketing-shell.love-onepage{width:min(94vw,1010px);max-width:1010px}
+}
+@media (min-width:768px) and (orientation:landscape){
+ .settings-group-content{max-height:min(76dvh,740px);overflow-y:auto;overscroll-behavior:contain}
+ .settings-group[open]>summary{position:relative}
+ .love-onepage .love-hero{max-height:74dvh}
+ .install-modal{max-height:88dvh;overflow-y:auto}
+}
+@media (hover:none) and (pointer:coarse){
+ .settings-group>summary{min-height:66px}
+ .settings-mini-button{min-height:44px}
+ .nav button{touch-action:manipulation}
+}
