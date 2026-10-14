@@ -1,0 +1,279 @@
+/* LoveRoll: thematic polish applied to CURRENT screens. Styles only.
+   Real menu: Accueil, Soirée, Surprise, Avent, Réglages.
+   Real dice: interactive WebGL D6/D20/D35 -- do not hide or replace canvases.
+   Underlying pairing, challenge, and personal data logic remains untouched. */
+:root{
+ --bg:#100510;--panel:#290c22;--edge:#ec7dad;--pink:#ff63ad;
+ --text:#fff5fa;--mute:#e8c3d8;--love-rose:#ff71b4;--love-wine:#4d0a2e;
+ --love-border:#f28ab48c;
+ --love-glass:linear-gradient(140deg,#571432ed 0%,#300b26f0 57%,#180719f7);
+ --love-glow:inset 0 1px 1px #ffdeee5a,0 0 22px #ed3e8427,0 16px 37px #070209c9;
+ accent-color:#ff64aa;
+}
+html{background:#0e0410}
+body:not(:has(.love-discover)){
+ color:#fff5fa;
+ background:radial-gradient(ellipse 75% 25% at 88% 0%,#af184d75,transparent 74%),
+ radial-gradient(ellipse 70% 33% at 0% 36%,#bd236758,transparent 70%),
+ radial-gradient(ellipse 75% 34% at 83% 95%,#9c1e583d,transparent 70%),
+ linear-gradient(171deg,#280617 0%,#110512 50%,#0b0611 100%);
+ background-attachment:fixed;
+}
+body:not(:has(.love-discover))::before{
+ content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.64;
+ background:radial-gradient(ellipse 65% 8% at 12% 28%,#f12e772b,transparent 83%),
+ radial-gradient(ellipse 76% 12% at 95% 61%,#f5448a27,transparent 79%),
+ radial-gradient(ellipse 53% 7% at 5% 90%,#f32a7a25,transparent 80%);
+}
+body:not(:has(.love-discover)) main{
+ max-width:690px;padding:12px 13px calc(106px + env(safe-area-inset-bottom));isolation:isolate;
+}
+body:not(:has(.love-discover)) main>.header{
+ position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px;
+ margin:0 0 11px;padding:4px 5px 15px;border-bottom:1px solid #ea6b9b43;background:transparent;
+}
+body:not(:has(.love-discover)) main>.header::before{
+ content:"LoveRoll♡";grid-column:1/-1;text-align:center;display:block;margin:0 0 5px;
+ font:italic 700 clamp(2.05rem,9.2vw,3.25rem)/1 Georgia,'Times New Roman',serif;
+ letter-spacing:-.065em;color:#fff4f9;text-shadow:0 1px 1px #000,0 0 22px #ff5a9a4d;
+}
+body:not(:has(.love-discover)) main>.header>div{grid-column:1;min-width:0}
+body:not(:has(.love-discover)) main>.header h1{
+ margin:0 0 3px;font:700 clamp(1.32rem,5vw,1.8rem)/1.12 Georgia,serif;color:#fff4fa;
+}
+body:not(:has(.love-discover)) main>.header p{margin:0;color:#f3b6d4;font-size:.79rem;line-height:1.35}
+body:not(:has(.love-discover)) main>.header>button{
+ grid-column:2;align-self:center;min-height:43px;min-width:43px;border-radius:50%!important;
+}
+body:not(:has(.love-discover)) .premium-intro{
+ padding:9px 9px 14px;margin:0 auto 6px;max-width:610px;
+}
+body:not(:has(.love-discover)) .premium-intro::before{opacity:.27;font-size:clamp(6rem,30vw,13rem)}
+body:not(:has(.love-discover)) .premium-intro h2{
+ font:700 clamp(1.65rem,6.6vw,2.55rem)/1.12 Georgia,serif;
+ letter-spacing:-.035em;text-shadow:0 3px 13px #17000c;
+}
+body:not(:has(.love-discover)) .premium-intro p{color:#f1d1e1;font-size:.88rem}
+body:not(:has(.love-discover)) .eyebrow,
+body:not(:has(.love-discover)) .premium-eyebrow{
+ font-size:.71rem;font-weight:800;color:#ff9ac7;letter-spacing:.165em;
+}
+body:not(:has(.love-discover)) .card,
+body:not(:has(.love-discover)) .auth-panel,
+body:not(:has(.love-discover)) .waiting-hero,
+body:not(:has(.love-discover)) .settings-group,
+body:not(:has(.love-discover)) .settings-item,
+body:not(:has(.love-discover)) .aftercare-card,
+body:not(:has(.love-discover)) .premium-invite-hero{
+ color:#fff5fa;background:var(--love-glass);border:1px solid var(--love-border);
+ border-radius:22px;box-shadow:var(--love-glow);
+}
+body:not(:has(.love-discover)) .card,
+body:not(:has(.love-discover)) .auth-panel{
+ margin:10px 0;padding:clamp(13px,3.5vw,21px);
+}
+body:not(:has(.love-discover)) .card h2,
+body:not(:has(.love-discover)) .card h3,
+body:not(:has(.love-discover)) .settings-group-heading strong{
+ font-family:Georgia,'Times New Roman',serif;color:#fff4fb;letter-spacing:-.02em;
+}
+body:not(:has(.love-discover)) .card h2{font-size:clamp(1.3rem,4.6vw,1.85rem)}
+body:not(:has(.love-discover)) .card h3{font-size:clamp(1.1rem,4vw,1.48rem)}
+body:not(:has(.love-discover)) p,
+body:not(:has(.love-discover)) .tiny-note{color:#e9c8da}
+body:not(:has(.love-discover)) .hero-game-card{
+ overflow:hidden;position:relative;
+ background:radial-gradient(ellipse 85% 67% at 10% 27%,#c9317a47,transparent 71%),
+ radial-gradient(ellipse at 95% 2%,#7e1a514d,transparent 62%),
+ linear-gradient(130deg,#511232,#240a22 85%);
+ border-color:#ffa7ccaa;
+ box-shadow:inset 0 1px #fff6,0 0 25px #f4398438,0 17px 39px #070209d9;
+}
+body:not(:has(.love-discover)) .hero-game-card::before{
+ content:"♡";position:absolute;top:-43px;right:-13px;font:170px/.9 Georgia,serif;
+ z-index:0;color:#f94b9930;text-shadow:0 0 17px #ff459148;
+ pointer-events:none;transform:rotate(-16deg);
+}
+body:not(:has(.love-discover)) .hero-game-card>*{position:relative;z-index:1}
+body:not(:has(.love-discover)) .hero-game-card h2{margin:7px 0;font-size:clamp(1.38rem,5vw,1.9rem)}
+body:not(:has(.love-discover)) .dice-row.premium-dice-row{
+ display:flex;gap:12px;align-items:center;justify-content:center;
+}
+body:not(:has(.love-discover)) .die.premium-die{
+ position:relative;width:clamp(154px,48vw,213px);height:clamp(154px,48vw,213px);
+ min-width:0;flex-shrink:0;overflow:hidden;border:1.5px solid #ff99cbbb;border-radius:26px;
+ background:radial-gradient(ellipse at 35% 18%,#e03d8270,#54112d 43%,#14081b 81%);
+ box-shadow:inset 1px 2px 1px #fff4,inset -12px -17px 22px #09020b9c,
+ 0 0 23px #ec2b894f,0 18px 23px #0a020a96;transform:translateZ(0);
+}
+body:not(:has(.love-discover)) .die.premium-die::before{
+ content:"";pointer-events:none;position:absolute;inset:0;
+ border-radius:inherit;background:linear-gradient(135deg,#fff2,transparent 33%,#f7217e0e 80%);z-index:2;
+}
+body:not(:has(.love-discover)) .die.premium-die .dice-canvas{
+ display:block!important;width:100%;height:100%;position:absolute;inset:0;z-index:1;touch-action:none;
+}
+body:not(:has(.love-discover)) .premium-die-caption{min-width:0;max-width:230px}
+body:not(:has(.love-discover)) .premium-die-caption p{color:#f4cddd;font-size:.81rem}
+body:not(:has(.love-discover)) .result{
+ color:#ffadd6;font-family:Georgia,serif;font-size:clamp(1.5rem,6vw,2.25rem);
+ text-shadow:0 0 18px #f5459866;
+}
+body:not(:has(.love-discover)) .stat{
+ border:1px solid #e86f9f85;border-radius:16px;
+ background:radial-gradient(ellipse at 50% 0%,#a32c6255,transparent 85%),#35102d;
+ box-shadow:inset 0 1px #ffc8e43b;padding:12px 5px;
+}
+body:not(:has(.love-discover)) .stat strong{
+ color:#fff3f9;font:700 clamp(1.25rem,4.3vw,1.65rem) Georgia,serif;
+}
+body:not(:has(.love-discover)) .stat small{color:#f3bfd7;font-size:.71rem}
+body:not(:has(.love-discover)) .love-turn-card,
+body:not(:has(.love-discover)) .gift-card,
+body:not(:has(.love-discover)) .challenge-present{
+ border-color:#f487b5!important;
+ background:linear-gradient(130deg,#4e1638,#200a20 85%)!important;
+}
+body:not(:has(.love-discover)) .turn-banner,
+body:not(:has(.love-discover)) .challenge-roles,
+body:not(:has(.love-discover)) .invite-status{
+ color:#ffdfef;border:1px solid #fb91be99;border-radius:17px;
+ background:linear-gradient(130deg,#9026597c,#4d123d80);
+ box-shadow:inset 0 1px #ffe7f139,0 0 18px #fe3a872f;
+}
+body:not(:has(.love-discover)) .timer-panel{
+ border:1px solid #fa8dbc9e;border-radius:21px;
+ background:radial-gradient(ellipse at 50% 0%,#ad245b50,transparent 80%),#291020;
+}
+body:not(:has(.love-discover)) .timer-clock{
+ font-family:Georgia,serif;color:#fff0f8;text-shadow:0 0 18px #fc569d9a;
+}
+body:not(:has(.love-discover)) .pill{
+ border:1px solid #e282b1aa;border-radius:999px;
+ color:#fbe5f0;background:linear-gradient(130deg,#4d1a3d,#230d26);
+}
+body:not(:has(.love-discover)) .pill.selected{
+ color:white;background:linear-gradient(130deg,#ff6aaf,#c51f73);
+ border-color:#ffd1e6;box-shadow:0 0 14px #f544925c,inset 0 1px #fff8;
+}
+body:not(:has(.love-discover)) button:not(.subtle):not(.pill):not(.nav button):not(.text-link):not(.love-answer-option){
+ border:1px solid #ffc4de!important;border-radius:999px!important;min-height:49px;
+ color:#fffafc;background:linear-gradient(160deg,#ff80b9,#ed3684 52%,#bf1868)!important;
+ box-shadow:inset 0 2px 2px #ffffff65,0 0 17px #ff31857a,0 7px 16px #7e0b457d;
+ font-weight:800;letter-spacing:.02em;
+}
+body:not(:has(.love-discover)) button.subtle{
+ background:linear-gradient(135deg,#461a37ee,#220b24);
+ border:1px solid #e781b2b3;border-radius:17px;color:#ffe0f0;
+ box-shadow:inset 0 1px #ffdbea3b;
+}
+body:not(:has(.love-discover)) button:focus-visible,
+body:not(:has(.love-discover)) input:focus-visible,
+body:not(:has(.love-discover)) select:focus-visible{
+ outline:2px solid #ffcedf;outline-offset:2px;
+}
+body:not(:has(.love-discover)) input,
+body:not(:has(.love-discover)) select,
+body:not(:has(.love-discover)) textarea{
+ color:#fff4fb;background:#1c0919;border:1px solid #ca6794;border-radius:15px;
+}
+body:not(:has(.love-discover)) .settings-head{text-align:center;padding:10px 5px 12px}
+body:not(:has(.love-discover)) .settings-grid{row-gap:9px}
+body:not(:has(.love-discover)) .settings-group>summary{
+ padding:13px 12px;min-height:73px;color:#ffe1ef;
+}
+body:not(:has(.love-discover)) .settings-group-icon{
+ border:1px solid #ffa1ca91;border-radius:15px;color:#ffabd3;
+ background:linear-gradient(135deg,#8a2656,#34112c);
+ box-shadow:inset 0 1px #ffe9f557,0 0 18px #f9378c42;
+}
+body:not(:has(.love-discover)) .settings-group-heading strong{font-size:1.1rem}
+body:not(:has(.love-discover)) .settings-group-content{border-color:#dc6b9f75}
+body:not(:has(.love-discover)) .custom-card-tile{
+ border:1px solid #e67eaa8e;border-radius:16px;
+ background:linear-gradient(140deg,#491333,#230c23);box-shadow:inset 0 1px #ffd6ea38;
+}
+body:not(:has(.love-discover)) .custom-card-tile.custom-active{
+ border:2px solid #ffb3d0;background:linear-gradient(140deg,#b62d75,#671642);
+ box-shadow:0 0 13px #ff4886a6;
+}
+body:not(:has(.love-discover)) .day-grid button:not(.locked),
+body:not(:has(.love-discover)) .calendar button.marked{
+ border:1px solid #ffabd0a8;background:linear-gradient(135deg,#e75b9f,#952458);
+ box-shadow:0 0 14px #ff397d51;
+}
+body:not(:has(.love-discover)) .day-grid button.locked{
+ border:1px solid #693550;background:#210d21;color:#99738b;box-shadow:none;
+}
+body:not(:has(.love-discover)) .nav{
+ padding:7px 7px calc(8px + env(safe-area-inset-bottom));
+ background:linear-gradient(180deg,#260d22f2,#100611f9);border-top:1px solid #e16b9c85;
+ box-shadow:0 -6px 21px #13030dd9,0 -1px 13px #ff388d3c;backdrop-filter:blur(20px);
+}
+body:not(:has(.love-discover)) .nav button{
+ border:0;background:none;box-shadow:none;color:#dfaec8;
+ border-radius:14px;min-height:59px;padding:5px 2px;
+}
+body:not(:has(.love-discover)) .nav button.active{
+ color:#ffb0d2;border:1px solid #f57fa979;
+ background:linear-gradient(140deg,#7a1f51,#40122e);
+ box-shadow:inset 0 1px #ffe3f454,0 0 17px #ec36833d;
+}
+body:not(:has(.love-discover)) .nav span{font-size:1.4rem;line-height:1.25}
+/* Approved landing, real invitation and 100%-local demo retain their own hierarchy. */
+body:has(.love-discover) .love-discover{
+ background:radial-gradient(ellipse at 5% 39%,#a52a6044,transparent 39%),
+ radial-gradient(ellipse at 101% 10%,#e52a6942,transparent 40%),
+ linear-gradient(165deg,#270618,#0b0410 72%,#1d0717);
+}
+body:has(.love-discover) .discover-showcase,
+body:has(.love-discover) .discover-feature,
+body:has(.love-discover) .discover-finale{
+ box-shadow:inset 0 2px #ffdaec6b,0 0 21px #f32a7c36,0 14px 32px #060209ae;
+}
+body:has(.love-discover) .discover-accept{
+ box-shadow:inset 0 3px 5px #ffe7f0b3,0 0 32px #fe358b9b,0 13px 31px #630b39bd;
+}
+body:has(.demo-shell) .demo-shell{background:transparent;max-width:690px}
+body:has(.demo-shell) .demo-control{
+ border-bottom:1px solid #ff9cc5b3;background:linear-gradient(130deg,#671638fa,#2a0b25fa);
+ box-shadow:0 7px 21px #060109b0;
+}
+body:has(.demo-shell) .demo-pairline{
+ border:1px solid #ef82b38c;border-radius:18px;
+ background:linear-gradient(130deg,#6d2148,#210b22);
+ box-shadow:inset 0 1px #fff5,0 0 18px #e936813c;
+}
+body:has(.demo-shell) .demo-card{
+ border:1px solid #ff9fc89b!important;
+ background:radial-gradient(ellipse at 15% 13%,#b31e6557,transparent 65%),
+ linear-gradient(135deg,#49152e,#1c071c)!important;box-shadow:var(--love-glow)!important;
+}
+body:has(.demo-shell) .demo-big-die{
+ color:#ffafd7;text-shadow:0 0 22px #ff3e9a;
+ background:radial-gradient(ellipse,#ce3d7b5e,#330c2a 70%,transparent);
+}
+body:has(.demo-shell) .nav{z-index:150}
+@media(min-width:768px){
+ body:not(:has(.love-discover)) main{max-width:1070px;padding:24px 26px 120px}
+ body:not(:has(.love-discover)) .premium-die-caption{max-width:280px}
+}
+@media(max-width:410px){
+ body:not(:has(.love-discover)) main{padding-left:11px;padding-right:11px}
+ body:not(:has(.love-discover)) .card{padding:13px}
+ body:not(:has(.love-discover)) .dice-row.premium-dice-row{flex-direction:row;gap:9px}
+ body:not(:has(.love-discover)) .premium-die-caption{max-width:130px}
+ body:not(:has(.love-discover)) .premium-die-caption p{font-size:.7rem}
+ body:not(:has(.love-discover)) .die.premium-die{
+  width:clamp(138px,43vw,174px);height:clamp(138px,43vw,174px)
+ }
+ body:not(:has(.love-discover)) .nav button{font-size:.62rem;min-height:58px}
+}
+@media(max-width:350px){
+ body:not(:has(.love-discover)) .dice-row.premium-dice-row{flex-direction:column}
+ body:not(:has(.love-discover)) .premium-die-caption{max-width:100%;text-align:center}
+ body:not(:has(.love-discover)) .stat-grid{gap:4px}
+}
+@media(prefers-reduced-motion:reduce){
+ body:not(:has(.love-discover)) .hero-game-card::before{animation:none}
+}
