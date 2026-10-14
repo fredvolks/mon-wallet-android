@@ -45,6 +45,9 @@ jobs:
               assert im.size==(1200,630), im.size
               assert im.format=='PNG'
           assert asset.stat().st_size>30000
+          scene=Path('couple-web/assets/loveroll-premium-scene.png')
+          with Image.open(scene) as graphic: assert graphic.size==(1200,630)
+          assert scene.stat().st_size>30000
           print('Open Graph image OK:',asset.stat().st_size,'bytes')
           PY
       - name: Téléverser uniquement la PWA (aucun fichier Android ni secret)
