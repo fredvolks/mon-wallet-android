@@ -10,7 +10,7 @@ const sql=readFileSync(new URL('./migrations/20261014_safe_unpair_portable_libra
 
 test('Invitation immediately renders the approved premium visual, not authentication',()=>{
  const h=discoverHtml(true);
- for(const label of ['LA COMPLICITÉ SE JOUE À DEUX','Jeux','Défis','Dates','Surprises','Un dé.','Une surprise.','Deux sourires.','UN ESPACE RIEN QU'])
+ for(const label of ['LA COMPLICITÉ SE JOUE À DEUX','Jeux','Défis','Rendez-vous','Surprises','Un dé.','Une surprise.','Deux sourires.','UN ESPACE RIEN QU'])
   assert.ok(h.includes(label),label);
  assert.match(h,/data-action="invite-start"/);
  assert.match(h,/ACCEPTER L’INVITATION/);
@@ -51,7 +51,7 @@ test('App-wide theme brings premium visual language to all signed-in sections',(
  }
  assert.match(html,/premium-theme\.css/);
  assert.match(worker,/premium-theme\.css/);
- assert.match(worker,/loveroll-static-v36/);
+ assert.match(worker,/loveroll-static-v37/);
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
