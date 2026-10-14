@@ -279,7 +279,7 @@ export function customCardSlots(category,cards=[]){
  return Array.from({length:10},(_,i)=>{
   const cardId=26+i,found=cards.find(c=>c.category===category&&c.card_id===cardId);
   return {category,cardId,title:found?.title||'',description:found?.description||'',
-   minutes:found?.timer_minutes??null,filled:!!found};
+   minutes:found?.timer_minutes??null,recipientId:found?.recipient_user_id||null,filled:!!found};
  });
 }
 export function resolvedCard(draw){
