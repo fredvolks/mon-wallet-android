@@ -1570,7 +1570,7 @@ async function handle(action,element){
     session_id:state.chosenSession,couple_id:state.coupleId,
     author_id:state.user.id,ciphertext},{onConflict:'session_id,author_id'});
   if(error)throw error;
-  await refreshAndShow();notify('Votre avis est sauvegardé et visible par votre partenaire');return;
+  await refreshAndShow();notify('Votre avis est enregistré. Il sera visible quand vous aurez répondu tous les deux.');return;
  }
 }
 async function start(){
