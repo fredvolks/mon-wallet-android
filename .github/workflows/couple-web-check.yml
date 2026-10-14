@@ -23,8 +23,11 @@ jobs:
           node --check couple-web/home-install.mjs
           node --check couple-web/json-libraries.mjs
           node --check couple-web/json-library-ui.mjs
+          node --check couple-web/invite-email.mjs
+          node --check couple-web/push-notifications.mjs
+          node --check couple-web/service-worker.js
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |
