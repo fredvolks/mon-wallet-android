@@ -991,7 +991,8 @@ function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
  let partner='<section class="card"><h3>♡ Gérer mon couple</h3>';
  if(hasPartner){
-  partner+='<p>Partenaire actuel : '+safe(other()?.name||'Compte associé')+'</p>'+
+  partner+='<div class="invite-status"><strong>✓ Demande acceptée ❤️</strong><p>Votre couple est connecté.</p></div>'+
+  '<p>Partenaire actuel : '+safe(other()?.name||'Compte associé')+'</p>'+
   '<p class="tiny-note">Dissocier les comptes retire immédiatement aux deux personnes l’accès à l’ancien calendrier partagé. Chaque personne conserve ses propres entrées dans son calendrier privé.</p>'+
   button('end-couple','Retirer mon conjoint ou ma conjointe','class="subtle danger-action"');
  }else if(linked){
