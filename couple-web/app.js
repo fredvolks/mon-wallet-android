@@ -56,6 +56,13 @@ const other=()=>state.members.find(m=>m.user_id!==state.user?.id);
 const me=()=>state.members.find(m=>m.user_id===state.user?.id);
 const person=u=>state.members.find(m=>m.user_id===u)?.name||'Partenaire';
 const button=(action,label,extra='')=>'<button '+extra+' data-action="'+safe(action)+'">'+label+'</button>';
+function inviteBrowserHelp(){
+ const inApp=/FBAN|FBAV|Messenger|Instagram/i.test(navigator.userAgent||'');
+ if(!inApp||!sessionStorage.getItem('pendingInvite'))return '';
+ return '<section class="card"><h3>❤️ Invitation reçue sur Messenger</h3>'+
+  '<p>Sur iPhone, la connexion Google peut demander de quitter le navigateur de Messenger. Pour ne pas perdre votre invitation, copiez son lien puis ouvrez-le dans Safari.</p>'+
+  button('copy-invite-for-browser','Copier mon lien pour Safari','class="subtle"')+'</section>';
+}
 function notify(message){toastEl.textContent=message;toastEl.classList.add('visible');
  clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>toastEl.classList.remove('visible'),4500);}
 function fail(error){console.error(error);notify(error?.message||'Une erreur est survenue');}
@@ -114,7 +121,7 @@ function render(){
  if(!state.user){
   if(!state.showAuth){
    root.innerHTML=marketingHtml();bindActions();
-  }else frame(authHtml(),'♡ LOVE ROLL','Créer ou retrouver votre espace amoureux');
+  }else frame(inviteBrowserHelp()+authHtml(),'♡ LOVE ROLL','Créer ou retrouver votre espace amoureux');
   return;
  }
  if(!state.profile||!state.profile.birthday_md){
@@ -128,7 +135,7 @@ function render(){
  // owns the private card editor and personal journal before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
   if(!state.coupleId&&sessionStorage.getItem('pendingInvite')){
-   frame(matchHtml(state.profile.display_name,true),
+   frame(inviteBrowserHelp()+matchHtml(state.profile.display_name,true),
     '♡ NOTRE MATCH','Accepter votre invitation');return;
   }
   if(state.tab==='settings')renderSettings();
@@ -1124,6 +1131,13 @@ function randomInviteToken(){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='copy-invite-for-browser'){
+  const token=sessionStorage.getItem('pendingInvite');
+  if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Lien d’invitation introuvable.');
+  const u=new URL(CONFIG.siteUrl);u.hash='invite='+token;
+  await navigator.clipboard.writeText(u.toString());
+  notify('Lien copié. Ouvrez Safari et collez ce lien dans la barre d’adresse.');return;
+ }
  if(verb==='show-install-guide'){
   state.showInstallSteps=true;
   state.forceInstallGuide=true;
