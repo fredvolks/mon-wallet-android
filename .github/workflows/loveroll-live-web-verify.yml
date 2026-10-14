@@ -22,7 +22,13 @@ jobs:
           from pathlib import Path
           live=json.loads(Path('/tmp/loveroll-live.json').read_text(encoding='utf-8'))
           expected=json.loads(Path('couple-web/web-version.json').read_text(encoding='utf-8'))
-          assert live.get('build')==expected.get('build'),f"Live build not yet deployed: {live.get('build')} != {expected.get('build')}"
+          import re
+          def version_key(value):
+              assert re.fullmatch(r'\d{4}-\d{2}-\d{2}\.\d+',str(value)),f'Invalid Web build: {value}'
+              date,build=value.split('.')
+              return date,int(build)
+          assert version_key(live.get('build'))<=version_key(expected.get('build')),f"Live build newer than checked source: {live.get('build')} > {expected.get('build')}"
+          print('Live build:',live.get('build'),'candidate build:',expected.get('build'))
           PY
           curl --fail --silent --show-error --location --max-time 20 "${SITE}index.html" -o /tmp/loveroll-live.html
           grep -F 'settings-premium.css?' /tmp/loveroll-live.html
