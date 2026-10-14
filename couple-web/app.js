@@ -1359,10 +1359,9 @@ async function ensureInviteDraft(forceNew=false){
  if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
  const token=randomInviteToken(),digest=await hashToken(token);
  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
- const url=new URL(CONFIG.siteUrl);
- // Separate OG crawler cache from old pixelated previews; token stays in URL fragment.
- url.searchParams.set('share','3');url.hash='invite='+token;
- state.inviteDraft={id:invitationId,email,link:url.toString()};
+ // Use a non-secret, browser-safe reference in the URL; acceptance is bound
+ // to the verified recipient email on the server.
+ state.inviteDraft={id:invitationId,email,link:inviteLinkForId(CONFIG.siteUrl,invitationId)};
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
 }
@@ -1621,7 +1620,10 @@ async function handle(action,element){
  }
  if(verb==='google'||verb==='apple'){
   sessionStorage.setItem('authStarted','1');
-  const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
+  const redirectUrl=new URL(CONFIG.siteUrl||location.origin+location.pathname);
+  const pendingId=sessionStorage.getItem('pendingInviteId');
+  if(pendingId){redirectUrl.searchParams.set('invite_id',pendingId);redirectUrl.searchParams.set('v',INVITATION_REVISION);}
+  const redirectTo=redirectUrl.toString();
   const {error}=await client.auth.signInWithOAuth({provider:verb,options:{redirectTo}});
   if(error)throw error;return;
  }
@@ -1630,7 +1632,10 @@ async function handle(action,element){
   if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
    throw Error('Entre une adresse courriel valide.');
   }
-  const redirectTo=CONFIG.siteUrl||location.origin+location.pathname;
+  const redirectUrl=new URL(CONFIG.siteUrl||location.origin+location.pathname);
+  const pendingId=sessionStorage.getItem('pendingInviteId');
+  if(pendingId){redirectUrl.searchParams.set('invite_id',pendingId);redirectUrl.searchParams.set('v',INVITATION_REVISION);}
+  const redirectTo=redirectUrl.toString();
   const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
   if(error)throw error;
   notify('Courriel envoyé. Si un code à 6 chiffres est présent, entre-le ici sans quitter LoveRoll.');
@@ -1672,7 +1677,7 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='prepare-cards'){
-  if(sessionStorage.getItem('pendingInvite'))throw Error('Une invitation est en attente.');
+  if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
   if(!state.coupleId)await rpc('create_love_match',{p_anniversary_md:null});
   state.tab='library';
   await reload();
@@ -1698,7 +1703,7 @@ async function handle(action,element){
   if(verb==='send-messenger'){
    if(window.LoveRollNativeAuth?.openShare)window.LoveRollNativeAuth.openShare(text);
    else if(navigator.share){
-    try{await navigator.share({title:'LoveRoll ❤️ Ton invitation privée',text:'J’ai envie de partager quelque chose de spécial avec toi sur LoveRoll ❤️\n\nOuvre ton invitation ici :',url:d.link});}
+    try{await navigator.share({title:'LoveRoll ❤️ Ton invitation privée',url:d.link});}
     catch(error){if(error.name!=='AbortError')throw error;}
    }else{
     await navigator.clipboard.writeText(d.link);
@@ -1739,11 +1744,19 @@ async function handle(action,element){
   await refreshShared();render();notify('Date du couple enregistrée.');return;
  }
  if(verb==='accept-invite'){
-  const token=sessionStorage.getItem('pendingInvite');
-  if(!token)throw Error('Invitation introuvable.');
-  await rpc('accept_love_match',{p_token_hash:await hashToken(token)});
+  const invite=pendingInviteReference(sessionStorage);
+  if(!invite)throw Error('Invitation introuvable.');
+  if(invite.kind==='id')
+   await rpc('accept_love_match_by_id',{p_invitation:invite.value});
+  else
+   await rpc('accept_love_match',{p_token_hash:await hashToken(invite.value)});
   sessionStorage.removeItem('pendingInvite');
+  sessionStorage.removeItem('pendingInviteId');
   sessionStorage.removeItem('loverollInviteAccepted');
+  const clean=new URL(location.href);
+  clean.searchParams.delete('invite_id');clean.searchParams.delete('v');
+  clean.hash='';
+  history.replaceState(null,'',clean.pathname+clean.search);
   state.inviteAccepted=false;await reload();return;
  }
  if(verb==='tab'){
@@ -1916,22 +1929,30 @@ async function handle(action,element){
 }
 async function start(){
  const currentUrl=new URL(location.href);
- const fragment=new URLSearchParams(currentUrl.hash.replace(/^#/, ''));
- const invite=fragment.get('invite')||currentUrl.searchParams.get('invite');
- if(invite){
-  if(!/^[0-9a-f]{64}$/i.test(invite))throw Error('Ce lien d’invitation est invalide.');
-  const previous=sessionStorage.getItem('pendingInvite');
-  if(previous!==invite)sessionStorage.removeItem('loverollInviteAccepted');
-  sessionStorage.setItem('pendingInvite',invite);
-  state.inviteAccepted=sessionStorage.getItem('loverollInviteAccepted')===invite;
+ const incoming=parseInvitationFromUrl(currentUrl.toString());
+ if(incoming.id||incoming.token){
+  const old=pendingInviteReference(sessionStorage);
+  const kind=incoming.id?'id':'token',value=incoming.id||incoming.token;
+  const key=kind+':'+value;
+  if(!old||old.kind!==kind||old.value!==value)
+   sessionStorage.removeItem('loverollInviteAccepted');
+  if(kind==='id'){
+   sessionStorage.setItem('pendingInviteId',value);
+   sessionStorage.removeItem('pendingInvite');
+   // Keep the non-secret reference in the URL for Messenger and OAuth handoffs.
+  }else{
+   sessionStorage.setItem('pendingInvite',value);
+   sessionStorage.removeItem('pendingInviteId');
+   const frag=new URLSearchParams(currentUrl.hash.replace(/^#/, ''));
+   frag.delete('invite');currentUrl.searchParams.delete('invite');
+   currentUrl.hash=frag.toString();
+   history.replaceState(null,'',currentUrl.pathname+currentUrl.search+currentUrl.hash);
+  }
+  state.inviteAccepted=sessionStorage.getItem('loverollInviteAccepted')===key;
   state.showAuth=state.inviteAccepted;
-  fragment.delete('invite');currentUrl.searchParams.delete('invite');
-  currentUrl.hash=fragment.toString();
-  history.replaceState(null,'',currentUrl.pathname+currentUrl.search+currentUrl.hash);
- }
- if(!invite){
-  const saved=sessionStorage.getItem('pendingInvite');
-  state.inviteAccepted=!!saved&&sessionStorage.getItem('loverollInviteAccepted')===saved;
+ }else{
+  const existing=pendingInviteReference(sessionStorage);
+  state.inviteAccepted=!!existing&&sessionStorage.getItem('loverollInviteAccepted')===existing.kind+':'+existing.value;
  }
  if(!client){render();return;}
  const {data,error}=await client.auth.getUser();
