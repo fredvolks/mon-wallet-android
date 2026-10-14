@@ -430,7 +430,7 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("isLoveAdmin()"));
  assert.ok(app.includes("if(state.couple?.owner_user_id===state.user.id)"));
  assert.ok(app.includes("save_love_card_with_roles"));
- assert.ok(app.includes("button('tab:library','♡ Mes 70 cartes')"));
+ assert.ok(app.includes("button('tab:library','♡ Nos 70 défis')"));
  assert.ok(app.includes("renderInvitePanel()"));
  assert.ok(app.includes("button('invite',latest?'↻ Renouveler mon lien sécurisé'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
@@ -499,7 +499,7 @@ test('Neither partner sees whether a drawn card was created by the admin',()=>{
  const missing=resolvedCard({category:'SENSUEL',card_id:28,face:4});
  assert.equal(missing.title,'Défi surprise');
  assert.equal(missing.description,'Consigne momentanément indisponible.');
- const gameScreen=app.slice(app.indexOf('function renderSession(){'),app.indexOf('function renderSpecial(){'));
+ const gameScreen=app.slice(app.indexOf('function renderLegacySession(){'),app.indexOf('function renderSpecial(){'));
  assert.ok(gameScreen.includes("' · CARTE N° '+safe(active.face)"));
  assert.ok(!gameScreen.includes('challenge.cardId'));
  assert.ok(!gameScreen.includes('active.card_id'));
