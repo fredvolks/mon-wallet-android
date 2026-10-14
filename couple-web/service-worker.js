@@ -1,7 +1,7 @@
-const CACHE='loveroll-static-v20';
+const CACHE='loveroll-static-v21';
 const SHELL=['./','./index.html','./app.js','./styles.css','./dice3d.js',
  './special-occasions.mjs','./evening-challenges.mjs','./monthly-activities.mjs','./advent-calendar.mjs','./private-special-events.mjs','./onboarding.mjs','./wellbeing.mjs',
- './config.js','./invite-email.mjs','./push-notifications.mjs','./home-install.mjs','./couple-dashboard.mjs','./manifest.webmanifest','./assets/loveroll-hero.webp'];
+ './config.js','./invite-email.mjs','./push-notifications.mjs','./home-install.mjs','./couple-dashboard.mjs','./manifest.webmanifest','./assets/loveroll-hero.webp','./assets/loveroll-premium-scene.png'];
 const root=new URL('./',self.registration.scope);
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(names=>

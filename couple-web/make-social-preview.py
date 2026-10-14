@@ -91,6 +91,23 @@ def font(size,bold=True):
     path=next((p for p in candidates if os.path.exists(p)),None)
     return ImageFont.truetype(path,size*SCALE) if path else ImageFont.load_default()
 
+# Additional premium glass highlights, rose reflections and soft sparkles.
+spark=Image.new("RGBA",(w,h),(0,0,0,0))
+sd=ImageDraw.Draw(spark,"RGBA")
+for cx,cy,radius in [(114,125,4),(471,78,6),(490,361,4),(1048,120,5),(1083,480,5),
+                     (201,278,4),(377,107,3),(466,520,3),(540,170,3)]:
+    x,y= cx*SCALE,cy*SCALE;r=radius*SCALE
+    sd.ellipse((x-r,y-r,x+r,y+r),fill=(255,221,238,190))
+    sd.line((x-4*r,y,x+4*r,y),fill=(255,137,194,90),width=2*SCALE)
+    sd.line((x,y-4*r,x,y+4*r),fill=(255,137,194,90),width=2*SCALE)
+image=Image.alpha_composite(image,spark.filter(ImageFilter.GaussianBlur(2*SCALE)))
+# The same high-resolution atmospheric artwork, without overlaid text, is reused
+# on the landing and invitation screens so every LoveRoll page shares one image.
+scene_path=os.path.join(os.path.dirname(__file__),"assets","loveroll-premium-scene.png")
+os.makedirs(os.path.dirname(scene_path),exist_ok=True)
+image.convert("RGB").resize((WIDTH,HEIGHT),Image.Resampling.LANCZOS).save(scene_path,optimize=True)
+print("LoveRoll scene:",scene_path,os.path.getsize(scene_path),"bytes")
+
 d=ImageDraw.Draw(image)
 d.text((615*SCALE,112*SCALE),"LOVEROLL",font=font(61),fill=(255,243,250))
 d.rounded_rectangle((614*SCALE,203*SCALE,943*SCALE,244*SCALE),
@@ -98,15 +115,15 @@ d.rounded_rectangle((614*SCALE,203*SCALE,943*SCALE,244*SCALE),
                     outline=(205,94,147,155),width=2*SCALE)
 d.text((634*SCALE,210*SCALE),"INVITATION PRIVÉE",
        font=font(20),fill=(255,185,218))
-d.text((615*SCALE,280*SCALE),"Une aventure",
+d.text((615*SCALE,280*SCALE),"Un espace",
        font=font(55),fill=(255,241,249))
-d.text((615*SCALE,344*SCALE),"à deux.",
-       font=font(64),fill=(255,103,170))
-d.text((617*SCALE,434*SCALE),"Complicité   •   Surprises   •   Tendresse",
+d.text((615*SCALE,344*SCALE),"rien qu’à deux.",
+       font=font(48),fill=(255,103,170))
+d.text((617*SCALE,434*SCALE),"Complicité   •   Jeu   •   Tendresse",
        font=font(21,False),fill=(235,195,214))
 d.line((618*SCALE,495*SCALE,1113*SCALE,495*SCALE),
        fill=(159,82,128),width=2*SCALE)
-d.text((617*SCALE,519*SCALE),"Ouvrez votre invitation pour nous rejoindre",
+d.text((617*SCALE,519*SCALE),"Ta surprise t’attend sur LoveRoll",
        font=font(21,False),fill=(243,213,231))
 
 output=os.path.join(os.path.dirname(__file__),"assets","loveroll-invite-og.png")

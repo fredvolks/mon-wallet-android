@@ -38,6 +38,9 @@ jobs:
               assert graphic.size==(1200,630)
               assert graphic.format=='PNG'
           assert path.stat().st_size>30000
+          scene=Path('couple-web/assets/loveroll-premium-scene.png')
+          with Image.open(scene) as graphic: assert graphic.size==(1200,630)
+          assert scene.stat().st_size>30000
           PY
       - name: Static security and logic contracts
         run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs

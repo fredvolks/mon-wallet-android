@@ -50,7 +50,7 @@ export function marketingHtml(){
    '<span class="love-brand-decoration">♡</span>'+
    '<div class="love-wordmark"><span>Love</span><b>Roll</b></div>'+
    '<div class="love-signature">JEUX · DÉFIS · DATES · NOUS</div></div>'+
-   '<img class="love-hero-art" src="./assets/loveroll-hero.webp" alt="Cœur en verre rose, deux dés noirs brillants et satin bourgogne" fetchpriority="high" decoding="async" width="682" height="376">'+
+   '<img class="love-hero-art" src="./assets/loveroll-premium-scene.png" alt="Cœur en verre rose, deux dés noirs brillants et satin bourgogne" fetchpriority="high" decoding="async" width="1200" height="630">'+
   '</div>'+
   '<div class="love-hero-copy">'+
    '<h1>Votre aventure à deux <em>commence ici.</em></h1>'+
@@ -78,19 +78,20 @@ export function marketingHtml(){
  '</footer>'+
  '</div>';
 }
-export function authHtml(){
- return '<div class="auth-panel"><div class="eyebrow">VOTRE NOUVELLE HISTOIRE</div>'+
- '<h2>Créer mon compte ou me connecter</h2>'+
- '<p>Un compte par personne. Les noms et les anniversaires viennent de l’inscription.</p>'+
+export function authHtml(invitation=false){
+ return '<div class="auth-panel premium-auth-panel"><div class="eyebrow">'+
+ (invitation?'♡ REJOINDRE VOTRE ESPACE':'♡ CONNEXION SÉCURISÉE')+'</div>'+
+ '<h2>'+(invitation?'Comment souhaitez-vous continuer ?':'Bienvenue sur LoveRoll ❤️')+'</h2>'+
+ '<p>'+(invitation?'Connectez-vous pour accepter votre invitation privée.':'Un compte par personne. Vos informations restent privées.')+'</p>'+
  button('google','◉ Continuer avec Google')+
  (typeof window!=='undefined'&&window.LoveRollNativeAuth?'':button('apple','Continuer avec Apple','subtle'))+
- '<div class="login-divider">ou par courriel</div>'+
+ '<details class="premium-email-disclosure"><summary>✉ Continuer avec mon courriel</summary>'+
  '<label>Courriel<input id="signin-email" type="email" autocomplete="email" placeholder="vous@exemple.com"></label>'+
  button('email-login','Recevoir un courriel de connexion','subtle')+
  '<label>Code à 6 chiffres (si présent dans le courriel)<input id="signin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></label>'+
- button('verify-email-code','Me connecter avec mon code','subtle')+
- '<p class="tiny-note">La connexion Google sur Android ouvre le sélecteur de comptes du téléphone. Pour recevoir un code plutôt qu’un lien, le modèle de courriel Supabase doit inclure le jeton à 6 chiffres.</p>'+
- button('show-landing','← Retour à la présentation','text-link')+'</div>';
+ button('verify-email-code','Me connecter avec mon code','subtle')+'</details>'+ 
+ '<p class="tiny-note">Connexion sécurisée · Votre invitation reste personnelle pendant 7 jours.</p>'+
+ button('show-landing','Découvrir LoveRoll','text-link')+'</div>';
 }
 // Custom in-app chooser: Android WebView's native <select> popup uses the OS
 // light theme and ignores CSS. Use a themed modal for both wellbeing questions.
@@ -147,8 +148,8 @@ export function matchHtml(name,invitation){
  return '<div class="auth-panel"><div class="eyebrow">ÉTAPE 2 SUR 2 · NOTRE MATCH</div>'+
  '<h2>Bienvenue '+esc(name)+' ♡</h2>'+
  (invitation?
- '<p>Tu as une invitation personnelle. En l’acceptant, tu rejoins votre espace partagé avec ton propre compte.</p>'+
- button('accept-invite','♡ Accepter ce match'):
+ '<p>Votre espace à deux est prêt à être créé. Vous choisissez de le rejoindre avec votre propre compte.</p>'+
+ button('accept-invite','♡ ACCEPTER L’INVITATION ❤️'):
  '<p>Créez votre duo, puis invitez votre partenaire par courriel. Elle ou il remplira son propre profil.</p>'+
  '<h3>🥂 Anniversaire de votre couple</h3>'+
  monthDayInputs('signup-couple','',true)+

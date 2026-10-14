@@ -243,7 +243,7 @@ test('Birthday inputs reject invalid dates, and support leap day',()=>{
 test('New couple match uses two individual sign-ups',()=>{
  assert.match(matchHtml('Camille',false),/signup-couple-month/);
  assert.match(matchHtml('Camille',false),/Créer notre espace à deux/);
- assert.match(matchHtml('Alex',true),/Accepter ce match/);
+ assert.match(matchHtml('Alex',true),/ACCEPTER L’INVITATION/);
  assert.match(app,/create_love_match/);
  assert.match(app,/accept_love_match/);
  assert.match(app,/parseMonthDay\('signup-couple',false\)/);
@@ -279,7 +279,7 @@ test('LoveRoll landing uses real artwork, not emoji substitutes or screenshot te
  const source=marketingHtml();
  assert.match(source,/Love<\/span><b>Roll<\/b>/);
  assert.match(source,/JEUX · DÉFIS · DATES · NOUS/);
- assert.match(source,/assets\/loveroll-hero\.webp/);
+ assert.match(source,/assets\/loveroll-premium-scene\.png/);
  assert.match(source,/alt="Cœur en verre rose/);
  assert.match(source,/Votre aventure à deux/);
  assert.match(source,/commence ici\./);
@@ -302,7 +302,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v20/);
+ assert.match(sw,/loveroll-static-v21/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -590,7 +590,7 @@ test('Challenge D35 gives 35 physical numbered faces without changing monthly D2
  assert.ok(db.includes("cc.recipient_role='partner'"));
  assert.ok(db.includes('love_card_draw_history'));
  assert.ok(!app.includes("heroDice(demo.challenge,35,'D35"));
- assert.ok(app.includes('Brasser le D35 pour'));
+ assert.ok(app.includes('LANCER LE D35 POUR'));
  assert.ok(app.includes('D35 :'));
  assert.ok(app.includes("heroDice(a.face,20,'Activité officielle')"));
  assert.ok(app.includes("heroDice(prize.face,20,'Résultat officiel')"));
