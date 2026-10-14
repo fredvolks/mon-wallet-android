@@ -38,7 +38,7 @@ export function invitationEmailText(url){
 }
 export function invitationPreviewMarkup(){
  return '<div class="loveroll-invite-preview" aria-label="Aperçu de l’invitation LoveRoll">'+
-  '<div class="loveroll-invite-heart"><img src="./assets/loveroll-hero.webp" alt="Cœur lumineux et dés LoveRoll" loading="lazy"></div>'+
+  '<div class="loveroll-invite-heart"><img src="./assets/loveroll-premium-scene.png" alt="Cœur lumineux et dés LoveRoll" loading="lazy"></div>'+
   '<h3>LoveRoll</h3><p class="loveroll-invite-kicker">Une invitation juste pour vous deux</p>'+
   '<div class="loveroll-invite-divider"></div>'+
   '<h4>♡ Votre aventure commence ici</h4>'+
