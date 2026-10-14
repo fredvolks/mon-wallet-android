@@ -14,7 +14,7 @@ declare s public.couple_sessions%rowtype; target uuid; v_cat text;
  cats text[]:=array[]::text[]; weights integer[]:=array[]::integer[];
  total integer:=0; ticket integer; i integer; cid integer; d35 integer;
  chosen public.love_custom_challenges%rowtype;
- rowout public.couple_challenges%rowtype; capacity integer; v_no_repeat boolean;
+ rowout public.couple_challenges%rowtype; capacity integer; v_no_repeat boolean; owner_id uuid;
 begin
  select * into s from public.couple_sessions where id=p_session and finished_at is null;
  if not found or not couple_private.is_member(s.couple_id) then
@@ -22,7 +22,7 @@ begin
  if p_preference not in ('SENSUEL','SEXUEL') then
   raise exception 'Catégorie inconnue';end if;
  -- Lock the couple to serialize admin edits, draw-rule changes and both partners' picks.
- select coalesce(no_repeat_challenges,true) into v_no_repeat
+ select coalesce(no_repeat_challenges,true),owner_user_id into v_no_repeat,owner_id
  from public.couples where id=s.couple_id for update;
  perform 1 from public.couple_sessions where id=p_session for update;
  select user_id into target from public.couple_members
@@ -49,7 +49,11 @@ begin
    and not exists(
     select 1 from public.love_custom_challenges cc
     where cc.couple_id=s.couple_id and cc.category=cats.category and cc.card_id=candidate.card
-      and ((cc.recipient_user_id is not null and cc.recipient_user_id<>target)
+      and ((cc.recipient_role='owner' and target<>owner_id)
+        or (cc.recipient_role='partner' and target=owner_id)
+        or (cc.drawer_role='owner' and auth.uid()<>owner_id)
+        or (cc.drawer_role='partner' and auth.uid()=owner_id)
+        or (cc.recipient_user_id is not null and cc.recipient_user_id<>target)
         or (cc.drawer_user_id is not null and cc.drawer_user_id<>auth.uid())))
    and not exists(
     select 1 from public.love_card_draw_history history
@@ -68,7 +72,11 @@ begin
    and not exists(
     select 1 from public.love_custom_challenges cc
     where cc.couple_id=s.couple_id and cc.category=v_cat and cc.card_id=card
-      and ((cc.recipient_user_id is not null and cc.recipient_user_id<>target)
+      and ((cc.recipient_role='owner' and target<>owner_id)
+        or (cc.recipient_role='partner' and target=owner_id)
+        or (cc.drawer_role='owner' and auth.uid()<>owner_id)
+        or (cc.drawer_role='partner' and auth.uid()=owner_id)
+        or (cc.recipient_user_id is not null and cc.recipient_user_id<>target)
         or (cc.drawer_user_id is not null and cc.drawer_user_id<>auth.uid())))
    and (not v_no_repeat or not exists(
     select 1 from public.love_card_draw_history history
@@ -96,8 +104,12 @@ begin
  and not exists(
     select 1 from public.love_custom_challenges cc
     where cc.couple_id=s.couple_id and cc.category=v_cat and cc.card_id=card
-     and ((cc.recipient_user_id is not null and cc.recipient_user_id<>target)
-       or (cc.drawer_user_id is not null and cc.drawer_user_id<>auth.uid())))
+     and ((cc.recipient_role='owner' and target<>owner_id)
+        or (cc.recipient_role='partner' and target=owner_id)
+        or (cc.drawer_role='owner' and auth.uid()<>owner_id)
+        or (cc.drawer_role='partner' and auth.uid()=owner_id)
+        or (cc.recipient_user_id is not null and cc.recipient_user_id<>target)
+        or (cc.drawer_user_id is not null and cc.drawer_user_id<>auth.uid())))
  and (not v_no_repeat or not exists(
    select 1 from public.love_card_draw_history history
    where history.couple_id=s.couple_id and history.recipient_user_id=target
