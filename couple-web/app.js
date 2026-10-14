@@ -311,8 +311,9 @@ function renderInvitePanel(){
    button('invite',latest?'Créer un nouveau lien d’invitation':'Préparer une invitation');
   if(draft){
    html+='<details class="invite-preview"><summary>♡ Aperçu de l’invitation LoveRoll</summary>'+invitationPreviewMarkup()+'</details>';
-   html+='<div class="invite-actions">'+button('send-sms','✉ Envoyer par texto')+
-    button('send-email','✉ Envoyer par courriel','class="subtle"')+
+   html+='<div class="invite-actions">'+button('send-sms','💬 Texto SMS')+
+    button('send-messenger','♡ Messenger','class="subtle"')+
+    button('send-email','✉ Courriel','class="subtle"')+
     button('copy-invite','Copier le lien','class="subtle"')+'</div>'+
     button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
     '<p class="tiny-note">Le téléphone ouvre votre messagerie; LoveRoll ne peut pas savoir si vous avez réellement appuyé sur Envoyer.</p>';
@@ -1305,15 +1306,25 @@ async function handle(action,element){
   state.inviteDraft={id:invitationId,email,link:url.toString()};
   state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
   render();
-  notify('Lien sécurisé prêt. Choisissez texto ou courriel pour partager.');
+  notify('Lien sécurisé prêt. Choisissez SMS, Messenger ou courriel.');
   return;
  }
- if(verb==='send-sms'||verb==='send-email'||verb==='copy-invite'){
+ if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
   const d=state.inviteDraft;
   if(!d)throw Error('Préparez un nouveau lien sécurisé pour l’envoyer.');
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
   const text=invitationEmailText(d.link);
-  if(verb==='send-sms'){
+  state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';
+  if(verb==='send-messenger'){
+   if(window.LoveRollNativeAuth?.openShare)window.LoveRollNativeAuth.openShare(text);
+   else if(navigator.share){
+    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:invitationEmailText(''),url:d.link});}
+    catch(error){if(error.name!=='AbortError')throw error;}
+   }else{
+    await navigator.clipboard.writeText(d.link);
+    notify('Lien copié : collez-le dans une conversation Messenger.');return;
+   }
+  }else if(verb==='send-sms'){
    if(window.LoveRollNativeAuth?.openSms)window.LoveRollNativeAuth.openSms(text);
    else{
     const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -1324,12 +1335,12 @@ async function handle(action,element){
     '&body='+encodeURIComponent(text);
    window.location.href=mail;
   }
-  notify('Votre messagerie est ouverte. Confirmez vous-même l’envoi.');
+  notify('Choisissez le destinataire et confirmez vous-même le partage.');
   return;
  }
  if(verb==='confirm-invite-sent'){
   if(!state.inviteDraft)throw Error('Aucun lien prêt à envoyer.');
-  await rpc('mark_pair_invite_sent',{p_invitation:state.inviteDraft.id,p_method:'partage'});
+  await rpc('mark_pair_invite_sent',{p_invitation:state.inviteDraft.id,p_method:state.lastShareMethod||'partage'});
   state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
   render();notify('Envoi confirmé manuellement.');return;
  }
