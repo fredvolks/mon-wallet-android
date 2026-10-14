@@ -525,9 +525,9 @@ function renderSession(){
   if(!state.rollStatus?.both_ready){
    body+='<section class="card"><h3>Une révélation à deux</h3>'+
     '<p>Mon lancer : '+(state.rollStatus?.my_rolled?'✓ Lancé · résultat secret':'Pas encore lancé')+'</p>'+
-    '<p>Lancer de '+safe(p.name)+' : '+(state.rollStatus?.partner_rolled?'✓ Lancé · résultat secret':'En attente')+'</p>';
+    '<p>Son lancer · '+safe(p.name)+' : '+(state.rollStatus?.partner_rolled?'✓ Lancé · résultat secret':'En attente')+'</p>';
    if(!state.rollStatus?.my_rolled)body+=button('my-d6','🎲 LANCER MON DÉ');
-   else body+='<p>Tu as joué. Le compte à rebours ne démarre pas : attends le Lancer de '+safe(p.name)+'.</p>';
+   else body+='<p>Tu as joué. Le compte à rebours ne démarre pas : attends le lancer de '+safe(p.name)+'.</p>';
    body+='</section>';
   }
   else{
@@ -673,7 +673,7 @@ function renderOccasions(){
    if(!activity){
     if(role.shared||role.receiver)
      body+=heroDice(null,6,'Activité surprise')+
-       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':activity','🎲 Brasser le Lancer de l’activité');
+       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':activity','🎲 DÉCOUVRIR L’ACTIVITÉ');
    }else{
     body+=heroDice(activity.face,6,'Activité surprise')+
       '<div class="card"><div class="eyebrow">ACTIVITÉ · FACE '+activity.face+'</div>'+
