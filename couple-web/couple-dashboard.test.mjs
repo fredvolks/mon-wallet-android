@@ -74,5 +74,7 @@ test('Messenger share stays readable even when the automatic preview is suppress
  assert.match(html,/loveroll-invite-og.png\?v=5/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert.match(app,/verb==='send-messenger'\?invitationMessengerText\(d.link\)/);
+ assert.match(app,/navigator\.share\(\{title:'LoveRoll ❤️ Ton invitation privée',text\}\)/);
+ assert.doesNotMatch(app,/navigator\.share\(\{title:'LoveRoll ❤️ Ton invitation privée',url:d.link\}\)/);
  assert.match(app,/inviteLinkForId\(CONFIG\.siteUrl,invitationId\)/);
 });
