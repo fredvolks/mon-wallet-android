@@ -23,7 +23,7 @@ test('4 versus 2 alternates A B A B A A on both accounts',()=>{
   assert.deepEqual(state.targets,{[a]:4,[b]:2});
   history.push({id:String(i),recipient:state.next,offered_by:state.next===a?b:a,status:'completed'});
  }
- assert.deepEqual(history.map(x=>x.offered_by),[a,b,a,b,a,a]);
+ assert.deepEqual(history.map(x=>x.recipient),[a,b,a,b,a,a]);
  assert.equal(sharedEveningTurns(session,members,rolls(4,2),history).finished,true);
 });
 
