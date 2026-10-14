@@ -549,6 +549,12 @@ function renderSession(){
  if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
  frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
+function optionalRolledTimer(roll){
+ if(!roll?.timer_minutes)return '';
+ const key='special-'+roll.id;
+ return state.specialTimerKey===key?timerWidget({id:key},roll.timer_minutes):
+  button('special-timer:'+key,'⏱ Minuteur · '+roll.timer_minutes+' min','class="subtle"');
+}
 function renderSpecial(){
  const a=state.monthly.monthly_activity,h=state.monthly.monthly_host,r=state.monthly.monthly_restaurant;
  let body='<div class="eyebrow">Défi spécial · '+safe(month())+'</div>'+
@@ -560,7 +566,8 @@ function renderSpecial(){
   body+=heroDice(a.face,20,'Activité officielle')+
   '<div class="result">'+safe(activity.title)+'</div>'+
   '<p>'+safe(activity.description)+'</p>'+
-  '<p>Tiré par '+safe(person(a.actor))+'.</p>';
+  '<p>Tiré par '+safe(person(a.actor))+'.</p>'+
+  (activity.timer_minutes?timerWidget({id:'monthly-'+a.id},activity.timer_minutes):'');
   if(!h)body+=button('roll:monthly_host','🎲 Brasser le D6 : qui invite ?');
   else{
    const host=h.face<=3?state.members[0]:state.members[1]; // ordered by join time, identically on both devices
@@ -631,14 +638,14 @@ function renderOccasions(){
     body+=heroDice(activity.face,6,'D6 · Activité spéciale')+
       '<div class="card"><div class="eyebrow">ACTIVITÉ · FACE '+activity.face+'</div>'+
       '<p>'+safe(activity.special_description||'')+'</p>'+
-      '<p class="tiny-note">Une proposition à accepter, modifier ou passer ensemble.</p></div>';
+      '<p class="tiny-note">Une proposition à accepter, modifier ou passer ensemble.</p>'+optionalRolledTimer(activity)+'</div>';
     if(!modifier){
      body+=heroDice(null,6,'D6 · Règle supplémentaire')+
        button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','🎲 Brasser le D6 du modificateur');
     }else{
      body+=heroDice(modifier.face,6,'D6 · Règle supplémentaire')+
        '<div class="card"><div class="eyebrow">RÈGLE · FACE '+modifier.face+'</div>'+
-       '<p>'+safe(modifier.modifier_text||'')+'</p></div>';
+       '<p>'+safe(modifier.modifier_text||'')+'</p>'+optionalRolledTimer(modifier)+'</div>';
     }
    }
   }
@@ -659,7 +666,7 @@ function renderOccasions(){
      body+=heroDice(modifier.face,6,'Règle supplémentaire')+
       '<div class="card"><div class="eyebrow">D6 · FACE '+modifier.face+'</div>'+
       '<h3>'+safe(modifier.modifier_title||'La règle du moment')+'</h3>'+
-      '<p>'+safe(modifier.modifier_text||'')+'</p></div>';
+      '<p>'+safe(modifier.modifier_text||'')+'</p>'+optionalRolledTimer(modifier)+'</div>';
     }
    }
    if(!host&&role.shared)body+='<p class="tag">Surprise commune · vous l’organisez à deux.</p>';
@@ -749,7 +756,8 @@ function renderAdvent(){
    '<p>Ouverte par '+safe(person(selected.opened_by))+'. '+
    (customized?'Ce défi est une proposition à accepter, adapter ou passer librement.':
     'À proposer par '+safe(person(selected.performed_by))+
-    ' (vous pouvez toujours modifier ou passer l’activité ensemble).')+'</p></div>';
+    ' (vous pouvez toujours modifier ou passer l’activité ensemble).')+'</p>'+
+    (selected.advent_timer_minutes?timerWidget({id:'advent-'+selected.year+'-'+selected.day},selected.advent_timer_minutes):'')+'</div>';
  }
  body+='</section>';
  frame(body,'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
@@ -1052,6 +1060,8 @@ function renderMonthlyLibrary(){
   '<label class="custom-draw-setting"><input id="monthly-restaurant" type="checkbox"'+
     (entry.is_restaurant?' checked':'')+'> Activité de restaurant / repas à réserver</label>'+
   '<p class="tiny-note">Si cette option est activée, LoveRoll propose également le dé « restaurant connu ou nouveau » après le tirage de cette activité.</p>'+
+  '<label class="custom-draw-setting"><input type="checkbox" id="monthly-timer-enabled"'+(entry.timer_minutes?' checked':'')+'> Minuteur facultatif</label>'+
+  '<label>Durée (minutes)<input id="monthly-minutes" type="number" min="1" max="60" value="'+(entry.timer_minutes||5)+'"></label>'+
   button('save-monthly-activity','♡ Enregistrer l’activité')+
   (entry.edited?button('reset-monthly-activity','Restaurer l’activité d’origine','class="subtle"'):'')+
   '</section><section class="card">'+
@@ -1211,6 +1221,7 @@ async function handle(action,element){
   await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
   await reload();notify('Personne célébrée enregistrée.');return;
  }
+ if(verb==='special-timer'){state.specialTimerKey=parts.join(':');render();return;}
  if(verb==='json-export'){
   if(!isLoveAdmin())throw Error('Export réservé à l’administrateur.');
   await exportLibraryFile(parts[0]);notify('Sauvegarde JSON préparée.');return;
@@ -1281,12 +1292,14 @@ async function handle(action,element){
   const title=id('monthly-title')?.value.trim();
   const description=id('monthly-description')?.value.trim();
   const restaurant=!!id('monthly-restaurant')?.checked;
+  const duration=id('monthly-timer-enabled')?.checked?Number(id('monthly-minutes')?.value):null;
+  if(duration!==null&&(!Number.isInteger(duration)||duration<1||duration>60))throw Error('Minuteur de 1 à 60 minutes.');
   if(!title||title.length<3||title.length>120||
     !description||description.length<10||description.length>900)
     throw Error('Titre de 3 à 120 caractères et description de 10 à 900 caractères requis.');
-  await rpc('save_love_monthly_activity',{
+  await rpc('save_love_monthly_activity_with_timer',{
    p_couple:state.coupleId,p_face:state.monthlySlot,p_title:title,
-   p_description:description,p_is_restaurant:restaurant});
+   p_description:description,p_is_restaurant:restaurant,p_timer_minutes:duration});
   await reload();notify('Activité enregistrée pour les prochains tirages.');return;
  }
  if(verb==='reset-monthly-activity'){
