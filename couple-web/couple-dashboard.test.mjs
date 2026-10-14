@@ -59,18 +59,18 @@ test('Invitation status APIs and native SMS open only a composer',()=>{
 });
 
 test('Messenger share is concise while secure link and acceptance remain functional',()=>{
- const link='https://fredvolks.github.io/mon-wallet-android/?share=2#invite='+'a'.repeat(64);
+ const link='https://fredvolks.github.io/mon-wallet-android/?share=3#invite='+'a'.repeat(64);
  const text=invitationMessengerText(link);
  assert.ok(text.length<link.length+80);
- assert.match(text,/surprise à deux/);
- assert.match(text,/\?share=2#invite=/);
+ assert.match(text,/quelque chose de spécial/);
+ assert.match(text,/\?share=3#invite=/);
  assert.ok(text.includes(link));
  assert.doesNotMatch(text,/ACCEPTER L’INVITATION/);
  assert.doesNotMatch(text,/Connecte-toi avec la même adresse/);
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  assert.match(html,/og:image:width" content="1200"/);
  assert.match(html,/og:image:height" content="630"/);
- assert.match(html,/loveroll-invite-og.png\?v=2/);
+ assert.match(html,/loveroll-invite-og.png\?v=3/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert.match(app,/verb==='send-messenger'\?invitationMessengerText\(d.link\)/);
  assert.match(app,/url.searchParams.set\('share','2'\)/);
