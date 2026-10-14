@@ -281,7 +281,7 @@ function renderWaitingPartner(){
   '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
   button('invite','♡ Préparer l’invitation')+
   '</section>',
- 'MON ESPACE','Préparer vos défis sans mode exploration');
+ 'MON ESPACE','Préparer vos cartes avant l’invitation');
 }
 function renderHome(){
  const name=state.profile.display_name,partner=other()?.name;
