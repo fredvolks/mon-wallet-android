@@ -111,12 +111,14 @@ test('Only the dedicated Supabase project and its publishable client key are con
  assert.doesNotMatch(cfg,/service_role|sb_secret_/);
  assert.match(cfg,/fredvolks\.github\.io\/mon-wallet-android/);
 });
-test('Email magic link fallback works in addition to Google and Apple login options',()=>{
+test('Password signup/signin and Google use distinct secure providers',()=>{
  assert.match(authHtml(),/Continuer avec Google/);
- assert.match(authHtml(),/Continuer avec Apple/);
- assert.match(app,/client\.auth\.signInWithOtp/);
- assert.match(app,/emailRedirectTo:redirectTo/);
- assert.match(app,/if\(verb==='email-login'\)/);
+ assert.match(authHtml(),/type="password"/);
+ assert.match(authHtml(),/auth-mode:signup/);
+ assert.match(authHtml(),/auth-mode:signin/);
+ assert.match(app,/client\.auth\.signUp/);
+ assert.match(app,/client\.auth\.signInWithPassword/);
+ assert.match(app,/client\.auth\.resetPasswordForEmail/);
 });
 
 test('LoveRoll special events have twenty separate fully-worded surprises',()=>{
@@ -219,7 +221,7 @@ test('Marketing page before OAuth or email signup',()=>{
  assert.match(h,/CRÉER MON COMPTE GRATUITEMENT/);
  assert.match(h,/Android et iPhone/);
  assert.match(app,/root\.innerHTML=discoverHtml\(false\)/);
- assert.match(app,/if\(!state\.showAuth\)/);
+ assert.match(app,/if\(!state\.user&&!state\.showAuth\)/);
  assert.match(app,/if\(verb==='show-auth'\)/);
 });
 test('Registration obtains the name from identity and birthday in the initial form',()=>{
@@ -244,7 +246,7 @@ test('Birthday inputs reject invalid dates, and support leap day',()=>{
 test('New couple match uses two individual sign-ups',()=>{
  assert.match(matchHtml('Camille',false),/signup-couple-month/);
  assert.match(matchHtml('Camille',false),/Créer notre espace à deux/);
- assert.match(matchHtml('Alex',true),/CONFIRMER NOTRE MATCH/);
+ assert.doesNotMatch(matchHtml('Alex',true),/CONFIRMER NOTRE MATCH/);
  assert.match(app,/create_love_match/);
  assert.match(app,/accept_love_match/);
  assert.match(app,/parseMonthDay\('signup-couple',false\)/);
@@ -366,17 +368,17 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(app,/Chacun peut dire non/);
 });
 
-test('Embedded Android account screen uses platform Google and email code',()=>{
+test('Embedded Android account screen uses Google native bridge and secure passwords',()=>{
  const html=authHtml();
- assert.match(html,/signin-code/);
- assert.match(html,/verify-email-code/);
+ assert.match(html,/signin-password/);
+ assert.match(html,/auth-eye/);
+ assert.match(html,/auth-signup-password/);
  assert.match(app,/LoveRollNativeAuth\?\.googleSignIn/);
  assert.match(app,/signInWithIdToken/);
- assert.match(app,/verifyOtp/);
+ assert.match(app,/signInWithPassword/);
  assert.match(app,/launchParams\.has\('auth'\)/);
  assert.match(app,/launchParams\.has\('settings'\)/);
 });
-
 
 test('Wellbeing selectors use dark custom dialogs, not white Android select popups',()=>{
  const html=wellbeingFields();
@@ -949,5 +951,5 @@ test('Premium screens share a responsive dice and invitation layout on mobile an
  assert.match(app,/premiumHomeHtml\(\{/);
  assert.match(app,/heroDice\(null,35/);
  assert.match(app,/heroDice\(null,20/);
- assert.match(onboarding,/premium-email-disclosure/);
+ assert.match(onboarding,/invite-auth-segments/);
 });
