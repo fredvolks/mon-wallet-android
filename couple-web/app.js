@@ -1,6 +1,6 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml} from './premium-home.mjs';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs';
 import {loginEmail,loginCode,emailAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -1322,6 +1322,16 @@ function renderSettings(){
   settingRow('Événements spéciaux','Gérer les fêtes et leurs deux surprises.','tab:special-editor','Modifier')+
   celebrants:
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
+ const adminWeekly=isLoveAdmin()&&hasPartner?
+  '<div class="settings-item"><div><strong>🎲 Administration — tirage hebdomadaire</strong>'+
+  '<p>Réinitialiser uniquement le D6 de la semaine en cours. Aucun défi ni compte n’est supprimé.</p></div></div>'+
+  '<div class="weekly-admin-status">'+
+  '<p>Résultat : <strong>'+(state.weekly?state.weekly.face+' soirée(s)':'Non brassé')+'</strong></p>'+
+  '<p>Brassé par : '+(state.weekly?safe(person(state.weekly.actor)):'—')+'</p>'+
+  '<p>Date du brassage : '+(state.weekly?safe(new Date(state.weekly.created_at).toLocaleString('fr-CA',{timeZone:'America/Toronto'})):'—')+'</p>'+
+  '<p>Prochain lundi : '+safe(nextMonday())+' à 00 h (Québec)</p></div>'+
+  '<p class="tiny-note">Pour préserver les défis, le reset est refusé si une soirée a commencé cette semaine.</p>'+
+  button('admin-reset-weekly','↺ Reset hebdomadaire','class="subtle danger-action" '+(!state.weekly?'disabled':'')):'';
  const notifications=notificationSettingsMarkup(state.pushPrefs||{});
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const appSettings=(nativeApp?
@@ -1350,6 +1360,8 @@ function renderSettings(){
      !requestedSettingsSection||requestedSettingsSection==='couple')+
    settingGroup('Notifications','♧','Rappels et préférences',notifications,requestedSettingsSection==='notifications')+
    settingGroup('Jeu et personnalisation','🎲','Modifier les cartes et activités',game,requestedSettingsSection==='jeu')+
+   (adminWeekly?settingGroup('Administration','♛','Reset hebdomadaire réservé au créateur du couple',adminWeekly,
+     requestedSettingsSection==='admin'):'')+
    settingGroup('Application','▣','Installation et mises à jour',appSettings,requestedSettingsSection==='application')+
    settingGroup('Confidentialité','♙','Journal chiffré et données personnelles',privacy,requestedSettingsSection==='confidentialite')+
    settingGroup('Aide','?','Informations et fonctionnement',support,requestedSettingsSection==='aide')+'</div>',
@@ -1388,6 +1400,19 @@ async function handle(action,element){
  const [verb,...parts]=action.split(':');
  if(verb==='home-notices'){
   state.homeNotices=!state.homeNotices;render();return;
+ }
+ if(verb==='admin-reset-weekly'){
+  if(!isLoveAdmin()||!isSharedCoupleReady(state.coupleId,state.members))
+   throw Error('Réinitialisation réservée à l’administrateur du couple.');
+  if(!state.weekly)throw Error('Aucun tirage hebdomadaire à réinitialiser.');
+  const message='Réinitialiser le résultat hebdomadaire pour les DEUX partenaires ? '+
+    'Cette action est enregistrée. Les défis et soirées restent intacts. '+
+    'Le reset est refusé si une soirée a déjà commencé cette semaine.';
+  if(!confirm(message))return;
+  const changed=await rpc('reset_love_weekly_roll_admin',{p_couple:state.coupleId});
+  await refreshAndShow();
+  notify(changed?'Résultat hebdomadaire réinitialisé pour le couple.':'Aucun tirage hebdomadaire à réinitialiser.');
+  return;
  }
  // All demo actions are local, never database writes or new memberships.
  if(verb==='demo-enter'){
