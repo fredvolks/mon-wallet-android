@@ -291,7 +291,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v7/);
+ assert.match(sw,/loveroll-static-v8/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -441,4 +441,28 @@ test('Creator-only access and private draws are enforced server side',()=>{
  assert.ok(app.includes("REÇOIT"));
  assert.ok(app.includes("OFFRE"));
  assert.ok(app.includes('Sans minuteur'));
+});
+
+
+test('Fixed celebration roles and shared couple anniversary',()=>{
+ const couple=[{user_id:'a',name:'A'},{user_id:'b',name:'B'}];
+ const conf={celebrants:{mothers_day:'b',womens_day:'b',fathers_day:'a',mens_day:'a'}};
+ for(const key of TARGETED_OCCASIONS){
+  const role=occasionRoles({key},conf,couple);
+  assert.equal(role.shared,false);
+  assert.ok(role.receiver&&role.giver&&role.receiver.user_id!==role.giver.user_id);
+ }
+ assert.equal(occasionRoles({key:'mothers_day'},conf,couple).giver.user_id,'a');
+ assert.equal(occasionRoles({key:'fathers_day'},conf,couple).giver.user_id,'b');
+ assert.equal(occasionRoles({key:'birthday',actorId:'a'},conf,couple).giver.user_id,'b');
+ assert.equal(occasionRoles({key:'anniversary'},conf,couple).shared,true);
+ assert.equal(occasionRoles({key:'valentine'},conf,couple).shared,true);
+ assert.equal(occasionRoles({key:'mothers_day'},null,couple).receiver,null);
+ assert.equal(occasionDate('womens_day',2026,{},null),'2026-03-08');
+ assert.equal(occasionDate('mens_day',2026,{},null),'2026-11-19');
+ const sql=readFileSync(new URL('./celebration-roles.sql',import.meta.url),'utf8');
+ assert.ok(sql.includes("set_love_celebrant"));
+ assert.ok(sql.includes("owner_user_id=auth.uid()"));
+ assert.ok(sql.includes("p_kind in ('mothers_day','fathers_day','womens_day','mens_day','birthday','anniversary','valentine')"));
+ assert.ok(app.includes("data-action=\"set-celebrant:"));
 });
