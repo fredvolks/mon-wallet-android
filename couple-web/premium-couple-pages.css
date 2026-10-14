@@ -171,6 +171,9 @@ main#app.loveroll-surprise-page{
  background:radial-gradient(ellipse at 48% 74%,#fd328449,transparent 45%);
 }
 .love3d-stage .dice-canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+/* An unrolled D6 must never look like an official one-pip result. */
+.love3d-stage.is-unrolled .dice-canvas{visibility:hidden!important}
+.love3d-stage.is-unrolled .dice-fallback{visibility:visible!important}
 .love3d-stage .dice-fallback{color:#ff82b7;text-shadow:0 0 12px #f83f8f;font-size:2rem}
 .love3d-stage.is-rolling .dice-fallback,
 .love3d-stage.webgl-ready .dice-fallback{visibility:hidden}
