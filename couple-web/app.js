@@ -10,6 +10,7 @@ import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-advent35';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -35,7 +36,7 @@ const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
- events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
+ events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
@@ -104,6 +105,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const realHome=isCouple&&state.tab==='home';
  const realEvening=isCouple&&state.tab==='session'&&(!state.session||(state.session.paired_turns&&state.session.self_draws));
  const realSurprise=isCouple&&state.tab==='special';
+ root.classList.toggle('loveroll-advent-page',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-real-home',realHome);
  root.classList.toggle('loveroll-evening-page',realEvening);
  root.classList.toggle('loveroll-surprise-page',realSurprise);
@@ -279,7 +281,7 @@ async function reload(){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;state.gifts=[];
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
-  state.feedback=[];state.advent=[];state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
+  state.feedback=[];state.advent=[];state.adventYear=null;state.adventSelected=null;state.adventServerDate=null;state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
   state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
@@ -316,7 +318,7 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts,adventServerDate]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
@@ -326,7 +328,8 @@ async function refreshShared(){
  query('couple_occasion_rolls',{eq:{couple_id:c}}),
  rpc('my_love_special_event_keys',{p_couple:c}),
  query('couple_challenges',{eq:{couple_id:c}}),
- query('couple_challenge_gifts',{eq:{couple_id:c}})
+ query('couple_challenge_gifts',{eq:{couple_id:c}}),
+ rpc('love_advent_server_date')
  ]);
  state.gifts=gifts;
  state.challengesHistory=challengeHistory;
@@ -337,7 +340,7 @@ async function refreshShared(){
  state.monthly={};
  for(const r of rolls.filter(r=>r.key===month()))state.monthly[r.kind]=r;
  state.session=sessions.find(s=>s.finished_at===null)||null;
- state.sessions=sessions;state.events=events;state.journal=diary;state.advent=advents;
+ state.sessions=sessions;state.events=events;state.journal=diary;state.advent=advents;state.adventServerDate=adventServerDate;
  if(state.session){
   const [personal,challenges,status]=await Promise.all([
     query('couple_personal_rolls',{eq:{session_id:state.session.id}}),
@@ -850,32 +853,15 @@ function renderSpecialEventsEditor(){
  frame(body,'MES FÊTES','6 fêtes · deux surprises à révéler');
 }
 function renderAdvent(){
- const now=today(),[year,mo,day]=now.split('-').map(Number);
- const unlocked=mo===12?Math.min(day,25):0;
- let body='<section class="premium-intro"><div class="premium-eyebrow">🎁 NOTRE AVENT</div><h2>25 moments à découvrir</h2><p>Chaque jour de décembre, une nouvelle surprise rien que pour nous.</p></section>'+ 
- '<section class="card hero-game-card"><h2>Ouvrons une surprise à la fois</h2><p>Une seule case officielle se déverrouille chaque jour du 1er au 25 décembre.</p>'+
-  '<div class="day-grid">';
- for(let d=1;d<=25;d++){
-  const allowed=d<=unlocked,opened=state.advent.find(x=>x.year===year&&x.day===d);
-  body+='<button class="'+(!allowed?'locked':'')+'" data-action="advent:'+d+'" '+
-    (!allowed?'disabled':'')+'>'+(opened?'♡ ':!allowed?'🔒 ':'🎁 ')+d+'</button>';
- }
- body+='</div>';
- const selected=state.advent.find(x=>x.year===year&&x.day===state.selectedDay);
- if(selected){
-  const customized=!!selected.advent_title;
-  body+='<div class="card"><div class="eyebrow">CASE '+selected.day+
-   (selected.advent_type?' · '+safe(selected.advent_type):'')+'</div>'+
-   '<h3>'+safe(selected.advent_title||advent[selected.day-1])+'</h3>'+
-   (selected.advent_description?'<p>'+safe(selected.advent_description)+'</p>':'')+
-   '<p>Ouverte par '+safe(person(selected.opened_by))+'. '+
-   (customized?'Ce défi est une proposition à accepter, adapter ou passer librement.':
-    'À proposer par '+safe(person(selected.performed_by))+
-    ' (vous pouvez toujours modifier ou passer l’activité ensemble).')+'</p>'+
-    (selected.advent_timer_minutes?timerWidget({id:'advent-'+selected.year+'-'+selected.day},selected.advent_timer_minutes):'')+'</div>';
- }
- body+='</section>';
- frame(body,'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
+ // The database's Toronto clock determines the UI's active day; only the
+ // authenticated RPC can open a case, after checking server time again.
+ const serverDate=state.adventServerDate||today();
+ frame(adventPremiumHtml({
+  openings:state.advent,members:state.members,
+  when:new Date(serverDate+'T16:00:00Z'),year:state.adventYear,
+  selectedDay:state.adventSelected,
+  openingDay:state.adventOpening,showHistory:state.adventHistory
+ }), 'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
 }
 
 function renderAdventEditor(){
@@ -1825,6 +1811,7 @@ async function handle(action,element){
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.eveningMore=false;}
   if(state.tab!=='special')state.showSurpriseActivity=false;
+  if(state.tab!=='advent'){state.adventSelected=null;state.adventHistory=false;state.adventOpening=null;}
   render();return;
  }
  if(['save-occasion-date','occasion-roll','roll','new-session','my-d6',
@@ -1952,10 +1939,41 @@ async function handle(action,element){
   await rpc('finish_couple_session',{p_session:state.session.id,p_count:false});
   state.confirmCancel=false;state.tab='home';await refreshAndShow();return;
  }
- if(verb==='advent'){
-  const day=Number(parts[0]);state.selectedDay=day;
-  await rpc('open_advent_day',{p_couple:state.coupleId,p_day:day});
-  await refreshAndShow();return;
+ if(verb==='advent-open'){
+  if(!isSharedCoupleReady(state.coupleId,state.members))
+   throw Error('Le calendrier appartient à votre couple associé.');
+  if(state.adventOpening!==null)return;
+  const day=Number(parts[0]),date=state.adventServerDate||today();
+  const year=Number(date.slice(0,4));
+  const cal=sharedAdventState(state.advent,new Date(date+'T16:00:00Z'),state.adventYear);
+  if(!cal.days[day-1]?.canOpen)throw Error('Seule la case du jour peut être ouverte.');
+  state.adventOpening=day;render();
+  try{
+   // Only the server commits an opening; concurrent partners receive one row.
+   const opened=await rpc('open_advent_day',{p_couple:state.coupleId,p_day:day});
+   if(!opened||opened.year!==year||opened.day!==day)
+    throw Error('Ouverture non confirmée.');
+   await refreshShared();
+   await new Promise(resolve=>setTimeout(resolve,900));
+   state.adventOpening=null;state.adventSelected=day;state.adventHistory=false;render();
+  }catch(error){
+   state.adventOpening=null;await refreshShared();render();throw error;
+  }
+  return;
+ }
+ if(verb==='advent-view'){
+  const day=Number(parts[0]),year=state.adventYear||Number((state.adventServerDate||today()).slice(0,4));
+  if(!state.advent.some(row=>row.year===year&&row.day===day))
+   throw Error('Cette surprise n’a pas encore été ouverte.');
+  state.adventSelected=day;render();return;
+ }
+ if(verb==='advent-close'){state.adventSelected=null;render();return;}
+ if(verb==='advent-history'){state.adventHistory=!state.adventHistory;render();return;}
+ if(verb==='advent-year'){
+  const year=Number(parts[0]),current=Number((state.adventServerDate||today()).slice(0,4));
+  if(!Number.isInteger(year)||(year!==current&&!state.advent.some(row=>row.year===year)))
+   throw Error('Aucun calendrier enregistré pour cette année.');
+  state.adventYear=year;state.adventHistory=false;state.adventSelected=null;render();return;
  }
  if(verb==='unlock'){
   const pass=id('journal-pass')?.value||'';
