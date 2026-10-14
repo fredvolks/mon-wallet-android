@@ -39,6 +39,34 @@ test('Private personal D6 results remain hidden until BOTH partner rolls are com
   rolls:[{user_id:'first',face:5}],status:{both_ready:false,my_rolled:false,partner_rolled:true},turn:{}});
  assert.match(otherUser,/data-action="my-d6"/);
 });
+test('Giving challenges updates both Step 1 totals while the dice show original faces',()=>{
+ // Original dice: Camille 5, Noémie 2; two gifts transfer from Camille to Noémie.
+ const gifted={...turns,targets:{first:3,second:4},remaining:{first:3,second:4}};
+ const html=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:5},{user_id:'second',face:2}],
+  status:{both_ready:true,my_rolled:true,partner_rolled:true},turn:gifted,category:'SENSUEL'});
+ assert.match(html,/data-dice-sides="6" data-face="5"/);
+ assert.match(html,/data-dice-sides="6" data-face="2"/);
+ assert.match(html,/aria-label="Total actuel 3 défis; dé initial 5"><strong>3<\/strong>/);
+ assert.match(html,/aria-label="Total actuel 4 défis; dé initial 2"><strong>4<\/strong>/);
+ assert.match(html,/Dé initial : 5/);
+ assert.match(html,/Dé initial : 2/);
+ assert.match(html,/<b>1 \/ 3<\/b>/);
+ assert.match(html,/<b>0 \/ 4<\/b>/);
+ assert.match(css,/\.evening-original-d6\{/);
+ // Without gifts, the cards still match the rolls, no redundant label.
+ const normal=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:5},{user_id:'second',face:2}],
+  status:{both_ready:true},turn:{...gifted,targets:{first:5,second:2}}});
+ assert.doesNotMatch(normal,/Dé initial :/);
+ assert.match(normal,/aria-label="Total actuel 5 défis; dé initial 5"><strong>5<\/strong>/);
+ // When the second D6 is not rolled yet, no totals are revealed.
+ const waiting=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:5}],status:{both_ready:false},
+  turn:{...gifted,ready:false}});
+ assert.doesNotMatch(waiting,/Total actuel/);
+ assert.doesNotMatch(waiting,/Dé initial :/);
+});
 test('D35 always visible and rolling face not displayed as text before settling',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:{...turns,pending:{face:21}},rollFace:11,
   rollingKind:'new-challenge',rolling:true,category:'SENSUEL'});

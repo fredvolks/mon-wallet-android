@@ -12,13 +12,21 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false){
    '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:'Dé en attente')+'"></canvas>'+
   '</div></div>';
 }
-const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace)=>{
+const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=>{
  const has=!!roll&&ready;
+ // The D6 keeps its original dice face. The card count reflects gifts
+ // transferred to/from this partner using the same Supabase-backed totals
+ // already displayed in Step 2. Never reveal a roll until BOTH are ready.
+ const officialTarget=Number(effectiveTarget);
+ const adjusted=has&&effectiveTarget!=null&&Number.isInteger(officialTarget)&&
+  officialTarget>=0&&officialTarget!==roll.face;
+ const displayCount=adjusted?officialTarget:has?roll.face:null;
  return '<article class="evening-user-die">'+
   '<strong class="evening-person">'+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
   premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser)+
-  '<div class="evening-face-result"><strong>'+(has?roll.face:'♡')+'</strong>'+
-  '<small>'+(has?'défi'+(roll.face>1?'s':'')+' ce soir':roll?'Résultat caché':'Pas encore lancé')+'</small></div>'+
+  '<div class="evening-face-result" aria-label="'+(has?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(has?esc(displayCount):'♡')+'</strong>'+
+  '<small>'+(has?'défi'+(displayCount>1?'s':'')+' ce soir':roll?'Résultat caché':'Pas encore lancé')+'</small>'+
+  (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>'+
   (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):(!roll?'<small class="evening-wait">En attente</small>':''))+
   '</article>';
 };
@@ -58,8 +66,8 @@ export function premiumEveningHtml({
  (session?
   '<section class="evening-step one"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
-  '<div class="evening-d6-grid">'+d6(mine,myRoll,true,canMyRoll,ready,rollingKind==='my-d6'&&rolling,rollFace)+
-  d6(partner,theirRoll,false,false,ready,false,null)+'</div>'+
+  '<div class="evening-d6-grid">'+d6(mine,myRoll,true,canMyRoll,ready,rollingKind==='my-d6'&&rolling,rollFace,turn?.ready?turn.targets?.[mine.user_id]:null)+
+  d6(partner,theirRoll,false,false,ready,false,null,turn?.ready?turn.targets?.[partner.user_id]:null)+'</div>'+
   '<div class="evening-ready '+(ready?'yes':'')+'">'+stateText+'</div></section>'+
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
