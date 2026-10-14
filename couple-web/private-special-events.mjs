@@ -41,3 +41,13 @@ export function specialForEvent(settings,roll){
   modifierTitle:roll.modifier_title??null,modifierText:roll.modifier_text??null
  };
 }
+
+export function privateSpecialKey(kind,actorId,creatorId){
+ if(kind==='valentine')return 'saint_valentin';
+ if(kind==='anniversary')return 'anniversaire_de_couple';
+ if(kind==='mothers_day')return 'fete_des_meres';
+ if(kind==='fathers_day')return 'fete_des_peres';
+ if(kind==='birthday')return actorId===creatorId?
+  'mon_anniversaire':'anniversaire_de_mon_partenaire';
+ return null;
+}
