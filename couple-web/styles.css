@@ -673,3 +673,15 @@ button:focus-visible,.nav button:focus-visible,summary:focus-visible{
  .premium-die{width:165px;height:165px}
 }
 @media(prefers-reduced-motion:reduce){.die.rolling strong{animation:none}}
+
+/* Shared two-account rounds and gifts */
+.love-turn-card{border-color:#df6698;background:radial-gradient(ellipse at top,#6b224e55,transparent 70%),linear-gradient(140deg,#36142d,#211024)}
+.turn-banner{padding:15px;border:1px solid #fa7db1;border-radius:14px;margin:14px 0 0;
+ color:#ffdee9;font-size:.97rem;font-weight:800;text-align:center;
+ background:linear-gradient(115deg,#912b6591,#4b1a497a);box-shadow:0 0 20px #e8307d2f}
+.gift-card{background:radial-gradient(circle at 94% 7%,#f278a729,transparent 40%),
+ linear-gradient(145deg,#472037,#281024);border:1px solid #bb638b}
+.gift-card h3{color:#fff1f8}
+.gift-card .gift-cta{min-height:54px;width:100%;font-weight:850}
+.status-line{font-size:.82rem;color:#ffbfda;text-align:center;padding:10px}
+@media(min-width:768px){.gift-card,.love-turn-card{max-width:760px;margin-inline:auto}}
