@@ -31,6 +31,7 @@ create table if not exists public.love_custom_challenges(
  title text not null check(length(trim(title)) between 3 and 120),
  description text not null check(length(trim(description)) between 10 and 900),
  timer_minutes smallint check(timer_minutes is null or timer_minutes between 1 and 60),
+ recipient_user_id uuid references auth.users(id) on delete set null,
  updated_at timestamptz not null default now(),
  primary key(couple_id,category,card_id)
 );
@@ -46,7 +47,8 @@ grant select on public.love_custom_challenges to authenticated;
 
 create or replace function public.save_love_custom_card(
  p_couple uuid,p_category text,p_card_id integer,
- p_title text,p_description text,p_timer_minutes integer default null)
+ p_title text,p_description text,p_timer_minutes integer default null,
+ p_recipient uuid default null)
 returns void language plpgsql security definer set search_path='' as $$
 begin
  if auth.uid() is null then raise exception 'Connexion requise';end if;
@@ -60,13 +62,16 @@ begin
     length(trim(coalesce(p_description,''))) not between 10 and 900 or
     (p_timer_minutes is not null and p_timer_minutes not between 1 and 60)
  then raise exception 'Carte ou minuterie invalide';end if;
- insert into public.love_custom_challenges(couple_id,category,card_id,title,description,timer_minutes)
- values(p_couple,p_category,p_card_id,trim(p_title),trim(p_description),p_timer_minutes)
+ if p_recipient is not null and not exists(select 1 from public.couple_members m
+  where m.couple_id=p_couple and m.user_id=p_recipient) then
+  raise exception 'Destinataire non membre du couple';end if;
+ insert into public.love_custom_challenges(couple_id,category,card_id,title,description,timer_minutes,recipient_user_id)
+ values(p_couple,p_category,p_card_id,trim(p_title),trim(p_description),p_timer_minutes,p_recipient)
  on conflict(couple_id,category,card_id) do update
  set title=excluded.title,description=excluded.description,
- timer_minutes=excluded.timer_minutes,updated_at=now();
+ timer_minutes=excluded.timer_minutes,recipient_user_id=excluded.recipient_user_id,updated_at=now();
 end;$$;
-revoke all on function public.save_love_custom_card(uuid,text,integer,text,text,integer) from public,anon;
+revoke all on function public.save_love_custom_card(uuid,text,integer,text,text,integer,uuid) from public,anon;
 grant execute on function public.save_love_custom_card(uuid,text,integer,text,text,integer) to authenticated;
 
 create or replace function public.delete_love_custom_card(
@@ -134,7 +139,8 @@ begin
   select count(*) into capacity from generate_series(1,35) card
    where (card<=25 or (card>=26 and exists(
     select 1 from public.love_custom_challenges cc
-    where cc.couple_id=s.couple_id and cc.category=v_cat and cc.card_id=card)))
+    where cc.couple_id=s.couple_id and cc.category=v_cat and cc.card_id=card
+    and (cc.recipient_user_id is null or cc.recipient_user_id=target))))
    and not exists(select 1 from public.couple_challenges used
     where used.session_id=p_session and used.recipient=target
      and used.category=v_cat and used.card_id=card);
@@ -153,7 +159,8 @@ begin
  select card into cid from generate_series(1,35) card
  where (card<=25 or (card>=26 and exists(
   select 1 from public.love_custom_challenges cc
-  where cc.couple_id=s.couple_id and cc.category=v_cat and cc.card_id=card)))
+  where cc.couple_id=s.couple_id and cc.category=v_cat and cc.card_id=card
+  and (cc.recipient_user_id is null or cc.recipient_user_id=target))))
  and not exists(select 1 from public.couple_challenges used
    where used.session_id=p_session and used.recipient=target
     and used.category=v_cat and used.card_id=card)
