@@ -430,9 +430,9 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("isLoveAdmin()"));
  assert.ok(app.includes("if(state.couple?.owner_user_id===state.user.id)"));
  assert.ok(app.includes("save_love_card_with_roles"));
- assert.ok(app.includes("button('tab:library','♡ Gérer mes 70 cartes')"));
+ assert.ok(app.includes("button('tab:library','♡ Mes 70 cartes')"));
  assert.ok(app.includes("renderInvitePanel()"));
- assert.ok(app.includes("button('invite',latest?'Renvoyer une invitation (nouveau lien)'"));
+ assert.ok(app.includes("button('invite',latest?'↻ Renouveler mon lien sécurisé'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
  assert.ok(app.includes("button('tab:personal-journal','Ouvrir mon calendrier personnel')"));
  assert.ok(!app.includes("if(verb==='skip-couple')"));
@@ -701,7 +701,7 @@ test('All 20 monthly D20 activities are editable without changing their face ide
  assert.equal(editableMonthlyActivities([])[0].title,MONTHLY_ACTIVITIES[0].title);
  assert.deepEqual(monthlyActivityForRoll({face:1}),{
   face:1,title:MONTHLY_ACTIVITIES[0].title,
-  description:MONTHLY_ACTIVITIES[0].description,is_restaurant:true
+  description:MONTHLY_ACTIVITIES[0].description,is_restaurant:true,timer_minutes:null
  });
  const historic={face:1,activity_title:'Ancienne activité du mois',
   activity_description:'Le souvenir de notre ancienne sortie à deux.',
@@ -736,7 +736,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("state.tab==='monthly-library'&&isLoveAdmin()"));
  assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  assert.ok(app.includes("query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})"));
- assert.ok(app.includes("rpc('save_love_monthly_activity'"));
+ assert.ok(app.includes("rpc('save_love_monthly_activity_with_timer'"));
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
  assert.ok(app.includes("settingRow('Activités du mois'"));
  assert.ok(app.includes("monthlyActivityForRoll(state.monthly.monthly_activity)"));
@@ -759,7 +759,7 @@ test('Private Advent 2026 import accepts 25 user-written days without altering t
  const saved=calendarFromSaved({
   calendar_title:calendar.calendar_title,target_audience:'18+',note:calendar.note
  },calendar.days);
- assert.deepEqual(saved,calendar);
+ assert.deepEqual(saved,{...calendar,days:calendar.days.map(d=>({...d,timer_minutes:null}))});
  assert.throws(()=>validateAdventJson({...calendar,year:2027}),/2026/);
  assert.throws(()=>validateAdventJson({...calendar,days:calendar.days.slice(0,24)}),/25/);
  assert.throws(()=>validateAdventJson({...calendar,days:[...calendar.days.slice(0,24),calendar.days[0]]}),/uniques/);
@@ -790,7 +790,7 @@ test('Founder-only Advent editor, server date locks and shared immutable case sn
  assert.ok(!migration.includes('delete from public.couple_intimacy'));
  assert.ok(app.includes("function renderAdventEditor()"));
  assert.ok(app.includes("import_love_advent_2026"));
- assert.ok(app.includes("validateAdventJson(calendar)"));
+ assert.ok(app.includes("previewPortableJson('advent')"));
  assert.ok(app.includes("state.advent2026Config=adventConfig[0]||null"));
  assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  assert.ok(app.includes("['library','monthly-library','advent-editor','special-editor'].includes(parts[0])"));
@@ -863,7 +863,7 @@ test('Server protects future D6 options, uses only random 1..6, and preserves pr
  assert.ok(app.includes("heroDice(modifier.face,6,"));
  assert.ok(app.includes("':activity','🎲 Brasser le D6 de l’activité'"));
  assert.ok(app.includes("':modifier','🎲 Brasser le D6 du modificateur'"));
- assert.ok(app.includes("validateSpecialEventsJson(data)"));
+ assert.ok(app.includes("previewPortableJson('special')"));
  assert.ok(app.includes('state.specialEventsConfig=specialSettings[0]?.events||null'));
  assert.ok(worker.includes("'./private-special-events.mjs'"));
  assert.ok(!rolls.includes('delete from public.couple_occasion_rolls'));
