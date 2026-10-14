@@ -8,6 +8,7 @@ import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './w
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
+import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
 
 
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
@@ -20,7 +21,7 @@ const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -68,9 +69,11 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
+ const installation=connected&&shouldOfferInstall(state.user?.id)?
+  (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
  root.innerHTML='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+
-  '</header>'+body+(connected?nav():'');
+  '</header>'+body+(connected?nav():'')+installation;
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
@@ -1019,6 +1022,15 @@ function randomInviteToken(){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='install-home'){
+  const result=await requestInstall();
+  if(result.prompted&&result.accepted){dismissInstall(state.user?.id);state.showInstallSteps=false;}
+  else state.showInstallSteps=true;
+  render();return;
+ }
+ if(verb==='install-later'||verb==='install-understood'){
+  dismissInstall(state.user?.id);state.showInstallSteps=false;render();return;
+ }
  if(verb==='set-celebrant'){
   if(!isLoveAdmin())throw Error('Réglage réservé à l’administrateur.');
   if(!TARGETED_OCCASIONS.includes(parts[0])||
