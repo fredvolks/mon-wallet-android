@@ -1,0 +1,39 @@
+<!doctype html><html lang="fr-CA"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./premium-theme.css">
+<link rel="stylesheet" href="./premium-couple-pages.css">
+</head><body><main id="app"></main><script type="module">
+import {premiumEveningHtml} from './premium-evening.mjs';
+import {premiumSurpriseHtml} from './premium-surprise.mjs';
+import {dieOn} from './dice3d.js';
+const root=document.querySelector('#app'),q=new URLSearchParams(location.search);
+const members=[{user_id:'owner',name:'Camille',joined_at:'2026-10-01'},{user_id:'partner',name:'Noémie',joined_at:'2026-10-02'}];
+let markup='';
+if(q.get('page')==='evening'){
+ root.className='loveroll-evening-page';
+ markup=premiumEveningHtml({
+  session:{id:'fixture',paired_turns:true,self_draws:true,starting_user_id:'owner'},
+  members,me:'owner',rolls:[{user_id:'owner',face:1},{user_id:'partner',face:2}],
+  status:{both_ready:true,my_rolled:true,partner_rolled:true},
+  turn:{first:'owner',ready:true,next:'owner',targets:{owner:1,partner:2},
+    completed:{owner:0,partner:0},remaining:{owner:1,partner:2},finished:false,pending:null},
+  category:'SENSUEL'
+ });
+}else{
+ root.className='loveroll-surprise-page';
+ markup=premiumSurpriseHtml({
+  members,monthly:{},settings:{anniversary_md:'06-15',birthday_by_user:{owner:'01-21',partner:'03-04'}},
+  now:new Date('2026-10-14T15:00:00Z')
+ });
+}
+const nav='<nav class="nav"><div class="nav-inner">'+
+ [['⌂','Accueil'],['🎲','Soirée'],['✦','Surprise'],['🎁','Avent'],['⚙','Réglages']].map((x,i)=>
+ '<button class="'+((q.get('page')==='evening'?i===1:i===2)?'active':'')+'"><span>'+x[0]+'</span>'+x[1]+'</button>').join('')+
+ '</div></nav>';
+root.innerHTML=markup+nav;
+const disposers=[];
+for(const canvas of root.querySelectorAll('canvas[data-dice-sides]')){
+ disposers.push(dieOn(canvas,Number(canvas.dataset.diceSides),Number(canvas.dataset.face),false));
+}
+window.__disposers=disposers;
+</script></body></html>

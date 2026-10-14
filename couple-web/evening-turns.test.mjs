@@ -65,7 +65,7 @@ test('monthly 3 gift quota enforced in protected RPC and not tied to number 6',(
  assert.match(schema,/auth\.uid\(\)/);
  assert.match(schema,/for update/);
  assert.match(app,/rpc\('give_love_challenge'/);
- assert.match(app,/turn\.remaining\[me\]>0/);
+ assert.match(app,/turn\.remaining\[me\]<=0/);
  assert.match(app,/Nos 70 défis/);
  assert.match(app,/turn\.pending/);
 });

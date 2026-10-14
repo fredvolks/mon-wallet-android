@@ -3,7 +3,7 @@ import {RoundedBoxGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geom
 import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/ConvexGeometry.js';
 /** Safari/Chrome WebGL die. Values come from the shared server, never from animation. */
 const pool=new Set();
-function digits(value,heart=false){const c=document.createElement('canvas');c.width=c.height=384;
+function digits(value,heart=false,pips=false){const c=document.createElement('canvas');c.width=c.height=384;
  const x=c.getContext('2d');x.font='bold '+(heart?({1:184,2:143,3:120,4:102,5:94,6:84}[value]||84):180)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#ff1e91';x.shadowBlur=24;
  x.fillStyle='#ff9ccf';x.strokeStyle='#ffe3f3';x.lineWidth=1.5;
  if(!heart)x.fillText(String(value),192,200);
@@ -11,7 +11,10 @@ function digits(value,heart=false){const c=document.createElement('canvas');c.wi
   const spots=[[192,192],[102,102],[282,282],[282,102],[102,282],[102,192],[282,192]];
   const indices={1:[0],2:[1,2],3:[1,0,2],4:[1,2,3,4],
    5:[1,2,3,4,0],6:[1,2,3,4,5,6]}[value]||[0];
-  for(const i of indices){x.fillText('♥',...spots[i]);x.strokeText('♥',...spots[i]);}
+  for(const i of indices){
+    if(pips){const [px,py]=spots[i];x.beginPath();x.arc(px,py,20,0,Math.PI*2);x.fill();x.stroke();}
+    else{x.fillText('♥',...spots[i]);x.strokeText('♥',...spots[i]);}
+   }
  }
  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;}
 // A genuine convex 35-faced die. The polar dual of a 35-vertex convex hull
@@ -72,7 +75,7 @@ function d35Geometry(){
  return {geo,edges,normals:sideNormals,labelCenters};
 }
 
-function geometry(sides){
+function geometry(sides,pips=false){
  const group=new THREE.Group(),normals=new Map();
  const custom=sides===35?d35Geometry():null;
  const geo=custom?.geo||(sides===20?new THREE.IcosahedronGeometry(1.16,0):
@@ -109,7 +112,7 @@ function geometry(sides){
   normals.set(value,normal);
   const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===35?.27:sides===20?.36:1.64,
    sides===35?.27:sides===20?.36:1.64),
-    new THREE.MeshBasicMaterial({map:digits(value,sides===6),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
   if(custom)plane.position.copy(custom.labelCenters.get(value));
   else plane.position.copy(normal).multiplyScalar(depth);
   plane.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),normal);
@@ -118,19 +121,19 @@ function geometry(sides){
  return {group,normals};
 }
 export function dieOn(canvas,sides,value,rolling){
- let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';canvas.closest('.home-die-platform')?.classList.add('webgl-ready');}catch{return ()=>{};}
+ let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';canvas.closest('.home-die-platform, .love3d-stage')?.classList.add('webgl-ready');}catch{return ()=>{};}
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
  renderer.setSize(canvas.clientWidth||124,canvas.clientHeight||124,false);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.6;
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=sides===6?5.25:4.15;
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=(sides===6?5.25:4.15)/Math.min(1.4,Math.max(.8,Number(canvas.dataset.diceZoom)||1));
  camera.aspect=(canvas.clientWidth||124)/(canvas.clientHeight||124);camera.updateProjectionMatrix();
  scene.add(new THREE.AmbientLight(0xffb7df,1.25));
  const key=new THREE.PointLight(0xff3e99,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
  const rim=new THREE.PointLight(0xff9fcb,22,9);rim.position.set(3,-1,1.9);scene.add(rim);
  const white=new THREE.DirectionalLight(0xfff0fa,2.3);white.position.set(1.3,3,4);scene.add(white);
- const built=geometry(sides);scene.add(built.group);
+ const built=geometry(sides,canvas.dataset.diceMarkers==='pips');scene.add(built.group);
  const target=new THREE.Quaternion().setFromUnitVectors(built.normals.get(Number(value)||1),
   new THREE.Vector3(0,0,1));
  if(sides===6){const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.49,-.52,-.07));target.premultiply(tilt);}
