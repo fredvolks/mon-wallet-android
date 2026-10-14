@@ -36,6 +36,7 @@ jobs:
           node --check couple-web/push-notifications.mjs
           node --check couple-web/evening-turns.mjs
           node --check couple-web/service-worker.js
+          node --check couple-web/premium-invite-auth-visual-check.cjs
           node --check couple-web/premium-settings-visual-check.cjs
       - name: Validate Messenger image renderer
         run: |
@@ -70,7 +71,7 @@ jobs:
           assert '.discover-approved-die' in styles
           PY
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs couple-web/force-weekly-reset.test.mjs couple-web/pwa-update.test.mjs couple-web/premium-couple-pages.test.mjs couple-web/settings-premium.test.mjs couple-web/premium-advent.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs couple-web/force-weekly-reset.test.mjs couple-web/pwa-update.test.mjs couple-web/premium-couple-pages.test.mjs couple-web/settings-premium.test.mjs couple-web/invite-password-auth.test.mjs couple-web/premium-advent.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |
@@ -393,6 +394,9 @@ jobs:
 
       - name: Verify premium eight-section Settings on Galaxy S25 Ultra and iPhone
         run: node couple-web/premium-settings-visual-check.cjs
+
+      - name: Verify invitation and account pages on Galaxy S25 Ultra
+        run: node couple-web/premium-invite-auth-visual-check.cjs
 
       - name: Publier les captures comparatives
         if: always()
