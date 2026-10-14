@@ -51,7 +51,9 @@ jobs:
               {name:'S25-Ultra',width:412,height:824,requireOneScreen:true},
               {name:'S25-Ultra-long',width:412,height:915,requireOneScreen:true},
               {name:'Petit-Android',width:360,height:700,requireOneScreen:false},
-              {name:'iPhone',width:393,height:780,requireOneScreen:false}
+              {name:'iPhone',width:393,height:780,requireOneScreen:false},
+              {name:'iPad-portrait',width:820,height:1180,requireOneScreen:false},
+              {name:'iPad-landscape',width:1180,height:820,requireOneScreen:false}
             ]){
               const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:2,
                 isMobile:true,hasTouch:true});
@@ -95,6 +97,59 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           EOF
           node capture-landing.cjs
+          cat > couple-web/__tablet-settings-test.html <<'EOF'
+          <!doctype html><html lang="fr-CA"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+          <link rel="stylesheet" href="./styles.css"></head><body>
+          <main><header class="header"><h1>♡ Réglages</h1></header>
+            <div class="settings-grid">
+              <details class="settings-group" open><summary><span class="settings-group-icon">♡</span>
+                <span class="settings-group-heading"><strong>Compte</strong><small>Profil</small></span></summary>
+                <div class="settings-group-content"><button>Gérer mon profil</button></div></details>
+              <details class="settings-group"><summary><span class="settings-group-icon">♥</span>
+                <span class="settings-group-heading"><strong>Couple</strong><small>Invitations</small></span></summary></details>
+              <details class="settings-group"><summary><span class="settings-group-icon">🎲</span>
+                <span class="settings-group-heading"><strong>Jeu</strong><small>Défis</small></span></summary></details>
+              <details class="settings-group"><summary><span class="settings-group-icon">♧</span>
+                <span class="settings-group-heading"><strong>Notifications</strong><small>Rappels</small></span></summary></details>
+            </div>
+            <nav class="nav"><div class="nav-inner">
+              <button>Accueil</button><button>Soirée</button><button>Défi spécial</button>
+              <button>Avent</button><button>Réglages</button></div></nav>
+          </main></body></html>
+          EOF
+          cat > verify-ipad.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch();
+            for(const device of [
+              {name:'iPad portrait',width:820,height:1180,columns:2},
+              {name:'iPad paysage',width:1180,height:820,columns:3},
+              {name:'iPhone',width:390,height:844,columns:1}
+            ]){
+              const page=await browser.newPage({viewport:{width:device.width,height:device.height},isMobile:true,hasTouch:true});
+              await page.goto('http://127.0.0.1:8765/__tablet-settings-test.html');
+              const check=await page.evaluate(()=>{
+                const grid=document.querySelector('.settings-grid');
+                const widths=getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+                return {columns:widths,mainWidth:document.querySelector('main').getBoundingClientRect().width,
+                  overflow:document.documentElement.scrollWidth>innerWidth+2,
+                  navButtons:document.querySelectorAll('.nav button').length};
+              });
+              if(check.columns!==device.columns||check.overflow||check.navButtons!==5||
+                (device.width>700&&check.mainWidth<700))
+                throw Error(device.name+': '+JSON.stringify(check));
+              await page.locator('.settings-group:nth-child(2) summary').click();
+              if(!await page.locator('.settings-group:nth-child(2)').evaluate(e=>e.open))
+                throw Error('Settings accordion cannot open on '+device.name);
+              await page.screenshot({path:'landing-captures/'+device.name.replace(' ','-')+'-reglages.png'});
+              console.log(device.name,check);
+              await page.close();
+            }
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          EOF
+          node verify-ipad.cjs
           cat > couple-web/__wellbeing-test.html <<'EOF'
           <!doctype html><html lang="fr-CA"><head><meta charset="utf-8">
           <meta name="viewport" content="width=device-width,initial-scale=1">
