@@ -509,9 +509,9 @@ public final class MainActivity extends Activity {
    progress(c,goal==0?0:(float)Math.min(done,goal)/goal);
    addButton(c,"COMMENCER UNE SOIRÉE   →",true,()->{tab="game";draw();});
   }
-  LinearLayout info=card("♥  Votre rituel   ·   3 types de dés",null);
+  LinearLayout info=card("♥  Votre rituel   ·   2 catégories de défis",null);
   addText(info,"SEMAINE  →  soirées     ·     D6 × 2  →  défis reçus",12,PALE,true,2);
-  addText(info,"D20  →  Sensuel  ·  Coquin  ·  Sexuel",12,MUTED,false,0);
+  addText(info,"DÉFIS  →  Sensuel  ·  Sexuel",12,MUTED,false,0);
  }
  void progress(LinearLayout dest,float fraction){
   FrameLayout track=new FrameLayout(this);
