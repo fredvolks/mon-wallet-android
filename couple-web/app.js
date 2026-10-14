@@ -1,4 +1,5 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
+import { discoverHtml } from './discover.mjs';
 import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
@@ -28,7 +29,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),showDiscover:false,inviteAccepted:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -149,10 +150,22 @@ function bindActions(){
 function render(){
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
+ const pendingInvite=sessionStorage.getItem('pendingInvite');
+ // Discover always shows a visual tour, never a second sign-in page.
+ if(state.showDiscover){
+  root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
+ }
+ // An invitee must press ACCEPT before Google/Apple/email are visible.
+ if(pendingInvite&&!state.inviteAccepted){
+  frame(invitationLandingHeader(true)+
+   '<div class="invite-discover-link">'+button('discover-loveroll','♡ Découvrir LoveRoll','class="subtle"')+'</div>'+
+   inviteBrowserHelp(),'LOVEROLL','Votre invitation privée');
+  return;
+ }
  if(!state.user){
   if(!state.showAuth){
    root.innerHTML=marketingHtml();bindActions();
-  }else frame((sessionStorage.getItem('pendingInvite')?invitationLandingHeader():'')+authHtml(!!sessionStorage.getItem('pendingInvite'))+inviteBrowserHelp(),'LOVEROLL',sessionStorage.getItem('pendingInvite')?'Votre invitation privée':'Votre espace privé à deux');
+  }else frame(authHtml(!!pendingInvite)+inviteBrowserHelp(),'LOVEROLL',pendingInvite?'Connexion après acceptation':'Votre espace privé à deux');
   return;
  }
  if(!state.profile||!state.profile.birthday_md){
@@ -1250,8 +1263,8 @@ function renderSettings(){
   '<p>'+safe(state.profile.display_name)+' et '+safe(other()?.name||'Votre partenaire')+
   ' · Invitation acceptée</p></div></div>'+
   renderCoupleDateSetting()+
-  '<p class="tiny-note">Un retrait coupe l’accès au journal partagé. Les entrées privées sont conservées.</p>'+
-  button('end-couple','Retirer mon partenaire','class="subtle danger-action"');
+  '<p class="tiny-note">Dissocier le partenaire ne supprime aucun compte ni défi. Vos cartes personnalisées sont sauvegardées.</p>'+
+  button('end-couple','Dissocier mon partenaire','class="subtle danger-action"');
  }else if(linked){
   partner=renderInvitePanel()+
    '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
@@ -1370,9 +1383,20 @@ async function handle(action,element){
   notify('Rappel local désactivé.');return;
  }
  if(verb==='invite-start'){
-  root.querySelector('.premium-auth-panel')?.scrollIntoView({behavior:'smooth',block:'center'});
-  root.querySelector('.premium-auth-panel [data-action="google"]')?.focus({preventScroll:true});
-  return;
+  const token=sessionStorage.getItem('pendingInvite');
+  if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Invitation introuvable.');
+  state.inviteAccepted=true;state.showAuth=true;
+  sessionStorage.setItem('loverollInviteAccepted',token);
+  render();return;
+ }
+ if(verb==='discover-loveroll'){state.showDiscover=true;render();return;}
+ if(verb==='discover-back'||verb==='invite-return'){
+  state.showDiscover=false;
+  if(sessionStorage.getItem('pendingInvite')){
+   state.inviteAccepted=false;state.showAuth=false;
+   sessionStorage.removeItem('loverollInviteAccepted');
+  }else state.showAuth=verb==='discover-back';
+  render();return;
  }
  if(verb==='copy-invite-for-browser'){
   const token=sessionStorage.getItem('pendingInvite');
@@ -1536,10 +1560,11 @@ async function handle(action,element){
  }
  if(verb==='end-couple'){
   if(!state.coupleId)return;
-  if(!confirm('Retirer le partenaire et fermer cet espace partagé pour LES DEUX personnes ? Vos propres notes restent dans votre calendrier privé. Vous ne pourrez plus lire les anciennes données communes.'))return;
+  if(!confirm('Dissocier le partenaire pour LES DEUX personnes ? Vos défis et cartes personnalisées sont conservés. Les anciennes données communes restent privées et inaccessibles.'))return;
   await rpc('end_love_match',{p_couple:state.coupleId});
   state.unlockKey=null;state.personalPass=null;
-  await reload();notify('Espace partagé fermé. Votre calendrier privé est conservé.');return;
+  state.inviteDraft=null;state.invitations=[];
+  await reload();notify('Partenaire dissocié. Vos défis personnels sont conservés.');return;
  }
  if(verb==='save-wellbeing'){
   const relationship=id('wellbeing-relationship')?.value,intimacy=id('wellbeing-intimacy')?.value;
@@ -1693,7 +1718,9 @@ async function handle(action,element){
   const token=sessionStorage.getItem('pendingInvite');
   if(!token)throw Error('Invitation introuvable.');
   await rpc('accept_love_match',{p_token_hash:await hashToken(token)});
-  sessionStorage.removeItem('pendingInvite');await reload();return;
+  sessionStorage.removeItem('pendingInvite');
+  sessionStorage.removeItem('loverollInviteAccepted');
+  state.inviteAccepted=false;await reload();return;
  }
  if(verb==='tab'){
   const ready=isSharedCoupleReady(state.coupleId,state.members);
@@ -1869,11 +1896,18 @@ async function start(){
  const invite=fragment.get('invite')||currentUrl.searchParams.get('invite');
  if(invite){
   if(!/^[0-9a-f]{64}$/i.test(invite))throw Error('Ce lien d’invitation est invalide.');
+  const previous=sessionStorage.getItem('pendingInvite');
+  if(previous!==invite)sessionStorage.removeItem('loverollInviteAccepted');
   sessionStorage.setItem('pendingInvite',invite);
-  state.showAuth=true;
+  state.inviteAccepted=sessionStorage.getItem('loverollInviteAccepted')===invite;
+  state.showAuth=state.inviteAccepted;
   fragment.delete('invite');currentUrl.searchParams.delete('invite');
   currentUrl.hash=fragment.toString();
   history.replaceState(null,'',currentUrl.pathname+currentUrl.search+currentUrl.hash);
+ }
+ if(!invite){
+  const saved=sessionStorage.getItem('pendingInvite');
+  state.inviteAccepted=!!saved&&sessionStorage.getItem('loverollInviteAccepted')===saved;
  }
  if(!client){render();return;}
  const {data,error}=await client.auth.getUser();
