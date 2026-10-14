@@ -19,10 +19,10 @@ jobs:
           python3 - <<'PY'
           import json
           with open('/tmp/loveroll-live.json', encoding='utf-8') as f: data=json.load(f)
-          assert data.get('build') == '2026-10-14.37', f"Live version does not match: {data}"
+          assert data.get('build') == '2026-10-14.38', f"Live version does not match: {data}"
           PY
           curl --fail --silent --show-error --location --max-time 20 "${SITE}index.html" -o /tmp/loveroll-live.html
-          grep -F 'settings-premium.css?v=20261014-invite37' /tmp/loveroll-live.html
+          grep -F 'settings-premium.css?v=20261014-hero38' /tmp/loveroll-live.html
           curl --fail --silent --show-error --location --max-time 20 "${SITE}settings-premium.css" -o /tmp/loveroll-settings.css
           grep -F 'main#app.loveroll-settings-page' /tmp/loveroll-settings.css
           curl --fail --silent --show-error --location --max-time 20 "${SITE}invite-account.css" -o /tmp/loveroll-invite.css
@@ -30,4 +30,14 @@ jobs:
           curl --fail --silent --show-error --location --max-time 20 "${SITE}app.js" -o /tmp/loveroll-invite-app.js
           grep -F 'signInWithPassword' /tmp/loveroll-invite-app.js
           grep -F 'autoAcceptPendingInvite' /tmp/loveroll-invite-app.js
-          echo 'Verified LoveRoll v37 premium account page and secure invite flow are live.'
+          curl --fail --silent --show-error --location --max-time 20 --retry 2 "${SITE}assets/loveroll-invitation-hero-hd.webp" -o /tmp/loveroll-hero-hd.webp
+          python3 - <<'PY'
+          import os
+          path='/tmp/loveroll-hero-hd.webp'
+          assert os.path.getsize(path) >= 100000, 'High-definition hero unexpectedly too small'
+          with open(path,'rb') as f: assert f.read(4) == b'RIFF', 'Invalid WebP header'
+          print('Live HD hero image verified:',os.path.getsize(path),'bytes')
+          PY
+          curl --fail --silent --show-error --location --max-time 20 "${SITE}discover.mjs" -o /tmp/loveroll-landing.js
+          grep -F 'loveroll-invitation-hero-hd.webp' /tmp/loveroll-landing.js
+          echo 'Verified LoveRoll v38 HD invitation visual is public and served.'
