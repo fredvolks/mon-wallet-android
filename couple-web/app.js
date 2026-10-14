@@ -64,9 +64,19 @@ const button=(action,label,extra='')=>'<button '+extra+' data-action="'+safe(act
 function inviteBrowserHelp(){
  const inApp=/FBAN|FBAV|Messenger|Instagram/i.test(navigator.userAgent||'');
  if(!inApp||!sessionStorage.getItem('pendingInvite'))return '';
- return '<section class="card"><h3>❤️ Invitation reçue sur Messenger</h3>'+
-  '<p>Sur iPhone, la connexion Google peut demander de quitter le navigateur de Messenger. Pour ne pas perdre votre invitation, copiez son lien puis ouvrez-le dans Safari.</p>'+
-  button('copy-invite-for-browser','Copier mon lien pour Safari','class="subtle"')+'</section>';
+ const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'')||
+  (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ return '<details class="premium-help"><summary>Ouvert depuis Messenger ? <span>Besoin d’aide</span></summary>'+
+  '<p>Si la connexion ne s’ouvre pas, copiez l’invitation et collez-la dans '+(apple?'Safari':'Chrome')+'.</p>'+
+  button('copy-invite-for-browser','Copier le lien sécurisé','class="subtle"')+'</details>';
+}
+function invitationLandingHeader(){
+ return '<section class="premium-invite-hero" aria-label="Votre invitation LoveRoll">'+
+ '<div class="premium-invite-photo"><img src="./assets/loveroll-hero.webp" alt="Cœur rose lumineux et deux dés noirs LoveRoll" loading="eager"></div>'+
+ '<div class="premium-eyebrow">♡ LOVEROLL · INVITATION PRIVÉE</div>'+
+ '<h2>Une surprise rien que pour vous deux ❤️</h2>'+
+ '<p>Partagez des moments de complicité, des défis et de belles surprises à votre rythme.</p>'+
+ '<p class="premium-invite-note">♡ Votre invitation est privée · Un compte par personne</p></section>';
 }
 function notify(message){toastEl.textContent=message;toastEl.classList.add('visible');
  clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>toastEl.classList.remove('visible'),4500);}
@@ -140,7 +150,7 @@ function render(){
  if(!state.user){
   if(!state.showAuth){
    root.innerHTML=marketingHtml();bindActions();
-  }else frame(inviteBrowserHelp()+authHtml(),'♡ LOVE ROLL','Créer ou retrouver votre espace amoureux');
+  }else frame((sessionStorage.getItem('pendingInvite')?invitationLandingHeader():'')+authHtml(!!sessionStorage.getItem('pendingInvite'))+inviteBrowserHelp(),'LOVEROLL',sessionStorage.getItem('pendingInvite')?'Votre invitation privée':'Votre espace privé à deux');
   return;
  }
  if(!state.profile||!state.profile.birthday_md){
@@ -154,8 +164,8 @@ function render(){
  // owns the private card editor and personal journal before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
   if(!state.coupleId&&sessionStorage.getItem('pendingInvite')){
-   frame(inviteBrowserHelp()+matchHtml(state.profile.display_name,true),
-    '♡ NOTRE MATCH','Accepter votre invitation');return;
+   frame(invitationLandingHeader()+matchHtml(state.profile.display_name,true)+inviteBrowserHelp(),
+    'LOVEROLL','Votre invitation privée');return;
   }
   if(state.tab==='settings')renderSettings();
   else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
@@ -1217,7 +1227,7 @@ async function ensureInviteDraft(forceNew=false){
  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
  const url=new URL(CONFIG.siteUrl);
  // Separate OG crawler cache from old pixelated previews; token stays in URL fragment.
- url.searchParams.set('share','2');url.hash='invite='+token;
+ url.searchParams.set('share','3');url.hash='invite='+token;
  state.inviteDraft={id:invitationId,email,link:url.toString()};
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
@@ -1255,7 +1265,7 @@ async function handle(action,element){
  if(verb==='copy-invite-for-browser'){
   const token=sessionStorage.getItem('pendingInvite');
   if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Lien d’invitation introuvable.');
-  const u=new URL(CONFIG.siteUrl);u.searchParams.set('share','2');u.hash='invite='+token;
+  const u=new URL(CONFIG.siteUrl);u.searchParams.set('share','3');u.hash='invite='+token;
   await navigator.clipboard.writeText(u.toString());
   notify('Lien copié. Ouvrez Safari et collez ce lien dans la barre d’adresse.');return;
  }
@@ -1527,7 +1537,7 @@ async function handle(action,element){
   if(verb==='send-messenger'){
    if(window.LoveRollNativeAuth?.openShare)window.LoveRollNativeAuth.openShare(text);
    else if(navigator.share){
-    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:'Une surprise à deux t’attend ❤️',url:d.link});}
+    try{await navigator.share({title:'LoveRoll ❤️ Ton invitation privée',text:'J’ai envie de partager quelque chose de spécial avec toi sur LoveRoll ❤️\n\nOuvre ton invitation ici :',url:d.link});}
     catch(error){if(error.name!=='AbortError')throw error;}
    }else{
     await navigator.clipboard.writeText(d.link);
