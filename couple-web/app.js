@@ -8,6 +8,8 @@ import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './w
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
+import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
+import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
@@ -20,7 +22,7 @@ const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[]};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -54,6 +56,13 @@ const other=()=>state.members.find(m=>m.user_id!==state.user?.id);
 const me=()=>state.members.find(m=>m.user_id===state.user?.id);
 const person=u=>state.members.find(m=>m.user_id===u)?.name||'Partenaire';
 const button=(action,label,extra='')=>'<button '+extra+' data-action="'+safe(action)+'">'+label+'</button>';
+function inviteBrowserHelp(){
+ const inApp=/FBAN|FBAV|Messenger|Instagram/i.test(navigator.userAgent||'');
+ if(!inApp||!sessionStorage.getItem('pendingInvite'))return '';
+ return '<section class="card"><h3>❤️ Invitation reçue sur Messenger</h3>'+
+  '<p>Sur iPhone, la connexion Google peut demander de quitter le navigateur de Messenger. Pour ne pas perdre votre invitation, copiez son lien puis ouvrez-le dans Safari.</p>'+
+  button('copy-invite-for-browser','Copier mon lien pour Safari','class="subtle"')+'</section>';
+}
 function notify(message){toastEl.textContent=message;toastEl.classList.add('visible');
  clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>toastEl.classList.remove('visible'),4500);}
 function fail(error){console.error(error);notify(error?.message||'Une erreur est survenue');}
@@ -68,9 +77,11 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
+ const installation=connected&&(state.forceInstallGuide||shouldOfferInstall(state.user?.id))?
+  (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
  root.innerHTML='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+
-  '</header>'+body+(connected?nav():'');
+  '</header>'+body+(connected?nav():'')+installation;
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
@@ -110,7 +121,7 @@ function render(){
  if(!state.user){
   if(!state.showAuth){
    root.innerHTML=marketingHtml();bindActions();
-  }else frame(authHtml(),'♡ LOVE ROLL','Créer ou retrouver votre espace amoureux');
+  }else frame(inviteBrowserHelp()+authHtml(),'♡ LOVE ROLL','Créer ou retrouver votre espace amoureux');
   return;
  }
  if(!state.profile||!state.profile.birthday_md){
@@ -124,7 +135,7 @@ function render(){
  // owns the private card editor and personal journal before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
   if(!state.coupleId&&sessionStorage.getItem('pendingInvite')){
-   frame(matchHtml(state.profile.display_name,true),
+   frame(inviteBrowserHelp()+matchHtml(state.profile.display_name,true),
     '♡ NOTRE MATCH','Accepter votre invitation');return;
   }
   if(state.tab==='settings')renderSettings();
@@ -175,15 +186,18 @@ async function reload(){
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
   state.feedback=[];state.advent=[];state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
+  state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
   render();return;
  }
  if(previousCouple&&previousCouple!==state.coupleId)state.unlockKey=null;
- const [couple,members]=await Promise.all([
+ const [couple,members,invitations]=await Promise.all([
   query('couples',{eq:{id:state.coupleId}}),
-  query('couple_members',{eq:{couple_id:state.coupleId}})
+  query('couple_members',{eq:{couple_id:state.coupleId}}),
+  query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'})
  ]);
+ state.invitations=invitations;
  state.couple=couple[0]||null;
  if(state.couple?.owner_user_id===state.user.id){
   const [cards,activities,adventConfig,adventDays,specialSettings]=await Promise.all([
@@ -208,7 +222,7 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
@@ -216,8 +230,10 @@ async function refreshShared(){
  query('couple_intimacy',{eq:{couple_id:c}}),
  query('couple_occasion_settings',{eq:{couple_id:c}}),
  query('couple_occasion_rolls',{eq:{couple_id:c}}),
- rpc('my_love_special_event_keys',{p_couple:c})
+ rpc('my_love_special_event_keys',{p_couple:c}),
+ query('couple_challenges',{eq:{couple_id:c}})
  ]);
+ state.challengesHistory=challengeHistory;
  state.occasionSettings=occasionSettings[0]||null;
  state.occasionRolls=occasionRolls;
  state.specialEventKeys=Array.isArray(keys)?keys:[];
@@ -287,6 +303,52 @@ function renderIdeas(){
  frame(ideaHtml()+'<section class="card">'+button('tab:home','← Retour à l’accueil','class="subtle"')+'</section>',
   'NOS IDÉES DE SOIRÉE','Complicité et intimité selon votre rythme');
 }
+function renderInvitePanel(){
+ const latest=state.invitations?.find(x=>!x.cancelled_at)||state.invitations?.[0];
+ const ready=state.members?.length===2;
+ const status=invitationStatus(latest,ready);
+ const draft=state.inviteDraft&&state.inviteDraft.id===latest?.id?state.inviteDraft:null;
+ let html='<section class="card"><div class="eyebrow">VOTRE INVITATION</div><h3>♡ Statut de la demande</h3>'+
+  '<div class="invite-status"><strong>'+safe(status.title)+'</strong><p>'+safe(status.hint)+'</p></div>';
+ if(latest)html+='<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+
+  ' · Préparée le '+safe(new Date(latest.created_at).toLocaleDateString('fr-CA'))+'</p>';
+ if(!ready){
+  html+='<label>Courriel Google de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
+   '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
+   button('invite',latest?'Renvoyer une invitation (nouveau lien)':'Préparer une invitation');
+  if(draft){
+   html+='<details class="invite-preview"><summary>♡ Aperçu de l’invitation LoveRoll</summary>'+invitationPreviewMarkup()+'</details>';
+   html+='<div class="invite-actions">'+button('send-sms','💬 Texto SMS')+
+    button('send-messenger','♡ Messenger','class="subtle"')+
+    button('send-email','✉ Courriel','class="subtle"')+
+    button('copy-invite','Copier le lien','class="subtle"')+'</div>'+
+    button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
+    '<p class="tiny-note">Le téléphone ouvre votre messagerie; LoveRoll ne peut pas savoir si vous avez réellement appuyé sur Envoyer.</p>';
+  }
+  if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
+   html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
+ }
+ return html+'</section>';
+}
+function renderCoupleOverview(){
+ const started=state.occasionSettings?.relationship_started_on;
+ const cs=coupleStats(state.sessions||[],state.challengesHistory||[]);
+ const currentMonth=month();
+ const intimate=state.journal.filter(e=>e.happened_on.startsWith(currentMonth)).length;
+ return '<section class="card"><div class="eyebrow">♡ VOTRE COUPLE</div>'+
+ '<h3>Notre histoire en chiffres</h3>'+
+ '<p>En couple depuis le <strong>'+safe(formatCoupleDate(started))+'</strong></p>'+
+ 
+ '<div class="stat-grid"><div class="stat"><strong>'+safe(cs.percentage===null?'—':cs.percentage+' %')+'</strong><small>Soirées terminées</small></div>'+
+ '<div class="stat"><strong>'+cs.completed+' / '+cs.opened+'</strong><small>Soirées jouées</small></div>'+
+ '<div class="stat"><strong>'+cs.challengesDone+'</strong><small>Défis réalisés</small></div></div>'+
+ '<div class="couple-progress"><span style="width:'+safe(cs.percentage||0)+'%"></span></div>'+
+ '<p class="tiny-note">Pourcentage = soirées entièrement terminées / soirées commencées.</p>'+
+ '<div class="stat-grid"><div class="stat"><strong>'+intimate+'</strong><small>Rapports enregistrés ce mois</small></div>'+
+ '<div class="stat"><strong>'+state.journal.length+'</strong><small>Rapports consignés au total</small></div></div>'+
+ '<p class="tiny-note">Chiffres issus de votre journal de couple chiffré. Les notes détaillées restent privées.</p>'+
+ button('tab:journal','Ouvrir nos statistiques et le calendrier','class="subtle"')+'</section>';
+}
 function renderWaitingPartner(){
  const title=safe(state.profile.display_name);
  frame('<section class="card"><div class="eyebrow">♡ ESPACE PRIVÉ</div>'+
@@ -298,9 +360,7 @@ function renderWaitingPartner(){
   button('tab:special-editor','💘 Préparer les événements spéciaux','class="subtle"')+
   '</section><section class="card"><h3>Inviter votre partenaire</h3>'+
   '<p>Invitez votre conjointe quand vous le souhaitez. Aucune carte n’est révélée avant la partie.</p>'+
-  '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
-  button('invite','♡ Préparer l’invitation')+
-  '</section>',
+  '</section>'+renderInvitePanel(),
  'MON ESPACE','Préparer vos cartes avant l’invitation');
 }
 function renderHome(){
@@ -393,7 +453,21 @@ function renderSession(){
  let s=state.session; const p=other();
  let body='<section class="card"><h2>Une soirée, deux D6 individuels</h2>'+
  '<p>Chacun lance son D6 sur son compte. Les deux résultats apparaissent ensemble dès que les deux ont joué.</p>';
- if(!s)body+=button('new-session','Commencer une soirée commune');
+ if(!s){
+  const latest=(state.sessions||[]).find(x=>x.finished_at&&x.counted);
+  if(latest){
+   const total=state.challengesHistory.filter(c=>c.session_id===latest.id);
+   const done=total.filter(c=>c.status==='completed').length;
+   const responses=state.feedback.filter(f=>f.session_id===latest.id).length;
+   body+='<div class="aftercare-card"><h2>♥ Soirée terminée</h2>'+
+    '<p>Un moment partagé à deux. Prenez quelques instants pour donner votre avis.</p>'+
+    '<div class="stat-grid"><div class="stat"><strong>'+done+'</strong><small>Défis réalisés</small></div>'+
+    '<div class="stat"><strong>'+responses+'/2</strong><small>Avis enregistrés</small></div></div>'+
+    button('choose-feedback:'+latest.id,responses===2?'Voir nos avis ❤️':'Répondre à mes 3 questions')+
+    button('tab:journal','Voir notre calendrier','class="subtle"')+'</div>';
+  }
+  body+=button('new-session','Commencer une nouvelle soirée');
+ }
  else{
   const mine=state.personal.find(x=>x.user_id===state.user.id);
   const theirs=state.personal.find(x=>x.user_id===p.user_id);
@@ -459,7 +533,12 @@ function renderSession(){
     button('dismiss-cancel','Continuer','class="subtle"')+'</div></div>';
   }else body+=button('cancel-session','Arrêter sans la compter','class="subtle"');
  }
- body+='</section>';frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
+ body+='</section>';
+ body+='<section class="card"><h3>♡ Nos calendriers</h3>'+
+  button('tab:journal','Ouvrir notre calendrier partagé','class="subtle"')+
+  button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>';
+ if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
+ frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
 function renderSpecial(){
  const a=state.monthly.monthly_activity,h=state.monthly.monthly_host,r=state.monthly.monthly_restaurant;
@@ -798,44 +877,54 @@ async function renderJournal(){
   }
   body+='</section>';
  }
- body+='<section class="card"><h3>★ Avis de nos soirées</h3>'+
-  button('tab:feedback','Consulter et répondre aux questionnaires')+'</section>';
+ body+='<section class="card"><h3>Nos moments à deux</h3>'+
+  button('tab:session','Retour à notre soirée','class="subtle"')+'</section>';
  frame(body,'NOTRE JOURNAL','Un calendrier partagé, du contenu chiffré');
 }
 async function renderFeedback(){
- let sessions=state.sessions||[];
- let session=sessions.find(x=>x.id===state.chosenSession)||
-  sessions.find(x=>x.finished_at) || sessions[0];
+ const sessions=state.sessions||[];
+ const session=sessions.find(x=>x.id===state.chosenSession&&x.finished_at&&x.counted)||
+  sessions.find(x=>x.finished_at&&x.counted);
  if(!session){
-  frame('<section class="card"><p>Terminez une soirée pour partager vos avis respectifs.</p></section>',
-   'NOS AVIS','Les deux réponses sont consultables ensemble');return;
+  frame('<section class="card"><p>Terminez d’abord une soirée pour répondre à vos questions.</p>'+
+   button('tab:session','Retour à notre soirée')+'</section>','NOS AVIS','Après une soirée terminée');return;
  }
  state.chosenSession=session.id;
  const entries=state.feedback.filter(f=>f.session_id===session.id);
- let body='<section class="card"><h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
- '<p>Chacun répond sur son propre compte. Les deux partenaires peuvent ensuite lire les deux avis.</p>';
+ const yours=entries.find(x=>x.author_id===state.user.id);
+ const complete=state.members.every(m=>entries.some(x=>x.author_id===m.user_id));
+ let body='<section class="card"><div class="eyebrow">♥ APRÈS LA SOIRÉE</div>'+
+ '<h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
+ '<p>Trois questions pour chacun. Votre partenaire ne pourra lire vos réponses qu’une fois que vous aurez répondu tous les deux.</p>'+
+ '<div class="stat-grid"><div class="stat"><strong>'+entries.length+'/2</strong><small>Avis déposés</small></div></div>';
  if(!state.unlockKey){
-  body+='<p>Déverrouillez le journal chiffré pour lire les réponses.</p>'+
+  body+='<p>Déverrouillez votre journal chiffré pour répondre ou voir les résultats.</p>'+
    '<input type="password" id="journal-pass" placeholder="Phrase secrète commune">'+button('unlock','Déverrouiller');
+ }else if(!complete){
+  if(yours)body+='<div class="invite-status"><strong>✓ Votre avis est enregistré</strong>'+
+   '<p>En attente de la réponse de votre partenaire. Les avis ne sont pas encore visibles.</p></div>';
+  else body+='<h3>Mes 3 questions</h3>'+
+   '<label>1. Comment avez-vous aimé la soirée ?'+ratingChoice('rating')+'</label>'+
+   '<label>2. Votre moment préféré<select id="feedback-liked">'+
+   ['La complicité','La tendresse','Les défis','L’ambiance','Les surprises'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   '</select></label><label>3. Pour la prochaine fois<select id="feedback-next">'+
+   ['Rien à changer','Plus de douceur','Plus de temps','Plus de surprises','Rythme différent'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   '</select></label>'+button('save-feedback','Enregistrer mon avis ❤️');
  }else{
+  body+='<h3>♡ Vos deux avis</h3>';
   for(const member of state.members){
    const entry=entries.find(x=>x.author_id===member.user_id);
-   let answer;
-   if(entry){try{answer=await decryptJson(entry.ciphertext)}catch{}}
+   let answer=null;
+   try{answer=await decryptJson(entry.ciphertext);}catch{}
    body+='<div class="muted-line"><h3>'+safe(member.name)+'</h3>'+
     (answer?'<p>'+formattedStars(answer.rating)+'<br>Préféré : '+safe(answer.liked)+
-     '<br>Pour la prochaine fois : '+safe(answer.next)+'</p>':
-     '<p>En attente de réponse ou phrase secrète incorrecte.</p>')+'</div>';
+      '<br>Pour la prochaine fois : '+safe(answer.next)+'</p>':
+      '<p>Impossible de lire cette réponse. Vérifiez la phrase secrète.</p>')+'</div>';
   }
-  if(!entries.find(x=>x.author_id===state.user.id))
-  body+='<h3>Mon questionnaire</h3><label>Ma note'+ratingChoice('rating')+'</label>'+
-   '<label>J’ai préféré<select id="feedback-liked">'+
-   ['La complicité','La tendresse','Les défis','L’ambiance','Les surprises'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label><label>Pour la prochaine fois<select id="feedback-next">'+
-   ['Rien à changer','Plus de douceur','Plus de temps','Plus de surprises','Rythme différent'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label>'+button('save-feedback','Enregistrer MON avis');
  }
- body+='</section>';frame(body,'NOS QUESTIONNAIRES','Une réponse individuelle, visible par le couple');
+ body+='</section><section class="card">'+
+ button('tab:session','← Retour à Soirée','class="subtle"')+'</section>';
+ frame(body,'NOS AVIS APRÈS LA SOIRÉE','Un moment pour partager vos ressentis');
 }
 function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
 function renderCardLibrary(){
@@ -934,72 +1023,95 @@ function renderMonthlyLibrary(){
   button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
  frame(body,'MES ACTIVITÉS','20 sorties personnalisables et privées');
 }
+function settingGroup(title,icon,description,body,opened=false){
+ return '<details class="settings-group"'+(opened?' open':'')+'><summary>'+
+  '<span class="settings-group-icon">'+icon+'</span>'+
+  '<span class="settings-group-heading"><strong>'+safe(title)+'</strong><small>'+safe(description)+'</small></span>'+
+  '<span aria-hidden="true" class="settings-chevron">⌄</span></summary>'+
+  '<div class="settings-group-content">'+body+'</div></details>';
+}
+function settingRow(title,detail,action,label='Ouvrir'){
+ return '<div class="settings-item"><div><strong>'+safe(title)+'</strong><p>'+safe(detail)+'</p></div>'+
+   button(action,label,'class="subtle settings-mini-button"')+'</div>';
+}
+function renderCoupleDateSetting(){
+ const started=state.occasionSettings?.relationship_started_on||'';
+ return '<div class="settings-item"><div><strong>Notre date de couple</strong>'+
+  '<p>La date à laquelle votre histoire a commencé.</p></div></div>'+
+ (isLoveAdmin()?'<label>Date de début<input id="couple-started-on" type="date" max="'+safe(today())+
+  '" value="'+safe(started)+'"></label>'+
+  button('save-couple-date','Enregistrer notre date','class="subtle"'):
+  '<p>'+safe(formatCoupleDate(started))+'</p>')+
+ '<p class="tiny-note">Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>';
+}
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
- let partner='<section class="card"><h3>♡ Gérer mon couple</h3>';
+ const account='<div class="settings-item"><div><strong>Compte connecté</strong><p>'+
+  safe(state.user.email||'Courriel privé')+'</p></div></div>'+
+  '<label>Prénom affiché<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
+  button('profile','Enregistrer mon prénom','class="subtle"')+
+  '<p class="tiny-note">Anniversaire du profil : '+safe(state.profile.birthday_md)+
+  ' · Connexion Google ou courriel liée à ce compte.</p>'+
+  settingRow('Se déconnecter','Déconnecte uniquement cet appareil.','signout','Déconnexion');
+ let partner='';
  if(hasPartner){
-  partner+='<p>Partenaire actuel : '+safe(other()?.name||'Compte associé')+'</p>'+
-  '<p class="tiny-note">Dissocier les comptes retire immédiatement aux deux personnes l’accès à l’ancien calendrier partagé. Chaque personne conserve ses propres entrées dans son calendrier privé.</p>'+
-  button('end-couple','Retirer mon conjoint ou ma conjointe','class="subtle danger-action"');
+  partner='<div class="settings-item"><div><strong>♥ Couple connecté</strong>'+
+  '<p>'+safe(state.profile.display_name)+' et '+safe(other()?.name||'Votre partenaire')+
+  ' · Invitation acceptée</p></div></div>'+
+  renderCoupleDateSetting()+
+  '<p class="tiny-note">Un retrait coupe l’accès au journal partagé. Les entrées privées sont conservées.</p>'+
+  button('end-couple','Retirer mon partenaire','class="subtle danger-action"');
  }else if(linked){
-  partner+='<p>En attente d’un partenaire. Invitez-le ou laissez cette étape pour plus tard.</p>'+
-  '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
-  button('invite','Inviter mon conjoint ou ma conjointe')+
-  button('end-couple','Annuler cet espace à deux','class="subtle"');
- }else{
-  partner+='<p>Préparez vos défis avant même d’inviter votre conjointe.</p>'+
-  button('prepare-cards','♡ Créer mes défis avant l’invitation')+
-  button('start-couple','Ajouter un conjoint ou une conjointe','class="subtle"');
- }
- partner+='</section>';
- const libraryPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+ 
- '<h3>♡ Mes défis et cartes personnalisées</h3>'+ 
- '<p>Modifier les 70 cartes : durée, minuteur, personnes autorisées et règle anti-répétition.</p>'+ 
- button('tab:library','Gérer les défis')+'</section>':'';
- const monthlyPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
- '<h3>✦ Mes 20 activités du mois</h3>'+
- '<p>Remplacer les activités du D20, personnaliser leurs consignes et choisir celles qui sont liées à un restaurant.</p>'+
- button('tab:monthly-library','Modifier les 20 activités')+'</section>':'';
- frame('<section class="card"><h2>Mon compte</h2><p>'+
-  safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
-  '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
-  button('profile','Mettre à jour mon nom')+'</section>'+
-  partner+libraryPanel+monthlyPanel+
-  (isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
-  '<h3>🎁 Calendrier de l’Avent 2026</h3>'+
-  '<p>Importer les 25 journées de votre calendrier JSON, sans modifier les titres ni les consignes.</p>'+
-  button('tab:advent-editor','Importer mon calendrier 2026')+'</section>':'')+
-  (isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
-  '<h3>💘 Mes événements spéciaux</h3>'+
-  '<p>Importer les 6 fêtes personnalisées avec leurs consignes et règles D6.</p>'+
-  button('tab:special-editor','Importer mes événements spéciaux')+'</section>':'')+
-  '<section class="card"><h3>♥ Mon calendrier personnel</h3>'+
-  '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
-  button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
-  (hasPartner?'<section class="card"><h3>♡ Notre journal commun</h3>'+
-   button('tab:journal','Ouvrir le calendrier et les statistiques')+
-   button('tab:feedback','Nos questionnaires de soirées','class="subtle"')+'</section>':'')+
-  '<section class="card"><h3>Mon ressenti · confidentiel</h3>'+wellbeingFields(state.wellbeing)+
-  button('save-wellbeing','Mettre à jour mes réponses')+
-  '<p class="tiny-note">Votre partenaire ne voit pas vos réponses individuelles. Les propositions de soirées utilisent une orientation générale.</p></section>'+
-  '<section class="card"><h3>🔐 Vie privée</h3><p>Les réponses restent privées. Votre ancien espace partagé est bloqué après une dissociation; les copies déjà conservées par quelqu’un ne peuvent pas être effacées à distance.</p>'+
-  (linked?button('lock','Verrouiller le journal','class="subtle"'):'')+'</section>'+
-  '<section class="card"><h3>🎂 Mes dates</h3><p>Mon anniversaire : '+
-  safe(state.profile.birthday_md)+' (enregistré à mon inscription).</p>'+
-  (linked?'<p>Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>':'')+
-  '</section>'+
-  (isLoveAdmin()&&hasPartner?'<section class="card"><div class="eyebrow">FÊTES · ADMINISTRATEUR</div>'+
-   '<h3>À qui offrir la surprise ?</h3>'+
-   '<p>Fête des Mères / Femmes : l’autre partenaire offre. Fête des Pères / Hommes : même règle inversée. On ne brasse pas pour changer ces rôles.</p>'+
-   TARGETED_OCCASIONS.map(key=>{
-    const entry=OCCASIONS.find(o=>o.key===key),chosen=state.occasionSettings?.celebrants?.[key];
-    return '<div class="muted-line"><strong>'+safe(entry.title)+'</strong>'+
-     '<div class="chipline">'+state.members.map(m=>
-      '<button class="pill '+(chosen===m.user_id?'selected':'')+
-      '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+'</div></div>';
-   }).join('')+'</section>':''),
-
- 'RÉGLAGES','Profil, confidentialité et gestion du partenaire');
+  partner=renderInvitePanel()+
+   '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
+   button('end-couple','Annuler mon espace à deux','class="subtle danger-action"');
+ }else partner='<p>Créez votre espace privé avant d’inviter votre partenaire.</p>'+
+  button('prepare-cards','Créer mes défis avant l’invitation')+
+  button('start-couple','Préparer mon couple','class="subtle"');
+ const celebrants=isLoveAdmin()&&hasPartner?
+  '<div class="settings-item"><div><strong>Surprises des fêtes</strong>'+
+  '<p>Choisissez le partenaire concerné pour chaque occasion.</p></div></div>'+
+  TARGETED_OCCASIONS.map(key=>{
+   const entry=OCCASIONS.find(o=>o.key===key),chosen=state.occasionSettings?.celebrants?.[key];
+   return '<div class="muted-line"><strong>'+safe(entry.title)+'</strong><div class="chipline">'+
+    state.members.map(m=>'<button class="pill '+(chosen===m.user_id?'selected':'')+
+      '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+
+    '</div></div>';
+  }).join(''):'';
+ const game=isLoveAdmin()?
+  settingRow('Cartes et défis','Personnaliser les 70 cartes et les règles de tirage.','tab:library','Mes cartes')+
+  settingRow('Activités du mois','Modifier les 20 activités du D20.','tab:monthly-library','Modifier')+
+  settingRow('Calendrier de l’Avent','Configurer les 25 journées privées.','tab:advent-editor','Modifier')+
+  settingRow('Événements spéciaux','Gérer les fêtes et leurs deux D6.','tab:special-editor','Modifier')+
+  celebrants:
+  '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
+ const notifications='<div class="settings-item"><div><strong>Notifications push</strong>'+
+  '<p>Dé hebdomadaire, invitation acceptée et événements spéciaux.</p></div></div>'+
+  '<p class="tiny-note">Les notifications automatiques nécessitent encore un service push configuré. '+
+  'Aucun SMS payant ne sera envoyé et aucun rappel ne sera annoncé comme actif avant sa mise en service.</p>';
+ const appSettings=settingRow('Ajouter LoveRoll à l’écran d’accueil',
+  'Accéder à l’application sans chercher le navigateur.','show-install-guide','Afficher')+
+  '<div class="settings-item"><div><strong>Version Web</strong>'+
+  '<p>Actualisation automatique du contenu à la réouverture avec connexion Internet.</p></div></div>'+
+  '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
+ const privacy='<p>Votre journal commun est chiffré. Vos réponses individuelles sur le ressenti restent privées.</p>'+
+  (linked?button('lock','Verrouiller le journal partagé','class="subtle"'):'')+
+  '<div class="settings-item"><div><strong>Mon ressenti</strong><p>Réglages personnels et confidentiels.</p></div></div>'+
+  wellbeingFields(state.wellbeing)+button('save-wellbeing','Enregistrer mon ressenti','class="subtle"');
+ const support='<div class="settings-item"><div><strong>Aide et informations</strong>'+
+  '<p>Invitation par SMS, Messenger ou courriel. Le lien est privé et expire après 7 jours.</p>'+
+  '<p>Vous pouvez toujours refuser un défi et faire une pause.</p>'+
+  '<p>Version Web de LoveRoll : accès Android et iPhone.</p></div></div>';
+ frame('<div class="settings-head"><div class="eyebrow">♡ VOTRE ESPACE À DEUX</div>'+
+   '<p>Retrouvez ici vos préférences, sans mélanger les jeux et les questionnaires.</p></div>'+
+   settingGroup('Compte','♙','Prénom, connexion et appareils',account)+
+   settingGroup('Couple','♥',hasPartner?'Votre espace partagé et vos dates':'Invitations et état de la demande',partner,true)+
+   settingGroup('Notifications','♧','Rappels et préférences',notifications)+
+   settingGroup('Jeu et personnalisation','🎲','Modifier les cartes et activités',game)+
+   settingGroup('Application','▣','Installation et mises à jour',appSettings)+
+   settingGroup('Confidentialité','♙','Journal chiffré et données personnelles',privacy)+
+   settingGroup('Aide','?','Informations et fonctionnement',support),
+  'RÉGLAGES','Compte, couple, notifications et confidentialité');
 }
 async function refreshAndShow(){await refreshShared();render();}
 async function animateRoll(fn){
@@ -1019,6 +1131,27 @@ function randomInviteToken(){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='copy-invite-for-browser'){
+  const token=sessionStorage.getItem('pendingInvite');
+  if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Lien d’invitation introuvable.');
+  const u=new URL(CONFIG.siteUrl);u.hash='invite='+token;
+  await navigator.clipboard.writeText(u.toString());
+  notify('Lien copié. Ouvrez Safari et collez ce lien dans la barre d’adresse.');return;
+ }
+ if(verb==='show-install-guide'){
+  state.showInstallSteps=true;
+  state.forceInstallGuide=true;
+  render();return;
+ }
+ if(verb==='install-home'){
+  const result=await requestInstall();
+  if(result.prompted&&result.accepted){dismissInstall(state.user?.id);state.showInstallSteps=false;}
+  else state.showInstallSteps=true;
+  render();return;
+ }
+ if(verb==='install-later'||verb==='install-understood'){
+  dismissInstall(state.user?.id);state.showInstallSteps=false;state.forceInstallGuide=false;render();return;
+ }
  if(verb==='set-celebrant'){
   if(!isLoveAdmin())throw Error('Réglage réservé à l’administrateur.');
   if(!TARGETED_OCCASIONS.includes(parts[0])||
@@ -1234,19 +1367,67 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='invite'){
+  if(!state.coupleId||state.members.length===2)throw Error('Invitation impossible : vérifiez le couple.');
   const email=id('invite-email')?.value.trim().toLowerCase();
-  if(!email||!email.includes('@'))throw Error('Saisissez un courriel valide.');
-  if(!CONFIG.siteUrl)throw Error('L’adresse publique HTTPS doit être configurée pour envoyer des invitations.');
+  if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))throw Error('Saisissez le courriel Google valide du destinataire.');
+  if(!CONFIG.siteUrl)throw Error('L’adresse publique HTTPS doit être configurée.');
   const token=randomInviteToken(),digest=await hashToken(token);
-  await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
+  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
   const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
-  const text='Je t’invite à rejoindre notre espace LoveRoll ♡\n\n'+url.toString()+
-   '\n\nConnecte-toi avec le même courriel que celui qui reçoit cette invitation.';
-  const mail='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Invitation LoveRoll')+
-   '&body='+encodeURIComponent(text);
-  window.location.href=mail;
-  notify('Votre courriel est prêt : confirmez son envoi dans votre application de messagerie.');
+  state.inviteDraft={id:invitationId,email,link:url.toString()};
+  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+  render();
+  notify('Lien sécurisé prêt. Choisissez SMS, Messenger ou courriel.');
   return;
+ }
+ if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
+  const d=state.inviteDraft;
+  if(!d)throw Error('Préparez un nouveau lien sécurisé pour l’envoyer.');
+  if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
+  const text=invitationEmailText(d.link);
+  state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';
+  if(verb==='send-messenger'){
+   if(window.LoveRollNativeAuth?.openShare)window.LoveRollNativeAuth.openShare(text);
+   else if(navigator.share){
+    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:'Je t’invite à rejoindre notre espace LoveRoll ❤️ Une invitation juste pour nous deux !',url:d.link});}
+    catch(error){if(error.name!=='AbortError')throw error;}
+   }else{
+    await navigator.clipboard.writeText(d.link);
+    notify('Lien copié : collez-le dans une conversation Messenger.');return;
+   }
+  }else if(verb==='send-sms'){
+   if(window.LoveRollNativeAuth?.openSms)window.LoveRollNativeAuth.openSms(text);
+   else{
+    const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+    window.location.href='sms:'+(isApple?'&':'?')+'body='+encodeURIComponent(text);
+   }
+  }else{
+   const mail='mailto:'+encodeURIComponent(d.email)+'?subject='+encodeURIComponent('LoveRoll ❤️ Une invitation juste pour nous deux')+
+    '&body='+encodeURIComponent(text);
+   window.location.href=mail;
+  }
+  notify('Choisissez le destinataire et confirmez vous-même le partage.');
+  return;
+ }
+ if(verb==='confirm-invite-sent'){
+  if(!state.inviteDraft)throw Error('Aucun lien prêt à envoyer.');
+  await rpc('mark_pair_invite_sent',{p_invitation:state.inviteDraft.id,p_method:state.lastShareMethod||'partage'});
+  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+  render();notify('Envoi confirmé manuellement.');return;
+ }
+ if(verb==='cancel-invite'){
+  await rpc('cancel_pair_invite',{p_invitation:parts[0]});
+  state.inviteDraft=null;
+  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+  render();notify('Invitation annulée.');return;
+ }
+ if(verb==='choose-feedback'){
+  state.chosenSession=parts[0];state.tab='feedback';render();return;
+ }
+ if(verb==='save-couple-date'){
+  const value=id('couple-started-on')?.value||null;
+  await rpc('set_love_relationship_date',{p_couple:state.coupleId,p_date:value});
+  await refreshShared();render();notify('Date du couple enregistrée.');return;
  }
  if(verb==='accept-invite'){
   const token=sessionStorage.getItem('pendingInvite');
@@ -1345,7 +1526,7 @@ async function handle(action,element){
  if(verb==='finish-session'){
   if(!state.session)return;
   await rpc('finish_couple_session',{p_session:state.session.id,p_count:true});
-  state.chosenSession=state.session.id;state.tab='feedback';await refreshAndShow();return;
+  state.chosenSession=state.session.id;state.tab='session';await refreshAndShow();return;
  }
  if(verb==='cancel-session'){state.confirmCancel=true;render();return;}
  if(verb==='dismiss-cancel'){state.confirmCancel=false;render();return;}
@@ -1403,7 +1584,7 @@ async function handle(action,element){
     session_id:state.chosenSession,couple_id:state.coupleId,
     author_id:state.user.id,ciphertext},{onConflict:'session_id,author_id'});
   if(error)throw error;
-  await refreshAndShow();notify('Votre avis est sauvegardé et visible par votre partenaire');return;
+  await refreshAndShow();notify('Votre avis est enregistré. Il sera visible quand vous aurez répondu tous les deux.');return;
  }
 }
 async function start(){

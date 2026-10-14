@@ -96,10 +96,11 @@ test('A member waiting for their match is notified when the partner accepts',()=
  assert.match(app,/Votre partenaire a accepté le match/);
  assert.match(app,/if\(state.members.length<2\)\{state.channel=channel.subscribe\(\);return;\}/);
 });
-test('The five bottom tabs keep Settings, with shared Journal inside',()=>{
+test('The five bottom tabs keep Settings while Journal and questionnaires move to Soirée',()=>{
  assert.match(app,/\['settings','⚙','Réglages'\]/);
- assert.match(app,/Ouvrir le calendrier et les statistiques/);
- assert.match(app,/Nos questionnaires de soirées/);
+ assert.match(app,/Ouvrir notre calendrier partagé/);
+ assert.match(app,/NOS AVIS APRÈS LA SOIRÉE/);
+ assert.match(app,/settingGroup\('Compte'/);
 });
 
 test('Only the dedicated Supabase project and its publishable client key are configured',()=>{
@@ -250,7 +251,7 @@ test('New couple match uses two individual sign-ups',()=>{
 });
 test('Anniversary and dates are not re-entered in Settings',()=>{
  const fragment=app.slice(app.indexOf('function renderSettings()'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
- assert.match(fragment,/enregistré à mon inscription/);
+ assert.match(fragment,/Anniversaire du profil/);
  assert.doesNotMatch(fragment,/loveroll-birthday|save-occasion-date:birthday/);
 });
 test('Database onboarding enforces profile birthday and revokes old bypasses',()=>{
@@ -301,7 +302,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v17/);
+ assert.match(sw,/loveroll-static-v18/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -358,8 +359,8 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(matchHtml('Camille',false),/prepare-cards/);
  assert.match(app,/function renderWaitingPartner\(/);
  assert.doesNotMatch(app,/function renderSolo\(/);
- assert.match(app,/Retirer mon conjoint ou ma conjointe/);
- assert.match(app,/Ajouter un conjoint ou une conjointe/);
+ assert.match(app,/Retirer mon partenaire/);
+ assert.match(app,/Préparer mon couple/);
  assert.match(app,/function ideaHtml\(/);
  assert.match(app,/Chacun peut dire non/);
 });
@@ -430,7 +431,8 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("if(state.couple?.owner_user_id===state.user.id)"));
  assert.ok(app.includes("save_love_card_with_roles"));
  assert.ok(app.includes("button('tab:library','♡ Gérer mes 70 cartes')"));
- assert.ok(app.includes("button('invite','♡ Préparer l’invitation')"));
+ assert.ok(app.includes("renderInvitePanel()"));
+ assert.ok(app.includes("button('invite',latest?'Renvoyer une invitation (nouveau lien)'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
  assert.ok(app.includes("button('tab:personal-journal','Ouvrir mon calendrier personnel')"));
  assert.ok(!app.includes("if(verb==='skip-couple')"));
@@ -736,7 +738,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})"));
  assert.ok(app.includes("rpc('save_love_monthly_activity'"));
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
- assert.ok(app.includes("button('tab:monthly-library','Modifier les 20 activités')"));
+ assert.ok(app.includes("settingRow('Activités du mois'"));
  assert.ok(app.includes("monthlyActivityForRoll(state.monthly.monthly_activity)"));
  assert.ok(app.includes("const activity=monthlyActivityForRoll(a)"));
  assert.ok(app.includes("if(activity.is_restaurant){"));
@@ -883,4 +885,18 @@ test('Real-time server D35 odds mirror 88/12 preference and keep safeguards',()=
  assert.ok(sql.includes('d35:=floor(random()*35)::integer+1'));
  assert.ok(!sql.includes('delete from public.couple_challenges'));
  assert.ok(app.includes("p_preference:state.category,p_random:false"));
+});
+
+test('Settings groups remain settings-only; after-party forms live under Soirée',()=>{
+ const settings=app.slice(app.indexOf('function renderSettings(){'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
+ assert.match(settings,/settingGroup\('Compte'/);
+ assert.match(settings,/settingGroup\('Couple'/);
+ assert.match(settings,/settingGroup\('Notifications'/);
+ assert.match(settings,/settingGroup\('Application'/);
+ assert.doesNotMatch(settings,/button\('tab:feedback'/);
+ assert.match(app,/if\(!s&&state\.sessions\?\.some/);
+ assert.match(app,/if\(verb==='choose-feedback'\)/);
+ assert.match(app,/if\(verb==='send-messenger'\)/);
+ assert.match(app,/LoveRollNativeAuth\?\.openShare/);
+ assert.match(app,/navigator\.share/);
 });

@@ -61,17 +61,17 @@ public class GameRulesTest {
    ChallengePicker.Pick pick=ChallengePicker.draw(Category.SENSUEL,0L);
    counts[pick.category.ordinal()]++;
   }
-  assertEquals(.80,(double)counts[0]/runs,.015);
+  assertEquals(.88,(double)counts[0]/runs,.015);
   assertEquals(0.,(double)counts[1]/runs,.001);
-  assertEquals(.20,(double)counts[2]/runs,.015);
+  assertEquals(.12,(double)counts[2]/runs,.015);
  }
 
  @Test public void twoCategoryOddsAndFortyNeverRepeat(){
   int[] hits=new int[3];int n=120000;
   for(int i=0;i<n;i++)hits[ChallengePicker.draw(Category.SEXUEL,0L).category.ordinal()]++;
-  assertEquals(.20,hits[Category.SENSUEL.ordinal()]/(double)n,.012);
+  assertEquals(.12,hits[Category.SENSUEL.ordinal()]/(double)n,.012);
   assertEquals(0,hits[Category.COQUIN.ordinal()]);
-  assertEquals(.80,hits[Category.SEXUEL.ordinal()]/(double)n,.012);
+  assertEquals(.88,hits[Category.SEXUEL.ordinal()]/(double)n,.012);
   long history=0L;
   for(int i=0;i<40;i++){
    ChallengePicker.Pick pick=ChallengePicker.draw(Category.SEXUEL,history);
