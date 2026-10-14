@@ -279,7 +279,7 @@ test('LoveRoll landing uses real artwork, not emoji substitutes or screenshot te
  const source=marketingHtml();
  assert.match(source,/Love<\/span><b>Roll<\/b>/);
  assert.match(source,/JEUX · DÉFIS · DATES · NOUS/);
- assert.match(source,/assets\/loveroll-hero\.webp/);
+ assert.match(source,/assets\/loveroll-premium-scene\.png/);
  assert.match(source,/alt="Cœur en verre rose/);
  assert.match(source,/Votre aventure à deux/);
  assert.match(source,/commence ici\./);
@@ -590,7 +590,7 @@ test('Challenge D35 gives 35 physical numbered faces without changing monthly D2
  assert.ok(db.includes("cc.recipient_role='partner'"));
  assert.ok(db.includes('love_card_draw_history'));
  assert.ok(!app.includes("heroDice(demo.challenge,35,'D35"));
- assert.ok(app.includes('Brasser le D35 pour'));
+ assert.ok(app.includes('LANCER LE D35 POUR'));
  assert.ok(app.includes('D35 :'));
  assert.ok(app.includes("heroDice(a.face,20,'Activité officielle')"));
  assert.ok(app.includes("heroDice(prize.face,20,'Résultat officiel')"));
