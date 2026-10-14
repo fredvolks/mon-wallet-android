@@ -2,7 +2,7 @@ import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWe
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 import {drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE} from './solo-mode.mjs';
-import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
+import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 
@@ -576,22 +576,32 @@ function renderOccasions(){
   const prize=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='surprise');
   const host=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='host');
   const displayName=ev.actorId?person(ev.actorId):'';
+  const role=occasionRoles(ev,settings,state.members);
   body+='<section class="card"><div class="eyebrow">'+safe(ev.emoji)+' '+safe(ev.title)+
     (displayName?' · '+safe(displayName):'')+'</div>';
   body+='<p>'+safe(ev.date||'Date non définie')+
     (ev.daysLeft!==null?' · '+(ev.daysLeft===0?"Aujourd’hui":ev.daysLeft>0?"Dans "+ev.daysLeft+" jours":"Il y a "+(-ev.daysLeft)+" jours"):'')+'</p>';
+  if(!role.shared&&!role.receiver){
+   body+='<p class="tag">Personne célébrée non renseignée. L’administrateur la désigne dans Réglages.</p>';
+  }else if(role.shared){
+   body+='<div class="challenge-roles">♡ DÉFI COMMUN · À ORGANISER ENSEMBLE</div>'+
+    '<p>Un rendez-vous plus original que d’habitude, préparé ensemble et jamais imposé.</p>';
+  }else{
+   body+='<div class="challenge-roles">♡ '+safe(role.giver.name).toUpperCase()+
+    ' OFFRE → '+safe(role.receiver.name).toUpperCase()+' REÇOIT</div>';
+  }
   if(!ev.date)body+='<p>Ajoutez cette date dans Réglages pour activer le tirage.</p>';
   else if(ev.daysLeft===null)body+='<p>Ouverture 14 jours avant la fête, fermeture 7 jours après. Cela laisse le temps de trouver une gardienne.</p>';
-  else if(!prize)body+=heroDice(null,20,'Dé de fête')+
-    button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 Brasser le D20 de la surprise');
+  else if(!prize){if(role.shared||role.receiver)body+=heroDice(null,20,'Dé de fête')+
+    button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 Brasser le D20 de la surprise');}
   else{
    const idea=specialSurprise(prize.face);
    body+=heroDice(prize.face,20,'Résultat officiel')+
      '<h3>'+safe(idea.title)+'</h3><p>'+safe(idea.detail)+'</p>'+
      '<p class="tag">'+safe(idea.level)+' · Tiré par '+safe(person(prize.actor))+'</p>';
-   if(!host)body+=button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':host',
-      '🎲 Brasser le D6 : qui organise ?');
-   else{
+   if(!host&&role.shared)body+='<p class="tag">Surprise commune · vous l’organisez à deux.</p>';
+   else if(!host&&role.receiver)body+='<p class="tag">L’offrant prépare la surprise pour la personne célébrée.</p>';
+   else if(host){
     const giver=state.members[host.face<=3?0:1];
     body+='<div class="result">♡ '+safe(giver?.name||'Partenaire')+' organise</div>'+
      '<p>D6 face '+host.face+' · Ensemble, vous fixez vos limites, le budget et la gardienne.</p>';
@@ -873,7 +883,18 @@ function renderSettings(){
   '<section class="card"><h3>🎂 Mes dates</h3><p>Mon anniversaire : '+
   safe(state.profile.birthday_md)+' (enregistré à mon inscription).</p>'+
   (linked?'<p>Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>':'')+
-  '</section>',
+  '</section>'+
+  (isLoveAdmin()&&hasPartner?'<section class="card"><div class="eyebrow">FÊTES · ADMINISTRATEUR</div>'+
+   '<h3>À qui offrir la surprise ?</h3>'+
+   '<p>Fête des Mères / Femmes : l’autre partenaire offre. Fête des Pères / Hommes : même règle inversée. On ne brasse pas pour changer ces rôles.</p>'+
+   TARGETED_OCCASIONS.map(key=>{
+    const entry=OCCASIONS.find(o=>o.key===key),chosen=state.occasionSettings?.celebrants?.[key];
+    return '<div class="muted-line"><strong>'+safe(entry.title)+'</strong>'+
+     '<div class="chipline">'+state.members.map(m=>
+      '<button class="pill '+(chosen===m.user_id?'selected':'')+
+      '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+'</div></div>';
+   }).join('')+'</section>':''),
+
  'RÉGLAGES','Profil, confidentialité et gestion du partenaire');
 }
 async function refreshAndShow(){await refreshShared();render();}
@@ -897,6 +918,13 @@ async function handle(action,element){
  if(verb==='skip-couple'){
   if(sessionStorage.getItem('pendingInvite'))throw Error('Traitez ou fermez d’abord votre invitation en attente.');
   localStorage.setItem('loveroll-skip-'+state.user.id,'1');state.tab='home';render();return;
+ }
+ if(verb==='set-celebrant'){
+  if(!isLoveAdmin())throw Error('Réglage réservé à l’administrateur.');
+  if(!TARGETED_OCCASIONS.includes(parts[0])||
+    !state.members.some(m=>m.user_id===parts[1]))throw Error('Personne célébrée invalide.');
+  await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
+  await reload();notify('Personne célébrée enregistrée.');return;
  }
  if(verb==='custom-category'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
