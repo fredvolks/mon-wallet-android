@@ -400,7 +400,7 @@ test('Unpaired members only see invitation, personal account, calendar and priva
            app.includes("state.tab==='library'&&isLoveAdmin()"));
  assert.ok(app.includes("if(verb==='prepare-cards')"));
  assert.ok(app.includes("state.tab='library'"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library']"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor']"));
  for(const forbidden of ['renderSoloSession','renderSoloSpecial','renderSoloOccasions',
   'renderSoloAdvent','renderSolo()','solo-roll','solo-category','solo-advent',
   'SOLO_MESSAGE','drawSoloFace','state.solo','loveroll-skip']){
@@ -723,7 +723,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(!sql.includes('delete from public.couple_intimacy'));
  assert.ok(app.includes("function renderMonthlyLibrary(){"));
  assert.ok(app.includes("state.tab==='monthly-library'&&isLoveAdmin()"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library']"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor']"));
  assert.ok(app.includes("query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})"));
  assert.ok(app.includes("rpc('save_love_monthly_activity'"));
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
