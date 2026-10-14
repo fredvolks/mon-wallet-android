@@ -59,7 +59,7 @@ test('Native Android FCM is truly configured, permission gated and routed',()=>{
 });
 test('Disabled native Firebase never fakes push availability',()=>{
  globalThis.window={LoveRollNativeAuth:{weeklyReminderEnabled:()=>true,nativePushConfigured:()=>false,nativePushToken:()=>''}};
- globalThis.navigator={userAgent:'Android',platform:'Android',maxTouchPoints:1,standalone:false};
+ Object.defineProperty(globalThis,'navigator',{configurable:true,value:{userAgent:'Android',platform:'Android',maxTouchPoints:1,standalone:false}});
  const html=notificationSettingsMarkup({enabled:false});
  assert.match(html,/FCM nécessite la configuration Firebase native/);
  assert.doesNotMatch(html,/data-action="push-enable"/);
