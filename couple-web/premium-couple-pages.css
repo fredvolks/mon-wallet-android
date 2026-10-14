@@ -87,6 +87,11 @@ main#app.loveroll-surprise-page{
 }
 .evening-face-result strong{font:800 clamp(1.2rem,4.4vw,1.9rem)/1 Georgia,serif;color:#fff5f9}
 .evening-face-result small{font-size:clamp(.51rem,1.65vw,.75rem);text-align:center;line-height:1.1;margin:3px}
+.evening-original-d6{
+ display:block;max-width:100%;margin-top:3px;text-align:center;
+ font-size:clamp(.48rem,1.53vw,.68rem);font-weight:700;line-height:1.1;
+ color:#ff9dc9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
 .evening-small-roll,.evening-wait{
  grid-column:1/-1;grid-row:3;text-align:center;
  font-size:clamp(.58rem,1.8vw,.73rem);min-height:25px;padding:2px 3px;
