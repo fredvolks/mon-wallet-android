@@ -96,10 +96,11 @@ test('A member waiting for their match is notified when the partner accepts',()=
  assert.match(app,/Votre partenaire a accepté le match/);
  assert.match(app,/if\(state.members.length<2\)\{state.channel=channel.subscribe\(\);return;\}/);
 });
-test('The five bottom tabs keep Settings, with shared Journal inside',()=>{
+test('The five bottom tabs keep Settings while Journal and questionnaires move to Soirée',()=>{
  assert.match(app,/\['settings','⚙','Réglages'\]/);
- assert.match(app,/Ouvrir le calendrier et les statistiques/);
- assert.match(app,/Nos questionnaires de soirées/);
+ assert.match(app,/Ouvrir notre calendrier partagé/);
+ assert.match(app,/NOS AVIS APRÈS LA SOIRÉE/);
+ assert.match(app,/settingGroup\('Compte'/);
 });
 
 test('Only the dedicated Supabase project and its publishable client key are configured',()=>{
@@ -301,7 +302,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v17/);
+ assert.match(sw,/loveroll-static-v18/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -737,7 +738,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})"));
  assert.ok(app.includes("rpc('save_love_monthly_activity'"));
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
- assert.ok(app.includes("button('tab:monthly-library','Modifier les 20 activités')"));
+ assert.ok(app.includes("settingRow('Activités du mois'"));
  assert.ok(app.includes("monthlyActivityForRoll(state.monthly.monthly_activity)"));
  assert.ok(app.includes("const activity=monthlyActivityForRoll(a)"));
  assert.ok(app.includes("if(activity.is_restaurant){"));
