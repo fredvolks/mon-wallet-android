@@ -277,3 +277,87 @@ body:has(.demo-shell) .nav{z-index:150}
 @media(prefers-reduced-motion:reduce){
  body:not(:has(.love-discover)) .hero-game-card::before{animation:none}
 }
+
+/* Invitation screens - aligned with the actual approved LoveRoll landing.
+   Covers incoming invitation, sender's invite status and share-preview UI. */
+body:has(.love-discover.discover-invite) .love-discover{
+ background:radial-gradient(ellipse at 0 37%,#ba19565e,transparent 45%),
+ radial-gradient(ellipse at 100% 10%,#ad14594c,transparent 42%),
+ linear-gradient(160deg,#290516 0%,#0b0411 72%,#220519 100%);
+}
+body:has(.love-discover.discover-invite) .discover-header h1{color:#fff7fa}
+body:has(.love-discover.discover-invite) .discover-preview-copy h2 em{color:#ff87c2}
+body:has(.love-discover.discover-invite) .discover-showcase{
+ border:1.5px solid #ffafd0de;
+ box-shadow:inset 0 1px #ffdae98c,0 0 25px #f6378c60,0 17px 32px #10020cce;
+}
+body:has(.love-discover.discover-invite) .discover-accept{
+ min-height:65px;border-color:#ffe4f1!important;
+ background:linear-gradient(155deg,#ff9ccc 0%,#fa4598 39%,#c41468 100%)!important;
+ box-shadow:inset 0 3px 3px #ffe6f3b2,0 0 36px #f72e90ae,0 12px 26px #650d3ec4;
+}
+body:not(:has(.love-discover)) .premium-invite-hero{
+ background:radial-gradient(ellipse at 50% -25%,#da2a785c,transparent 65%),
+ linear-gradient(130deg,#4e1431,#1b081b 80%);border-color:#ffafd0bb;
+ box-shadow:inset 0 1px #fff5,0 0 24px #ff30804f,0 16px 37px #0c030dcb;
+}
+body:not(:has(.love-discover)) .premium-invite-photo{
+ border-bottom:1px solid #ff83b386;
+ background:radial-gradient(ellipse at 50% 40%,#ac2d669a,#23091f 70%);
+}
+body:not(:has(.love-discover)) .premium-invite-photo img{
+ filter:saturate(1.22) contrast(1.09);
+}
+body:not(:has(.love-discover)) .premium-invite-hero h2{
+ color:#fff3fa;font:700 clamp(1.55rem,6vw,2.3rem)/1.09 Georgia,serif;
+}
+body:not(:has(.love-discover)) .premium-invite-note{
+ color:#ffb1d4!important;letter-spacing:.03em;
+}
+body:not(:has(.love-discover)) .invite-status{
+ border:1px solid #ffabd0b9;border-radius:18px;
+ background:linear-gradient(130deg,#722148ac,#36112a);
+ box-shadow:inset 0 1px #ffe3f159,0 0 17px #e53a8440;
+}
+body:not(:has(.love-discover)) .invite-status strong{color:#ffdbed}
+body:not(:has(.love-discover)) .invite-actions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+body:not(:has(.love-discover)) .invite-preview{
+ border:1px solid #f890b8ad;border-radius:20px;
+ background:linear-gradient(140deg,#3d122f,#210b1d);
+}
+body:not(:has(.love-discover)) .loveroll-invite-preview{
+ overflow:hidden;border:1px solid #ff94c1a3;border-radius:22px;
+ background:radial-gradient(ellipse at 50% 1%,#8d1c515e,transparent 65%),#1b0819;
+ box-shadow:inset 0 2px #ffdbeb66,0 0 20px #f3338036,0 12px 27px #0a040ba8;
+}
+body:not(:has(.love-discover)) .loveroll-invite-preview h3{
+ font:italic 700 clamp(2.1rem,8vw,3rem)/1 Georgia,serif;color:#fff5fa;
+ text-shadow:0 0 20px #e8418c6d;
+}
+body:not(:has(.love-discover)) .loveroll-invite-preview h4{
+ font:700 clamp(1.25rem,4.8vw,1.75rem)/1.12 Georgia,serif;
+ color:#ffbddb;
+}
+body:not(:has(.love-discover)) .loveroll-invite-divider{
+ background:linear-gradient(90deg,transparent,#ffb0d5,transparent);
+ box-shadow:0 0 11px #fc468a9a;
+}
+body:not(:has(.love-discover)) .loveroll-invite-cta{
+ border:1px solid #ffe0eebd;border-radius:999px;
+ background:linear-gradient(145deg,#ff84ba,#f03889 52%,#bc1669);
+ box-shadow:inset 0 2px #ffe5f28c,0 0 23px #f63c8c89;
+ color:#fff7fb;font-weight:850;letter-spacing:.035em;
+}
+body:not(:has(.love-discover)) .waiting-hero{
+ background:radial-gradient(ellipse at 50% 0%,#95205b7a,transparent 61%),
+ linear-gradient(150deg,#4c1232,#1f091e 80%);
+}
+body:not(:has(.love-discover)) .waiting-heart{
+ color:#ff94c7;font-size:3.4rem;text-shadow:0 0 22px #ff4da8;
+}
+@media(max-width:390px){
+ body:has(.love-discover.discover-invite) .discover-accept{min-height:58px}
+ body:not(:has(.love-discover)) .invite-actions>button{font-size:.78rem;padding:9px 6px}
+}
