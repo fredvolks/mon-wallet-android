@@ -30,7 +30,9 @@ self.addEventListener('push',event=>{
   message.title:'LoveRoll ❤️';
  const body=typeof message.body==='string'&&message.body.length<300?
   message.body:'Votre espace à deux vous attend.';
- const url=new URL('./',self.registration.scope).href;
+ const kind=['weekly','invitation','monthly','special'].includes(message.tag)?message.tag:'home';
+ const tab=kind==='weekly'?'session':kind==='monthly'||kind==='special'?'special':'home';
+ const url=new URL('./?open='+tab,self.registration.scope).href;
  event.waitUntil(self.registration.showNotification(title,{
   body,tag:String(message.tag||'loveroll').slice(0,60),
   icon:new URL('./assets/loveroll-hero.webp',self.registration.scope).href,
@@ -40,12 +42,15 @@ self.addEventListener('push',event=>{
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();
- const destination=new URL('./',self.registration.scope).href;
+ const candidate=event.notification.data?.url||'./';
+ const parsed=new URL(candidate,self.registration.scope);
+ const origin=new URL(self.registration.scope).origin;
+ const destination=parsed.origin===origin&&parsed.pathname.startsWith(new URL(self.registration.scope).pathname)?parsed.href:new URL('./',self.registration.scope).href;
  event.waitUntil((async()=>{
   const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   for(const client of windows){
    if(new URL(client.url).origin===new URL(destination).origin){
-    await client.focus();return;
+    await client.focus();if('navigate' in client)await client.navigate(destination);return;
    }
   }
   if(self.clients.openWindow)await self.clients.openWindow(destination);
