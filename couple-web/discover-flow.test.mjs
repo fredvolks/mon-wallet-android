@@ -31,14 +31,14 @@ test('Public homepage shares the same premium visual while retaining account ent
 });
 
 test('Invitation remains the first screen, Google and email follow explicit acceptance only',()=>{
- const firstGate=app.indexOf('if(state.showDiscover||(pendingInvite&&!state.inviteAccepted))');
- const authGate=app.indexOf('if(!state.user){',app.indexOf('function render(){'));
+ const firstGate=app.indexOf('if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted)))');
+ const authGate=app.indexOf('if(!state.user||state.passwordRecovery){',app.indexOf('function render(){'));
  assert.ok(firstGate>0&&firstGate<authGate);
  assert.match(app,/root\.innerHTML=discoverHtml\(!!pendingInvite\)/);
  assert.match(app,/sessionStorage\.setItem\('loverollInviteAccepted',invite\.kind\+':'\+invite\.value\)/);
  assert.match(app,/state\.showDiscover=false;/);
  assert.match(app,/if\(verb==='invite-start'\)/);
- assert.match(app,/authHtml\(!!pendingInvite\)/);
+ assert.match(app,/authHtml\(!!pendingInvite,state\.passwordRecovery/);
  assert.doesNotMatch(authHtml(true),/data-action="show-landing"/);
 });
 
