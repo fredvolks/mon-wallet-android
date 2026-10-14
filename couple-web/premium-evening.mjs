@@ -3,6 +3,12 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const bt=(action,text,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(action)+'"'+(disabled?' disabled':'')+'>'+text+'</button>';
 export function premiumPolyDie(sides,face=null,caption='',spinning=false){
  const valid=Number.isInteger(face)&&face>=1&&face<=sides;
+ // A missing D6 value is NOT 1. Until the official result is known,
+ // show a neutral heart rather than a real-looking but fake 'one pip'.
+ if(sides===6&&!valid){
+  return '<div class="love3d love3d-6" role="group" aria-label="'+esc(caption)+' · dé en attente">'+
+   '<div class="love3d-stage is-unrolled"><strong class="dice-fallback">♡</strong></div></div>';
+ }
  const target=valid?face:1;
  return '<div class="love3d love3d-'+sides+'" role="group" aria-label="'+esc(caption)+'">'+
   '<div class="love3d-stage '+(spinning?'is-rolling':'')+'">'+
@@ -13,19 +19,20 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false){
   '</div></div>';
 }
 const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=>{
- const has=!!roll&&ready;
- // The D6 keeps its original dice face. The card count reflects gifts
- // transferred to/from this partner using the same Supabase-backed totals
- // already displayed in Step 2. Never reveal a roll until BOTH are ready.
+ // Reveal a player's real server-confirmed result as soon as THEY roll.
+ // Their face is immutable; the second player's roll cannot modify it.
+ const has=Number.isInteger(roll?.face)&&roll.face>=1&&roll.face<=6;
+ // Only gift transfers modify the separate challenge total, not D6 history.
  const officialTarget=Number(effectiveTarget);
- const adjusted=has&&effectiveTarget!=null&&Number.isInteger(officialTarget)&&
+ const reveal=has&&!(localUser&&rolling);
+ const adjusted=reveal&&effectiveTarget!=null&&Number.isInteger(officialTarget)&&
   officialTarget>=0&&officialTarget!==roll.face;
- const displayCount=adjusted?officialTarget:has?roll.face:null;
+ const displayCount=adjusted?officialTarget:reveal?roll.face:null;
  return '<article class="evening-user-die">'+
   '<strong class="evening-person">'+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
-  premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser)+
-  '<div class="evening-face-result" aria-label="'+(has?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(has?esc(displayCount):'♡')+'</strong>'+
-  '<small>'+(has?'défi'+(displayCount>1?'s':'')+' ce soir':roll?'Résultat caché':'Pas encore lancé')+'</small>'+
+  premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser&&Number.isInteger(rollFace)) +
+  '<div class="evening-face-result" aria-label="'+(reveal?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(reveal?esc(displayCount):'♡')+'</strong>'+
+  '<small>'+(reveal?'défi'+(displayCount>1?'s':'')+' ce soir':localUser&&rolling?'Brassage…':roll?'Résultat en attente':'Pas encore lancé')+'</small>'+
   (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>'+
   (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):(!roll?'<small class="evening-wait">En attente</small>':''))+
   '</article>';
