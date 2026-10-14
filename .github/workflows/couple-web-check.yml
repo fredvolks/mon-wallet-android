@@ -47,6 +47,7 @@ jobs:
           PY
       - name: Validate approved premium die artwork
         run: |
+          python3 couple-web/repair-approved-die.py
           python3 - <<'PY'
           from pathlib import Path
           from PIL import Image
