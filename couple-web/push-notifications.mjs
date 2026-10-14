@@ -96,9 +96,11 @@ export function notificationSettingsMarkup(prefs={}){
  }
  return '<div class="invite-status push-status">'+status+'</div>'+
  '<div class="push-actions">'+actions+'</div>'+
- '<div class="push-options">'+categories.map(([key,title,desc])=>
- '<label class="push-option"><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
- '<input type="checkbox" data-push-option="'+key+'"'+(prefs[key]!==false?' checked':'')+
- (e.native||!enabled?' disabled':'')+'></label>').join('')+'</div>'+
+ '<div class="push-options">'+categories.map(([key,title,desc])=>{
+ const available=!e.native&&e.supported&&enabled&&e.permission==='granted';
+ return '<label class="push-option"><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
+ '<input type="checkbox" data-push-option="'+key+'"'+(available&&prefs[key]!==false?' checked':'')+
+ (!available?' disabled':'')+' aria-label="'+title+'"></label>';
+ }).join('')+'</div>'+
  '<p class="tiny-note">Aucun SMS payant. Les messages ne décrivent jamais votre journal ni les défis intimes. Le service Web vérifie les rappels toutes les 15 minutes.</p>';
 }

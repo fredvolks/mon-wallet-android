@@ -84,6 +84,13 @@ public final class ConnectedLoveRollActivity extends Activity {
     UpdateManager.check(ConnectedLoveRollActivity.this,false);
    });
   }
+  // Expose only the actually installed package version to the account settings page.
+  @JavascriptInterface public String appVersion() {
+   try {
+    android.content.pm.PackageInfo installed=getPackageManager().getPackageInfo(getPackageName(),0);
+    return installed.versionName==null?"":installed.versionName;
+   }catch(Exception ignored){return "";}
+  }
   // Android shares the personal invitation using the system chooser (Messenger supported).
   @JavascriptInterface public void openShare(String message) {
    runOnUiThread(() -> {
