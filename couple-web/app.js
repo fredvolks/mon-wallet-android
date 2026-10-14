@@ -32,7 +32,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -163,7 +163,8 @@ function render(){
  if(!state.user){
   if(!state.showAuth){
    root.innerHTML=discoverHtml(false);bindActions();
-  }else frame(authHtml(!!pendingInvite)+inviteBrowserHelp(),'LOVEROLL',pendingInvite?'Connexion après acceptation':'Votre espace privé à deux');
+  }else frame((state.authNotice?'<p class="auth-callback-notice" role="alert">'+safe(state.authNotice)+'</p>':'')+authHtml(!!pendingInvite)+inviteBrowserHelp(),
+ 'LOVEROLL',pendingInvite?'Connexion après acceptation':'Votre espace privé à deux');
   return;
  }
  if(pendingInvite&&state.user&&state.coupleId){
@@ -1993,6 +1994,21 @@ async function handle(action,element){
 }
 async function start(){
  const currentUrl=new URL(location.href);
+ const frag=new URLSearchParams(currentUrl.hash.replace(/^#/,''));
+ const errorCode=currentUrl.searchParams.get('error_code')||frag.get('error_code');
+ const authError=currentUrl.searchParams.get('error')||frag.get('error');
+ if(errorCode||authError){
+  state.authNotice=/expired|invalid|not_found/i.test(String(errorCode||''))?
+   'Le lien est expiré ou a déjà été utilisé. Si ton courriel est confirmé, tu peux te connecter avec Google ou demander un nouveau lien lorsque la limite d’envoi sera levée.':
+   'La confirmation n’a pas ouvert de session. Tu peux te connecter avec Google ou utiliser un nouveau lien de connexion plus tard.';
+  state.showAuth=true;
+  for(const key of ['error','error_code','error_description']){
+   currentUrl.searchParams.delete(key);
+   frag.delete(key);
+  }
+  currentUrl.hash=frag.toString();
+  history.replaceState(null,'',currentUrl.pathname+currentUrl.search+currentUrl.hash);
+ }
  let incoming=parseInvitationFromUrl(currentUrl.toString());
  // Backward compatibility: replace legacy secret fragments with a new URL
  // reference. Chrome can then open the SAME invitation from Messenger.
