@@ -1929,7 +1929,27 @@ async function handle(action,element){
 }
 async function start(){
  const currentUrl=new URL(location.href);
- const incoming=parseInvitationFromUrl(currentUrl.toString());
+ let incoming=parseInvitationFromUrl(currentUrl.toString());
+ // Backward compatibility: replace legacy secret fragments with a new URL
+ // reference. Chrome can then open the SAME invitation from Messenger.
+ if(incoming.token&&client){
+  try{
+   const {data,error}=await client.rpc('resolve_love_invite_reference',
+    {p_token_hash:await hashToken(incoming.token)});
+   if(!error&&data){
+    const migrated=inviteLinkForId(CONFIG.siteUrl,data);
+    const oldRef=pendingInviteReference(sessionStorage);
+    const oldKey=oldRef?oldRef.kind+':'+oldRef.value:null;
+    if(oldKey==='token:'+incoming.token&&
+       sessionStorage.getItem('loverollInviteAccepted')===oldKey)
+     sessionStorage.setItem('loverollInviteAccepted','id:'+data);
+    const rewritten=new URL(migrated);
+    currentUrl.search=rewritten.search;currentUrl.hash='';
+    history.replaceState(null,'',currentUrl.pathname+currentUrl.search);
+    incoming={id:data,token:null};
+   }
+  }catch(error){console.warn('Lien ancien conservé',error);}
+ }
  if(incoming.id||incoming.token){
   const old=pendingInviteReference(sessionStorage);
   const kind=incoming.id?'id':'token',value=incoming.id||incoming.token;
