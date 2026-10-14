@@ -1,27 +1,108 @@
 // LoveRoll • 20 special-occasion surprises.
 // A suggestion is always optional. Boundaries and mutual enthusiasm come first.
 export const SPECIAL_SURPRISES=[
- {title:"Lingerie surprise",level:"Osé",detail:"Préparer une tenue qui vous fait sentir désirables, puis demander à l'autre ce qui lui plaît."},
- {title:"Danse privée",level:"Osé",detail:"Choisir une chanson, tamiser la lumière et offrir une danse de séduction, si vous en avez envie."},
- {title:"Spa privé et peignoirs",level:"Sensuel",detail:"Organiser une parenthèse sans écran avec bain, serviettes chaudes et un moment de détente à deux."},
- {title:"La soirée des fantasmes",level:"Osé",detail:"Chacun partage une envie à explorer et une limite. Choisir ensemble une idée qui enthousiasme les deux."},
- {title:"Massage à l'huile",level:"Sensuel",detail:"Préparer une ambiance relaxante et offrir un massage à tour de rôle, en demandant les préférences de chacun."},
- {title:"Le rendez-vous secret",level:"Coquin",detail:"Envoyer une invitation mystérieuse avec l'heure, la tenue et une surprise adaptée à votre disponibilité."},
- {title:"Strip-tease léger",level:"Osé",detail:"Préparer une performance de séduction ludique, uniquement si la personne qui la propose se sent à l'aise."},
- {title:"Coffret de lingerie",level:"Osé",detail:"Choisir ensemble une pièce de lingerie ou une tenue élégante, sans pression de devoir la porter."},
- {title:"Plaisirs à discuter",level:"Osé",detail:"Parler ouvertement de vos préférences intimes, y compris des envies de plaisir oral, sans obligation de les réaliser."},
- {title:"Jeu de rôles",level:"Coquin",detail:"Imaginer deux personnages pour un rendez-vous complice, puis choisir ensemble jusqu'où va le jeu."},
- {title:"Une nuit rien qu'à nous",level:"Romantique",detail:"Réserver une gardienne et préparer une chambre ou une escapade confortable, sans horaire imposé."},
- {title:"L'enveloppe audacieuse",level:"Osé",detail:"Écrire chacun trois idées de surprises intimes et en tirer une que vous acceptez tous les deux."},
- {title:"Baisers au hasard",level:"Sensuel",detail:"Inventer un petit jeu de baisers et de compliments, au rythme choisi ensemble."},
- {title:"Lumières tamisées",level:"Romantique",detail:"Créer une ambiance raffinée avec musique douce, lumière rose et un dessert à partager."},
- {title:"Soirée sans téléphone",level:"Romantique",detail:"Mettre les écrans de côté pour un repas tranquille, puis choisir une activité à deux."},
- {title:"Une nouvelle tenue",level:"Coquin",detail:"Chacun choisit un style vestimentaire pour séduire l'autre, avec droit de refuser et de changer."},
- {title:"Le choix du partenaire",level:"Coquin",detail:"Proposer deux attentions coquines et laisser l'autre choisir celle qu'il ou elle préfère."},
- {title:"Le menu du désir",level:"Osé",detail:"Créer ensemble une liste de moments tendres, sensuels ou plus intimes, sans imposer de conclusion."},
- {title:"Matinée à deux",level:"Romantique",detail:"Prévoir une gardienne quelques heures et profiter d'un déjeuner prolongé avant un moment en amoureux."},
- {title:"Carte blanche consensuelle",level:"Osé",detail:"Offrir à votre partenaire la possibilité de proposer une surprise intime, avec des limites claires et le droit de dire non."}
+  {
+    "title": "La suite secrète",
+    "level": "Très osé",
+    "detail": "Transformer une pièce en suite d’hôtel privée : éclairage tamisé, parfum, musique et invitation personnelle glissée sous la porte."
+  },
+  {
+    "title": "Danse privée sous les néons",
+    "level": "Très osé",
+    "detail": "Préparer une danse de séduction dans une lumière rose, avec une tenue choisie librement et une chanson demandée par la personne célébrée."
+  },
+  {
+    "title": "L’hôtel pour une nuit",
+    "level": "Osé",
+    "detail": "Organiser une escapade avec arrivée surprise, chambre décorée, petit-déjeuner prolongé et liberté de décider de la suite ensemble."
+  },
+  {
+    "title": "La boîte des envies secrètes",
+    "level": "Osé",
+    "detail": "Présenter cinq cartes de fantasmes à discuter; la personne célébrée peut choisir, modifier ou écarter chaque proposition."
+  },
+  {
+    "title": "Bandeau et cinq sensations",
+    "level": "Osé",
+    "detail": "Proposer un bandeau facile à enlever et faire découvrir cinq textures, parfums ou douceurs sur les mains, en restant à l’écoute."
+  },
+  {
+    "title": "Une lettre de tentation",
+    "level": "Osé",
+    "detail": "Écrire une invitation audacieuse et élégante pour un tête-à-tête privé avec une ambiance soigneusement préparée."
+  },
+  {
+    "title": "Le défilé surprise",
+    "level": "Très osé",
+    "detail": "Préparer un mini-défilé séduisant avec deux tenues au choix, sans obligation de se déshabiller ni de poursuivre."
+  },
+  {
+    "title": "Une soirée Kamasutra",
+    "level": "Très osé",
+    "detail": "Offrir un livre ou des cartes d’inspiration Kamasutra et choisir ensemble des idées de positions confortables à découvrir ou simplement discuter."
+  },
+  {
+    "title": "La chambre aux roses",
+    "level": "Sensuel",
+    "detail": "Installer une lumière chaude, une playlist, des pétales décoratifs et une attention personnalisée à l’arrivée de l’autre."
+  },
+  {
+    "title": "Jeu de rôles : inconnu·e",
+    "level": "Osé",
+    "detail": "Préparer une fausse première rencontre dans un bar ou le salon, avec personnages, invitation et limites convenues d’avance."
+  },
+  {
+    "title": "Les mains liées au ruban",
+    "level": "Très osé",
+    "detail": "Proposer un jeu symbolique avec un ruban libre sur les mains, immédiatement retirable, puis une expérience de détente ou de complicité."
+  },
+  {
+    "title": "Bain nocturne",
+    "level": "Sensuel",
+    "detail": "Préparer un bain ou une douche chaude en duo avec serviettes, éclairage doux et boissons, puis laisser le rythme se choisir à deux."
+  },
+  {
+    "title": "Le menu à la carte",
+    "level": "Osé",
+    "detail": "Présenter à la personne célébrée un menu de cinq attentions romantiques et sensuelles; elle peut sélectionner ce qui lui plaît."
+  },
+  {
+    "title": "Une nuit sans écran",
+    "level": "Osé",
+    "detail": "Réserver la soirée entière, ranger les appareils et créer une succession de surprises adaptées aux envies partagées."
+  },
+  {
+    "title": "Le rendez-vous minuit",
+    "level": "Très osé",
+    "detail": "Préparer une invitation à heure fixe avec une tenue, une playlist et un lieu surprise dans la maison ou lors d’une escapade."
+  },
+  {
+    "title": "Massage éclairé aux bougies",
+    "level": "Sensuel",
+    "detail": "Prévoir un massage à l’huile adaptée, des bougies LED et une pièce confortable; la personne célébrée décide de la pression et de la durée."
+  },
+  {
+    "title": "L’enveloppe rouge",
+    "level": "Osé",
+    "detail": "Préparer trois enveloppes de rendez-vous : tendre, sensuel et audacieux. La personne célébrée ouvre celle qu’elle souhaite."
+  },
+  {
+    "title": "Le jeu des secrets",
+    "level": "Très osé",
+    "detail": "Proposer cinq questions complices, dont les envies, les nouveautés et les limites, en offrant toujours la possibilité de passer."
+  },
+  {
+    "title": "La table du désir",
+    "level": "Osé",
+    "detail": "Mettre une table romantique exceptionnelle à domicile, soigner les détails et garder la fin de la soirée entièrement ouverte."
+  },
+  {
+    "title": "Le grand rendez-vous hors du commun",
+    "level": "Très osé",
+    "detail": "Organiser une expérience inhabituelle à deux : hôtel thématique, événement élégant ou nuit surprise, avec accord sur le budget et l’ambiance."
+  }
 ];
+
 export const OCCASIONS=[
  {key:"valentine",title:"Saint-Valentin",emoji:"💘",description:"Une fête des amoureux qui peut se préparer à l'avance."},
  {key:"anniversary",title:"Notre anniversaire de couple",emoji:"🥂",description:"Une expérience hors du commun à préparer et découvrir ensemble, sans désigner un organisateur au hasard."},
