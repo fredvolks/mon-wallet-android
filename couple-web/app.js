@@ -1193,6 +1193,20 @@ function randomInviteToken(){
  const bytes=crypto.getRandomValues(new Uint8Array(32));
  return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
+async function ensureInviteDraft(forceNew=false){
+ if(!forceNew&&state.inviteDraft)return state.inviteDraft;
+ if(!state.coupleId||state.members.length===2)throw Error('Le couple est déjà connecté.');
+ const email=id('invite-email')?.value?.trim()?.toLowerCase();
+ if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))
+  throw Error('Indiquez le courriel Google valide de votre partenaire.');
+ if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
+ const token=randomInviteToken(),digest=await hashToken(token);
+ const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
+ const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
+ state.inviteDraft={id:invitationId,email,link:url.toString()};
+ state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+ return state.inviteDraft;
+}
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
  if(verb==='copy-invite-for-browser'){
@@ -1471,22 +1485,13 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='invite'){
-  if(!state.coupleId||state.members.length===2)throw Error('Invitation impossible : vérifiez le couple.');
-  const email=id('invite-email')?.value.trim().toLowerCase();
-  if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))throw Error('Saisissez le courriel Google valide du destinataire.');
-  if(!CONFIG.siteUrl)throw Error('L’adresse publique HTTPS doit être configurée.');
-  const token=randomInviteToken(),digest=await hashToken(token);
-  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
-  const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
-  state.inviteDraft={id:invitationId,email,link:url.toString()};
-  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
-  render();
-  notify('Lien sécurisé prêt. Choisissez SMS, Messenger ou courriel.');
-  return;
+  await ensureInviteDraft(true);render();
+  notify('Nouveau lien personnel prêt. Choisissez une méthode de partage.');return;
  }
  if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
-  const d=state.inviteDraft;
-  if(!d)throw Error('Préparez un nouveau lien sécurisé pour l’envoyer.');
+  // A token cannot be recovered from its hash after closing the application.
+  // Generate a fresh, single-use link when the user chooses a sharing method.
+  const d=await ensureInviteDraft(false);
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
   const text=invitationEmailText(d.link);
   state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';
