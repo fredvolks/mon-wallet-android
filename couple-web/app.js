@@ -3,6 +3,7 @@ import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editab
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
+import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
@@ -23,7 +24,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[]};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -106,7 +107,7 @@ function nav(){
   ['advent','🎁','Avent'],['settings','⚙','Réglages']]:
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
- return '<nav class="nav"><div class="nav-inner">'+tabs.map(([key,icon,label])=>
+ return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
  '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
@@ -114,6 +115,12 @@ function bindActions(){
  document.querySelectorAll('[data-action]').forEach(el=>{
   el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
  });
+ document.querySelectorAll('input[data-json-file]').forEach(input=>input.addEventListener('change',async()=>{
+  const file=input.files?.[0];if(!file)return;
+  if(file.size>MAX_IMPORT_BYTES){fail(Error('Fichier trop volumineux : 250 Ko maximum.'));return;}
+  const output=id(jsonInputId(input.dataset.jsonFile));if(!output)return;
+  try{output.value=await file.text();state.jsonPending=null;notify('Fichier chargé. Vérifiez son aperçu.');}catch(e){fail(e);}
+ }));
  bindWellbeingMenus();
 }
 function render(){
