@@ -35,8 +35,11 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  assert.match(first,/Étape 2 verrouillée/);
  assert.match(first,/data-action="new-challenge"[^>]*disabled/);
  assert.doesNotMatch(first,/Dé initial : 4/);
- assert.equal((first.match(/data-dice-sides="6"/g)||[]).length,1,'Unrolled D6 has no misleading face 1');
+ assert.equal((first.match(/data-dice-sides="6"/g)||[]).length,2,'Keep two consistent D6 components');
  assert.match(first,/class="love3d-stage is-unrolled"/);
+ assert.match(first,/data-dice-unrolled="true"/);
+ assert.match(css,/\.love3d-stage\.is-unrolled \.dice-canvas\{visibility:hidden/);
+ assert.match(app,/canvas\.dataset\.diceUnrolled!=='true'/);
  const secondView=premiumEveningHtml({session,members:people,me:'second',
   rolls:[{user_id:'first',face:4}],status:{both_ready:false,my_rolled:false,partner_rolled:true},
   turn:{ready:false}});
