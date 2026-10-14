@@ -291,7 +291,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v10/);
+ assert.match(sw,/loveroll-static-v11/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -437,7 +437,7 @@ test('Creator-only access and private draws are enforced server side',()=>{
  assert.ok(app.includes("p_card_id:state.customSlot"));
  assert.ok(app.includes("state.couple?.owner_user_id===state.user?.id"));
  assert.ok(app.includes("state.tab==='library')renderCardLibrary()"));
- assert.ok(app.includes("' · D20 : '+safe(active.face)"));
+ assert.ok(app.includes("' · D35 : '+safe(active.face)"));
  assert.equal(app.includes("' · CARTE '+"),false);
  assert.ok(app.includes("REÇOIT"));
  assert.ok(app.includes("OFFRE"));
@@ -480,7 +480,7 @@ test('Neither partner sees whether a drawn card was created by the admin',()=>{
  assert.equal(missing.title,'Défi surprise');
  assert.equal(missing.description,'Consigne momentanément indisponible.');
  const gameScreen=app.slice(app.indexOf('function renderSession(){'),app.indexOf('function renderSpecial(){'));
- assert.ok(gameScreen.includes("' · D20 : '+safe(active.face)"));
+ assert.ok(gameScreen.includes("' · D35 : '+safe(active.face)"));
  assert.ok(!gameScreen.includes('challenge.cardId'));
  assert.ok(!gameScreen.includes('active.card_id'));
  assert.ok(!gameScreen.includes('défis personnalisés'));
@@ -547,11 +547,50 @@ test('All card draws respect drawer eligibility and persistent no-repeat cycles'
  assert.ok(app.includes("button('save-draw-rule'"));
  assert.ok(app.includes("id=\"no-repeat-cards\""));
  assert.ok(app.includes("rpc('set_love_draw_rule'"));
- assert.ok(app.includes("p_drawer:drawer"));
+ assert.ok(app.includes("p_drawer_role:drawer"));
  assert.ok(app.includes("custom-drawer"));
  assert.ok(app.includes("custom-recipient"));
  assert.ok(app.includes("state.customSlot=slot"));
  assert.ok(app.includes("slot<1||slot>35"));
  assert.ok(app.includes("Restaurer cette carte d’origine"));
  assert.ok(!app.includes("CARTE '+safe(challenge.cardId"));
+});
+
+test('Challenge D35 gives 35 physical numbered faces without changing monthly D20s',()=>{
+ const webgl=readFileSync(new URL('./dice3d.js',import.meta.url),'utf8');
+ const db=readFileSync(new URL('./d35-challenge-dice.sql',import.meta.url),'utf8');
+ assert.ok(webgl.includes('function d35Geometry()'));
+ assert.ok(webgl.includes('new ConvexGeometry(points)'));
+ assert.ok(webgl.includes('const count=35'));
+ assert.ok(webgl.includes('sideNormals.set(i+1,outward)'));
+ assert.ok(db.includes('check(face between 1 and 35)'));
+ assert.ok(db.includes('d35:=floor(random()*35)::integer+1'));
+ assert.ok(db.includes('v_cat,d35,cid'));
+ assert.ok(db.includes("cc.drawer_role='owner'"));
+ assert.ok(db.includes("cc.recipient_role='partner'"));
+ assert.ok(db.includes('love_card_draw_history'));
+ assert.ok(app.includes("heroDice(demo.challenge,35,'D35"));
+ assert.ok(app.includes('Brasser le D35 pour'));
+ assert.ok(app.includes('D35 :'));
+ assert.ok(app.includes("heroDice(a.face,20,'Activité officielle')"));
+ assert.ok(app.includes("heroDice(prize.face,20,'Résultat officiel')"));
+ assert.equal(drawSoloFace(35,()=>0),1);
+ assert.equal(drawSoloFace(35,()=>0.999),35);
+});
+test('Prepare cards privately before inviting a partner with future partner roles',()=>{
+ const view=matchHtml('Test',false);
+ const roles=readFileSync(new URL('./preinvite-card-roles.sql',import.meta.url),'utf8');
+ assert.ok(view.includes('prepare-cards'));
+ assert.ok(app.includes("if(verb==='prepare-cards')"));
+ assert.ok(app.includes("create_love_match',{p_anniversary_md:null}"));
+ assert.ok(app.includes("state.tab='library'"));
+ assert.ok(app.includes('Créer mes défis avant l’invitation'));
+ assert.ok(app.includes('Ma conjointe (à inviter)'));
+ assert.ok(app.includes('save_love_card_with_roles'));
+ assert.ok(app.includes('p_recipient_role:recipient'));
+ assert.ok(app.includes('p_drawer_role:drawer'));
+ assert.ok(roles.includes("drawer_role text not null default 'both'"));
+ assert.ok(roles.includes("recipient_role text not null default 'both'"));
+ assert.ok(roles.includes("owner_user_id=auth.uid()"));
+ assert.ok(roles.includes("p_drawer_role=p_recipient_role"));
 });
