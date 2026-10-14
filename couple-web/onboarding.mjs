@@ -50,7 +50,7 @@ export function marketingHtml(){
    '<span class="love-brand-decoration">♡</span>'+
    '<div class="love-wordmark"><span>Love</span><b>Roll</b></div>'+
    '<div class="love-signature">JEUX · DÉFIS · DATES · NOUS</div></div>'+
-   '<img class="love-hero-art" src="./assets/loveroll-hero.webp" alt="Cœur en verre rose, deux dés noirs brillants et satin bourgogne" fetchpriority="high" decoding="async" width="682" height="376">'+
+   '<img class="love-hero-art" src="./assets/loveroll-premium-scene.png" alt="Cœur en verre rose, deux dés noirs brillants et satin bourgogne" fetchpriority="high" decoding="async" width="1200" height="630">'+
   '</div>'+
   '<div class="love-hero-copy">'+
    '<h1>Votre aventure à deux <em>commence ici.</em></h1>'+
