@@ -1,0 +1,207 @@
+
+/* LoveRoll — TRUE COUPLE HOME ONLY. Reference-focused; other screens untouched. */
+main#app.loveroll-real-home{
+ max-width:none!important;width:100%;height:100dvh;min-height:0;overflow:hidden;
+ padding:0 12px 0!important;display:flex;flex-direction:column;
+ background:radial-gradient(ellipse at 50% 46%,#850f3d85,transparent 50%),
+  radial-gradient(ellipse at 5% 75%,#4d092a,transparent 50%),
+  linear-gradient(180deg,#080408 0%,#1b0614 66%,#090409 100%);
+}
+.loveroll-real-home .home-brandbar{
+ display:flex;justify-content:space-between;align-items:center;flex:none;
+ height:clamp(60px,8.8dvh,78px);padding:6px 10px 5px;
+}
+.loveroll-real-home .home-brand{
+ min-width:0;display:flex;flex-direction:column;gap:0;text-align:left
+}
+.loveroll-real-home .home-brand b{
+ color:#fff5fa;font:italic 800 clamp(1.75rem,6vw,2.7rem)/.97 Georgia,serif;
+ letter-spacing:-.075em;text-shadow:0 0 14px #f0277a55;
+ white-space:nowrap;
+}
+.loveroll-real-home .home-brand em{font-style:normal;color:#fd368d}
+.loveroll-real-home .home-brand small{
+ color:#eeb5d0;font-weight:900;letter-spacing:.14em;
+ font-size:clamp(.48rem,1.7vw,.68rem);white-space:nowrap;margin-left:4px;margin-top:4px;
+}
+.loveroll-real-home .home-brand-actions{display:flex;gap:7px}
+.loveroll-real-home .home-brand-actions button{
+ display:grid;place-items:center;min-width:45px;height:45px;padding:0;
+ border-radius:13px;border:1px solid #d85b8e9c;
+ background:linear-gradient(140deg,#3d162c,#120816);
+ box-shadow:inset 0 1px #ffc2db30,0 0 15px #df378333;
+ font-size:1.32rem;color:#ffd2e5;
+}
+.loveroll-real-home .home-brand-actions button b{
+ width:7px;height:7px;background:#fe3c97;border-radius:50%;
+ position:absolute;margin:-23px 0 0 20px;box-shadow:0 0 6px #ff3b96;
+}
+.loveroll-real-home .real-home-shell{
+ flex:1;min-height:0;
+ margin:0 auto calc(80px + env(safe-area-inset-bottom));
+ width:min(100%,860px);
+ display:grid;grid-template-rows:
+  minmax(52px,.85fr)
+  minmax(32px,.48fr)
+  minmax(112px,2.3fr)
+  minmax(61px,.9fr)
+  minmax(68px,1.05fr)
+  minmax(67px,1fr)
+  minmax(88px,1.35fr);
+ row-gap:clamp(3px,.65dvh,7px);
+}
+.loveroll-real-home .home-ritual{text-align:center;display:flex;justify-content:center;flex-direction:column}
+.loveroll-real-home .home-ritual>span{
+ color:#ffb2d5;font-size:clamp(.61rem,2.1vw,.86rem);font-weight:800;letter-spacing:.21em;
+}
+.loveroll-real-home .home-ritual h2{
+ font-family:Georgia,serif;color:#fff8fc;font-size:clamp(1.35rem,5.15vw,2.2rem);
+ letter-spacing:-.035em;line-height:1.07;margin:2px 0 0;
+}
+.loveroll-real-home .home-ritual p{font-size:clamp(.72rem,2.5vw,.95rem);margin:0;color:#ffe2ef}
+.loveroll-real-home .home-weights{
+ display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(3px,1.1vw,9px);align-items:stretch;
+}
+.loveroll-real-home .home-weight{
+ display:flex;align-items:center;justify-content:center;min-width:0;gap:clamp(2px,.5vw,5px);
+ color:#fff2f9;background:linear-gradient(145deg,#430a29dc,#190514dd);
+ border:1px solid #f7619bb0;border-radius:13px;
+ box-shadow:0 0 11px #fa267344,inset 0 1px #ffc8e143;
+ padding:3px 2px;
+}
+.loveroll-real-home .home-pip-svg{
+ display:block;flex:none;width:clamp(15px,3.8vw,26px);height:clamp(15px,3.8vw,26px);
+}
+.loveroll-real-home .home-weight b{font-size:clamp(.58rem,2.1vw,.82rem)}
+.loveroll-real-home .home-weight span{font-size:clamp(.51rem,1.75vw,.78rem)}
+.loveroll-real-home .home-die-theater{
+ position:relative;min-height:0;overflow:hidden;
+ display:grid;place-items:center;isolation:isolate;border-radius:27px;
+ background:
+  radial-gradient(ellipse at 50% 79%,#fe2b805c,transparent 44%),
+  radial-gradient(ellipse at 50% 28%,#6b0e4080,transparent 67%),
+  repeating-radial-gradient(ellipse at 48% 100%,transparent 0 21px,#d3276b1b 23px 26px,transparent 29px 51px);
+}
+.loveroll-real-home .home-die-theater:before{
+ content:'';position:absolute;inset:15% -8% -44%;z-index:-1;
+ background:radial-gradient(ellipse at 48% 42%,#9c0e41 5%,#2b0813 31%,#6a1735 35%,#150610 48%,#4a0926 56%,#1a0411 73%);
+ border-radius:42%;transform:rotate(-9deg);filter:blur(7px);
+}
+.loveroll-real-home .home-die-theater:after{
+ content:'♡';position:absolute;right:6%;top:4%;pointer-events:none;
+ color:#ff3c9677;font:5rem Georgia,serif;text-shadow:0 0 16px #ff369c,0 0 26px #ff3376;
+}
+.loveroll-real-home .home-satin-orbit{
+ position:absolute;width:min(85vw,350px);height:48%;bottom:-3%;
+ border:2px solid #ff3e8d95;border-radius:50%;transform:rotate(-12deg);
+ box-shadow:0 0 18px #f62987bb,inset 0 0 14px #fc327566;pointer-events:none
+}
+.loveroll-real-home .home-die-platform{
+ width:min(100%,240px);height:100%;position:relative;display:grid;place-items:center;
+ filter:drop-shadow(0 13px 12px #12000f) drop-shadow(0 0 20px #ff2b8d66);
+}
+.loveroll-real-home .home-die-platform .dice-canvas{
+ display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;
+}
+.loveroll-real-home .home-die-platform .dice-fallback{
+ font:900 4rem Georgia,serif;color:#ff89c2;text-shadow:0 0 30px #fb1e90;
+}
+.loveroll-real-home .home-die-platform:has(canvas[data-spinning="true"]){
+ filter:drop-shadow(0 0 24px #f62089a0)
+}
+.loveroll-real-home .home-roll-area{display:flex;flex-direction:column;min-height:0;gap:2px}
+.loveroll-real-home .home-roll-button{
+ width:85%;margin:auto auto 0;min-height:0;flex:1;max-height:55px;
+ color:white;font-weight:900;font-size:clamp(.85rem,3.2vw,1.16rem);
+ border:1px solid #ffb8d5!important;border-radius:999px!important;
+ background:linear-gradient(155deg,#fe78ad,#f8378b 52%,#c20a63)!important;
+ box-shadow:0 0 14px #f53c9a88,inset 0 2px #ffe4efa8!important;text-shadow:0 1px 2px #700034;
+}
+.loveroll-real-home .home-roll-button.is-used{
+ opacity:.81;color:#f9d1e6;background:linear-gradient(155deg,#5f2948,#431432)!important;
+}
+.loveroll-real-home .home-roll-area p{
+ margin:1px 0 0;text-align:center;color:#e8b8d1;
+ font-size:clamp(.57rem,1.85vw,.72rem);line-height:1.13;min-height:15px
+}
+.loveroll-real-home .home-challenge-stats{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;
+ border:1px solid #ec36818f;border-radius:17px;
+ background:linear-gradient(110deg,#2d0a1ec7,#0f0718cb 54%,#2b0920);
+ box-shadow:inset 0 1px #fb88ba44;
+}
+.loveroll-real-home .home-challenge-stats>div{
+ display:grid;grid-template-columns:30% 70%;align-items:center;grid-template-rows:auto auto;
+ padding:3px 5px;min-width:0;border-right:1px solid #9d39635a;
+}
+.loveroll-real-home .home-challenge-stats>div:last-child{border:0}
+.loveroll-real-home .home-challenge-stats span{
+ grid-row:1/3;text-align:center;font-size:clamp(1.2rem,3.8vw,1.9rem);color:#ff70ac;
+}
+.loveroll-real-home .home-challenge-stats strong{
+ display:block;font:800 clamp(1.15rem,4.4vw,2.15rem)/1 Georgia,serif;text-align:center;color:#fff0f8
+}
+.loveroll-real-home .home-challenge-stats small{
+ grid-column:2;font-size:clamp(.55rem,1.75vw,.72rem);text-align:center;line-height:1.13;color:#ead3df
+}
+.loveroll-real-home .home-next-month{
+ display:grid;grid-template-columns:19% 1fr 21%;align-items:center;text-align:left;
+ min-height:0;padding:4px 10px;border:1px solid #e76e9baa!important;border-radius:18px;
+ background:linear-gradient(110deg,#3c102cb3,#1d091ccf)!important;color:#fff1f8;
+ box-shadow:inset 0 1px #ffe0f63a,0 0 12px #e72c7f22!important;
+}
+.loveroll-real-home .home-next-month>span:nth-child(2){display:flex;flex-direction:column;min-width:0}
+.loveroll-real-home .home-next-month small{font:700 clamp(.78rem,2.7vw,1.11rem) Georgia,serif}
+.loveroll-real-home .home-next-month strong{font:800 clamp(1.25rem,4.8vw,2.25rem)/1.02 Georgia,serif;color:#fc4ea3}
+.loveroll-real-home .home-next-month em{font:normal clamp(.63rem,1.85vw,.8rem) system-ui;color:#e7bbd2}
+.loveroll-real-home .home-calendar-icon{color:#ff6bb1;display:grid;place-items:center;font-size:1.65rem}
+.loveroll-real-home .home-calendar-icon b{font-size:1.3rem;grid-area:1/1;text-shadow:0 0 9px #fc3d98}
+.loveroll-real-home .home-calendar-icon::first-letter{color:#ff78b1}
+.loveroll-real-home .home-gift-icon{text-align:right;font-size:clamp(1.75rem,5vw,2.7rem);filter:drop-shadow(0 0 13px #ee3387)}
+.loveroll-real-home .home-shortcuts{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(4px,1.3vw,12px);min-height:0
+}
+.loveroll-real-home .home-shortcut{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;
+ padding:4px 3px;color:#fff1f9;text-align:center;
+ border:1px solid #df478d8a!important;border-radius:17px;
+ background:linear-gradient(145deg,#48152ecb,#140a19e8)!important;
+ box-shadow:inset 0 1px #ffe2f134,0 4px 13px #0a0614aa!important;
+}
+.loveroll-real-home .home-shortcut-icon{
+ font-size:clamp(1.5rem,4.5vw,2.1rem);line-height:1.1;
+ filter:drop-shadow(0 0 9px #f62a8a)
+}
+.loveroll-real-home .home-shortcut-name{
+ font:700 clamp(.75rem,2.4vw,1.07rem)/1.05 Georgia,serif;
+ color:#fff5fb;
+}
+.loveroll-real-home .home-shortcut small{
+ font-size:clamp(.55rem,1.65vw,.7rem);line-height:1.15;color:#e7c5d7;max-width:100%
+}
+.loveroll-real-home .nav{
+ position:fixed;bottom:0;left:0;right:0;z-index:5000;
+ background:linear-gradient(180deg,#200918f5,#08040dec);
+ border-top:1px solid #fa66a04d;box-shadow:0 -8px 18px #18050f;
+}
+.loveroll-real-home .nav-inner button.active{
+ background:linear-gradient(145deg,#b42168,#611d43)!important;
+ border:1px solid #ed458dd4;box-shadow:inset 0 1px #ffc4e080,0 0 13px #f32b8c55!important
+}
+@media(max-height:735px){
+ .loveroll-real-home .home-brandbar{height:58px}
+ .loveroll-real-home .real-home-shell{
+  margin-bottom:calc(72px + env(safe-area-inset-bottom));
+  grid-template-rows:minmax(42px,.85fr) minmax(29px,.55fr) minmax(100px,2.5fr) minmax(51px,.85fr) minmax(56px,1fr) minmax(55px,1fr) minmax(75px,1.4fr);
+  row-gap:3px;
+ }
+ .loveroll-real-home .home-roll-area p{font-size:.57rem}
+ .loveroll-real-home .home-next-month strong{font-size:1.25rem}
+ .loveroll-real-home .nav button{min-height:55px}
+}
+@media(max-width:360px){
+ .loveroll-real-home .home-brand-actions button{min-width:38px;height:40px}
+ .loveroll-real-home .home-weight{gap:1px}
+ .loveroll-real-home .home-pip-svg{width:14px;height:14px}
+ .loveroll-real-home .home-shortcut small{font-size:.52rem}
+}
