@@ -19,6 +19,7 @@ const opts={auth:{flowType:'pkce',autoRefreshToken:true,persistSession:true,dete
 const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
 const launchParams=new URLSearchParams(location.search);
+const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
@@ -1089,28 +1090,36 @@ function renderSettings(){
   '<p>Dé hebdomadaire, invitation acceptée et événements spéciaux.</p></div></div>'+
   '<p class="tiny-note">Les notifications automatiques nécessitent encore un service push configuré. '+
   'Aucun SMS payant ne sera envoyé et aucun rappel ne sera annoncé comme actif avant sa mise en service.</p>';
- const appSettings=settingRow('Ajouter LoveRoll à l’écran d’accueil',
-  'Accéder à l’application sans chercher le navigateur.','show-install-guide','Afficher')+
+ const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
+ const appSettings=(nativeApp?
+  '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>L’application Android utilise les mêmes écrans que les versions iPhone et iPad.</p></div></div>'+
+  settingRow('Vérifier les mises à jour APK','Rechercher une version Android signée plus récente.','native-update','Vérifier'):
+  settingRow('Ajouter LoveRoll à l’écran d’accueil',
+    'Installation recommandée sur Safari iPhone et iPad.','show-install-guide','Afficher'))+
   '<div class="settings-item"><div><strong>Version Web</strong>'+
   '<p>Actualisation automatique du contenu à la réouverture avec connexion Internet.</p></div></div>'+
   '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
  const privacy='<p>Votre journal commun est chiffré. Vos réponses individuelles sur le ressenti restent privées.</p>'+
+  (nativeApp?settingRow('Mes anciennes données hors ligne',
+   'Ouvrir volontairement le journal Android local non synchronisé.','native-legacy','Ouvrir'):'')+
   (linked?button('lock','Verrouiller le journal partagé','class="subtle"'):'')+
   '<div class="settings-item"><div><strong>Mon ressenti</strong><p>Réglages personnels et confidentiels.</p></div></div>'+
   wellbeingFields(state.wellbeing)+button('save-wellbeing','Enregistrer mon ressenti','class="subtle"');
  const support='<div class="settings-item"><div><strong>Aide et informations</strong>'+
   '<p>Invitation par SMS, Messenger ou courriel. Le lien est privé et expire après 7 jours.</p>'+
   '<p>Vous pouvez toujours refuser un défi et faire une pause.</p>'+
-  '<p>Version Web de LoveRoll : accès Android et iPhone.</p></div></div>';
+  '<p>Même expérience sur Android, iPhone et iPad. Les écrans s’adaptent à la taille de chaque appareil.</p></div></div>';
  frame('<div class="settings-head"><div class="eyebrow">♡ VOTRE ESPACE À DEUX</div>'+
-   '<p>Retrouvez ici vos préférences, sans mélanger les jeux et les questionnaires.</p></div>'+
-   settingGroup('Compte','♙','Prénom, connexion et appareils',account)+
-   settingGroup('Couple','♥',hasPartner?'Votre espace partagé et vos dates':'Invitations et état de la demande',partner,true)+
-   settingGroup('Notifications','♧','Rappels et préférences',notifications)+
-   settingGroup('Jeu et personnalisation','🎲','Modifier les cartes et activités',game)+
-   settingGroup('Application','▣','Installation et mises à jour',appSettings)+
-   settingGroup('Confidentialité','♙','Journal chiffré et données personnelles',privacy)+
-   settingGroup('Aide','?','Informations et fonctionnement',support),
+   '<p>Vos réglages LoveRoll, identiques sur Android, iPhone et iPad.</p></div>'+
+   '<div class="settings-grid">'+
+   settingGroup('Compte','♙','Prénom, connexion et appareils',account,requestedSettingsSection==='compte')+
+   settingGroup('Couple','♥',hasPartner?'Votre espace partagé et vos dates':'Invitations et état de la demande',partner,
+     !requestedSettingsSection||requestedSettingsSection==='couple')+
+   settingGroup('Notifications','♧','Rappels et préférences',notifications,requestedSettingsSection==='notifications')+
+   settingGroup('Jeu et personnalisation','🎲','Modifier les cartes et activités',game,requestedSettingsSection==='jeu')+
+   settingGroup('Application','▣','Installation et mises à jour',appSettings,requestedSettingsSection==='application')+
+   settingGroup('Confidentialité','♙','Journal chiffré et données personnelles',privacy,requestedSettingsSection==='confidentialite')+
+   settingGroup('Aide','?','Informations et fonctionnement',support,requestedSettingsSection==='aide')+'</div>',
   'RÉGLAGES','Compte, couple, notifications et confidentialité');
 }
 async function refreshAndShow(){await refreshShared();render();}
@@ -1137,6 +1146,15 @@ async function handle(action,element){
   const u=new URL(CONFIG.siteUrl);u.hash='invite='+token;
   await navigator.clipboard.writeText(u.toString());
   notify('Lien copié. Ouvrez Safari et collez ce lien dans la barre d’adresse.');return;
+ }
+ if(verb==='native-update'){
+  if(!window.LoveRollNativeAuth?.checkForUpdates)throw Error('Vérification des mises à jour disponible dans l’APK Android.');
+  window.LoveRollNativeAuth.checkForUpdates();return;
+ }
+ if(verb==='native-legacy'){
+  if(!window.LoveRollNativeAuth?.openLegacyOffline)throw Error('Anciennes données locales disponibles dans l’APK Android.');
+  if(!confirm('Ouvrir votre ancien espace local Android ? Les données hors ligne ne sont pas synchronisées avec votre couple connecté.'))return;
+  window.LoveRollNativeAuth.openLegacyOffline();return;
  }
  if(verb==='show-install-guide'){
   state.showInstallSteps=true;
