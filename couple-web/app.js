@@ -331,8 +331,7 @@ function renderCoupleOverview(){
  return '<section class="card"><div class="eyebrow">♡ VOTRE COUPLE</div>'+
  '<h3>Notre histoire en chiffres</h3>'+
  '<p>En couple depuis le <strong>'+safe(formatCoupleDate(started))+'</strong></p>'+
- (isLoveAdmin()?'<label>Date du début de notre relation<input type="date" id="couple-started-on" max="'+safe(today())+'" value="'+safe(started||'')+'"></label>'+
-  button('save-couple-date','Enregistrer notre date','class="subtle"'):'')+
+ 
  '<div class="stat-grid"><div class="stat"><strong>'+safe(cs.percentage===null?'—':cs.percentage+' %')+'</strong><small>Soirées terminées</small></div>'+
  '<div class="stat"><strong>'+cs.completed+' / '+cs.opened+'</strong><small>Soirées jouées</small></div>'+
  '<div class="stat"><strong>'+cs.challengesDone+'</strong><small>Défis réalisés</small></div></div>'+
@@ -528,6 +527,9 @@ function renderSession(){
   }else body+=button('cancel-session','Arrêter sans la compter','class="subtle"');
  }
  body+='</section>';
+ body+='<section class="card"><h3>♡ Nos calendriers</h3>'+
+  button('tab:journal','Ouvrir notre calendrier partagé','class="subtle"')+
+  button('tab:personal-journal','Ouvrir mon calendrier personnel','class="subtle"')+'</section>';
  if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
  frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
