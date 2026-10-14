@@ -1215,15 +1215,12 @@ function initSettingsAccordion(){
   }catch(error){console.warn('Préférence locale non disponible',error);}
  };
  for(const group of groups){
-  group.addEventListener('toggle',()=>{
-   if(group.open){
-    for(const other of groups)if(other!==group&&other.open)other.open=false;
-    settingsOpenSection=group.dataset.settingsSection;
-    saveOpen(settingsOpenSection);
-   }else if(!groups.some(item=>item.open)){
-    settingsOpenSection='';
-    saveOpen('');
-   }
+  group.querySelector('summary')?.addEventListener('click',event=>{
+   event.preventDefault();
+   const shouldOpen=!group.open;
+   for(const other of groups)other.open=shouldOpen&&other===group;
+   settingsOpenSection=shouldOpen?group.dataset.settingsSection:'';
+   saveOpen(settingsOpenSection);
   });
  }
 }
