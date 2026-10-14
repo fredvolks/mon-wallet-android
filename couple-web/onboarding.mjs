@@ -91,7 +91,7 @@ export function authHtml(invitation=false){
  '<label>Code à 6 chiffres (si présent dans le courriel)<input id="signin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></label>'+
  button('verify-email-code','Me connecter avec mon code','subtle')+'</details>'+ 
  '<p class="tiny-note">Connexion sécurisée · Votre invitation reste personnelle pendant 7 jours.</p>'+
- button('discover-loveroll','♡ Découvrir LoveRoll','text-link') (invitation?button('invite-return','← Retour à l’invitation','text-link'):'')+'</div>';
+ button('discover-loveroll','♡ Découvrir LoveRoll','text-link')+ (invitation?button('invite-return','← Retour à l’invitation','text-link'):'')+'</div>';
 }
 // Custom in-app chooser: Android WebView's native <select> popup uses the OS
 // light theme and ignores CSS. Use a themed modal for both wellbeing questions.
