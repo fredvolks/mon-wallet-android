@@ -6,11 +6,11 @@ import {sharedEveningTurns,evenLabels} from './evening-turns.mjs';
 const a='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const b='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const members=[{user_id:a},{user_id:b}],id='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const session={id,opened_by:a,starting_user_id:a,paired_turns:true};
+const session={id,opened_by:a,starting_user_id:a,paired_turns:true,self_draws:true};
 const rolls=(aCount,bCount)=>[{user_id:a,face:aCount},{user_id:b,face:bCount}];
 const cards=(completedA,completedB)=>[
- ...Array.from({length:completedA},(_,i)=>({id:'a'+i,offered_by:a,recipient:b,status:'completed'})),
- ...Array.from({length:completedB},(_,i)=>({id:'b'+i,offered_by:b,recipient:a,status:'completed'}))
+ ...Array.from({length:completedA},(_,i)=>({id:'a'+i,recipient:a,offered_by:b,status:'completed'})),
+ ...Array.from({length:completedB},(_,i)=>({id:'b'+i,recipient:b,offered_by:a,status:'completed'}))
 ];
 
 test('4 versus 2 alternates A B A B A A on both accounts',()=>{
@@ -21,7 +21,7 @@ test('4 versus 2 alternates A B A B A A on both accounts',()=>{
   assert.equal(state.pending,null);
   assert.equal(state.first,a);
   assert.deepEqual(state.targets,{[a]:4,[b]:2});
-  history.push({id:String(i),offered_by:state.next,recipient:state.next===a?b:a,status:'completed'});
+  history.push({id:String(i),recipient:state.next,offered_by:state.next===a?b:a,status:'completed'});
  }
  assert.deepEqual(history.map(x=>x.offered_by),[a,b,a,b,a,a]);
  assert.equal(sharedEveningTurns(session,members,rolls(4,2),history).finished,true);
@@ -48,7 +48,7 @@ test('gift with TWO challenges moves one remaining turn to the other, no six min
 });
 
 test('pending challenge blocks next roll and cannot itself be gifted',()=>{
- const pending={id:'open',offered_by:a,recipient:b,status:'proposed'};
+ const pending={id:'open',recipient:a,offered_by:b,status:'proposed'};
  const state=sharedEveningTurns(session,members,rolls(1,2),[pending]);
  assert.equal(state.pending?.id,'open');
  assert.equal(state.remaining[a],0);
@@ -74,4 +74,18 @@ test('baseline weekly result remains unique to the couple for one week',()=>{
  const schema=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
  assert.match(schema,/unique\(couple_id,kind,key\)/);
  assert.match(schema,/when a<50 then 1 when a<75 then 2 when a<87 then 3/);
+});
+
+test('Gift receiver chooses exact category while ordinary draws retain 88/12',()=>{
+ const migration=readFileSync(new URL('./migrations/20261014_gift_challenge_category.sql',import.meta.url),'utf8');
+ assert.match(migration,/if capacity>0 and \(not gifted_turn or v_cat=p_preference\)/);
+ assert.match(migration,/case when gifted_turn then 100 when v_cat=p_preference then 88 else 12 end/);
+ assert.match(migration,/is_gifted boolean not null default false/);
+ assert.match(migration,/completed_by_me>=greatest\(0,base_turns-donated_turns\)/);
+});
+test('A gifted challenge is RECEIVED by the partner, who rolls their own turn',()=>{
+ const migration=readFileSync(new URL('./migrations/20261014_self_received_challenge_gifts.sql',import.meta.url),'utf8');
+ assert.match(migration,/if s.self_draws then target:=auth.uid\(\)/);
+ assert.match(migration,/recipient=auth.uid\(\) and status='completed'/);
+ assert.match(migration,/self_draws boolean not null default false/);
 });
