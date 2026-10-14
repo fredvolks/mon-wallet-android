@@ -72,7 +72,7 @@ function inviteBrowserHelp(){
 }
 function invitationLandingHeader(){
  return '<section class="premium-invite-hero" aria-label="Votre invitation LoveRoll">'+
- '<div class="premium-invite-photo"><img src="./assets/loveroll-hero.webp" alt="Cœur rose lumineux et deux dés noirs LoveRoll" loading="eager"></div>'+
+ '<div class="premium-invite-photo"><img src="./assets/loveroll-premium-scene.png" alt="Cœur rose lumineux et deux dés noirs LoveRoll" loading="eager"></div>'+
  '<div class="premium-eyebrow">♡ LOVEROLL · INVITATION PRIVÉE</div>'+
  '<h2>Une surprise rien que pour vous deux ❤️</h2>'+
  '<p>Partagez des moments de complicité, des défis et de belles surprises à votre rythme.</p>'+
