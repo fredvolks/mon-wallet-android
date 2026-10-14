@@ -399,7 +399,7 @@ test('Unpaired members only see invitation, personal account, calendar and priva
            app.includes("state.tab==='library'&&isLoveAdmin()"));
  assert.ok(app.includes("if(verb==='prepare-cards')"));
  assert.ok(app.includes("state.tab='library'"));
- assert.ok(app.includes("['home','settings','library','personal-journal']"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library']"));
  for(const forbidden of ['renderSoloSession','renderSoloSpecial','renderSoloOccasions',
   'renderSoloAdvent','renderSolo()','solo-roll','solo-category','solo-advent',
   'SOLO_MESSAGE','drawSoloFace','state.solo','loveroll-skip']){
@@ -417,7 +417,7 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("p_anniversary_md:null"));
  assert.ok(app.includes("if(!state.coupleId)await rpc('create_love_match'"));
  assert.ok(app.includes("isLoveAdmin()"));
- assert.ok(app.includes("state.customCards=state.couple?.owner_user_id===state.user.id"));
+ assert.ok(app.includes("if(state.couple?.owner_user_id===state.user.id)"));
  assert.ok(app.includes("save_love_card_with_roles"));
  assert.ok(app.includes("button('tab:library','♡ Gérer mes 70 cartes')"));
  assert.ok(app.includes("button('invite','♡ Préparer l’invitation')"));
