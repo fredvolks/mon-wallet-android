@@ -24,7 +24,7 @@ import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,instal
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
-const WEB_RELEASE='2026-10-14.34';
+const WEB_RELEASE='2026-10-14.35';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -1222,24 +1222,31 @@ function renderCoupleDateSetting(){
 }
 function initSettingsAccordion(){
  const groups=[...root.querySelectorAll('details.settings-group[data-settings-section]')];
- groups.forEach(group=>group.addEventListener('toggle',()=>{
-  const key=group.dataset.settingsSection;
-  if(group.open){
-   settingsOpenSection=key;
-   for(const other of groups)if(other!==group)other.open=false;
-   sessionStorage.setItem('loveroll-settings-section',key);
-  }else if(settingsOpenSection===key&&!groups.some(other=>other.open)){
-   settingsOpenSection='';
-   sessionStorage.removeItem('loveroll-settings-section');
-  }
- }));
+ const saveOpen=section=>{
+  try{
+   if(section)sessionStorage.setItem('loveroll-settings-section',section);
+   else sessionStorage.removeItem('loveroll-settings-section');
+  }catch(error){console.warn('Préférence locale non disponible',error);}
+ };
+ for(const group of groups){
+  group.addEventListener('toggle',()=>{
+   if(group.open){
+    for(const other of groups)if(other!==group&&other.open)other.open=false;
+    settingsOpenSection=group.dataset.settingsSection;
+    saveOpen(settingsOpenSection);
+   }else if(!groups.some(item=>item.open)){
+    settingsOpenSection='';
+    saveOpen('');
+   }
+  });
+ }
 }
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
  const account='<div class="settings-split settings-account-top">'+
   '<div class="settings-identity"><strong>Compte connecté</strong><p>'+safe(state.user.email||'Courriel privé')+'</p></div>'+
   '<label class="settings-inline-name"><span>Prénom affiché</span>'+
-  '<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label></div>'+
+  '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label></div>'+
   '<div class="settings-actions">'+
   button('profile','Enregistrer mon prénom','class="settings-primary"')+
   button('signout','Déconnexion','class="subtle settings-secondary"')+'</div>'+
@@ -1274,10 +1281,10 @@ function renderSettings(){
     '</div></div>';
   }).join(''):'';
  const game=isLoveAdmin()?
-  settingRow('Cartes et défis','Personnaliser les 70 cartes et les règles de tirage.','tab:library','Mes cartes')+
-  settingRow('Activités du mois','Modifier les 20 idées de sortie.','tab:monthly-library','Modifier')+
-  settingRow('Calendrier de l’Avent','Configurer les 25 journées privées.','tab:advent-editor','Modifier')+
-  settingRow('Événements spéciaux','Gérer les fêtes et leurs deux surprises.','tab:special-editor','Modifier')+
+  settingRow('Mes cartes','70 défis · 35 Sensuel et 35 Sexuel.','tab:library','Modifier')+
+  settingRow('Activités du mois','20 activités du dé D20.','tab:monthly-library','Modifier')+
+  settingRow('Calendrier de l’Avent','25 surprises du calendrier partagé.','tab:advent-editor','Modifier')+
+  settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
   celebrants:
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
  const adminWeekly=isLoveAdmin()&&hasPartner?
@@ -1298,31 +1305,42 @@ function renderSettings(){
   settingRow('Ajouter LoveRoll à l’écran d’accueil',
     'Installation recommandée sur Safari iPhone et iPad.','show-install-guide','Afficher'))+
   '<div class="settings-item"><div><strong>Version Web '+WEB_RELEASE+'</strong>'+
-  '<p>Vérification automatique des mises à jour et cache réseau renouvelé.</p></div></div>'+
+  '<p>Version du contenu Web actuellement chargé.</p></div></div>'+
   settingRow('Actualiser LoveRoll maintenant',
    'Force le chargement de la dernière version sans supprimer votre compte ni vos défis.',
    'reload-web','Actualiser')+
   '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
- const privacy='<p>Votre journal commun est chiffré. Vos réponses individuelles sur le ressenti restent privées.</p>'+
+ const privacy=(linked?settingRow('Journal partagé','Consulter le journal commun et son calendrier.','tab:journal','Ouvrir'):'')+
   (nativeApp?settingRow('Mes anciennes données hors ligne',
    'Ouvrir volontairement le journal Android local non synchronisé.','native-legacy','Ouvrir'):'')+
   (linked?button('lock','Verrouiller le journal partagé','class="subtle"'):'')+
   '<div class="settings-item"><div><strong>Mon ressenti</strong><p>Réglages personnels et confidentiels.</p></div></div>'+
   wellbeingFields(state.wellbeing)+button('save-wellbeing','Enregistrer mon ressenti','class="subtle"');
- const support='<div class="settings-item"><div><strong>Aide et informations</strong>'+
-  '<p>Invitation par SMS, Messenger ou courriel. Le lien est privé et expire après 7 jours.</p>'+
-  '<p>Vous pouvez toujours refuser un défi et faire une pause.</p>'+
-  '<p>Même expérience sur Android, iPhone et iPad. Les écrans s’adaptent à la taille de chaque appareil.</p></div></div>';
+ const helpEntries=[
+  ['Association des comptes','Une invitation privée relie deux comptes distincts après acceptation.'],
+  ['Dé hebdomadaire','Un seul tirage officiel par couple et par semaine, renouvelé le lundi.'],
+  ['Soirée et défis','Chacun joue les défis qui lui sont attribués et peut les refuser.'],
+  ['Cadeaux','Les cadeaux restent dans l’historique commun prévu pour le couple.'],
+  ['Rendez-vous surprise','Les dés vous proposent une activité et déterminent qui invite.'],
+  ['Événements spéciaux','Les occasions et leurs variantes se gèrent dans Jeu et personnalisation.'],
+  ['Calendrier de l’Avent','Une seule ouverture officielle par journée pour le couple.'],
+  ['Synchronisation','Les données partagées se mettent à jour entre les comptes connectés.'],
+  ['Confidentialité','Le ressenti de chaque personne demeure individuel.'],
+  ['Mises à jour','Vérifiez les versions Android et actualisez le contenu Web dans Application.']
+ ];
+ const support='<div class="settings-help-list">'+helpEntries.map(([title,answer])=>
+  '<details class="settings-help-item"><summary>'+safe(title)+'<span aria-hidden="true">⌄</span></summary>'+
+  '<p>'+safe(answer)+'</p></details>').join('')+'</div>';
  frame('<div class="settings-grid">'+
-   settingGroup('Compte','♙','Prénom, connexion et appareils',account,requestedSettingsSection==='compte')+
+   settingGroup('Compte','♙','Gérez votre compte et votre appareil',account,requestedSettingsSection==='compte')+
    settingGroup('Couple','♥',hasPartner?'Votre espace partagé et vos dates':'Invitations et état de la demande',partner,
      !requestedSettingsSection||requestedSettingsSection==='couple')+
    settingGroup('Notifications','♧','Rappels et préférences',notifications,requestedSettingsSection==='notifications')+
-   settingGroup('Jeu et personnalisation','🎲','Modifier les cartes et activités',game,requestedSettingsSection==='jeu')+
-   (adminWeekly?settingGroup('Administration','♛','Reset hebdomadaire réservé au créateur du couple',adminWeekly,
-     requestedSettingsSection==='admin'):'')+
-   settingGroup('Application','▣','Installation et mises à jour',appSettings,requestedSettingsSection==='application')+
-   settingGroup('Confidentialité','♙','Journal chiffré et données personnelles',privacy,requestedSettingsSection==='confidentialite')+
+   settingGroup('Jeu et personnalisation','🎲','Cartes, activités et surprises',game,requestedSettingsSection==='jeu')+
+   settingGroup('Administration','♛','Gestion des tirages',adminWeekly||'<p class="settings-limited">Réservé au créateur du couple. Aucun accès aux commandes administrateur.</p>',
+     requestedSettingsSection==='admin')+
+   settingGroup('Application','▣','Version et mises à jour',appSettings,requestedSettingsSection==='application')+
+   settingGroup('Confidentialité','♙','Journal, données et ressenti',privacy,requestedSettingsSection==='confidentialite')+
    settingGroup('Aide','?','Informations et fonctionnement',support,requestedSettingsSection==='aide')+'</div>',
   'RÉGLAGES','Compte, couple, notifications et confidentialité');
  initSettingsAccordion();
