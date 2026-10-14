@@ -900,3 +900,25 @@ test('Settings groups remain settings-only; after-party forms live under Soirée
  assert.match(app,/LoveRollNativeAuth\?\.openShare/);
  assert.match(app,/navigator\.share/);
 });
+
+test('Android APK and Web use one shared LoveRoll interface; iPad layout is adaptive',()=>{
+ const manifest=readFileSync(new URL('../app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
+ const native=readFileSync(new URL('../app/src/main/java/ca/desadeux/jeu/ConnectedLoveRollActivity.java',import.meta.url),'utf8');
+ const css=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
+ const install=readFileSync(new URL('./home-install.mjs',import.meta.url),'utf8');
+ assert.match(manifest,/<activity android:name="\\.ConnectedLoveRollActivity" android:exported="true"/);
+ assert.match(manifest,/<intent-filter><action android:name="android.intent.action.MAIN"\/><category android:name="android.intent.category.LAUNCHER"\/><\/intent-filter>/);
+ const mainBlock=manifest.slice(manifest.indexOf('<activity android:name=".MainActivity"'),manifest.indexOf('</activity>',manifest.indexOf('<activity android:name=".MainActivity"')));
+ assert.doesNotMatch(mainBlock,/android.intent.category.LAUNCHER/);
+ assert.doesNotMatch(native,/Button back = new Button/);
+ assert.match(native,/web.loadUrl\(SITE\+suffix\)/);
+ assert.match(native,/openLegacyOffline/);
+ assert.match(native,/checkForUpdates/);
+ assert.match(app,/settings-grid/);
+ assert.match(app,/native-legacy/);
+ assert.match(app,/native-update/);
+ assert.match(css,/@media \(min-width:768px\)/);
+ assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(install,/navigator.platform==='MacIntel'/);
+});
