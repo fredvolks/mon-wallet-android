@@ -110,6 +110,16 @@ main#app.loveroll-surprise-page{
 .evening-play{display:grid;grid-template-columns:49% minmax(0,1fr);gap:7px;min-height:0;flex:1}
 .evening-d35-col{min-height:0;display:flex;flex-direction:column;align-items:stretch}
 .evening-d35-col .love3d{flex:1;min-height:0}
+.evening-d35-result{
+ align-self:center;flex:none;min-height:19px;max-width:100%;margin:0 0 2px;
+ padding:3px 10px;border-radius:999px;
+ border:1px solid #fb7db29c;
+ background:linear-gradient(110deg,#64153eb8,#400c2fc9);
+ color:#ffe0f0;text-align:center;
+ font-size:clamp(.63rem,2.03vw,.8rem);font-weight:850;line-height:1.15;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ box-shadow:0 0 10px #ff368b35;
+}
 .evening-play-state{
  font-size:clamp(.6rem,2vw,.77rem);text-align:center;color:#ff9eca;
  font-weight:750;line-height:1.1;padding-bottom:2px
