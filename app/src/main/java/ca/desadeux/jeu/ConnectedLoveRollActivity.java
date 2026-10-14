@@ -119,6 +119,23 @@ public final class ConnectedLoveRollActivity extends Activity {
     }catch(Exception e){show("Export JSON impossible : "+e.getMessage());}
    });
   }
+  // Email is composed in the user's chosen email app, never auto-sent.
+  @JavascriptInterface public void openEmail(String recipient,String subject,String body){
+   runOnUiThread(()->{
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    if(recipient==null||recipient.length()>254||!android.util.Patterns.EMAIL_ADDRESS.matcher(recipient).matches()){
+     show("Adresse courriel invalide.");return;
+    }
+    try {
+     Intent email=new Intent(Intent.ACTION_SENDTO);
+     email.setData(Uri.parse("mailto:"));
+     email.putExtra(Intent.EXTRA_EMAIL,new String[]{recipient});
+     email.putExtra(Intent.EXTRA_SUBJECT,subject==null?"Invitation LoveRoll":subject);
+     email.putExtra(Intent.EXTRA_TEXT,body==null?"":body);
+     startActivity(Intent.createChooser(email,"Envoyer mon invitation LoveRoll"));
+    }catch(Exception e){show("Aucune application courriel disponible. Utilisez Copier le lien.");}
+   });
+  }
   // Free SMS share: opens the system composer, never sends silently.
   @JavascriptInterface public void openSms(String message) {
    runOnUiThread(() -> {
