@@ -4,6 +4,7 @@ import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} fro
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
+import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
@@ -674,6 +675,31 @@ function renderOccasions(){
  body+='<section class="card">'+button('tab:settings','⚙ Définir nos dates')+'</section>';
  frame(body,'FÊTES ET ANNIVERSAIRES','Un moment LoveRoll pensé pour chaque grande occasion');
 }
+function portableLibrary(kind){
+ if(kind==='evening')return buildEveningLibrary(state.customCategory,state.customCards);
+ if(kind==='monthly')return buildMonthlyLibrary(state.monthlyActivities);
+ if(kind==='advent')return calendarFromSaved(state.advent2026Config,state.advent2026Days);
+ if(kind==='special')return state.specialEventsConfig;
+ throw Error('Type de bibliothèque inconnu.');
+}
+function exportLibraryFile(kind){
+ const data=portableLibrary(kind);
+ if(!data)throw Error('Aucun contenu enregistré dans cette liste.');
+ librarySummary(data,kind);
+ const label=kind==='evening'?'soiree-'+state.customCategory.toLowerCase():kind;
+ return exportJsonFile('loveroll-'+label+'.json',JSON.stringify(data,null,2));
+}
+function previewPortableJson(kind){
+ const text=id(jsonInputId(kind))?.value||'';
+ if(!text.trim())throw Error('Choisissez un fichier JSON ou collez son contenu.');
+ if(new Blob([text]).size>MAX_IMPORT_BYTES)throw Error('Le JSON ne doit pas dépasser 250 Ko.');
+ let data;
+ try{data=JSON.parse(text);}catch{throw Error('Syntaxe JSON invalide (virgules, guillemets, accolades).');}
+ normalizeLibraryData(data,kind);
+ if(kind==='evening'&&data.category!==state.customCategory)
+  throw Error('Choisissez la catégorie '+data.category+' avant cet import.');
+ state.jsonPending={kind,data,summary:librarySummary(data,kind)};
+}
 function renderSpecialEventsEditor(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
  const current=state.specialEventsConfig;
@@ -687,7 +713,7 @@ function renderSpecialEventsEditor(){
    ' spellcheck="false" placeholder="{ &quot;evenements_speciaux&quot;: { ... } }">'+
    safe(current?JSON.stringify(current,null,2):'')+'</textarea></label>'+
   button('import-special-events','♡ Enregistrer les 6 événements')+
-  '</section>';
+  '</section>'+jsonToolsPanel('special','6 événements spéciaux',state.jsonPending);
  if(current){
   body+='<section class="card"><h3>Mes surprises préparées</h3>'+
    '<p class="tiny-note">Aperçu réservé à l’administrateur.</p>'+
@@ -743,7 +769,7 @@ function renderAdventEditor(){
   ' placeholder="{ &quot;calendar_title&quot;: &quot;...&quot;, &quot;year&quot;: 2026, &quot;days&quot;: [...] }">'+
    safe(calendar?JSON.stringify(calendar,null,2):'')+'</textarea></label>'+
    button('import-advent-2026','♡ Enregistrer les 25 cases')+
-  '</section>';
+  '</section>'+jsonToolsPanel('advent','25 cases de l’Avent',state.jsonPending);
  if(calendar){
   body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
    '<p class="tiny-note">Ce récapitulatif est privé. Votre partenaire ne voit les consignes qu’en ouvrant les cases autorisées.</p>'+
@@ -963,7 +989,7 @@ function renderCardLibrary(){
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
     '<button class="pill '+(category===c?'selected':'')+
     '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
-  '</section>'+
+  '</section>'+jsonToolsPanel('evening',names[category],state.jsonPending)+
   '<section class="card"><div class="eyebrow">RÈGLE DE PIGE</div>'+
   '<h3>Éviter les répétitions</h3>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="no-repeat-cards"'+
@@ -1016,7 +1042,8 @@ function renderMonthlyLibrary(){
   '<p>Changez les 20 résultats du D20, même avant d’inviter votre partenaire. Vous pouvez remplacer complètement une idée de sortie et sa description.</p>'+
   '<div class="custom-card-tiles">'+tiles+'</div>'+
   '<p class="tiny-note">Les changements seront utilisés aux prochains tirages. Le résultat déjà obtenu ce mois-ci reste inchangé pour les deux partenaires.</p>'+
-  '</section><section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
+  '</section>'+jsonToolsPanel('monthly','20 activités du mois',state.jsonPending)+
+  '<section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
   '<h3>'+safe(entry.title)+'</h3>'+
   '<label>Nom de l’activité<input id="monthly-title" maxlength="120" value="'+
     safe(entry.title)+'" placeholder="Ex. Soirée au chalet"></label>'+
