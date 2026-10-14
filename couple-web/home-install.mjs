@@ -28,8 +28,9 @@ export function dismissInstall(userId,store=globalThis.localStorage){
 }
 export function installSteps(){
  const agent=typeof navigator!=='undefined'?navigator.userAgent:'';
- if(/iPhone|iPad|iPod/i.test(agent))
-  return {system:'ios',text:'Dans Safari, touchez Partager (carré avec une flèche), puis « Sur l’écran d’accueil » et « Ajouter ». Si vous utilisez un autre navigateur, ouvrez LoveRoll dans Safari.'};
+ const iPadOS=typeof navigator!=='undefined'&&navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+ if(/iPhone|iPad|iPod/i.test(agent)||iPadOS)
+  return {system:'ios',text:'Dans Safari sur iPhone ou iPad, touchez Partager (carré avec une flèche), choisissez « Sur l’écran d’accueil », puis « Ajouter ». Si vous utilisez un autre navigateur, ouvrez d’abord LoveRoll dans Safari.'};
  return {system:'android',text:'Dans Chrome, ouvrez le menu ⋮, puis « Installer l’application » ou « Ajouter à l’écran d’accueil ». Confirmez ensuite l’installation.'};
 }
 export async function requestInstall(){
