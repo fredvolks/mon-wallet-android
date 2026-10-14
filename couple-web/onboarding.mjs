@@ -159,13 +159,24 @@ export function wellbeingFields(current=null){
  wellnessSelect('Comment va votre couple en ce moment ?','wellbeing-relationship',RELATIONSHIP_OPTIONS,current?.relationship_state)+
  wellnessSelect('Comment va votre sexualité dans votre couple ?','wellbeing-intimacy',INTIMACY_OPTIONS,current?.intimacy_state);
 }
-export function wellbeingHtml(current=null){
+export function wellbeingHtml(current=null,user=null){
  return '<div class="auth-panel"><div class="eyebrow">MON RESSENTI · CONFIDENTIEL</div>'+
- '<h2>Des soirées à votre rythme ♡</h2>'+wellbeingFields(current)+
+ '<h2>Des soirées à votre rythme ♡</h2>'+profileAccountChoiceHtml(user)+wellbeingFields(current)+
  button('save-wellbeing','Enregistrer mes réponses')+
  '<p class="tiny-note">Vos réponses sont modifiables à tout moment dans Réglages.</p></div>';
 }
 
+export function profileAccountChoiceHtml(user){
+ // These screens are rendered for an already authenticated Supabase session.
+ // Show which identity is active and offer a way back to sign-in without deleting a profile.
+ const email=user?.email?esc(user.email):'un compte connecté';
+ return '<div class="profile-account-choice" role="group" aria-label="Compte LoveRoll">'+
+ '<p>Compte actuellement connecté : <strong>'+email+'</strong></p>'+
+ '<button type="button" class="profile-switch-account" data-action="use-existing-account">'+
+ '↗ Se connecter à mon compte existant</button>'+
+ '<small>Si c’est bien votre compte, complétez seulement les informations manquantes. Aucune donnée ne sera supprimée.</small>'+
+ '</div>';
+}
 export function inviteProfileHtml(user,profile){
  const name=profile?.display_name||user?.user_metadata?.given_name||
   user?.user_metadata?.full_name||user?.user_metadata?.name||'';
@@ -176,6 +187,7 @@ export function inviteProfileHtml(user,profile){
   '<div class="invite-progress-line"><i></i></div><div class="invite-progress-item is-current"><b>2</b><span>Votre profil</span></div></div></header>'+
   '<section class="invite-auth-card invite-profile-card"><h1>Un peu plus sur vous ♡</h1>'+
   '<p>Ces informations terminent votre inscription personnelle avant de rejoindre votre partenaire.</p>'+
+  profileAccountChoiceHtml(user)+
   '<label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+
   '<h3>Votre anniversaire</h3>'+monthDayInputs('signup-birth',profile?.birthday_md||'')+
   wellbeingFields()+
@@ -184,11 +196,12 @@ export function inviteProfileHtml(user,profile){
   '<p class="invite-small-note">Le mot de passe du compte et la phrase secrète du journal sont distincts.</p>'+
   '</section></div>';
 }
-export function inviteWellbeingHtml(current=null){
+export function inviteWellbeingHtml(current=null,user=null){
  return '<div class="invite-account-screen invite-profile-screen"><header class="invite-account-hero">'+
   '<div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
   '<p>LA COMPLICITÉ SE JOUE À DEUX</p></header>'+
   '<section class="invite-auth-card invite-profile-card"><h1>Votre ressenti ♡</h1>'+
+  profileAccountChoiceHtml(user)+
   wellbeingFields(current)+button('save-wellbeing','Continuer vers LoveRoll ♡','invite-auth-submit')+
   '</section></div>';
 }
@@ -197,6 +210,7 @@ export function profileHtml(user,profile){
  user?.user_metadata?.name||'';
  return '<div class="auth-panel"><div class="eyebrow">ÉTAPE 1 SUR 2 · MON PROFIL</div>'+
  '<h2>Enchanté·e ♡</h2>'+
+ profileAccountChoiceHtml(user)+
  '<p>Ton nom peut venir de Google ou Apple. Tu peux le corriger avant de continuer.</p>'+
  '<label>Mon nom à afficher<input id="profile-name" maxlength="80" autocomplete="given-name" value="'+esc(name)+'"></label>'+
  '<h3>🎂 Mon anniversaire</h3>'+
