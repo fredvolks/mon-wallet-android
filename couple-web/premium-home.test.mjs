@@ -73,7 +73,7 @@ test('Production home uses actual saved weekly result, disabled state and live c
  assert.match(rolling,/Brassage 3D en cours/);
  assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true"><\/strong>/);
 });
-test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and real 2.65s tumble',()=>{
+test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and real 3.1s tumble',()=>{
  assert.match(die,/\[1,\[0,0,1\]\],\[6,\[0,0,-1\]\]/);
  assert.match(die,/\[2,\[0,1,0\]\]/);
  assert.match(die,/\[5,\[0,-1,0\]\]/);
