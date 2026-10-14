@@ -1211,6 +1211,34 @@ async function handle(action,element){
   await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
   await reload();notify('Personne célébrée enregistrée.');return;
  }
+ if(verb==='json-export'){
+  if(!isLoveAdmin())throw Error('Export réservé à l’administrateur.');
+  await exportLibraryFile(parts[0]);notify('Sauvegarde JSON préparée.');return;
+ }
+ if(verb==='json-preview'){
+  if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
+  previewPortableJson(parts[0]);render();return;
+ }
+ if(verb==='json-cancel'){state.jsonPending=null;render();return;}
+ if(verb==='json-apply'){
+  if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
+  const preview=state.jsonPending;
+  if(!preview||preview.kind!==parts[0])throw Error('Prévisualisez d’abord votre JSON.');
+  normalizeLibraryData(preview.data,preview.kind);
+  if(!confirm('Remplacer la bibliothèque « '+preview.summary.label+' » avec '+
+    preview.summary.count+' éléments et '+preview.summary.timers+
+    ' minuteur(s) configuré(s) ? Les anciens tirages restent inchangés.'))return;
+  if(preview.kind==='evening')
+   await rpc('import_love_evening_library',{p_couple:state.coupleId,p_library:preview.data});
+  else if(preview.kind==='monthly')
+   await rpc('import_love_monthly_library',{p_couple:state.coupleId,p_library:preview.data});
+  else if(preview.kind==='advent')
+   await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:preview.data});
+  else if(preview.kind==='special')
+   await rpc('import_love_special_events',{p_couple:state.coupleId,p_events:preview.data});
+  state.jsonPending=null;await reload();
+  notify('Bibliothèque importée : les minuteries JSON sont activées pour les prochains tirages.');return;
+ }
  if(verb==='import-special-events'){
   if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
   let data;
