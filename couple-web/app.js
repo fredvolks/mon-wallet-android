@@ -70,7 +70,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
- const installation=connected&&shouldOfferInstall(state.user?.id)?
+ const installation=connected&&(state.forceInstallGuide||shouldOfferInstall(state.user?.id))?
   (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
  root.innerHTML='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+
@@ -988,71 +988,85 @@ function renderMonthlyLibrary(){
   button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
  frame(body,'MES ACTIVITÉS','20 sorties personnalisables et privées');
 }
+function settingGroup(title,icon,description,body,opened=false){
+ return '<details class="settings-group"'+(opened?' open':'')+'><summary>'+
+  '<span class="settings-group-icon">'+icon+'</span>'+
+  '<span class="settings-group-heading"><strong>'+safe(title)+'</strong><small>'+safe(description)+'</small></span>'+
+  '<span aria-hidden="true" class="settings-chevron">⌄</span></summary>'+
+  '<div class="settings-group-content">'+body+'</div></details>';
+}
+function settingRow(title,detail,action,label='Ouvrir'){
+ return '<div class="settings-item"><div><strong>'+safe(title)+'</strong><p>'+safe(detail)+'</p></div>'+
+   button(action,label,'class="subtle settings-mini-button"')+'</div>';
+}
+function renderCoupleDateSetting(){
+ const started=state.occasionSettings?.relationship_started_on||'';
+ return '<div class="settings-item"><div><strong>Notre date de couple</strong>'+
+  '<p>La date à laquelle votre histoire a commencé.</p></div></div>'+
+ (isLoveAdmin()?'<label>Date de début<input id="couple-started-on" type="date" max="'+safe(today())+
+  '" value="'+safe(started)+'"></label>'+
+  button('save-couple-date','Enregistrer notre date','class="subtle"'):
+  '<p>'+safe(formatCoupleDate(started))+'</p>')+
+ '<p class="tiny-note">Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>';
+}
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
- let partner='<section class="card"><h3>♡ Gérer mon couple</h3>';
+ const account='<div class="settings-item"><div><strong>Compte connecté</strong><p>'+
+  safe(state.user.email||'Courriel privé')+'</p></div></div>'+
+  '<label>Prénom affiché<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
+  button('profile','Enregistrer mon prénom','class="subtle"')+
+  '<p class="tiny-note">Anniversaire du profil : '+safe(state.profile.birthday_md)+
+  ' · Connexion Google ou courriel liée à ce compte.</p>'+
+  settingRow('Se déconnecter','Déconnecte uniquement cet appareil.','signout','Déconnexion');
+ let partner='';
  if(hasPartner){
-  partner+='<div class="invite-status"><strong>✓ Demande acceptée ❤️</strong><p>Votre couple est connecté.</p></div>'+
-  '<p>Partenaire actuel : '+safe(other()?.name||'Compte associé')+'</p>'+
-  '<p class="tiny-note">Dissocier les comptes retire immédiatement aux deux personnes l’accès à l’ancien calendrier partagé. Chaque personne conserve ses propres entrées dans son calendrier privé.</p>'+
-  button('end-couple','Retirer mon conjoint ou ma conjointe','class="subtle danger-action"');
+  partner='<div class="settings-item"><div><strong>♥ Couple connecté</strong>'+
+  '<p>'+safe(state.profile.display_name)+' et '+safe(other()?.name||'Votre partenaire')+
+  ' · Invitation acceptée</p></div></div>'+
+  renderCoupleDateSetting()+
+  '<p class="tiny-note">Un retrait coupe l’accès au journal partagé. Les entrées privées sont conservées.</p>'+
+  button('end-couple','Retirer mon partenaire','class="subtle danger-action"');
  }else if(linked){
-  partner+='<p>En attente de votre partenaire. Les invitations sont gérées juste en dessous.</p>'+
-  button('end-couple','Annuler cet espace à deux','class="subtle"');
- }else{
-  partner+='<p>Préparez vos défis avant même d’inviter votre conjointe.</p>'+
-  button('prepare-cards','♡ Créer mes défis avant l’invitation')+
-  button('start-couple','Ajouter un conjoint ou une conjointe','class="subtle"');
- }
- partner+='</section>';
- const libraryPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+ 
- '<h3>♡ Mes défis et cartes personnalisées</h3>'+ 
- '<p>Modifier les 70 cartes : durée, minuteur, personnes autorisées et règle anti-répétition.</p>'+ 
- button('tab:library','Gérer les défis')+'</section>':'';
- const monthlyPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
- '<h3>✦ Mes 20 activités du mois</h3>'+
- '<p>Remplacer les activités du D20, personnaliser leurs consignes et choisir celles qui sont liées à un restaurant.</p>'+
- button('tab:monthly-library','Modifier les 20 activités')+'</section>':'';
- frame('<section class="card"><h2>Mon compte</h2><p>'+
-  safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
-  '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
-  button('profile','Mettre à jour mon nom')+'</section>'+
-  partner+(hasPartner?renderCoupleOverview():(linked?renderInvitePanel():''))+libraryPanel+monthlyPanel+
-  (isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
-  '<h3>🎁 Calendrier de l’Avent 2026</h3>'+
-  '<p>Importer les 25 journées de votre calendrier JSON, sans modifier les titres ni les consignes.</p>'+
-  button('tab:advent-editor','Importer mon calendrier 2026')+'</section>':'')+
-  (isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
-  '<h3>💘 Mes événements spéciaux</h3>'+
-  '<p>Importer les 6 fêtes personnalisées avec leurs consignes et règles D6.</p>'+
-  button('tab:special-editor','Importer mes événements spéciaux')+'</section>':'')+
-  '<section class="card"><h3>♥ Mon calendrier personnel</h3>'+
-  '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
-  button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
-  (hasPartner?'<section class="card"><h3>♡ Notre journal commun</h3>'+
-   button('tab:journal','Ouvrir le calendrier et les statistiques')+
-   button('tab:feedback','Nos questionnaires de soirées','class="subtle"')+'</section>':'')+
-  '<section class="card"><h3>Mon ressenti · confidentiel</h3>'+wellbeingFields(state.wellbeing)+
-  button('save-wellbeing','Mettre à jour mes réponses')+
-  '<p class="tiny-note">Votre partenaire ne voit pas vos réponses individuelles. Les propositions de soirées utilisent une orientation générale.</p></section>'+
-  '<section class="card"><h3>🔐 Vie privée</h3><p>Les réponses restent privées. Votre ancien espace partagé est bloqué après une dissociation; les copies déjà conservées par quelqu’un ne peuvent pas être effacées à distance.</p>'+
-  (linked?button('lock','Verrouiller le journal','class="subtle"'):'')+'</section>'+
-  '<section class="card"><h3>🎂 Mes dates</h3><p>Mon anniversaire : '+
-  safe(state.profile.birthday_md)+' (enregistré à mon inscription).</p>'+
-  (linked?'<p>Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>':'')+
-  '</section>'+
-  (isLoveAdmin()&&hasPartner?'<section class="card"><div class="eyebrow">FÊTES · ADMINISTRATEUR</div>'+
-   '<h3>À qui offrir la surprise ?</h3>'+
-   '<p>Fête des Mères / Femmes : l’autre partenaire offre. Fête des Pères / Hommes : même règle inversée. On ne brasse pas pour changer ces rôles.</p>'+
-   TARGETED_OCCASIONS.map(key=>{
-    const entry=OCCASIONS.find(o=>o.key===key),chosen=state.occasionSettings?.celebrants?.[key];
-    return '<div class="muted-line"><strong>'+safe(entry.title)+'</strong>'+
-     '<div class="chipline">'+state.members.map(m=>
-      '<button class="pill '+(chosen===m.user_id?'selected':'')+
-      '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+'</div></div>';
-   }).join('')+'</section>':''),
-
- 'RÉGLAGES','Profil, confidentialité et gestion du partenaire');
+  partner=renderInvitePanel()+
+   '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
+   button('end-couple','Annuler mon espace à deux','class="subtle danger-action"');
+ }else partner='<p>Créez votre espace privé avant d’inviter votre partenaire.</p>'+
+  button('prepare-cards','Créer mon espace et mes cartes')+
+  button('start-couple','Préparer mon couple','class="subtle"');
+ const game=isLoveAdmin()?
+  settingRow('Cartes et défis','Personnaliser les 70 cartes et les règles de tirage.','tab:library','Mes cartes')+
+  settingRow('Activités du mois','Modifier les 20 activités du D20.','tab:monthly-library','Modifier')+
+  settingRow('Calendrier de l’Avent','Configurer les 25 journées privées.','tab:advent-editor','Modifier')+
+  settingRow('Événements spéciaux','Gérer les fêtes et leurs deux D6.','tab:special-editor','Modifier')+
+  (hasPartner?'<p class="tiny-note">Les paramètres des surprises restent réservés au créateur du couple.</p>':''):
+  '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
+ const notifications='<div class="settings-item"><div><strong>Notifications push</strong>'+
+  '<p>Dé hebdomadaire, invitation acceptée et événements spéciaux.</p></div></div>'+
+  '<p class="tiny-note">Les notifications automatiques nécessitent encore un service push configuré. '+
+  'Aucun SMS payant ne sera envoyé et aucun rappel ne sera annoncé comme actif avant sa mise en service.</p>';
+ const appSettings=settingRow('Ajouter LoveRoll à l’écran d’accueil',
+  'Accéder à l’application sans chercher le navigateur.','show-install-guide','Afficher')+
+  '<div class="settings-item"><div><strong>Version Web</strong>'+
+  '<p>Actualisation automatique du contenu à la réouverture avec connexion Internet.</p></div></div>'+
+  '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
+ const privacy='<p>Votre journal commun est chiffré. Vos réponses individuelles sur le ressenti restent privées.</p>'+
+  (linked?button('lock','Verrouiller le journal partagé','class="subtle"'):'')+
+  '<div class="settings-item"><div><strong>Mon ressenti</strong><p>Réglages personnels et confidentiels.</p></div></div>'+
+  wellbeingFields(state.wellbeing)+button('save-wellbeing','Enregistrer mon ressenti','class="subtle"');
+ const support='<div class="settings-item"><div><strong>Aide et informations</strong>'+
+  '<p>Invitation par SMS, Messenger ou courriel. Le lien est privé et expire après 7 jours.</p>'+
+  '<p>Vous pouvez toujours refuser un défi et faire une pause.</p>'+
+  '<p>Version Web de LoveRoll : accès Android et iPhone.</p></div></div>';
+ frame('<div class="settings-head"><div class="eyebrow">♡ VOTRE ESPACE À DEUX</div>'+
+   '<p>Retrouvez ici vos préférences, sans mélanger les jeux et les questionnaires.</p></div>'+
+   settingGroup('Compte','♙','Prénom, connexion et appareils',account)+
+   settingGroup('Couple','♥',hasPartner?'Votre espace partagé et vos dates':'Invitations et état de la demande',partner,true)+
+   settingGroup('Notifications','♧','Rappels et préférences',notifications)+
+   settingGroup('Jeu et personnalisation','🎲','Modifier les cartes et activités',game)+
+   settingGroup('Application','▣','Installation et mises à jour',appSettings)+
+   settingGroup('Confidentialité','♙','Journal chiffré et données personnelles',privacy)+
+   settingGroup('Aide','?','Informations et fonctionnement',support),
+  'RÉGLAGES','Compte, couple, notifications et confidentialité');
 }
 async function refreshAndShow(){await refreshShared();render();}
 async function animateRoll(fn){
@@ -1072,6 +1086,11 @@ function randomInviteToken(){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='show-install-guide'){
+  state.showInstallSteps=true;
+  state.forceInstallGuide=true;
+  render();return;
+ }
  if(verb==='install-home'){
   const result=await requestInstall();
   if(result.prompted&&result.accepted){dismissInstall(state.user?.id);state.showInstallSteps=false;}
@@ -1079,7 +1098,7 @@ async function handle(action,element){
   render();return;
  }
  if(verb==='install-later'||verb==='install-understood'){
-  dismissInstall(state.user?.id);state.showInstallSteps=false;render();return;
+  dismissInstall(state.user?.id);state.showInstallSteps=false;state.forceInstallGuide=false;render();return;
  }
  if(verb==='set-celebrant'){
   if(!isLoveAdmin())throw Error('Réglage réservé à l’administrateur.');
