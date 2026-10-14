@@ -1,5 +1,6 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
+import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
 import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
@@ -65,7 +66,7 @@ const person=u=>state.members.find(m=>m.user_id===u)?.name||'Partenaire';
 const button=(action,label,extra='')=>'<button '+extra+' data-action="'+safe(action)+'">'+label+'</button>';
 function inviteBrowserHelp(){
  const inApp=/FBAN|FBAV|Messenger|Instagram/i.test(navigator.userAgent||'');
- if(!inApp||!sessionStorage.getItem('pendingInvite'))return '';
+ if(!inApp||!pendingInviteReference(sessionStorage))return '';
  const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'')||
   (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
  return '<details class="premium-help"><summary>Ouvert depuis Messenger ? <span>Besoin d’aide</span></summary>'+
@@ -150,7 +151,7 @@ function bindActions(){
 function render(){
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
- const pendingInvite=sessionStorage.getItem('pendingInvite');
+ const pendingInvite=pendingInviteReference(sessionStorage);
  // Discover always shows a visual tour, never a second sign-in page.
  if(state.showDiscover){
   root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
@@ -168,6 +169,17 @@ function render(){
   }else frame(authHtml(!!pendingInvite)+inviteBrowserHelp(),'LOVEROLL',pendingInvite?'Connexion après acceptation':'Votre espace privé à deux');
   return;
  }
+ if(pendingInvite&&state.user&&state.coupleId){
+  root.innerHTML='<header class="header"><div><h1>♡ LOVEROLL</h1><p>Votre invitation privée</p></div></header>'+
+   '<section class="auth-panel invite-switch-account">'+
+   '<div class="eyebrow">♡ UTILISER LE BON COMPTE</div>'+
+   '<h2>Cette invitation attend un autre compte ❤️</h2>'+
+   '<p>Vous êtes connecté avec <strong>'+safe(state.user.email||'un compte existant')+
+   '</strong>. Pour rejoindre votre partenaire, utilisez le compte du destinataire.</p>'+
+   button('switch-account-invite','Changer de compte pour cette invitation')+
+   button('invite-return','← Revoir l’invitation','class="subtle"')+'</section>';
+  bindActions();return;
+ }
  if(!state.profile||!state.profile.birthday_md){
   frame(profileHtml(state.user,state.profile),'♡ MON PROFIL','Première connexion : inscription');
   return;
@@ -178,8 +190,10 @@ function render(){
  // No demonstration games without two linked accounts. The creator still
  // owns the private card editor and personal journal before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
-  if(!state.coupleId&&sessionStorage.getItem('pendingInvite')){
-   frame(invitationLandingHeader(false)+matchHtml(state.profile.display_name,true)+inviteBrowserHelp(),
+  if(!state.coupleId&&pendingInvite){
+   frame(invitationLandingHeader(false)+matchHtml(state.profile.display_name,true)+
+    '<p class="tiny-note">Compte utilisé : '+safe(state.user.email||'Compte connecté')+'</p>'+
+    button('switch-account-invite','Utiliser un autre compte','class="subtle"')+inviteBrowserHelp(),
     'LOVEROLL','Votre invitation privée');return;
   }
   if(state.tab==='settings')renderSettings();
@@ -1383,27 +1397,37 @@ async function handle(action,element){
   notify('Rappel local désactivé.');return;
  }
  if(verb==='invite-start'){
-  const token=sessionStorage.getItem('pendingInvite');
-  if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Invitation introuvable.');
+  const invite=pendingInviteReference(sessionStorage);
+  if(!invite)throw Error('Invitation introuvable.');
   state.inviteAccepted=true;state.showAuth=true;
-  sessionStorage.setItem('loverollInviteAccepted',token);
+  sessionStorage.setItem('loverollInviteAccepted',invite.kind+':'+invite.value);
   render();return;
  }
  if(verb==='discover-loveroll'){state.showDiscover=true;render();return;}
  if(verb==='discover-back'||verb==='invite-return'){
   state.showDiscover=false;
-  if(sessionStorage.getItem('pendingInvite')){
+  if(pendingInviteReference(sessionStorage)){
    state.inviteAccepted=false;state.showAuth=false;
    sessionStorage.removeItem('loverollInviteAccepted');
   }else state.showAuth=verb==='discover-back';
   render();return;
  }
  if(verb==='copy-invite-for-browser'){
-  const token=sessionStorage.getItem('pendingInvite');
-  if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Lien d’invitation introuvable.');
-  const u=new URL(CONFIG.siteUrl);u.searchParams.set('share','3');u.hash='invite='+token;
-  await navigator.clipboard.writeText(u.toString());
-  notify('Lien copié. Ouvrez Safari et collez ce lien dans la barre d’adresse.');return;
+  const invite=pendingInviteReference(sessionStorage);
+  if(!invite)throw Error('Lien d’invitation introuvable.');
+  const url=invite.kind==='id'?inviteLinkForId(CONFIG.siteUrl,invite.value):
+   CONFIG.siteUrl+'?v='+INVITATION_REVISION+'#invite='+invite.value;
+  await navigator.clipboard.writeText(url);
+  notify('Lien complet copié. Collez-le dans Chrome ou Safari.');return;
+ }
+ if(verb==='switch-account-invite'){
+  if(!pendingInviteReference(sessionStorage))throw Error('Invitation introuvable.');
+  state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
+  if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
+  const {error}=await client.auth.signOut();
+  if(error)throw error;
+  state.user=null;state.profile=null;state.coupleId=null;state.members=[];
+  state.inviteAccepted=true;state.showAuth=true;render();return;
  }
  if(verb==='native-update'){
   if(!window.LoveRollNativeAuth?.checkForUpdates)throw Error('Vérification des mises à jour disponible dans l’APK Android.');
