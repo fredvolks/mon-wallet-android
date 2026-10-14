@@ -47,7 +47,7 @@ test('D35 always visible and rolling face not displayed as text before settling'
  assert.match(css,/\.love3d-stage\.is-rolling \.dice-fallback/);
  assert.match(die, /canvas\.dataset\.diceMarkers==='pips'/);
  assert.match(die,/canvas\.dataset\.diceZoom/);
- assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,2750\)\)/);
+ assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,3250\)\)/);
 });
 test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:turns,
