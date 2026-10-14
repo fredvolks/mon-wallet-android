@@ -508,7 +508,8 @@ function renderSession(){
    }else if(otherActive){const giving=resolvedCard(otherActive);
     body+='<section class="card"><div class="challenge-roles">♡ '+safe(state.profile.display_name).toUpperCase()+' OFFRE → '+safe(p.name).toUpperCase()+' REÇOIT</div>'+
     '<h3>Mon défi à offrir : '+safe(giving.title)+'</h3><p>'+safe(giving.description)+'</p>'+
-    timerWidget(otherActive,giving.minutes)+'</section>';
+    (active?'<p class="tiny-note">Minuteur et contrôle principal accessibles dans le défi reçu.</p>':
+     timerWidget(otherActive,giving.minutes))+'</section>';
    }
   }
   const myTarget=mine?.face||0,otherTarget=theirs?.face||0;
