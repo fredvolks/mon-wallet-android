@@ -21,6 +21,13 @@ export function formatCoupleDate(iso){
  const d=new Date(iso.slice(0,10)+'T12:00:00');
  return Number.isNaN(d.getTime())?'À compléter':new Intl.DateTimeFormat('fr-CA',{day:'numeric',month:'long',year:'numeric'}).format(d);
 }
+// Messenger supplies the title, description and artwork through Open Graph.
+// Keep the shared message short: no duplicate 'ACCEPTER' heading or paragraph.
+// The personalized URL is still required for the secure one-time invitation.
+export function invitationMessengerText(url){
+ if(typeof url!=='string'||!/^https:\/\//.test(url))throw Error('Lien d’invitation invalide.');
+ return '❤️ Une surprise à deux t’attend sur LoveRoll.\n\n'+url;
+}
 export function invitationEmailText(url){
  return '♡ LoveRoll — Une invitation juste pour nous deux\n\n'
   +'Notre aventure commence ici. Je t’invite à partager avec moi des moments de complicité, de surprises et de tendresse sur LoveRoll.\n\n'

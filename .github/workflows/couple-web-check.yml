@@ -26,6 +26,19 @@ jobs:
           node --check couple-web/invite-email.mjs
           node --check couple-web/push-notifications.mjs
           node --check couple-web/service-worker.js
+      - name: Validate Messenger image renderer
+        run: |
+          python3 -m pip install --user 'Pillow>=10,<13'
+          python3 couple-web/make-social-preview.py
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          path=Path('couple-web/assets/loveroll-invite-og.png')
+          with Image.open(path) as graphic:
+              assert graphic.size==(1200,630)
+              assert graphic.format=='PNG'
+          assert path.stat().st_size>30000
+          PY
       - name: Static security and logic contracts
         run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs
 

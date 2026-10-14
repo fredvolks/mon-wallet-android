@@ -13,7 +13,7 @@ import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
 import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup} from './push-notifications.mjs';
 import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
-import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationPreviewMarkup} from './couple-dashboard.mjs';
+import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
@@ -1209,7 +1209,9 @@ async function ensureInviteDraft(forceNew=false){
  if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
  const token=randomInviteToken(),digest=await hashToken(token);
  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
- const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
+ const url=new URL(CONFIG.siteUrl);
+ // Separate OG crawler cache from old pixelated previews; token stays in URL fragment.
+ url.searchParams.set('share','2');url.hash='invite='+token;
  state.inviteDraft={id:invitationId,email,link:url.toString()};
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
@@ -1247,7 +1249,7 @@ async function handle(action,element){
  if(verb==='copy-invite-for-browser'){
   const token=sessionStorage.getItem('pendingInvite');
   if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Lien d’invitation introuvable.');
-  const u=new URL(CONFIG.siteUrl);u.hash='invite='+token;
+  const u=new URL(CONFIG.siteUrl);u.searchParams.set('share','2');u.hash='invite='+token;
   await navigator.clipboard.writeText(u.toString());
   notify('Lien copié. Ouvrez Safari et collez ce lien dans la barre d’adresse.');return;
  }
@@ -1514,12 +1516,12 @@ async function handle(action,element){
   // Generate a fresh, single-use link when the user chooses a sharing method.
   const d=await ensureInviteDraft(false);
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
-  const text=invitationEmailText(d.link);
+  const text=verb==='send-messenger'?invitationMessengerText(d.link):invitationEmailText(d.link);
   state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';
   if(verb==='send-messenger'){
    if(window.LoveRollNativeAuth?.openShare)window.LoveRollNativeAuth.openShare(text);
    else if(navigator.share){
-    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:'Je t’invite à rejoindre notre espace LoveRoll ❤️ Une invitation juste pour nous deux !',url:d.link});}
+    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:'Une surprise à deux t’attend ❤️',url:d.link});}
     catch(error){if(error.name!=='AbortError')throw error;}
    }else{
     await navigator.clipboard.writeText(d.link);

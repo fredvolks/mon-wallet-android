@@ -2,6 +2,10 @@ name: Build and release LoveRoll APK
 on:
   push:
     branches: [des-a-deux-apk-20261013]
+    # HTML/CSS/share preview updates are live WebView changes, not native APK releases.
+    paths:
+      - 'app/**'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
 jobs:
   release:
