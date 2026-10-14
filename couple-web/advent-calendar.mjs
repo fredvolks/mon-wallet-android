@@ -31,7 +31,7 @@ export function calendarFromSaved(settings,days){
  return validateAdventJson({
   calendar_title:settings.calendar_title,year:2026,
   target_audience:settings.target_audience,note:settings.note,
-  days:days.map(day=>({day:day.day,type:day.type,title:day.title,description:day.description}))
+  days:days.map(day=>({day:day.day,type:day.type,title:day.title,description:day.description,timer_minutes:day.timer_minutes??null}))
    .sort((a,b)=>a.day-b.day)
  });
 }
