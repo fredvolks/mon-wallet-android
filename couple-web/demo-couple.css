@@ -24,3 +24,4 @@ body:has(.demo-shell) main{max-width:none;padding:0;background:#110717}
 .demo-calendar span.marked{background:#b82d77;box-shadow:0 0 14px #ff4b9444;color:white}
 .demo-body .day-grid button.demo-active{background:#bf287a;box-shadow:0 0 14px #f56eaa8c}
 @media(max-width:375px){.demo-control{padding-inline:10px}.demo-control span{font-size:.62rem}.demo-card{padding:12px!important}}
+\n.demo-pairline{text-align:center;padding:8px 10px;margin:-4px auto 12px;border:1px solid #d05c8a66;border-radius:15px;background:linear-gradient(90deg,#43172f,#261022);color:#ffe0ef;font-size:.85rem;font-weight:800}.demo-pairline span{color:#ff8fc4;margin:0 10px}\n
