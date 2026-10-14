@@ -5,6 +5,7 @@ import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayIn
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {ADVENT_YEAR,validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
+import {validateSpecialEventsJson,privateSpecialKey,SPECIAL_EVENT_KEYS} from './private-special-events.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
@@ -292,7 +293,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v15/);
+ assert.match(sw,/loveroll-static-v16/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -400,7 +401,7 @@ test('Unpaired members only see invitation, personal account, calendar and priva
            app.includes("state.tab==='library'&&isLoveAdmin()"));
  assert.ok(app.includes("if(verb==='prepare-cards')"));
  assert.ok(app.includes("state.tab='library'"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor']"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  for(const forbidden of ['renderSoloSession','renderSoloSpecial','renderSoloOccasions',
   'renderSoloAdvent','renderSolo()','solo-roll','solo-category','solo-advent',
   'SOLO_MESSAGE','drawSoloFace','state.solo','loveroll-skip']){
@@ -723,7 +724,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(!sql.includes('delete from public.couple_intimacy'));
  assert.ok(app.includes("function renderMonthlyLibrary(){"));
  assert.ok(app.includes("state.tab==='monthly-library'&&isLoveAdmin()"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor']"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  assert.ok(app.includes("query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})"));
  assert.ok(app.includes("rpc('save_love_monthly_activity'"));
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
@@ -781,12 +782,79 @@ test('Founder-only Advent editor, server date locks and shared immutable case sn
  assert.ok(app.includes("import_love_advent_2026"));
  assert.ok(app.includes("validateAdventJson(calendar)"));
  assert.ok(app.includes("state.advent2026Config=adventConfig[0]||null"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor']"));
- assert.ok(app.includes("['library','monthly-library','advent-editor'].includes(parts[0])"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
+ assert.ok(app.includes("['library','monthly-library','advent-editor','special-editor'].includes(parts[0])"));
  assert.ok(app.includes("selected.advent_description"));
  assert.ok(app.includes("selected.advent_type"));
  assert.ok(app.includes("selected.advent_title||advent[selected.day-1]"));
  assert.ok(!app.includes('advent[selected.day-1])</h3>'));
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.ok(sw.includes("'./advent-calendar.mjs'"));
+});
+
+test('Six festivals have two complete independent six-sided dice in the JSON importer',()=>{
+ const calendar={evenements_speciaux:{}};
+ for(const key of SPECIAL_EVENT_KEYS)calendar.evenements_speciaux[key]={
+  evenement:'Célébration surprise',date:'2027-05-09',
+  D6_activite:Array.from({length:6},(_,i)=>({[i+1]:'Activité confidentielle numéro '+(i+1)})),
+  D6_modificateur:Array.from({length:6},(_,i)=>({[i+1]:'Règle confidentielle numéro '+(i+1)}))
+ };
+ assert.equal(validateSpecialEventsJson(calendar),calendar);
+ assert.equal(SPECIAL_EVENT_KEYS.length,6);
+ assert.throws(()=>validateSpecialEventsJson({...calendar,evenements_speciaux:{}}),/six/);
+ assert.throws(()=>validateSpecialEventsJson({...calendar,
+  evenements_speciaux:{...calendar.evenements_speciaux,saint_valentin:{
+   ...calendar.evenements_speciaux.saint_valentin,D6_activite:[{1:'Erreur'}]}}}),/Six/);
+ assert.throws(()=>validateSpecialEventsJson({...calendar,
+  evenements_speciaux:{...calendar.evenements_speciaux,fete_des_peres:{
+   ...calendar.evenements_speciaux.fete_des_peres,D6_modificateur:[
+    {1:'Correctement numéroté'}, {2:'Correctement numéroté'}, {2:'Mauvaise face'},
+    {4:'Correctement numéroté'}, {5:'Correctement numéroté'}, {6:'Correctement numéroté'}]
+  }}}),/Option/);
+ assert.equal(privateSpecialKey('birthday','creator','creator'),'mon_anniversaire');
+ assert.equal(privateSpecialKey('birthday','partner','creator'),'anniversaire_de_mon_partenaire');
+ assert.equal(privateSpecialKey('mothers_day',null,'creator'),'fete_des_meres');
+ assert.equal(privateSpecialKey('womens_day',null,'creator'),null);
+});
+test('Server protects future D6 options, uses only random 1..6, and preserves previous rolls',()=>{
+ const schema=readFileSync(new URL('./special-event-private-schema.sql',import.meta.url),'utf8');
+ const validator=readFileSync(new URL('./special-events-import-rpc.sql',import.meta.url),'utf8');
+ const rolls=readFileSync(new URL('./special-events-roll-rpc.sql',import.meta.url),'utf8');
+ const worker=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ for(const token of [
+  "check(roll_type in ('surprise','host','activity','modifier'))",
+  "check(roll_type not in ('host','activity','modifier') or face<=6)",
+  'alter table public.love_special_event_catalogue enable row level security',
+  'love_special_event_catalogue',
+  'revoke all on public.love_special_modifier_snapshots from public,anon,authenticated'
+ ])assert.ok(schema.includes(token),'Missing private DB restriction '+token);
+ for(const token of [
+  'c.owner_user_id=auth.uid()','import_love_special_events',
+  'jsonb_array_length(d6)<>6',
+  'my_love_special_event_keys',
+  'couple_private.is_member(p_couple)'
+ ])assert.ok(validator.includes(token),'Missing owner validation '+token);
+ for(const token of [
+  "p_roll not in ('surprise','host','activity','modifier')",
+  "if p_roll='activity' then",
+  "if p_roll='modifier' then",
+  "floor(random()*6)::int+1",
+  "n-1)->>(n::text)",
+  "prior.couple_id is null",
+  "p_kind='birthday'",
+  "if eventyear>=2027",
+  'on conflict(couple_id,event_year,occasion_key) do nothing',
+  'from public.love_special_modifier_snapshots',
+  "if data is not null then raise exception 'Pour cette fête, utilisez les deux D6'",
+ ])assert.ok(rolls.includes(token),'Missing random D6 or snapshot behavior '+token);
+ assert.ok(app.includes("rpc('my_love_special_event_keys'"));
+ assert.ok(app.includes("function renderSpecialEventsEditor()"));
+ assert.ok(app.includes("heroDice(activity.face,6,"));
+ assert.ok(app.includes("heroDice(modifier.face,6,"));
+ assert.ok(app.includes("':activity','🎲 Brasser le D6 de l’activité'"));
+ assert.ok(app.includes("':modifier','🎲 Brasser le D6 du modificateur'"));
+ assert.ok(app.includes("validateSpecialEventsJson(data)"));
+ assert.ok(app.includes('state.specialEventsConfig=specialSettings[0]?.events||null'));
+ assert.ok(worker.includes("'./private-special-events.mjs'"));
+ assert.ok(!rolls.includes('delete from public.couple_occasion_rolls'));
 });
