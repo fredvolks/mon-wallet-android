@@ -26,7 +26,9 @@ begin
   then raise exception 'Numéro de jour invalide';end if;
   d:=(item->>'day')::integer;
   if (item->>'timer_minutes') is not null and
-     ((item->>'timer_minutes') !~ '^[0-9]{1,2}
+     ((item->>'timer_minutes') !~ '^[0-9]{1,2}$' or (item->>'timer_minutes')::int not between 1 and 60)
+   then raise exception 'Minuteur invalide au jour %',d;end if;
+  if d not between 1 and 25 or
    length(btrim(coalesce(item->>'type',''))) not between 2 and 90 or
    length(btrim(coalesce(item->>'title',''))) not between 3 and 200 or
    length(btrim(coalesce(item->>'description',''))) not between 10 and 1500
@@ -44,29 +46,6 @@ begin
  insert into public.love_advent_2026_days(couple_id,day,type,title,description,timer_minutes)
  select p_couple,(j.value->>'day')::integer,j.value->>'type',
   j.value->>'title',j.value->>'description',(j.value->>'timer_minutes')::int
- from jsonb_array_elements(p_calendar->'days') as j(value);
- -- No changes to the current year's previously opened couple_advent rows.
-end;$function$
- or (item->>'timer_minutes')::int not between 1 and 60)
-   then raise exception 'Minuteur invalide au jour %',d;end if;
-  if d not between 1 and 25 or
-   length(btrim(coalesce(item->>'type',''))) not between 2 and 90 or
-   length(btrim(coalesce(item->>'title',''))) not between 3 and 200 or
-   length(btrim(coalesce(item->>'description',''))) not between 10 and 1500
-  then raise exception 'Contenu invalide au jour %',d;end if;
- end loop;
- if (select count(distinct (value->>'day')::integer)
-     from jsonb_array_elements(p_calendar->'days'))<>25
- then raise exception 'Les 25 jours doivent être uniques';end if;
- insert into public.love_advent_2026_config(couple_id,calendar_title,target_audience,note)
- values(p_couple,p_calendar->>'calendar_title','18+',coalesce(p_calendar->>'note',''))
- on conflict(couple_id) do update set
-  calendar_title=excluded.calendar_title,target_audience=excluded.target_audience,
-  note=excluded.note,updated_at=now();
- delete from public.love_advent_2026_days where couple_id=p_couple;
- insert into public.love_advent_2026_days(couple_id,day,type,title,description)
- select p_couple,(j.value->>'day')::integer,j.value->>'type',
-  j.value->>'title',j.value->>'description'
  from jsonb_array_elements(p_calendar->'days') as j(value);
  -- No changes to the current year's previously opened couple_advent rows.
 end;$function$
