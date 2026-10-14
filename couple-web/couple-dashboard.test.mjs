@@ -62,7 +62,7 @@ test('Messenger share is concise while secure link and acceptance remain functio
  const link='https://fredvolks.github.io/mon-wallet-android/?invite_id=72aa640b-2644-4d0d-bcf7-575587d27f31&v=20261014-messenger-v4';
  const text=invitationMessengerText(link);
  assert.ok(text.length<link.length+160);
- assert.match(text,/quelque chose de spécial/);
+ assert.equal(text,link);
  assert.equal(text,link,'Messenger share has no duplicate caption or second URL');
  assert.ok(text.includes(link));
  assert.doesNotMatch(text,/ACCEPTER L’INVITATION/);
@@ -70,8 +70,8 @@ test('Messenger share is concise while secure link and acceptance remain functio
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  assert.match(html,/og:image:width" content="1200"/);
  assert.match(html,/og:image:height" content="630"/);
- assert.match(html,/loveroll-invite-og.png\?v=3/);
+ assert.match(html,/loveroll-invite-og.png\?v=4/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert.match(app,/verb==='send-messenger'\?invitationMessengerText\(d.link\)/);
- assert.match(app,/url.searchParams.set\('share','3'\)/);
+ assert.match(app,/inviteLinkForId\(CONFIG\.siteUrl,invitationId\)/);
 });
