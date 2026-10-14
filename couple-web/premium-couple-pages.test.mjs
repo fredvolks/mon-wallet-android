@@ -51,7 +51,7 @@ test('Giving challenges updates both Step 1 totals while the dice show original 
  assert.match(html,/aria-label="Total actuel 4 défis; dé initial 2"><strong>4<\/strong>/);
  assert.match(html,/Dé initial : 5/);
  assert.match(html,/Dé initial : 2/);
- assert.match(html,/<b>0 \/ 3<\/b>/);
+ assert.match(html,/<b>1 \/ 3<\/b>/);
  assert.match(html,/<b>0 \/ 4<\/b>/);
  assert.match(css,/\.evening-original-d6\{/);
  // Without gifts, the cards still match the rolls, no redundant label.
