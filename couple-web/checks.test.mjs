@@ -940,7 +940,7 @@ test('Premium screens share a responsive dice and invitation layout on mobile an
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  const onboarding=readFileSync(new URL('./onboarding.mjs',import.meta.url),'utf8');
  for(const cls of ['premium-intro','hero-game-card','premium-die','premium-invite-hero','premium-auth-panel','premium-help']){
-  assert.match(css,new RegExp('\\\\.'+cls));
+  assert.ok(css.includes('.'+cls),'Missing responsive component: '+cls);
  }
  assert.match(css,/@media\(min-width:768px\)/);
  assert.match(app,/heroDice\(state\.weekly\?\.face,6/);
