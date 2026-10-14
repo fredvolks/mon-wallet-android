@@ -12,6 +12,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient.FileChooserParams;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -50,6 +56,8 @@ public final class ConnectedLoveRollActivity extends Activity {
  private static final String GOOGLE_WEB_CLIENT_ID =
   "158439565502-3cj6kjdntrec6enjpllbi2tknie278hb.apps.googleusercontent.com";
  private WebView web;
+ private ValueCallback<Uri[]> jsonChooser;
+ private static final int JSON_PICKER_REQUEST=8625;
  private boolean pageReady = false;
  private boolean authInProgress = false;
  private String pendingGoogleResult;
@@ -88,6 +96,29 @@ public final class ConnectedLoveRollActivity extends Activity {
     } catch(Exception ignored){show("Partage non disponible sur cet appareil.");}
    });
   }
+  // Export a JSON file through Android's native share/save picker.
+  @JavascriptInterface public void exportJson(String filename,String content){
+   runOnUiThread(()->{
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    if(content==null||content.length()>250000||filename==null||
+      !filename.matches("loveroll-[a-z0-9-]{2,64}\\.json")){show("Export JSON invalide.");return;}
+    try{
+     File dir=new File(getCacheDir(),"jsonexports");
+     if(!dir.exists()&&!dir.mkdirs())throw new Exception("Dossier indisponible");
+     File file=new File(dir,filename);
+     try(FileOutputStream out=new FileOutputStream(file)){
+      out.write(content.getBytes(StandardCharsets.UTF_8));
+     }
+     Uri uri=FileProvider.getUriForFile(ConnectedLoveRollActivity.this,
+      getPackageName()+".fileprovider",file);
+     Intent share=new Intent(Intent.ACTION_SEND);
+     share.setType("application/json");
+     share.putExtra(Intent.EXTRA_STREAM,uri);
+     share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+     startActivity(Intent.createChooser(share,"Sauvegarder ou partager mon JSON LoveRoll"));
+    }catch(Exception e){show("Export JSON impossible : "+e.getMessage());}
+   });
+  }
   // Free SMS share: opens the system composer, never sends silently.
   @JavascriptInterface public void openSms(String message) {
    runOnUiThread(() -> {
@@ -121,7 +152,21 @@ public final class ConnectedLoveRollActivity extends Activity {
   settings.setSupportMultipleWindows(false);
   if(Build.VERSION.SDK_INT>=26) settings.setSafeBrowsingEnabled(true);
   web.addJavascriptInterface(new NativeAuthBridge(),"LoveRollNativeAuth");
-  web.setWebChromeClient(new WebChromeClient());
+  web.setWebChromeClient(new WebChromeClient(){
+   @Override public boolean onShowFileChooser(WebView view,ValueCallback<Uri[]> callback,FileChooserParams params){
+    if(jsonChooser!=null){jsonChooser.onReceiveValue(null);jsonChooser=null;}
+    if(!pageReady||!isTrusted(Uri.parse(web.getUrl()))){callback.onReceiveValue(null);return true;}
+    jsonChooser=callback;
+    try{
+     Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+     pick.setType("*/*");
+     pick.addCategory(Intent.CATEGORY_OPENABLE);
+     pick.putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"application/json","text/plain"});
+     startActivityForResult(pick,JSON_PICKER_REQUEST);
+    }catch(Exception e){jsonChooser.onReceiveValue(null);jsonChooser=null;show("Choix du fichier indisponible.");}
+    return true;
+   }
+  });
   web.setWebViewClient(new WebViewClient() {
    @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
     if(!request.isForMainFrame()) return false;
@@ -165,6 +210,14 @@ public final class ConnectedLoveRollActivity extends Activity {
   web.loadUrl(SITE+suffix);
   if(getSharedPreferences("des_a_deux_game",MODE_PRIVATE).getBoolean("auto_update",true))
    UpdateManager.check(this,true);
+ }
+ @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+  super.onActivityResult(requestCode,resultCode,data);
+  if(requestCode==JSON_PICKER_REQUEST&&jsonChooser!=null){
+   Uri selected=resultCode==RESULT_OK&&data!=null?data.getData():null;
+   jsonChooser.onReceiveValue(selected==null?null:new Uri[]{selected});
+   jsonChooser=null;
+  }
  }
  private boolean isTrusted(Uri url) {
   return url!=null&&"https".equals(url.getScheme())&&TRUSTED_HOST.equals(url.getHost())

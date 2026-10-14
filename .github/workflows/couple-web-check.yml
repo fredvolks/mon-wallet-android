@@ -21,8 +21,10 @@ jobs:
           node --check couple-web/config.js
           node --check couple-web/couple-dashboard.mjs
           node --check couple-web/home-install.mjs
+          node --check couple-web/json-libraries.mjs
+          node --check couple-web/json-library-ui.mjs
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |

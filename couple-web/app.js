@@ -3,6 +3,8 @@ import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editab
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
+import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
+import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
@@ -23,7 +25,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[]};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -106,7 +108,7 @@ function nav(){
   ['advent','🎁','Avent'],['settings','⚙','Réglages']]:
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
- return '<nav class="nav"><div class="nav-inner">'+tabs.map(([key,icon,label])=>
+ return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
  '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
@@ -114,6 +116,12 @@ function bindActions(){
  document.querySelectorAll('[data-action]').forEach(el=>{
   el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
  });
+ document.querySelectorAll('input[data-json-file]').forEach(input=>input.addEventListener('change',async()=>{
+  const file=input.files?.[0];if(!file)return;
+  if(file.size>MAX_IMPORT_BYTES){fail(Error('Fichier trop volumineux : 250 Ko maximum.'));return;}
+  const output=id(jsonInputId(input.dataset.jsonFile));if(!output)return;
+  try{output.value=await file.text();state.jsonPending=null;notify('Fichier chargé. Vérifiez son aperçu.');}catch(e){fail(e);}
+ }));
  bindWellbeingMenus();
 }
 function render(){
@@ -316,16 +324,17 @@ function renderInvitePanel(){
  if(!ready){
   html+='<label>Courriel Google de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   button('invite',latest?'Renvoyer une invitation (nouveau lien)':'Préparer une invitation');
-  if(draft){
-   html+='<details class="invite-preview"><summary>♡ Aperçu de l’invitation LoveRoll</summary>'+invitationPreviewMarkup()+'</details>';
-   html+='<div class="invite-actions">'+button('send-sms','💬 Texto SMS')+
-    button('send-messenger','♡ Messenger','class="subtle"')+
+   button('invite',latest?'↻ Renouveler mon lien sécurisé':'Créer mon invitation');
+  html+='<div class="invite-actions">'+
+    button('send-messenger','♡ Messenger')+
+    button('send-sms','💬 Texto SMS','class="subtle"')+
     button('send-email','✉ Courriel','class="subtle"')+
-    button('copy-invite','Copier le lien','class="subtle"')+'</div>'+
+    (draft?button('copy-invite','Copier le lien','class="subtle"'):'')+'</div>';
+  if(draft)html+='<details class="invite-preview"><summary>♡ Aperçu de votre invitation</summary>'+
+    invitationPreviewMarkup()+'</details>'+
     button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
-    '<p class="tiny-note">Le téléphone ouvre votre messagerie; LoveRoll ne peut pas savoir si vous avez réellement appuyé sur Envoyer.</p>';
-  }
+    '<p class="tiny-note">Choisissez Messenger, SMS ou courriel dans votre application, puis confirmez l’envoi ici.</p>';
+  else html+='<p class="tiny-note">Choisir un moyen de partage prépare un nouveau lien personnel. Cela invalide l’ancien lien d’invitation. Aucun message n’est envoyé sans votre confirmation.</p>';
   if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
    html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
  }
@@ -351,18 +360,28 @@ function renderCoupleOverview(){
  button('tab:journal','Ouvrir nos statistiques et le calendrier','class="subtle"')+'</section>';
 }
 function renderWaitingPartner(){
- const title=safe(state.profile.display_name);
- frame('<section class="card"><div class="eyebrow">♡ ESPACE PRIVÉ</div>'+
-  '<h2>Votre espace est prêt, '+title+'</h2>'+
-  '<p>Vous pouvez créer et modifier vos cartes maintenant. Les dés et les défis du couple seront accessibles lorsque votre partenaire aura rejoint LoveRoll.</p>'+
-  button('tab:library','♡ Gérer mes 70 cartes')+
-  button('tab:monthly-library','✦ Modifier les 20 activités du mois','class="subtle"')+
-  button('tab:advent-editor','🎁 Préparer l’Avent 2026','class="subtle"')+
-  button('tab:special-editor','💘 Préparer les événements spéciaux','class="subtle"')+
-  '</section><section class="card"><h3>Inviter votre partenaire</h3>'+
-  '<p>Invitez votre conjointe quand vous le souhaitez. Aucune carte n’est révélée avant la partie.</p>'+
-  '</section>'+renderInvitePanel(),
- 'MON ESPACE','Préparer vos cartes avant l’invitation');
+ const name=safe(state.profile.display_name);
+ const latest=state.invitations?.find(x=>!x.cancelled_at)||state.invitations?.[0];
+ const invited=!!latest;
+ frame('<div class="waiting-hero"><div class="waiting-heart">♡</div>'+
+  '<div class="eyebrow">♡ VOTRE UNIVERS LOVEROLL</div>'+
+  '<h2>Votre espace est prêt, '+name+' !</h2>'+
+  '<p>Il ne reste qu’à inviter votre partenaire pour commencer vos premiers jeux à deux.</p>'+
+  '<div class="waiting-avatars"><span>♥ '+name+'</span><span class="waiting-connection">·····</span><span>♡ Partenaire</span></div>'+
+  '<div class="waiting-status">● '+(invited?'Invitation à compléter':'En attente de votre partenaire')+'</div>'+
+  button('tab:settings','♡ Inviter mon partenaire')+'</div>'+
+  '<section class="card"><div class="eyebrow">LES 3 ÉTAPES</div>'+
+  '<div class="waiting-steps"><p><strong>✓ 1.</strong> Votre espace personnel est créé</p>'+
+  '<p><strong>2.</strong> Partager l’invitation par Messenger, SMS ou courriel</p>'+
+  '<p><strong>3.</strong> Dès qu’elle est acceptée, vos dés et soirées seront activés</p></div></section>'+
+  '<section class="card"><h3>♡ À préparer pendant l’attente</h3>'+
+  '<div class="waiting-actions">'+
+  button('tab:library','♡ Mes 70 cartes')+
+  button('tab:monthly-library','✦ 20 activités du mois','class="subtle"')+
+  button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
+  button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
+  '<p class="tiny-note">Importez ou exportez chaque bibliothèque en JSON pour renouveler vos idées.</p></section>'+
+  renderInvitePanel(),'MON ESPACE','Votre aventure à deux commence ici');
 }
 function renderHome(){
  const name=state.profile.display_name,partner=other()?.name;
@@ -541,6 +560,12 @@ function renderSession(){
  if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
  frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
+function optionalRolledTimer(roll){
+ if(!roll?.timer_minutes)return '';
+ const key='special-'+roll.id;
+ return state.specialTimerKey===key?timerWidget({id:key},roll.timer_minutes):
+  button('special-timer:'+key,'⏱ Minuteur · '+roll.timer_minutes+' min','class="subtle"');
+}
 function renderSpecial(){
  const a=state.monthly.monthly_activity,h=state.monthly.monthly_host,r=state.monthly.monthly_restaurant;
  let body='<div class="eyebrow">Défi spécial · '+safe(month())+'</div>'+
@@ -552,7 +577,8 @@ function renderSpecial(){
   body+=heroDice(a.face,20,'Activité officielle')+
   '<div class="result">'+safe(activity.title)+'</div>'+
   '<p>'+safe(activity.description)+'</p>'+
-  '<p>Tiré par '+safe(person(a.actor))+'.</p>';
+  '<p>Tiré par '+safe(person(a.actor))+'.</p>'+
+  (activity.timer_minutes?timerWidget({id:'monthly-'+a.id},activity.timer_minutes):'');
   if(!h)body+=button('roll:monthly_host','🎲 Brasser le D6 : qui invite ?');
   else{
    const host=h.face<=3?state.members[0]:state.members[1]; // ordered by join time, identically on both devices
@@ -623,14 +649,14 @@ function renderOccasions(){
     body+=heroDice(activity.face,6,'D6 · Activité spéciale')+
       '<div class="card"><div class="eyebrow">ACTIVITÉ · FACE '+activity.face+'</div>'+
       '<p>'+safe(activity.special_description||'')+'</p>'+
-      '<p class="tiny-note">Une proposition à accepter, modifier ou passer ensemble.</p></div>';
+      '<p class="tiny-note">Une proposition à accepter, modifier ou passer ensemble.</p>'+optionalRolledTimer(activity)+'</div>';
     if(!modifier){
      body+=heroDice(null,6,'D6 · Règle supplémentaire')+
        button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','🎲 Brasser le D6 du modificateur');
     }else{
      body+=heroDice(modifier.face,6,'D6 · Règle supplémentaire')+
        '<div class="card"><div class="eyebrow">RÈGLE · FACE '+modifier.face+'</div>'+
-       '<p>'+safe(modifier.modifier_text||'')+'</p></div>';
+       '<p>'+safe(modifier.modifier_text||'')+'</p>'+optionalRolledTimer(modifier)+'</div>';
     }
    }
   }
@@ -651,7 +677,7 @@ function renderOccasions(){
      body+=heroDice(modifier.face,6,'Règle supplémentaire')+
       '<div class="card"><div class="eyebrow">D6 · FACE '+modifier.face+'</div>'+
       '<h3>'+safe(modifier.modifier_title||'La règle du moment')+'</h3>'+
-      '<p>'+safe(modifier.modifier_text||'')+'</p></div>';
+      '<p>'+safe(modifier.modifier_text||'')+'</p>'+optionalRolledTimer(modifier)+'</div>';
     }
    }
    if(!host&&role.shared)body+='<p class="tag">Surprise commune · vous l’organisez à deux.</p>';
@@ -667,6 +693,31 @@ function renderOccasions(){
  body+='<section class="card">'+button('tab:settings','⚙ Définir nos dates')+'</section>';
  frame(body,'FÊTES ET ANNIVERSAIRES','Un moment LoveRoll pensé pour chaque grande occasion');
 }
+function portableLibrary(kind){
+ if(kind==='evening')return buildEveningLibrary(state.customCategory,state.customCards);
+ if(kind==='monthly')return buildMonthlyLibrary(state.monthlyActivities);
+ if(kind==='advent')return calendarFromSaved(state.advent2026Config,state.advent2026Days);
+ if(kind==='special')return state.specialEventsConfig;
+ throw Error('Type de bibliothèque inconnu.');
+}
+function exportLibraryFile(kind){
+ const data=portableLibrary(kind);
+ if(!data)throw Error('Aucun contenu enregistré dans cette liste.');
+ librarySummary(data,kind);
+ const label=kind==='evening'?'soiree-'+state.customCategory.toLowerCase():kind;
+ return exportJsonFile('loveroll-'+label+'.json',JSON.stringify(data,null,2));
+}
+function previewPortableJson(kind){
+ const text=id(jsonInputId(kind))?.value||'';
+ if(!text.trim())throw Error('Choisissez un fichier JSON ou collez son contenu.');
+ if(new Blob([text]).size>MAX_IMPORT_BYTES)throw Error('Le JSON ne doit pas dépasser 250 Ko.');
+ let data;
+ try{data=JSON.parse(text);}catch{throw Error('Syntaxe JSON invalide (virgules, guillemets, accolades).');}
+ normalizeLibraryData(data,kind);
+ if(kind==='evening'&&data.category!==state.customCategory)
+  throw Error('Choisissez la catégorie '+data.category+' avant cet import.');
+ state.jsonPending={kind,data,summary:librarySummary(data,kind)};
+}
 function renderSpecialEventsEditor(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
  const current=state.specialEventsConfig;
@@ -679,8 +730,8 @@ function renderSpecialEventsEditor(){
   '<label>JSON de mes événements spéciaux<textarea id="special-events-json" rows="11"'+
    ' spellcheck="false" placeholder="{ &quot;evenements_speciaux&quot;: { ... } }">'+
    safe(current?JSON.stringify(current,null,2):'')+'</textarea></label>'+
-  button('import-special-events','♡ Enregistrer les 6 événements')+
-  '</section>';
+  button('import-special-events','♡ Prévisualiser avant remplacement')+
+  '</section>'+jsonToolsPanel('special','6 événements spéciaux',state.jsonPending);
  if(current){
   body+='<section class="card"><h3>Mes surprises préparées</h3>'+
    '<p class="tiny-note">Aperçu réservé à l’administrateur.</p>'+
@@ -716,7 +767,8 @@ function renderAdvent(){
    '<p>Ouverte par '+safe(person(selected.opened_by))+'. '+
    (customized?'Ce défi est une proposition à accepter, adapter ou passer librement.':
     'À proposer par '+safe(person(selected.performed_by))+
-    ' (vous pouvez toujours modifier ou passer l’activité ensemble).')+'</p></div>';
+    ' (vous pouvez toujours modifier ou passer l’activité ensemble).')+'</p>'+
+    (selected.advent_timer_minutes?timerWidget({id:'advent-'+selected.year+'-'+selected.day},selected.advent_timer_minutes):'')+'</div>';
  }
  body+='</section>';
  frame(body,'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
@@ -735,8 +787,8 @@ function renderAdventEditor(){
   '<label>Votre calendrier JSON<textarea id="advent-2026-json" spellcheck="false" rows="10"'+
   ' placeholder="{ &quot;calendar_title&quot;: &quot;...&quot;, &quot;year&quot;: 2026, &quot;days&quot;: [...] }">'+
    safe(calendar?JSON.stringify(calendar,null,2):'')+'</textarea></label>'+
-   button('import-advent-2026','♡ Enregistrer les 25 cases')+
-  '</section>';
+   button('import-advent-2026','♡ Prévisualiser avant remplacement')+
+  '</section>'+jsonToolsPanel('advent','25 cases de l’Avent',state.jsonPending);
  if(calendar){
   body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
    '<p class="tiny-note">Ce récapitulatif est privé. Votre partenaire ne voit les consignes qu’en ouvrant les cases autorisées.</p>'+
@@ -956,7 +1008,7 @@ function renderCardLibrary(){
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
     '<button class="pill '+(category===c?'selected':'')+
     '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
-  '</section>'+
+  '</section>'+jsonToolsPanel('evening',names[category],state.jsonPending)+
   '<section class="card"><div class="eyebrow">RÈGLE DE PIGE</div>'+
   '<h3>Éviter les répétitions</h3>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="no-repeat-cards"'+
@@ -1009,7 +1061,8 @@ function renderMonthlyLibrary(){
   '<p>Changez les 20 résultats du D20, même avant d’inviter votre partenaire. Vous pouvez remplacer complètement une idée de sortie et sa description.</p>'+
   '<div class="custom-card-tiles">'+tiles+'</div>'+
   '<p class="tiny-note">Les changements seront utilisés aux prochains tirages. Le résultat déjà obtenu ce mois-ci reste inchangé pour les deux partenaires.</p>'+
-  '</section><section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
+  '</section>'+jsonToolsPanel('monthly','20 activités du mois',state.jsonPending)+
+  '<section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
   '<h3>'+safe(entry.title)+'</h3>'+
   '<label>Nom de l’activité<input id="monthly-title" maxlength="120" value="'+
     safe(entry.title)+'" placeholder="Ex. Soirée au chalet"></label>'+
@@ -1018,6 +1071,8 @@ function renderMonthlyLibrary(){
   '<label class="custom-draw-setting"><input id="monthly-restaurant" type="checkbox"'+
     (entry.is_restaurant?' checked':'')+'> Activité de restaurant / repas à réserver</label>'+
   '<p class="tiny-note">Si cette option est activée, LoveRoll propose également le dé « restaurant connu ou nouveau » après le tirage de cette activité.</p>'+
+  '<label class="custom-draw-setting"><input type="checkbox" id="monthly-timer-enabled"'+(entry.timer_minutes?' checked':'')+'> Minuteur facultatif</label>'+
+  '<label>Durée (minutes)<input id="monthly-minutes" type="number" min="1" max="60" value="'+(entry.timer_minutes||5)+'"></label>'+
   button('save-monthly-activity','♡ Enregistrer l’activité')+
   (entry.edited?button('reset-monthly-activity','Restaurer l’activité d’origine','class="subtle"'):'')+
   '</section><section class="card">'+
@@ -1138,6 +1193,20 @@ function randomInviteToken(){
  const bytes=crypto.getRandomValues(new Uint8Array(32));
  return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
+async function ensureInviteDraft(forceNew=false){
+ if(!forceNew&&state.inviteDraft)return state.inviteDraft;
+ if(!state.coupleId||state.members.length===2)throw Error('Le couple est déjà connecté.');
+ const email=id('invite-email')?.value?.trim()?.toLowerCase();
+ if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))
+  throw Error('Indiquez le courriel Google valide de votre partenaire.');
+ if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
+ const token=randomInviteToken(),digest=await hashToken(token);
+ const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
+ const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
+ state.inviteDraft={id:invitationId,email,link:url.toString()};
+ state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+ return state.inviteDraft;
+}
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
  if(verb==='copy-invite-for-browser'){
@@ -1177,27 +1246,42 @@ async function handle(action,element){
   await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
   await reload();notify('Personne célébrée enregistrée.');return;
  }
+ if(verb==='special-timer'){state.specialTimerKey=parts.join(':');render();return;}
+ if(verb==='json-export'){
+  if(!isLoveAdmin())throw Error('Export réservé à l’administrateur.');
+  await exportLibraryFile(parts[0]);notify('Sauvegarde JSON préparée.');return;
+ }
+ if(verb==='json-preview'){
+  if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
+  previewPortableJson(parts[0]);render();return;
+ }
+ if(verb==='json-cancel'){state.jsonPending=null;render();return;}
+ if(verb==='json-apply'){
+  if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
+  const preview=state.jsonPending;
+  if(!preview||preview.kind!==parts[0])throw Error('Prévisualisez d’abord votre JSON.');
+  normalizeLibraryData(preview.data,preview.kind);
+  if(!confirm('Remplacer la bibliothèque « '+preview.summary.label+' » avec '+
+    preview.summary.count+' éléments et '+preview.summary.timers+
+    ' minuteur(s) configuré(s) ? Les anciens tirages restent inchangés.'))return;
+  if(preview.kind==='evening')
+   await rpc('import_love_evening_library',{p_couple:state.coupleId,p_library:preview.data});
+  else if(preview.kind==='monthly')
+   await rpc('import_love_monthly_library',{p_couple:state.coupleId,p_library:preview.data});
+  else if(preview.kind==='advent')
+   await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:preview.data});
+  else if(preview.kind==='special')
+   await rpc('import_love_special_events',{p_couple:state.coupleId,p_events:preview.data});
+  state.jsonPending=null;await reload();
+  notify('Bibliothèque importée : les minuteries JSON sont activées pour les prochains tirages.');return;
+ }
  if(verb==='import-special-events'){
   if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
-  let data;
-  try{data=JSON.parse(id('special-events-json')?.value||'');}
-  catch{throw Error('JSON invalide : copiez le texte entier, entre les deux accolades.');}
-  validateSpecialEventsJson(data);
-  await rpc('import_love_special_events',{p_couple:state.coupleId,p_events:data});
-  await reload();
-  notify('Les 6 fêtes et leurs deux D6 sont enregistrés.');
-  return;
+  previewPortableJson('special');render();return;
  }
  if(verb==='import-advent-2026'){
   if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
-  let calendar;
-  try{calendar=JSON.parse(id('advent-2026-json')?.value||'');}
-  catch{throw Error('JSON invalide : vérifiez la syntaxe et les guillemets.');}
-  validateAdventJson(calendar);
-  await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:calendar});
-  await reload();
-  notify('Les 25 cases de décembre 2026 sont enregistrées.');
-  return;
+  previewPortableJson('advent');render();return;
  }
  if(verb==='advent-editor-day'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
@@ -1219,12 +1303,14 @@ async function handle(action,element){
   const title=id('monthly-title')?.value.trim();
   const description=id('monthly-description')?.value.trim();
   const restaurant=!!id('monthly-restaurant')?.checked;
+  const duration=id('monthly-timer-enabled')?.checked?Number(id('monthly-minutes')?.value):null;
+  if(duration!==null&&(!Number.isInteger(duration)||duration<1||duration>60))throw Error('Minuteur de 1 à 60 minutes.');
   if(!title||title.length<3||title.length>120||
     !description||description.length<10||description.length>900)
     throw Error('Titre de 3 à 120 caractères et description de 10 à 900 caractères requis.');
-  await rpc('save_love_monthly_activity',{
+  await rpc('save_love_monthly_activity_with_timer',{
    p_couple:state.coupleId,p_face:state.monthlySlot,p_title:title,
-   p_description:description,p_is_restaurant:restaurant});
+   p_description:description,p_is_restaurant:restaurant,p_timer_minutes:duration});
   await reload();notify('Activité enregistrée pour les prochains tirages.');return;
  }
  if(verb==='reset-monthly-activity'){
@@ -1385,22 +1471,13 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='invite'){
-  if(!state.coupleId||state.members.length===2)throw Error('Invitation impossible : vérifiez le couple.');
-  const email=id('invite-email')?.value.trim().toLowerCase();
-  if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))throw Error('Saisissez le courriel Google valide du destinataire.');
-  if(!CONFIG.siteUrl)throw Error('L’adresse publique HTTPS doit être configurée.');
-  const token=randomInviteToken(),digest=await hashToken(token);
-  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
-  const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
-  state.inviteDraft={id:invitationId,email,link:url.toString()};
-  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
-  render();
-  notify('Lien sécurisé prêt. Choisissez SMS, Messenger ou courriel.');
-  return;
+  await ensureInviteDraft(true);render();
+  notify('Nouveau lien personnel prêt. Choisissez une méthode de partage.');return;
  }
  if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
-  const d=state.inviteDraft;
-  if(!d)throw Error('Préparez un nouveau lien sécurisé pour l’envoyer.');
+  // A token cannot be recovered from its hash after closing the application.
+  // Generate a fresh, single-use link when the user chooses a sharing method.
+  const d=await ensureInviteDraft(false);
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
   const text=invitationEmailText(d.link);
   state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';

@@ -20,6 +20,9 @@ export function validateAdventJson(payload){
     item[field].length>max)
     throw Error('Champ invalide au jour '+item.day+' : '+field);
   }
+  if(item.timer_minutes!==undefined&&item.timer_minutes!==null&&
+    (!Number.isInteger(item.timer_minutes)||item.timer_minutes<1||item.timer_minutes>60))
+    throw Error('Minuteur du jour '+item.day+' : 1 à 60 minutes ou null.');
  }
  return payload;
 }
@@ -28,7 +31,7 @@ export function calendarFromSaved(settings,days){
  return validateAdventJson({
   calendar_title:settings.calendar_title,year:2026,
   target_audience:settings.target_audience,note:settings.note,
-  days:days.map(day=>({day:day.day,type:day.type,title:day.title,description:day.description}))
+  days:days.map(day=>({day:day.day,type:day.type,title:day.title,description:day.description,timer_minutes:day.timer_minutes??null}))
    .sort((a,b)=>a.day-b.day)
  });
 }
