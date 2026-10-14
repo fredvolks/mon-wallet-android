@@ -291,7 +291,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v8/);
+ assert.match(sw,/loveroll-static-v9/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -437,7 +437,8 @@ test('Creator-only access and private draws are enforced server side',()=>{
  assert.ok(app.includes("p_card_id:state.customSlot"));
  assert.ok(app.includes("state.couple?.owner_user_id===state.user?.id"));
  assert.ok(app.includes("state.tab==='library')renderCardLibrary()"));
- assert.ok(app.includes("challenge.cardId||active.card_id||active.face"));
+ assert.ok(app.includes("' · D20 : '+safe(active.face)"));
+ assert.equal(app.includes("' · CARTE '+"),false);
  assert.ok(app.includes("REÇOIT"));
  assert.ok(app.includes("OFFRE"));
  assert.ok(app.includes('Sans minuteur'));
@@ -465,4 +466,28 @@ test('Fixed celebration roles and shared couple anniversary',()=>{
  assert.ok(sql.includes("owner_user_id=auth.uid()"));
  assert.ok(sql.includes("p_kind in ('mothers_day','fathers_day','womens_day','mens_day','birthday','anniversary','valentine')"));
  assert.ok(app.includes("data-action=\"set-celebrant:"));
+});
+
+test('Neither partner sees whether a drawn card was created by the admin',()=>{
+ const custom=resolvedCard({category:'SEXUEL',card_id:29,face:7,
+  card_title:'Surprise à deux',card_description:'Une proposition choisie par votre partenaire.',
+  card_timer_minutes:null});
+ const official=resolvedCard({category:'SEXUEL',card_id:5,face:7});
+ assert.equal(Object.hasOwn(custom,'custom'),false);
+ assert.equal(Object.hasOwn(official,'custom'),false);
+ assert.equal(custom.title,'Surprise à deux');
+ const missing=resolvedCard({category:'SENSUEL',card_id:28,face:4});
+ assert.equal(missing.title,'Défi surprise');
+ assert.equal(missing.description,'Consigne momentanément indisponible.');
+ const gameScreen=app.slice(app.indexOf('function renderSession(){'),app.indexOf('function renderSpecial(){'));
+ assert.ok(gameScreen.includes("' · D20 : '+safe(active.face)"));
+ assert.ok(!gameScreen.includes('challenge.cardId'));
+ assert.ok(!gameScreen.includes('active.card_id'));
+ assert.ok(!gameScreen.includes('défis personnalisés'));
+ assert.ok(!gameScreen.includes('Carte personnalisée'));
+ assert.ok(!gameScreen.includes('carte personnalisée'));
+ assert.ok(gameScreen.includes('OFFRE → '));
+ assert.ok(gameScreen.includes('REÇOIT'));
+ // The existing admin-only catalogue can retain its internal slot numbers.
+ assert.ok(app.includes('function isLoveAdmin()'));
 });

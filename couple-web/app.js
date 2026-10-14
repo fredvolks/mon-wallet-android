@@ -488,7 +488,7 @@ function renderSession(){
    if(active){
     const challenge=resolvedCard(active);
     body+='<div class="card challenge-present"><div class="eyebrow">'+safe(names[active.category])+
-     ' · CARTE '+safe(challenge.cardId||active.card_id||active.face)+' · D20 : '+active.face+'</div>'+
+     ' · D20 : '+safe(active.face)+'</div>'+
      '<div class="challenge-roles">♡ '+safe(p.name).toUpperCase()+' OFFRE → '+safe(state.profile.display_name).toUpperCase()+' REÇOIT</div>'+
      '<h3>'+safe(challenge.title)+'</h3>'+
      '<p>'+safe(challenge.description)+'</p>' +
@@ -526,7 +526,7 @@ function renderSession(){
     button('dismiss-cancel','Continuer','class="subtle"')+'</div></div>';
   }else body+=button('cancel-session','Arrêter sans la compter','class="subtle"');
  }
- body+='</section>';frame(body,'VOTRE SOIRÉE',s?'Étapes partagées et défis personnalisés':'Un nouveau moment à deux');
+ body+='</section>';frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
 function renderSpecial(){
  const a=state.monthly.monthly_activity,h=state.monthly.monthly_host,r=state.monthly.monthly_restaurant;
