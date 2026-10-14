@@ -35,6 +35,17 @@ const path=require('node:path');
   await page.goto('http://127.0.0.1:8765/__invite-account-test.html',{waitUntil:'load'});
   await page.locator('[data-action="invite-start"]').waitFor();
   const first=await page.evaluate(()=>({maxWidth:document.documentElement.scrollWidth,inner:innerWidth,sections:document.querySelectorAll('.discover-feature').length,hasSubmit:!!document.querySelector('.discover-accept')}));
+  const hero=await page.evaluate(()=>{
+   const img=document.querySelector('.discover-hero-premium');
+   const outer=document.querySelector('.discover-showcase').getBoundingClientRect();
+   const inner=img?.getBoundingClientRect();
+   return {naturalWidth:img?.naturalWidth||0,naturalHeight:img?.naturalHeight||0,
+    complete:!!img?.complete,top:inner?.top||0,width:inner?.width||0,
+    outerWidth:outer.width,outerHeight:outer.height,visible:!!inner?.width};
+  });
+  if(hero.naturalWidth<1400||hero.naturalHeight<750||!hero.complete||
+   !hero.visible||hero.width<hero.outerWidth-2)
+   throw Error('Hero HD missing, not loaded or cropped unexpectedly '+view.name+' '+JSON.stringify(hero));
   if(errors.length||first.maxWidth>first.inner+2||first.sections!==4||!first.hasSubmit)
    throw Error('Invite first page invalid '+view.name+JSON.stringify({first,errors}));
   if(view.name==='S25-Ultra')await page.screenshot({path:path.join(captures,'S25-Ultra-INVITATION-PAGE1.png')});
@@ -57,7 +68,7 @@ const path=require('node:path');
   await page.locator('[data-action="auth-signin-password"]').waitFor();
   if(view.name==='S25-Ultra')await page.screenshot({path:path.join(captures,'S25-Ultra-INVITATION-PAGE2-CONNEXION.png')});
   if(await page.locator('[data-action="auth-reset-request"]').count()!==1)throw Error('Recovery button missing');
-  console.log(view.name,JSON.stringify({first,data,errors}));
+  console.log(view.name,JSON.stringify({first,hero,data,errors}));
   await page.close();
  }
  await browser.close();
