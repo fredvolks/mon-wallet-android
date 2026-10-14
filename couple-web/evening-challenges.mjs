@@ -295,6 +295,8 @@ export function editableCardSlots(category,cards=[]){
     minutes:saved?saved.timer_minutes:original?.minutes??null,
     recipientId:saved?.recipient_user_id??null,
     drawerId:saved?.drawer_user_id??null,
+    drawerRole:saved?.drawer_role??(saved?.drawer_user_id?'owner':'both'),
+    recipientRole:saved?.recipient_role??(saved?.recipient_user_id?'partner':'both'),
     filled:!!saved||!!original,saved:!!saved,isOriginal:cardId<=25};
  });
 }

@@ -18,7 +18,7 @@ const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false,
- solo:{weekly:null,session:null,challenge:null,challengeCategory:'SENSUEL',special:null,host:null,occasion:null,occasionDay:null,adventDay:null}};
+ solo:{weekly:null,session:null,challenge:null,challengeCardId:null,challengeCategory:'SENSUEL',special:null,host:null,occasion:null,occasionDay:null,adventDay:null}};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 let timerCtx=null;
 const challengeTimer={id:null,durationMs:0,remainingMs:0,deadline:0,running:false,notified:false,mode:'sound'};
@@ -276,7 +276,7 @@ function renderSoloSession(){
  let body=soloNote()+
   '<section class="card"><div class="eyebrow">Découvrir les soirées</div>'+
   '<h2>Vos dés et vos défis</h2>'+
-  '<p>Essayez la mécanique des D6 et du D20 avant d’inviter quelqu’un. '+
+  '<p>Essayez la mécanique des D6 et du D35 avant d’inviter quelqu’un. '+
   'Aucun tirage ne sera enregistré comme une activité de couple.</p>'+
   heroDice(demo.session,6,'D6 individuel · essai')+
   button('solo-roll:session','🎲 Essayer le D6')+
@@ -286,12 +286,16 @@ function renderSoloSession(){
    '" data-action="solo-category:'+c+'">'+safe(names[c])+'</button>').join('')+
   '</div><p>Vous pouvez essayer des défis pour découvrir leur contenu. '+
   'Toute activité reste facultative et nécessite l’accord des personnes concernées.</p>'+
-  heroDice(demo.challenge,20,'D20 · défi d’essai')+
-  button('solo-roll:challenge','🎲 Découvrir un défi D20');
+  heroDice(demo.challenge,35,'D35 · défi d’essai')+
+  button('solo-roll:challenge','🎲 Découvrir un défi D35');
  if(demo.challenge){
-  const card=eveningCard(category,demo.challenge);
+  const cardId=demo.challengeCardId||1;
+  const custom=state.customCards.find(x=>x.category===category&&x.card_id===cardId);
+  const card=custom?resolvedCard({category,card_id:cardId,face:demo.challenge,
+    card_title:custom.title,card_description:custom.description,
+    card_timer_minutes:custom.timer_minutes}):eveningCard(category,cardId);
   body+='<div class="solo-result"><div class="eyebrow">'+safe(names[category])+
-   ' · N° '+demo.challenge+'</div><h3>'+safe(card.title)+'</h3>'+
+   ' · D35 : '+demo.challenge+'</div><h3>'+safe(card.title)+'</h3>'+
    '<p>'+safe(card.description)+'</p>'+timerWidget({id:'solo-'+category+'-'+demo.challenge},card.minutes)+'</div>';
  }
  body+='</section><section class="card">'+
@@ -364,13 +368,14 @@ function renderSolo(){
  '<p>Découvrez toutes les fonctionnalités de LoveRoll sans avoir à ajouter de partenaire. '+
  'Les essais sont privés et ne modifient pas votre calendrier.</p>'+
  '<div class="solo-shortcuts">'+
- button('tab:session','🎲 Soirée et dés D6 / D20')+
+ button('tab:session','🎲 Soirée et dés D6 / D35')+
  button('tab:special','✦ Défis et sorties')+
  button('tab:advent','🎁 Calendrier de l’Avent')+
  button('tab:personal-journal','♥ Mon calendrier personnel')+
  '</div></section>'+ideaPreview()+
- '<section class="card"><h3>♡ Jouer à deux plus tard</h3>'+
- '<p>Vous pourrez lier une personne depuis les réglages lorsque vous serez prêt.</p>'+
+ '<section class="card"><h3>♡ Préparer avant d’inviter</h3>'+
+ '<p>Écrivez vos cartes, choisissez les rôles et les minuteurs en privé. Votre conjointe sera invitée plus tard.</p>'+
+ (state.coupleId?button('tab:library','♡ Gérer mes défis'):button('prepare-cards','♡ Créer mes défis maintenant'))+
  button('start-couple','Ajouter un conjoint ou une conjointe','class="subtle"')+
  '</section>','VOTRE ESPACE','Toute l’application, même en solo');
 }
@@ -488,7 +493,7 @@ function renderSession(){
    if(active){
     const challenge=resolvedCard(active);
     body+='<div class="card challenge-present"><div class="eyebrow">'+safe(names[active.category])+
-     ' · D20 : '+safe(active.face)+'</div>'+
+     ' · D35 : '+safe(active.face)+'</div>'+
      '<div class="challenge-roles">♡ '+safe(p.name).toUpperCase()+' OFFRE → '+safe(state.profile.display_name).toUpperCase()+' REÇOIT</div>'+
      '<h3>'+safe(challenge.title)+'</h3>'+
      '<p>'+safe(challenge.description)+'</p>' +
@@ -497,7 +502,7 @@ function renderSession(){
      (active.status==='proposed'?button('answer:'+active.id+':accepted','Accepter'):'')+
      (active.status==='accepted'?button('answer:'+active.id+':completed','Terminé'):'')+
      button('answer:'+active.id+':passed','Passer')+'</div></div>';
-   }else if(completed<mine.face)body+='<p>Votre partenaire brasse le D20 pour vous proposer le prochain défi.</p>';
+   }else if(completed<mine.face)body+='<p>Votre partenaire brasse le D35 pour vous proposer le prochain défi.</p>';
    const otherActive=state.challenges.filter(x=>x.recipient===p.user_id&&['proposed','accepted'].includes(x.status)).at(-1);
    const otherCompleted=state.challenges.filter(x=>x.recipient===p.user_id&&x.status==='completed').length;
    if(!otherActive&&otherCompleted<theirs.face){
@@ -505,7 +510,7 @@ function renderSession(){
      '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
      '<p>Chaque défi : 80 % de chances de tomber dans la catégorie choisie, 20 % dans l’autre.</p>'+
-     button('new-challenge','🎲 Brasser le D20 pour '+safe(p.name))+'</div>';
+     button('new-challenge','🎲 Brasser le D35 pour '+safe(p.name))+'</div>';
    }else if(otherActive){const giving=resolvedCard(otherActive);
     body+='<section class="card"><div class="challenge-roles">♡ '+safe(state.profile.display_name).toUpperCase()+' OFFRE → '+safe(p.name).toUpperCase()+' REÇOIT</div>'+
     '<h3>Mon défi à offrir : '+safe(giving.title)+'</h3><p>'+safe(giving.description)+'</p>'+
@@ -810,14 +815,13 @@ function renderCardLibrary(){
  const category=state.customCategory;
  const slots=editableCardSlots(category,state.customCards);
  const slot=slots.find(x=>x.cardId===state.customSlot)||slots[0];
- const eligibleOptions=(name,value,selected)=>'<label class="custom-person-option">'+
-  '<input type="radio" name="'+name+'" value="'+safe(value)+'"'+
-  (selected===value?' checked':'')+'> '+safe(value?state.members.find(m=>m.user_id===value)?.name||'Partenaire':'Les deux partenaires')+
-  '</label>';
+ const roleNames={both:'Les deux partenaires',
+  owner:'Moi · '+state.profile.display_name,
+  partner:state.members.find(m=>m.user_id!==state.user.id)?.name||'Ma conjointe (à inviter)'};
  const chooser=(name,current)=>'<div class="custom-receiver">'+
-  '<label class="custom-person-option"><input type="radio" name="'+name+'" value=""'+
-  (!current?' checked':'')+'> Les deux partenaires</label>'+
-  state.members.map(m=>eligibleOptions(name,m.user_id,current)).join('')+'</div>';
+   ['both','owner','partner'].map(role=>'<label class="custom-person-option">'+
+     '<input type="radio" name="'+name+'" value="'+role+'"'+
+     (current===role?' checked':'')+'> '+safe(roleNames[role])+'</label>').join('')+'</div>';
  const table=(range)=>range.map(card=>{
   const title=card.title||'Emplacement vide';
   return '<button type="button" class="custom-card-tile '+
@@ -855,9 +859,9 @@ function renderCardLibrary(){
   '<label>Consigne<textarea id="custom-description" maxlength="900" rows="4"'+
    ' placeholder="Décrivez librement le défi proposé">'+safe(slot.description)+'</textarea></label>'+
   '<strong>Qui peut piger cette carte ?</strong>'+
-  chooser('custom-drawer',slot.drawerId)+
+  chooser('custom-drawer',slot.drawerRole)+
   '<strong>Qui peut recevoir ce défi ?</strong>'+
-  chooser('custom-recipient',slot.recipientId)+
+  chooser('custom-recipient',slot.recipientRole)+
   '<p class="tiny-note">Celui qui pige OFFRE le défi à l’autre, qui le REÇOIT. Ces restrictions sont vérifiées dans la base de données avant chaque tirage.</p>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="custom-timer-enabled"'+
    (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
@@ -885,8 +889,9 @@ function renderSettings(){
   button('invite','Inviter mon conjoint ou ma conjointe')+
   button('end-couple','Annuler cet espace à deux','class="subtle"');
  }else{
-  partner+='<p>Vous n’avez pas de partenaire lié. Votre calendrier personnel reste disponible.</p>'+
-  button('start-couple','Ajouter un conjoint ou une conjointe');
+  partner+='<p>Préparez vos défis avant même d’inviter votre conjointe.</p>'+
+  button('prepare-cards','♡ Créer mes défis avant l’invitation')+
+  button('start-couple','Ajouter un conjoint ou une conjointe','class="subtle"');
  }
  partner+='</section>';
  const libraryPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+ 
@@ -981,15 +986,15 @@ async function handle(action,element){
   if(!title||title.length<3||title.length>120||!description||description.length<10||
      description.length>900||(timer&&(!Number.isInteger(minutes)||minutes<1||minutes>60)))
    throw Error('Titre de 3 à 120 caractères, description de 10 à 900 caractères et minuteur facultatif de 1 à 60 minutes.');
-  const recipient=document.querySelector('[name="custom-recipient"]:checked')?.value||null;
-  const drawer=document.querySelector('[name="custom-drawer"]:checked')?.value||null;
-  if(recipient&&!state.members.some(m=>m.user_id===recipient))throw Error('Destinataire inconnu.');
-  if(drawer&&!state.members.some(m=>m.user_id===drawer))throw Error('La personne qui pige est inconnue.');
-  if(drawer&&recipient&&drawer===recipient)throw Error('Une personne ne peut pas piger un défi à s’offrir à elle-même.');
-  await rpc('save_love_custom_card',{p_couple:state.coupleId,
+  const recipient=document.querySelector('[name="custom-recipient"]:checked')?.value;
+  const drawer=document.querySelector('[name="custom-drawer"]:checked')?.value;
+  if(!['both','owner','partner'].includes(drawer)||!['both','owner','partner'].includes(recipient))
+   throw Error('Choisissez qui peut piger et recevoir cette carte.');
+  if(drawer===recipient&&drawer!=='both')throw Error('La même personne ne peut pas piger son propre défi.');
+  await rpc('save_love_card_with_roles',{p_couple:state.coupleId,
    p_category:state.customCategory,p_card_id:state.customSlot,
    p_title:title,p_description:description,p_timer_minutes:minutes,
-   p_recipient:recipient,p_drawer:drawer});
+   p_recipient_role:recipient,p_drawer_role:drawer});
   await reload();notify('Carte enregistrée.');return;
  }
  if(verb==='delete-custom-card'){
@@ -1008,16 +1013,23 @@ async function handle(action,element){
  }
  if(verb==='solo-roll'){
   if(isSharedCoupleReady(state.coupleId,state.members))throw Error('Utilisez les tirages partagés pour votre couple.');
-  const kind=parts[0],sizes={weekly:6,session:6,challenge:20,special:20,host:6,occasion:20};
+  const kind=parts[0],sizes={weekly:6,session:6,challenge:35,special:20,host:6,occasion:20};
   if(!Object.hasOwn(sizes,kind))throw Error('Dé d’essai inconnu.');
   state.solo[kind]=drawSoloFace(sizes[kind]);
+  if(kind==='challenge'){
+   const category=state.solo.challengeCategory;
+   const extra=state.customCards.filter(c=>c.category===category&&c.card_id>=26&&c.card_id<=35)
+    .map(c=>c.card_id);
+   const pool=[...Array.from({length:25},(_,i)=>i+1),...extra];
+   state.solo.challengeCardId=pool[Math.floor(Math.random()*pool.length)];
+  }
   if(kind==='special')state.solo.host=null;
   render();return;
  }
  if(verb==='solo-category'){
   if(isSharedCoupleReady(state.coupleId,state.members))throw Error('Le mode solo est indisponible dans un couple connecté.');
   if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie inconnue.');
-  state.solo.challengeCategory=parts[0];state.solo.challenge=null;
+  state.solo.challengeCategory=parts[0];state.solo.challenge=null;state.solo.challengeCardId=null;
   render();return;
  }
  if(verb==='solo-advent'){
@@ -1114,6 +1126,15 @@ async function handle(action,element){
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:state.profile.birthday_md});
   await reload();return;
+ }
+ if(verb==='prepare-cards'){
+  if(sessionStorage.getItem('pendingInvite'))throw Error('Une invitation est en attente.');
+  if(!state.coupleId)await rpc('create_love_match',{p_anniversary_md:null});
+  localStorage.setItem('loveroll-skip-'+state.user.id,'1');
+  state.tab='library';
+  await reload();
+  notify('Votre bibliothèque privée est prête. Invitez votre conjointe plus tard.');
+  return;
  }
  if(verb==='create-couple'){
   const date=parseMonthDay('signup-couple',false);
