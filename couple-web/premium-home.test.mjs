@@ -79,12 +79,12 @@ test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and real 3.1s tumble',
  assert.match(die,/\[5,\[0,-1,0\]\]/);
  assert.match(die,/\[3,\[1,0,0\]\]/);
  assert.match(die,/\[4,\[-1,0,0\]\]/);
- assert.match(die,/duration=rolling\?2650:0/);
+ assert.match(die,/duration=rolling&&!reduceMotion\?3100:0/);
  assert.match(die,/new THREE\.WebGLRenderer/);
  assert.match(die,/built\.group\.quaternion\.copy\(target\)/);
  assert.match(app,/state\.weekly=result/);
  assert.match(app,/state\.diceStatus='rolling'/);
- assert.match(app,/setTimeout\(resolve,2750\)/);
+ assert.match(app,/setTimeout\(resolve,3250\)/);
 });
 test('Admin reset requires privileged server action and never touches custom challenges',()=>{
  assert.match(app,/isLoveAdmin\(\)&&hasPartner/);
@@ -135,7 +135,7 @@ test('D6 uses an actual bevel and no neon wireframe; fallback hidden during thro
  assert.match(die,/RoundedBoxGeometry\(1\.8,1\.8,1\.8,9,\.30\)/);
  assert.doesNotMatch(die,/new THREE\.LineSegments/);
  assert.match(die,/function roundedPolyhedron\(/);
- assert.match(die,/if\(rolling\)\{[\s\S]*built\.group\.quaternion\.setFromEuler/);
+ assert.match(die,/if\(duration\)\{[\s\S]*built\.group\.quaternion\.setFromEuler/);
  assert.match(css,/webgl-ready \.dice-fallback/);
  assert.match(css,/safe-area-inset-top/);
  assert.match(css,/home-stats-grid/);
