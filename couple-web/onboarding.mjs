@@ -87,9 +87,11 @@ export function authHtml(invitation=false){
  (typeof window!=='undefined'&&window.LoveRollNativeAuth?'':button('apple','Continuer avec Apple','subtle'))+
  '<details class="premium-email-disclosure"><summary>✉ Continuer avec mon courriel</summary>'+
  '<label>Courriel<input id="signin-email" type="email" autocomplete="email" placeholder="vous@exemple.com"></label>'+
- button('email-login','Recevoir un courriel de connexion','subtle')+
- '<label>Code à 6 chiffres (si présent dans le courriel)<input id="signin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></label>'+
- button('verify-email-code','Me connecter avec mon code','subtle')+'</details>'+ 
+ button('email-login','Recevoir mon lien de connexion','subtle')+
+ '<p class="tiny-note" id="auth-email-help" role="status" aria-live="polite">Vous recevrez un courriel de Supabase Auth. S’il contient « Confirm email address », appuyez sur ce lien pour confirmer votre compte. Aucun code à 6 chiffres n’est nécessaire.</p>'+
+ '<details class="premium-otp-disclosure"><summary>J’ai reçu un code à 6 chiffres</summary>'+
+ '<label>Code reçu dans le courriel<input id="signin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></label>'+
+ button('verify-email-code','Me connecter avec le code','subtle')+'</details></details>'+ 
  '<p class="tiny-note">Connexion sécurisée · Votre invitation reste personnelle pendant 7 jours.</p>'+
  (invitation?button('invite-return','← Retour à l’invitation','text-link'):button('show-landing','← Retour à l’accueil','text-link'))+'</div>';
 }
