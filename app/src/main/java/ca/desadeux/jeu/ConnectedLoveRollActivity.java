@@ -62,6 +62,17 @@ public final class ConnectedLoveRollActivity extends Activity {
   @JavascriptInterface public void closeLoveRoll() {
    runOnUiThread(() -> finish());
   }
+  // Free SMS share: opens the system composer, never sends silently.
+  @JavascriptInterface public void openSms(String message) {
+   runOnUiThread(() -> {
+    if(web==null || !pageReady || !isTrusted(Uri.parse(web.getUrl())))return;
+    try {
+     Intent sms = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"));
+     sms.putExtra("sms_body", message == null ? "" : message);
+     startActivity(sms);
+    } catch(Exception ignored) {show("Aucune application SMS disponible.");}
+   });
+  }
  }
  @Override public void onCreate(Bundle savedInstanceState) {
   super.onCreate(savedInstanceState);
