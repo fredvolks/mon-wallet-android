@@ -32,3 +32,20 @@ end;$$;
 revoke all on function public.accept_love_match_by_id(uuid)
  from public,anon,authenticated;
 grant execute on function public.accept_love_match_by_id(uuid) to authenticated;
+
+-- Migrate an OLD #invite=<256-bit-token> link on first visit into a new
+-- browser-safe ?invite_id= link. The resolver exposes no email and cannot pair.
+create or replace function public.resolve_love_invite_reference(p_token_hash text)
+returns uuid language sql stable security definer set search_path='' as $$
+ select i.id from public.couple_invitations i
+ where p_token_hash ~ '^[a-f0-9]{64}$'
+   and i.token_hash=p_token_hash
+   and i.accepted_at is null
+   and i.cancelled_at is null
+   and i.expires_at>now()
+ limit 1;
+$$;
+revoke all on function public.resolve_love_invite_reference(text)
+ from public,anon,authenticated;
+grant execute on function public.resolve_love_invite_reference(text)
+ to anon,authenticated;
