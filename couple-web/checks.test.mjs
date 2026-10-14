@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
+import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
@@ -290,7 +291,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v13/);
+ assert.match(sw,/loveroll-static-v14/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -667,4 +668,68 @@ test('Database snapshots and server defaults match all 50 client cards without c
  assert.ok(protectedEntries.includes('card_timer_minutes=historical.minutes'));
  assert.ok(!sql.includes('delete from public.love_custom_challenges'));
  assert.ok(!sql.includes('delete from public.love_personal_intimacy'));
+});
+
+test('All 20 monthly D20 activities are editable without changing their face identifiers',()=>{
+ assert.equal(MONTHLY_ACTIVITIES.length,20);
+ assert.deepEqual(MONTHLY_ACTIVITIES.map(a=>a.face),Array.from({length:20},(_,i)=>i+1));
+ for(const item of MONTHLY_ACTIVITIES){
+  assert.ok(item.title.length>=3&&item.title.length<=120);
+  assert.ok(item.description.length>=10&&item.description.length<=900);
+  assert.equal(typeof item.is_restaurant,'boolean');
+ }
+ const edits=[{face:1,title:'Notre sortie surprise',description:'Une sortie personnalisée et encore inconnue.',is_restaurant:false}];
+ const result=editableMonthlyActivities(edits);
+ assert.equal(result.length,20);
+ assert.equal(result[0].title,'Notre sortie surprise');
+ assert.equal(result[0].edited,true);
+ assert.equal(result[0].is_restaurant,false);
+ assert.equal(result[1].edited,false);
+ assert.equal(result[1].title,MONTHLY_ACTIVITIES[1].title);
+ assert.equal(editableMonthlyActivities([])[0].title,MONTHLY_ACTIVITIES[0].title);
+ assert.deepEqual(monthlyActivityForRoll({face:1}),{
+  face:1,title:MONTHLY_ACTIVITIES[0].title,
+  description:MONTHLY_ACTIVITIES[0].description,is_restaurant:true
+ });
+ const historic={face:1,activity_title:'Ancienne activité du mois',
+  activity_description:'Le souvenir de notre ancienne sortie à deux.',
+  activity_is_restaurant:false};
+ assert.equal(monthlyActivityForRoll(historic).title,'Ancienne activité du mois');
+ assert.equal(monthlyActivityForRoll(historic).is_restaurant,false);
+ assert.throws(()=>monthlyActivityForRoll({face:21}),/invalide/);
+});
+test('Only LoveRoll couple owner edits monthly activities, including before partner invitation',()=>{
+ const sql=readFileSync(new URL('./edit-monthly-activities.sql',import.meta.url),'utf8');
+ const serviceWorker=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ for(const clause of [
+  'create table if not exists public.love_monthly_activity_overrides',
+  'alter table public.love_monthly_activity_overrides enable row level security',
+  'love_monthly_activity_owner_read',
+  'owner_user_id=(select auth.uid())',
+  'create or replace function public.save_love_monthly_activity(',
+  'create or replace function public.reset_love_monthly_activity(',
+  'where c.id=p_couple and c.owner_user_id=auth.uid()',
+  'perform 1 from public.couples where id=p_couple for update',
+  'primary key(couple_id,face)',
+  'r.activity_title is null',
+  'activity_title,activity_description,activity_is_restaurant',
+  'coalesce(edited.title,selected.title)',
+  'coalesce(edited.description,selected.description)',
+  'coalesce(edited.is_restaurant,selected.is_restaurant)',
+  "if p_kind='monthly_restaurant' and not coalesce(is_restaurant,false)"
+ ])assert.ok(sql.includes(clause),'Missing owner-only or snapshot rule: '+clause);
+ assert.ok(!sql.includes('delete from public.couple_rolls'));
+ assert.ok(!sql.includes('delete from public.couple_intimacy'));
+ assert.ok(app.includes("function renderMonthlyLibrary(){"));
+ assert.ok(app.includes("state.tab==='monthly-library'&&isLoveAdmin()"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library']"));
+ assert.ok(app.includes("query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})"));
+ assert.ok(app.includes("rpc('save_love_monthly_activity'"));
+ assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
+ assert.ok(app.includes("button('tab:monthly-library','Modifier les 20 activités')"));
+ assert.ok(app.includes("monthlyActivityForRoll(state.monthly.monthly_activity)"));
+ assert.ok(app.includes("const activity=monthlyActivityForRoll(a)"));
+ assert.ok(app.includes("if(activity.is_restaurant){"));
+ assert.ok(serviceWorker.includes("'./monthly-activities.mjs'"));
+ assert.ok(!app.includes("safe(outings[a.face-1])"));
 });
