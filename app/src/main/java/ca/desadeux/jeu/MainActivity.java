@@ -866,13 +866,6 @@ public final class MainActivity extends Activity {
   return new SpecialDateData.Draw(face,prefs.getBoolean(p+"fred",false),
     prefs.getBoolean(p+"optionB",false));
  }
- void showSpecialCatalogue(){
-  StringBuilder sb=new StringBuilder("20 idées possibles à Québec :\n\n");
-  for(int i=0;i<20;i++)sb.append(i+1).append(".  ")
-    .append(SpecialDateData.ACTIVITIES[i][0]).append("\n");
-  sb.append("\nLa personne qui invite est tirée à 50/50. Pour une sortie au restaurant, vous brassez un D6 supplémentaire pour choisir resto connu ou nouveau.");
-  PremiumDialog.info(this,"✦ Nos 20 sorties",sb.toString());
- }
  void drawSpecial(){
   LocalDate now=LocalDate.now(SpecialDateData.ZONE);
   String prefix=specialPrefix(now);
@@ -973,7 +966,6 @@ public final class MainActivity extends Activity {
    }
    addText(page,"🔒 L'activité, la personne qui invite et le restaurant restent enregistrés jusqu'au mois prochain.",12,MUTED,false,8);
   }
-  addButton(page,"CONSULTER LES 20 IDÉES",false,()->showSpecialCatalogue());
   LinearLayout eventsCard=card("💘 Nos fêtes et anniversaires",
    "Saint-Valentin, anniversaire de couple, fête des Mères, fête des Pères et anniversaires personnels.");
   addButton(eventsCard,"🎲  ÉVÉNEMENTS SPÉCIAUX →",true,()->{tab="occasions";draw();});
