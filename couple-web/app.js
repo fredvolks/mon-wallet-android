@@ -11,6 +11,7 @@ import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,o
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
+import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup} from './push-notifications.mjs';
 import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
@@ -26,7 +27,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -123,6 +124,14 @@ function bindActions(){
   const output=id(jsonInputId(input.dataset.jsonFile));if(!output)return;
   try{output.value=await file.text();state.jsonPending=null;notify('Fichier chargé. Vérifiez son aperçu.');}catch(e){fail(e);}
  }));
+ document.querySelectorAll('[data-push-option]').forEach(input=>input.addEventListener('change',async()=>{
+  const type=input.dataset.pushOption;
+  try{
+   await updatePushPreference(client,state.user.id,state.pushPrefs||{},type,input.checked);
+   state.pushPrefs={...state.pushPrefs,[type]:input.checked};
+   notify('Préférence enregistrée.');
+  }catch(err){input.checked=!input.checked;fail(err);}
+ }));
  bindWellbeingMenus();
 }
 function render(){
@@ -180,11 +189,13 @@ function render(){
 }
 async function reload(){
  if(!state.user)return;
- const [profiles,assessments,personal]=await Promise.all([
+ const [profiles,assessments,personal,pushSettings]=await Promise.all([
   query('couple_profiles',{eq:{id:state.user.id}}),
   query('love_wellbeing',{eq:{user_id:state.user.id}}),
-  query('love_personal_intimacy',{eq:{user_id:state.user.id}})
+  query('love_personal_intimacy',{eq:{user_id:state.user.id}}),
+  query('love_push_preferences',{eq:{user_id:state.user.id}})
  ]);
+ state.pushPrefs=pushSettings[0]||{enabled:false,weekly:true,invitation:true,monthly:true,special:true};
  state.profile=profiles[0]||null;
  state.wellbeing=assessments[0]||null;
  state.personalJournal=personal;
@@ -1142,10 +1153,7 @@ function renderSettings(){
   settingRow('Événements spéciaux','Gérer les fêtes et leurs deux D6.','tab:special-editor','Modifier')+
   celebrants:
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
- const notifications='<div class="settings-item"><div><strong>Notifications push</strong>'+
-  '<p>Dé hebdomadaire, invitation acceptée et événements spéciaux.</p></div></div>'+
-  '<p class="tiny-note">Les notifications automatiques nécessitent encore un service push configuré. '+
-  'Aucun SMS payant ne sera envoyé et aucun rappel ne sera annoncé comme actif avant sa mise en service.</p>';
+ const notifications=notificationSettingsMarkup(state.pushPrefs||{});
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const appSettings=(nativeApp?
   '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>L’application Android utilise les mêmes écrans que les versions iPhone et iPad.</p></div></div>'+
@@ -1208,6 +1216,34 @@ async function ensureInviteDraft(forceNew=false){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(verb==='push-enable'){
+  await enablePush(client,state.user.id);
+  state.pushPrefs={...(state.pushPrefs||{}),enabled:true};
+  render();notify('Notifications activées sur cet appareil ❤️');return;
+ }
+ if(verb==='push-disable'){
+  await disablePush(client,state.user.id);
+  state.pushPrefs={...(state.pushPrefs||{}),enabled:false};
+  render();notify('Notifications désactivées.');return;
+ }
+ if(verb==='push-test'){
+  const result=await sendTestPush(client);
+  notify(result?'Notification test planifiée.':'Impossible de préparer le test.');
+  return;
+ }
+ if(verb==='native-notify-enable'){
+  if(!window.LoveRollNativeAuth?.enableWeeklyReminder)
+   throw Error('Mettez à jour l’APK pour activer le rappel Android.');
+  window.LoveRollNativeAuth.enableWeeklyReminder();
+  notify('Rappel hebdomadaire demandé à Android. Autorisez les notifications si nécessaire.');
+  return;
+ }
+ if(verb==='native-notify-disable'){
+  if(!window.LoveRollNativeAuth?.disableWeeklyReminder)
+   throw Error('Mettez à jour l’APK pour désactiver le rappel Android.');
+  window.LoveRollNativeAuth.disableWeeklyReminder();
+  notify('Rappel local désactivé.');return;
+ }
  if(verb==='copy-invite-for-browser'){
   const token=sessionStorage.getItem('pendingInvite');
   if(!/^[0-9a-f]{64}$/i.test(token||''))throw Error('Lien d’invitation introuvable.');
