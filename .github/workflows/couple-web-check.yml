@@ -292,6 +292,63 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           EOF
           node verify-premium-invitation.cjs
+      - name: Capturer les six pages réelles du mode couple démo
+        run: |
+          cat > couple-web/__couple-capture.html <<'EOF'
+          <!doctype html><html lang="fr-CA"><head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+          <link rel="stylesheet" href="./styles.css">
+          <link rel="stylesheet" href="./premium-theme.css">
+          <link rel="stylesheet" href="./discover.css">
+          <link rel="stylesheet" href="./approved-artwork.css">
+          <link rel="stylesheet" href="./demo-couple.css">
+          </head><body><main id="app"></main><script type="module">
+          import {demoCoupleHtml} from './demo-couple.mjs';
+          const params=new URLSearchParams(location.search);
+          const tab=params.get('tab')||'home';
+          document.querySelector('#app').innerHTML=demoCoupleHtml({
+            userName:'Fred',tab,roll:4,
+            surprise:'Souper romantique',
+            day:14,challengeComplete:false
+          });
+          </script></body></html>
+          EOF
+          cat > capture-couple.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const pages=[
+              ['home','01-Accueil'],
+              ['session','02-Soiree'],
+              ['special','03-Surprise'],
+              ['advent','04-Avent'],
+              ['settings','05-Reglages'],
+              ['journal','06-Calendrier']
+            ];
+            for(const [tab,label] of pages){
+              const page=await browser.newPage({
+                viewport:{width:412,height:915},deviceScaleFactor:2,
+                isMobile:true,hasTouch:true
+              });
+              await page.goto('http://127.0.0.1:8765/__couple-capture.html?tab='+tab,{waitUntil:'networkidle'});
+              await page.locator('.demo-shell').waitFor();
+              const result=await page.evaluate(()=>({
+                header:document.querySelector('.demo-pairline')?.textContent,
+                cards:document.querySelectorAll('.demo-card').length,
+                overflow:document.documentElement.scrollWidth>innerWidth+2,
+                height:document.documentElement.scrollHeight
+              }));
+              if(result.overflow||!result.header||result.cards<1)
+                throw Error(tab+': '+JSON.stringify(result));
+              await page.screenshot({path:'landing-captures/Couple-'+label+'.png',fullPage:true});
+              console.log('Couple '+label+': '+JSON.stringify(result));
+              await page.close();
+            }
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          EOF
+          node capture-couple.cjs
       - name: Publier les captures comparatives
         if: always()
         uses: actions/upload-artifact@v4
