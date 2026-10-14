@@ -178,7 +178,7 @@ test('50 built-in cards and 20 optional creator-only slots',()=>{
   assert.equal(slots.length,10);
   assert.ok(slots.every(s=>s.cardId>=26&&s.cardId<=35&&!s.filled));
  }
- assert.equal(eveningCard('SENSUEL',3).minutes,8);
+ assert.equal(eveningCard('SENSUEL',3).minutes,4);
  assert.equal(eveningCard('SEXUEL',5).minutes,12);
  assert.equal(eveningCard('SEXUEL',16).minutes,0);
  assert.throws(()=>eveningCard('COQUIN',1));
@@ -290,7 +290,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v12/);
+ assert.match(sw,/loveroll-static-v13/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -600,4 +600,71 @@ test('Prepare cards privately before inviting a partner with future partner role
  assert.ok(roles.includes("recipient_role text not null default 'both'"));
  assert.ok(roles.includes("owner_user_id=auth.uid()"));
  assert.ok(roles.includes("p_drawer_role=p_recipient_role"));
+});
+
+test('All 50 original cards are varied, ready to play and individually editable',()=>{
+ const all=new Set();
+ for(const category of EVENING_CATEGORIES){
+  const cards=Array.from({length:25},(_,i)=>eveningCard(category,i+1));
+  assert.equal(cards.length,25);
+  assert.ok(cards.filter(c=>c.minutes>0).length>=9,'Not enough playable timed challenges in '+category);
+  assert.ok(cards.filter(c=>c.minutes===0).length>=9,'Open-ended surprises should never force a countdown in '+category);
+  for(const [i,card] of cards.entries()){
+   assert.ok(card.title.length>=8&&card.title.length<=120,'Missing card title '+category+' '+i);
+   assert.ok(card.description.length>=90&&card.description.length<=900,'Incomplete instructions '+category+' '+i);
+   assert.ok(Number.isInteger(card.minutes)&&card.minutes>=0&&card.minutes<=15,'Invalid timer');
+   assert.ok(!/À écrire|Titre à remplir|Carte personnalisée|lorem ipsum/i.test(card.title+' '+card.description),'Placeholder '+category+' '+i);
+   assert.ok(!all.has(category+'-'+card.title.toLowerCase()),'Duplicate title '+card.title);
+   all.add(category+'-'+card.title.toLowerCase());
+  }
+  const overrides=editableCardSlots(category,[
+   {category,card_id:1,title:'Ma version personnelle',description:'Une consigne modifiée qui demeure prioritaire dans cet espace.',
+    timer_minutes:null,recipient_role:'partner',drawer_role:'owner'}
+  ]);
+  assert.equal(overrides[0].title,'Ma version personnelle');
+  assert.equal(overrides[0].minutes,null,'Timer switch-off must override any factory timer');
+  assert.equal(overrides[0].recipientRole,'partner');
+  assert.equal(overrides[0].drawerRole,'owner');
+  assert.equal(overrides[1].title,eveningCard(category,2).title);
+ }
+ assert.equal(all.size,50);
+ assert.equal(eveningCard('SEXUEL',1).title,'Strip-tease privé');
+ assert.equal(eveningCard('SEXUEL',8).title,'Le Kamasutra à deux');
+ assert.equal(eveningCard('SENSUEL',4).title,'Douche à deux');
+});
+test('Database snapshots and server defaults match all 50 client cards without changing private edits',()=>{
+ const sql=readFileSync(new URL('./base-cards-v2-snapshots.sql',import.meta.url),'utf8');
+ for(const token of [
+ 'update public.couple_challenges ch',
+ 'and ch.card_title is null',
+ 'create table if not exists public.love_base_challenges',
+ 'check(timer_minutes between 0 and 15)',
+ 'alter table public.love_base_challenges enable row level security',
+ 'revoke all on public.love_base_challenges from public,anon,authenticated',
+ 'insert into public.love_base_challenges(category,card_id,title,description,timer_minutes)',
+ 'on conflict(category,card_id) do update set',
+ 'original public.love_base_challenges%rowtype',
+ 'select * into original from public.love_base_challenges',
+ 'coalesce(chosen.title,original.title)',
+ 'coalesce(chosen.description,original.description)',
+ 'case when chosen.card_id is not null then chosen.timer_minutes',
+ 'love_card_draw_history',
+ "cc.recipient_role='owner'",
+ "cc.drawer_role='partner'",
+ 'd35:=floor(random()*35)::integer+1'
+ ])assert.ok(sql.includes(token),'Missing important server behaviour: '+token);
+ const protectedEntries=sql.split('update public.couple_challenges ch')[1].split('create table')[0];
+ const seededEntries=sql.split('insert into public.love_base_challenges(category,card_id,title,description,timer_minutes)')[1].split('on conflict(category,card_id)')[0];
+ for(const category of EVENING_CATEGORIES){
+  for(let id=1;id<=25;id++){
+   const c=eveningCard(category,id);
+   const escapedTitle=c.title.replaceAll("'","''");
+   const escapedDesc=c.description.replaceAll("'","''");
+   assert.ok(seededEntries.includes(escapedTitle),'Server missing title '+category+' '+id);
+   assert.ok(seededEntries.includes(escapedDesc),'Server missing description '+category+' '+id);
+  }
+ }
+ assert.ok(protectedEntries.includes('card_timer_minutes=historical.minutes'));
+ assert.ok(!sql.includes('delete from public.love_custom_challenges'));
+ assert.ok(!sql.includes('delete from public.love_personal_intimacy'));
 });
