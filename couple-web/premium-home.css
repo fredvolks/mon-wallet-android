@@ -205,3 +205,20 @@ main#app.loveroll-real-home{
  .loveroll-real-home .home-pip-svg{width:14px;height:14px}
  .loveroll-real-home .home-shortcut small{font-size:.52rem}
 }
+
+.loveroll-real-home .home-notification-popover{
+ position:fixed;z-index:4999;top:65px;right:12px;width:min(340px,92vw);
+ padding:15px;border:1px solid #f58cbac7;border-radius:17px;
+ background:linear-gradient(145deg,#501d3c,#190817);
+ box-shadow:0 14px 36px #090109ee;max-height:47dvh;overflow:auto;
+}
+.loveroll-real-home .home-notification-popover strong{color:#ffcbe1}
+.loveroll-real-home .home-notification-popover p{
+ font-size:.8rem;color:#f0cade;padding:7px 0;border-bottom:1px solid #8a486850;
+}
+.loveroll-real-home .home-notification-popover button{width:100%;min-height:40px}
+.weekly-admin-status{border:1px solid #aa4d7899;border-radius:15px;
+ background:linear-gradient(145deg,#3c1933,#1f1026);padding:11px 13px;margin:10px 0}
+.weekly-admin-status p{font-size:.82rem;margin:5px 0;color:#f4d2e2}
+.weekly-admin-status strong{color:#ffa2cc}
+.real-home-shell .home-die-platform{aspect-ratio:1;height:min(100%,240px)}
