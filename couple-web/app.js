@@ -891,7 +891,7 @@ function renderSettings(){
  partner+='</section>';
  const libraryPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+ 
  '<h3>♡ Mes défis et cartes personnalisées</h3>'+ 
- '<p>25 Sensuel, 25 Sexuel et jusqu’à 10 cartes personnelles par catégorie.</p>'+ 
+ '<p>Modifier les 70 cartes : durée, minuteur, personnes autorisées et règle anti-répétition.</p>'+ 
  button('tab:library','Gérer les défis')+'</section>':'';
  frame('<section class="card"><h2>Mon compte</h2><p>'+
   safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
@@ -955,14 +955,22 @@ async function handle(action,element){
   await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
   await reload();notify('Personne célébrée enregistrée.');return;
  }
+ if(verb==='save-draw-rule'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const enabled=!!id('no-repeat-cards')?.checked;
+  await rpc('set_love_draw_rule',{p_couple:state.coupleId,p_no_repeat:enabled});
+  await reload();
+  notify(enabled?'Chaque carte doit être pigée avant de pouvoir revenir.':'Répétition libre activée.');
+  return;
+ }
  if(verb==='custom-category'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie invalide.');
-  state.customCategory=parts[0];state.customSlot=26;render();return;
+  state.customCategory=parts[0];state.customSlot=1;render();return;
  }
  if(verb==='custom-slot'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
-  const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<26||slot>35)throw Error('Emplacement invalide.');
+  const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<1||slot>35)throw Error('Emplacement invalide.');
   state.customSlot=slot;render();return;
  }
  if(verb==='save-custom-card'){
@@ -974,18 +982,25 @@ async function handle(action,element){
      description.length>900||(timer&&(!Number.isInteger(minutes)||minutes<1||minutes>60)))
    throw Error('Titre de 3 à 120 caractères, description de 10 à 900 caractères et minuteur facultatif de 1 à 60 minutes.');
   const recipient=document.querySelector('[name="custom-recipient"]:checked')?.value||null;
+  const drawer=document.querySelector('[name="custom-drawer"]:checked')?.value||null;
   if(recipient&&!state.members.some(m=>m.user_id===recipient))throw Error('Destinataire inconnu.');
+  if(drawer&&!state.members.some(m=>m.user_id===drawer))throw Error('La personne qui pige est inconnue.');
+  if(drawer&&recipient&&drawer===recipient)throw Error('Une personne ne peut pas piger un défi à s’offrir à elle-même.');
   await rpc('save_love_custom_card',{p_couple:state.coupleId,
    p_category:state.customCategory,p_card_id:state.customSlot,
-   p_title:title,p_description:description,p_timer_minutes:minutes,p_recipient:recipient});
+   p_title:title,p_description:description,p_timer_minutes:minutes,
+   p_recipient:recipient,p_drawer:drawer});
   await reload();notify('Carte enregistrée.');return;
  }
  if(verb==='delete-custom-card'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
-  if(!confirm('Vider cet emplacement ? Les cartes déjà tirées restent dans l’historique.'))return;
+  const original=state.customSlot<=25;
+  if(!confirm(original?
+   'Rétablir la carte officielle et ses réglages par défaut ? Les défis déjà tirés restent inchangés.':
+   'Vider cet emplacement ? Les cartes déjà tirées restent dans l’historique.'))return;
   await rpc('delete_love_custom_card',{p_couple:state.coupleId,
    p_category:state.customCategory,p_card_id:state.customSlot});
-  await reload();notify('Emplacement vidé, historique conservé.');return;
+  await reload();notify(original?'Carte officielle rétablie.':'Emplacement vidé, historique conservé.');return;
  }
  if(verb==='start-couple'){
   if(state.coupleId){state.tab='settings';render();return;}
