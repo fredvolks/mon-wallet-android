@@ -457,7 +457,7 @@ test('Creator-only access and private draws are enforced server side',()=>{
  assert.ok(app.includes("p_card_id:state.customSlot"));
  assert.ok(app.includes("state.couple?.owner_user_id===state.user?.id"));
  assert.ok(app.includes("state.tab==='library')renderCardLibrary()"));
- assert.ok(app.includes("' · D35 : '+safe(active.face)"));
+ assert.ok(app.includes("' · CARTE N° '+safe(active.face)"));
  assert.equal(app.includes("' · CARTE '+"),false);
  assert.ok(app.includes("REÇOIT"));
  assert.ok(app.includes("OFFRE"));
@@ -500,7 +500,7 @@ test('Neither partner sees whether a drawn card was created by the admin',()=>{
  assert.equal(missing.title,'Défi surprise');
  assert.equal(missing.description,'Consigne momentanément indisponible.');
  const gameScreen=app.slice(app.indexOf('function renderSession(){'),app.indexOf('function renderSpecial(){'));
- assert.ok(gameScreen.includes("' · D35 : '+safe(active.face)"));
+ assert.ok(gameScreen.includes("' · CARTE N° '+safe(active.face)"));
  assert.ok(!gameScreen.includes('challenge.cardId'));
  assert.ok(!gameScreen.includes('active.card_id'));
  assert.ok(!gameScreen.includes('défis personnalisés'));
@@ -590,8 +590,8 @@ test('Challenge D35 gives 35 physical numbered faces without changing monthly D2
  assert.ok(db.includes("cc.recipient_role='partner'"));
  assert.ok(db.includes('love_card_draw_history'));
  assert.ok(!app.includes("heroDice(demo.challenge,35,'D35"));
- assert.ok(app.includes('LANCER LE D35 POUR'));
- assert.ok(app.includes('D35 :'));
+ assert.ok(app.includes('DÉCOUVRIR UN DÉFI POUR'));
+ assert.ok(app.includes('CARTE N° '));
  assert.ok(app.includes("heroDice(a.face,20,'Activité officielle')"));
  assert.ok(app.includes("heroDice(prize.face,20,'Résultat officiel')"));
  assert.ok(!app.includes('solo-roll:challenge'));
@@ -861,8 +861,8 @@ test('Server protects future D6 options, uses only random 1..6, and preserves pr
  assert.ok(app.includes("function renderSpecialEventsEditor()"));
  assert.ok(app.includes("heroDice(activity.face,6,"));
  assert.ok(app.includes("heroDice(modifier.face,6,"));
- assert.ok(app.includes("':activity','🎲 Brasser le D6 de l’activité'"));
- assert.ok(app.includes("':modifier','🎲 Brasser le D6 du modificateur'"));
+ assert.ok(app.includes("':activity','🎲 DÉCOUVRIR L’ACTIVITÉ'"));
+ assert.ok(app.includes("':modifier','🎲 RÉVÉLER LA TOUCHE SURPRISE'"));
  assert.ok(app.includes("previewPortableJson('special')"));
  assert.ok(app.includes('state.specialEventsConfig=specialSettings[0]?.events||null'));
  assert.ok(worker.includes("'./private-special-events.mjs'"));
@@ -921,4 +921,16 @@ test('Android APK and Web use one shared LoveRoll interface; iPad layout is adap
  assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(install,/navigator.platform==='MacIntel'/);
+});
+
+test('LoveRoll user-facing navigation uses inviting words instead of technical dice codes',()=>{
+ const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
+ const nav=app.slice(app.indexOf('function nav(){'),app.indexOf('function bindActions(){'));
+ assert.match(nav,/Surprise/);
+ assert.doesNotMatch(nav,/D6|D20|D35/);
+ assert.match(app,/LANCER LE DÉ DE LA SEMAINE/);
+ assert.match(app,/DÉCOUVRIR UN DÉFI POUR/);
+ assert.match(app,/DÉCOUVRIR NOTRE SORTIE/);
+ assert.match(app,/SURPRISE DU MOIS|RENDEZ-VOUS SURPRISE/);
+ assert.doesNotMatch(app,/LANCER LE D35 POUR|LANCER LE D20 MENSUEL/);
 });
