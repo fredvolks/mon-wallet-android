@@ -78,7 +78,7 @@ export function marketingHtml(){
  '</footer>'+
  '</div>';
 }
-export function authHtml(invitation=false,mode='signup',notice=''){
+export function authHtml(invitation=false,mode='signup',notice='',emailValue=''){
  const recovering=mode==='recover',signingIn=mode==='signin';
  const title=recovering?'Nouveau mot de passe':signingIn?'Bienvenue dans LoveRoll':'Créez votre compte';
  const helper=recovering?'Choisissez un nouveau mot de passe pour retrouver votre compte.':
@@ -93,7 +93,7 @@ export function authHtml(invitation=false,mode='signup',notice=''){
   '<button type="button" data-action="auth-mode:signup" class="'+(!signingIn?'is-active':'')+'" aria-pressed="'+(!signingIn)+'">Créer un compte</button>'+
   '<button type="button" data-action="auth-mode:signin" class="'+(signingIn?'is-active':'')+'" aria-pressed="'+signingIn+'">Se connecter</button></div>';
  const email='<label class="invite-auth-field"><span class="invite-field-icon" aria-hidden="true">✉</span>'+
-  '<span class="invite-field-body"><span>Votre courriel</span><input id="signin-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" placeholder="exemple@courriel.com" maxlength="254" required></span></label>';
+  '<span class="invite-field-body"><span>Votre courriel</span><input id="signin-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" placeholder="exemple@courriel.com" maxlength="254" value="'+esc(emailValue)+'" required></span></label>';
  const pass='<label class="invite-auth-field"><span class="invite-field-icon" aria-hidden="true">♙</span>'+
   '<span class="invite-field-body"><span>'+(recovering?'Nouveau mot de passe':signingIn?'Votre mot de passe':'Choisissez un mot de passe')+'</span>'+
   '<input id="signin-password" name="password" type="password" autocomplete="'+(signingIn?'current-password':'new-password')+'" placeholder="••••••••" minlength="8" required></span>'+
