@@ -7,7 +7,7 @@ const release=JSON.parse(read('web-version.json'));
 test('LoveRoll build versions agree between endpoint, app, HTML and imported modules',()=>{
  const build='2026-10-14.45',tag='20261014-profile45';
  assert.equal(release.build,build);
- assert.match(app,/const WEB_RELEASE='2026-10-14\.44'/);
+ assert.match(app,/const WEB_RELEASE='2026-10-14\.45'/);
  assert.match(html,new RegExp('app\\.js\\?v='+tag));
  for(const css of ['styles.css','premium-theme.css','premium-home.css','satin-reference.css','discover.css']){
   assert.ok(html.includes(css+'?v='+tag),css);
