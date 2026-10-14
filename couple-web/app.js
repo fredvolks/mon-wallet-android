@@ -9,6 +9,7 @@ import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,o
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
+import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
@@ -21,7 +22,7 @@ const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[]};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -178,15 +179,18 @@ async function reload(){
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
   state.feedback=[];state.advent=[];state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
+  state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
   render();return;
  }
  if(previousCouple&&previousCouple!==state.coupleId)state.unlockKey=null;
- const [couple,members]=await Promise.all([
+ const [couple,members,invitations]=await Promise.all([
   query('couples',{eq:{id:state.coupleId}}),
-  query('couple_members',{eq:{couple_id:state.coupleId}})
+  query('couple_members',{eq:{couple_id:state.coupleId}}),
+  query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'})
  ]);
+ state.invitations=invitations;
  state.couple=couple[0]||null;
  if(state.couple?.owner_user_id===state.user.id){
   const [cards,activities,adventConfig,adventDays,specialSettings]=await Promise.all([
@@ -211,7 +215,7 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
@@ -219,8 +223,10 @@ async function refreshShared(){
  query('couple_intimacy',{eq:{couple_id:c}}),
  query('couple_occasion_settings',{eq:{couple_id:c}}),
  query('couple_occasion_rolls',{eq:{couple_id:c}}),
- rpc('my_love_special_event_keys',{p_couple:c})
+ rpc('my_love_special_event_keys',{p_couple:c}),
+ query('couple_challenges',{eq:{couple_id:c}})
  ]);
+ state.challengesHistory=challengeHistory;
  state.occasionSettings=occasionSettings[0]||null;
  state.occasionRolls=occasionRolls;
  state.specialEventKeys=Array.isArray(keys)?keys:[];
@@ -290,6 +296,51 @@ function renderIdeas(){
  frame(ideaHtml()+'<section class="card">'+button('tab:home','← Retour à l’accueil','class="subtle"')+'</section>',
   'NOS IDÉES DE SOIRÉE','Complicité et intimité selon votre rythme');
 }
+function renderInvitePanel(){
+ const latest=state.invitations?.find(x=>!x.cancelled_at)||state.invitations?.[0];
+ const ready=state.members?.length===2;
+ const status=invitationStatus(latest,ready);
+ const draft=state.inviteDraft&&state.inviteDraft.id===latest?.id?state.inviteDraft:null;
+ let html='<section class="card"><div class="eyebrow">VOTRE INVITATION</div><h3>♡ Statut de la demande</h3>'+
+  '<div class="invite-status"><strong>'+safe(status.title)+'</strong><p>'+safe(status.hint)+'</p></div>';
+ if(latest)html+='<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+
+  ' · Préparée le '+safe(new Date(latest.created_at).toLocaleDateString('fr-CA'))+'</p>';
+ if(!ready){
+  html+='<label>Courriel Google de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
+   '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
+   button('invite',latest?'Créer un nouveau lien d’invitation':'Préparer une invitation');
+  if(draft){
+   html+='<div class="invite-actions">'+button('send-sms','✉ Envoyer par texto')+
+    button('send-email','✉ Envoyer par courriel','class="subtle"')+
+    button('copy-invite','Copier le lien','class="subtle"')+'</div>'+
+    button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
+    '<p class="tiny-note">Le téléphone ouvre votre messagerie; LoveRoll ne peut pas savoir si vous avez réellement appuyé sur Envoyer.</p>';
+  }
+  if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
+   html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
+ }
+ return html+'</section>';
+}
+function renderCoupleOverview(){
+ const started=state.occasionSettings?.relationship_started_on;
+ const cs=coupleStats(state.sessions||[],state.challengesHistory||[]);
+ const currentMonth=month();
+ const intimate=state.journal.filter(e=>e.happened_on.startsWith(currentMonth)).length;
+ return '<section class="card"><div class="eyebrow">♡ VOTRE COUPLE</div>'+
+ '<h3>Notre histoire en chiffres</h3>'+
+ '<p>En couple depuis le <strong>'+safe(formatCoupleDate(started))+'</strong></p>'+
+ (isLoveAdmin()?'<label>Date du début de notre relation<input type="date" id="couple-started-on" max="'+safe(today())+'" value="'+safe(started||'')+'"></label>'+
+  button('save-couple-date','Enregistrer notre date','class="subtle"'):'')+
+ '<div class="stat-grid"><div class="stat"><strong>'+safe(cs.percentage===null?'—':cs.percentage+' %')+'</strong><small>Soirées terminées</small></div>'+
+ '<div class="stat"><strong>'+cs.completed+' / '+cs.opened+'</strong><small>Soirées jouées</small></div>'+
+ '<div class="stat"><strong>'+cs.challengesDone+'</strong><small>Défis réalisés</small></div></div>'+
+ '<div class="couple-progress"><span style="width:'+safe(cs.percentage||0)+'%"></span></div>'+
+ '<p class="tiny-note">Pourcentage = soirées entièrement terminées / soirées commencées.</p>'+
+ '<div class="stat-grid"><div class="stat"><strong>'+intimate+'</strong><small>Rapports enregistrés ce mois</small></div>'+
+ '<div class="stat"><strong>'+state.journal.length+'</strong><small>Rapports consignés au total</small></div></div>'+
+ '<p class="tiny-note">Chiffres issus de votre journal de couple chiffré. Les notes détaillées restent privées.</p>'+
+ button('tab:journal','Ouvrir nos statistiques et le calendrier','class="subtle"')+'</section>';
+}
 function renderWaitingPartner(){
  const title=safe(state.profile.display_name);
  frame('<section class="card"><div class="eyebrow">♡ ESPACE PRIVÉ</div>'+
@@ -301,9 +352,7 @@ function renderWaitingPartner(){
   button('tab:special-editor','💘 Préparer les événements spéciaux','class="subtle"')+
   '</section><section class="card"><h3>Inviter votre partenaire</h3>'+
   '<p>Invitez votre conjointe quand vous le souhaitez. Aucune carte n’est révélée avant la partie.</p>'+
-  '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
-  button('invite','♡ Préparer l’invitation')+
-  '</section>',
+  '</section>'+renderInvitePanel(),
  'MON ESPACE','Préparer vos cartes avant l’invitation');
 }
 function renderHome(){
@@ -945,9 +994,7 @@ function renderSettings(){
   '<p class="tiny-note">Dissocier les comptes retire immédiatement aux deux personnes l’accès à l’ancien calendrier partagé. Chaque personne conserve ses propres entrées dans son calendrier privé.</p>'+
   button('end-couple','Retirer mon conjoint ou ma conjointe','class="subtle danger-action"');
  }else if(linked){
-  partner+='<p>En attente d’un partenaire. Invitez-le ou laissez cette étape pour plus tard.</p>'+
-  '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
-  button('invite','Inviter mon conjoint ou ma conjointe')+
+  partner+='<p>En attente de votre partenaire. Les invitations sont gérées juste en dessous.</p>'+
   button('end-couple','Annuler cet espace à deux','class="subtle"');
  }else{
   partner+='<p>Préparez vos défis avant même d’inviter votre conjointe.</p>'+
@@ -967,7 +1014,7 @@ function renderSettings(){
   safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
   '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
   button('profile','Mettre à jour mon nom')+'</section>'+
-  partner+libraryPanel+monthlyPanel+
+  partner+(hasPartner?renderCoupleOverview():(linked?renderInvitePanel():''))+libraryPanel+monthlyPanel+
   (isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
   '<h3>🎁 Calendrier de l’Avent 2026</h3>'+
   '<p>Importer les 25 journées de votre calendrier JSON, sans modifier les titres ni les consignes.</p>'+
@@ -1246,19 +1293,51 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='invite'){
+  if(!state.coupleId||state.members.length===2)throw Error('Invitation impossible : vérifiez le couple.');
   const email=id('invite-email')?.value.trim().toLowerCase();
-  if(!email||!email.includes('@'))throw Error('Saisissez un courriel valide.');
-  if(!CONFIG.siteUrl)throw Error('L’adresse publique HTTPS doit être configurée pour envoyer des invitations.');
+  if(!email||!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))throw Error('Saisissez le courriel Google valide du destinataire.');
+  if(!CONFIG.siteUrl)throw Error('L’adresse publique HTTPS doit être configurée.');
   const token=randomInviteToken(),digest=await hashToken(token);
-  await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
+  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
   const url=new URL(CONFIG.siteUrl);url.hash='invite='+token;
-  const text='Je t’invite à rejoindre notre espace LoveRoll ♡\n\n'+url.toString()+
-   '\n\nConnecte-toi avec le même courriel que celui qui reçoit cette invitation.';
-  const mail='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Invitation LoveRoll')+
-   '&body='+encodeURIComponent(text);
-  window.location.href=mail;
-  notify('Votre courriel est prêt : confirmez son envoi dans votre application de messagerie.');
+  state.inviteDraft={id:invitationId,email,link:url.toString()};
+  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+  render();
+  notify('Lien sécurisé prêt. Choisissez texto ou courriel pour partager.');
   return;
+ }
+ if(verb==='send-sms'||verb==='send-email'||verb==='copy-invite'){
+  const d=state.inviteDraft;
+  if(!d)throw Error('Préparez un nouveau lien sécurisé pour l’envoyer.');
+  if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
+  const text=invitationEmailText(d.link);
+  if(verb==='send-sms'){
+   const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+   window.location.href='sms:'+(isApple?'&':'?')+'body='+encodeURIComponent(text);
+  }else{
+   const mail='mailto:'+encodeURIComponent(d.email)+'?subject='+encodeURIComponent('LoveRoll ❤️ Une invitation juste pour nous deux')+
+    '&body='+encodeURIComponent(text);
+   window.location.href=mail;
+  }
+  notify('Votre messagerie est ouverte. Confirmez vous-même l’envoi.');
+  return;
+ }
+ if(verb==='confirm-invite-sent'){
+  if(!state.inviteDraft)throw Error('Aucun lien prêt à envoyer.');
+  await rpc('mark_pair_invite_sent',{p_invitation:state.inviteDraft.id,p_method:'partage'});
+  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+  render();notify('Envoi confirmé manuellement.');return;
+ }
+ if(verb==='cancel-invite'){
+  await rpc('cancel_pair_invite',{p_invitation:parts[0]});
+  state.inviteDraft=null;
+  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
+  render();notify('Invitation annulée.');return;
+ }
+ if(verb==='save-couple-date'){
+  const value=id('couple-started-on')?.value||null;
+  await rpc('set_love_relationship_date',{p_couple:state.coupleId,p_date:value});
+  await refreshShared();render();notify('Date du couple enregistrée.');return;
  }
  if(verb==='accept-invite'){
   const token=sessionStorage.getItem('pendingInvite');
