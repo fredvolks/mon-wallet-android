@@ -529,7 +529,7 @@ function renderSession(){
  body+='</section>';
  body+='<section class="card"><h3>♡ Nos calendriers</h3>'+
   button('tab:journal','Ouvrir notre calendrier partagé','class="subtle"')+
-  button('tab:personal-journal','Ouvrir mon calendrier personnel','class="subtle"')+'</section>';
+  button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>';
  if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
  frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
@@ -1059,14 +1059,24 @@ function renderSettings(){
    '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
    button('end-couple','Annuler mon espace à deux','class="subtle danger-action"');
  }else partner='<p>Créez votre espace privé avant d’inviter votre partenaire.</p>'+
-  button('prepare-cards','Créer mon espace et mes cartes')+
+  button('prepare-cards','Créer mes défis avant l’invitation')+
   button('start-couple','Préparer mon couple','class="subtle"');
+ const celebrants=isLoveAdmin()&&hasPartner?
+  '<div class="settings-item"><div><strong>Surprises des fêtes</strong>'+
+  '<p>Choisissez le partenaire concerné pour chaque occasion.</p></div></div>'+
+  TARGETED_OCCASIONS.map(key=>{
+   const entry=OCCASIONS.find(o=>o.key===key),chosen=state.occasionSettings?.celebrants?.[key];
+   return '<div class="muted-line"><strong>'+safe(entry.title)+'</strong><div class="chipline">'+
+    state.members.map(m=>'<button class="pill '+(chosen===m.user_id?'selected':'')+
+      '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+
+    '</div></div>';
+  }).join(''):'';
  const game=isLoveAdmin()?
   settingRow('Cartes et défis','Personnaliser les 70 cartes et les règles de tirage.','tab:library','Mes cartes')+
   settingRow('Activités du mois','Modifier les 20 activités du D20.','tab:monthly-library','Modifier')+
   settingRow('Calendrier de l’Avent','Configurer les 25 journées privées.','tab:advent-editor','Modifier')+
   settingRow('Événements spéciaux','Gérer les fêtes et leurs deux D6.','tab:special-editor','Modifier')+
-  (hasPartner?'<p class="tiny-note">Les paramètres des surprises restent réservés au créateur du couple.</p>':''):
+  celebrants:
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
  const notifications='<div class="settings-item"><div><strong>Notifications push</strong>'+
   '<p>Dé hebdomadaire, invitation acceptée et événements spéciaux.</p></div></div>'+
