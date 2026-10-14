@@ -2132,6 +2132,20 @@ async function reloadWebAssets(force=false){
  }finally{versionProbeRunning=false;}
 }
 window.addEventListener('load',()=>{reloadWebAssets().catch(console.warn);});
+// When left open across midnight, server time (not phone time) changes the
+// current Advent door without requiring a restart or manual refresh.
+setInterval(async()=>{
+ if(!state.user||state.tab!=='advent'||document.hidden||state.adventOpening!==null)return;
+ try{
+  const todayOnServer=await rpc('love_advent_server_date');
+  if(todayOnServer&&todayOnServer!==state.adventServerDate){
+   state.adventServerDate=todayOnServer;
+   state.adventYear=null;
+   await refreshShared();
+   render();
+  }
+ }catch(error){console.warn('Horloge Avent indisponible',error);}
+},60_000);
 document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&state.user){
   reload().catch(fail);
