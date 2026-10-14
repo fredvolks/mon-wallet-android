@@ -9,20 +9,26 @@ jobs:
   live:
     runs-on: ubuntu-latest
     steps:
-      - name: Check live LoveRoll deployed build and entrypoint
+      - uses: actions/checkout@v4
+      - name: Check published LoveRoll assets and Messenger preview
         run: |
           set -euo pipefail
           SITE='https://fredvolks.github.io/mon-wallet-android/'
-          echo "Checking ${SITE}web-version.json"
           curl --fail --silent --show-error --location --max-time 20 --retry 2 --retry-delay 2 "${SITE}web-version.json" -o /tmp/loveroll-live.json
+          echo "Live build:"
           cat /tmp/loveroll-live.json
           python3 - <<'PY'
           import json
-          with open('/tmp/loveroll-live.json', encoding='utf-8') as f: data=json.load(f)
-          assert data.get('build') == '2026-10-14.38', f"Live version does not match: {data}"
+          from pathlib import Path
+          live=json.loads(Path('/tmp/loveroll-live.json').read_text(encoding='utf-8'))
+          expected=json.loads(Path('couple-web/web-version.json').read_text(encoding='utf-8'))
+          assert live.get('build')==expected.get('build'),f"Live build not yet deployed: {live.get('build')} != {expected.get('build')}"
           PY
           curl --fail --silent --show-error --location --max-time 20 "${SITE}index.html" -o /tmp/loveroll-live.html
-          grep -F 'settings-premium.css?v=20261014-hero38' /tmp/loveroll-live.html
+          grep -F 'settings-premium.css?' /tmp/loveroll-live.html
+          grep -F 'invite-account.css?' /tmp/loveroll-live.html
+          grep -F 'property="og:image"' /tmp/loveroll-live.html
+          grep -F 'loveroll-invite-og.png' /tmp/loveroll-live.html
           curl --fail --silent --show-error --location --max-time 20 "${SITE}settings-premium.css" -o /tmp/loveroll-settings.css
           grep -F 'main#app.loveroll-settings-page' /tmp/loveroll-settings.css
           curl --fail --silent --show-error --location --max-time 20 "${SITE}invite-account.css" -o /tmp/loveroll-invite.css
@@ -31,13 +37,18 @@ jobs:
           grep -F 'signInWithPassword' /tmp/loveroll-invite-app.js
           grep -F 'autoAcceptPendingInvite' /tmp/loveroll-invite-app.js
           curl --fail --silent --show-error --location --max-time 20 --retry 2 "${SITE}assets/loveroll-invitation-hero-hd.webp" -o /tmp/loveroll-hero-hd.webp
+          curl --fail --silent --show-error --location --max-time 20 --retry 2 "${SITE}assets/loveroll-invite-og.png?v=4" -o /tmp/loveroll-invite-og.png
           python3 - <<'PY'
-          import os
-          path='/tmp/loveroll-hero-hd.webp'
-          assert os.path.getsize(path) >= 100000, 'High-definition hero unexpectedly too small'
-          with open(path,'rb') as f: assert f.read(4) == b'RIFF', 'Invalid WebP header'
-          print('Live HD hero image verified:',os.path.getsize(path),'bytes')
+          from pathlib import Path
+          import struct
+          hero=Path('/tmp/loveroll-hero-hd.webp').read_bytes()
+          assert len(hero)>=100000 and hero[:4]==b'RIFF','Invalid HD hero image'
+          og=Path('/tmp/loveroll-invite-og.png').read_bytes()
+          assert len(og)>30000 and og[:8]==b'\x89PNG\r\n\x1a\n','Invalid Messenger OG PNG'
+          width,height=struct.unpack('>II',og[16:24])
+          assert (width,height)==(1200,630),(width,height)
+          print('Live Messenger OG asset verified:',len(og),'bytes,',width,'x',height)
           PY
           curl --fail --silent --show-error --location --max-time 20 "${SITE}discover.mjs" -o /tmp/loveroll-landing.js
           grep -F 'loveroll-invitation-hero-hd.webp' /tmp/loveroll-landing.js
-          echo 'Verified LoveRoll v38 HD invitation visual is public and served.'
+          echo 'Verified LoveRoll current build, invitation page and public Messenger preview image.'
