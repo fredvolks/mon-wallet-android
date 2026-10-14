@@ -678,7 +678,7 @@ function renderSession(){
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
-   showMore:state.eveningMore,confirmCancel:state.confirmCancel,
+   rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
