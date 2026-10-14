@@ -58,7 +58,9 @@ export function demoCoupleHtml({userName='Moi',tab='home',roll=null,surprise=nul
   panel('♡ CONFIDENTIALITÉ','Votre espace reste privé','Les données de démonstration ne sont ni partagées ni sauvegardées.');
  }
  return '<div class="demo-shell"><div class="demo-control"><span>♡ MODE DÉMO · PARTENAIRE FICTIVE</span>'+
- B('demo-exit','✕ Quitter','demo-exit')+'</div><div class="demo-body">'+body+
+ B('demo-exit','✕ Quitter','demo-exit')+'</div>'+
+ '<div class="demo-pairline">♥ '+mine+' <span>♡</span> '+esc(partner)+'</div>'+
+ '<div class="demo-body">'+body+
  '<p class="demo-disclaimer">Simulation visuelle seulement · Zéro modification à votre compte ou aux défis.</p></div>'+
  nav+'</div>';
 }
