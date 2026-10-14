@@ -218,7 +218,7 @@ test('Marketing page before OAuth or email signup',()=>{
  assert.match(h,/Votre aventure à deux/);
  assert.match(h,/CRÉER MON COMPTE GRATUITEMENT/);
  assert.match(h,/Android et iPhone/);
- assert.match(app,/root\.innerHTML=marketingHtml\(\)/);
+ assert.match(app,/root\.innerHTML=discoverHtml\(false\)/);
  assert.match(app,/if\(!state\.showAuth\)/);
  assert.match(app,/if\(verb==='show-auth'\)/);
 });
