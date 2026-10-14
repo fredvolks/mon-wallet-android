@@ -74,6 +74,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    '<h2>'+escape(weeklyTitle)+'</h2><p>'+weeklySubtitle+'</p></div>'+
    '<div class="home-weights" aria-label="Pondération des six faces du dé">'+weights+'</div>'+
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+
+   '<div class="home-fabric-photo" aria-hidden="true"></div>'+
    '<div class="home-satin-orbit" aria-hidden="true"></div>'+
    '<div class="home-die-platform"><strong class="dice-fallback">'+(ready?weekly.face:'♡')+'</strong>'+
    '<canvas class="dice-canvas" width="300" height="300" data-dice-sides="6" '+
