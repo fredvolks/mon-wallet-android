@@ -94,6 +94,20 @@ test('Existing server rolls and cards untouched; migration makes configured 6x6 
  assert.match(app,/rpc\('draw_for_partner'/);
  assert.match(app,/sharedEveningTurns\(/);
 });
+test('D20 and D35 are true glossy rounded polyhedra without pink wireframe',()=>{
+ assert.match(die,/roundedPolyhedron\(polygons/);
+ assert.match(die,/bevel:sides===20\?\.13:\.095/);
+ assert.match(die,/shrink:sides===20\?\.095:\.07/);
+ assert.match(die,/const n0=arc\(na,nb,j\/steps\)/);
+ assert.match(die,/tri\(apex,base\.clone\(\)\.addScaledVector\(n0,bevel\)/);
+ assert.match(die,/normal:outward\.clone\(\),value:i\+1/);
+ assert.match(die,/flatShading:false/);
+ assert.match(die,/clearcoat:1,clearcoatRoughness:/);
+ assert.doesNotMatch(die,/new THREE\.LineSegments|new THREE\.LineBasicMaterial|new THREE\.EdgesGeometry/);
+ assert.match(die,/new THREE\.IcosahedronGeometry\(1\.16,0\)/);
+ assert.match(die,/const count=35/);
+ assert.match(die,/digits\(value,sides===6,pips\)/);
+});
 test('Mobile full-height layout with safe area and fixed existing tabs',()=>{
  assert.match(css,/100dvh/);
  assert.match(css,/safe-area-inset-top/);

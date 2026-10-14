@@ -39,7 +39,7 @@ function d35Geometry(){
   triangles.push({vertices:[a,b,c],dual:outward.divideScalar(dist)});
  }
  hull.dispose();
- const vertices=[],normals=[],segments=[],sideNormals=new Map(),labelCenters=new Map();
+ const vertices=[],normals=[],segments=[],sideNormals=new Map(),labelCenters=new Map(),polygons=[];
  for(let i=0;i<count;i++){
   const outward=points[i].clone().normalize();
   const corners=triangles.filter(tri=>
@@ -64,6 +64,7 @@ function d35Geometry(){
    const tri=cross.dot(outward)>=0?[a,b,c]:[a,c,b];
    for(const p of tri){vertices.push(...p.toArray());normals.push(...outward.toArray());}
   }
+  polygons.push({corners:corners.map(p=>p.clone()),normal:outward.clone(),value:i+1});
   sideNormals.set(i+1,outward);
   labelCenters.set(i+1,center.clone().addScaledVector(outward,.055));
  }
@@ -72,49 +73,156 @@ function d35Geometry(){
  geo.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
  const edges=new THREE.BufferGeometry();
  edges.setAttribute('position',new THREE.Float32BufferAttribute(segments,3));
- return {geo,edges,normals:sideNormals,labelCenters};
+ return {geo,edges,normals:sideNormals,labelCenters,polygons};
+}
+
+
+/**
+ * True rounded polyhedron (convex body ⊕ small sphere), not a wireframe or
+ * smooth-shaded fake. The original N planar faces remain flat. Narrow
+ * cylindrical edge fillets and spherical vertex caps create a rounded,
+ * watertight-looking glossy silhouette with PBR lighting.
+ *
+ * Each original face is translated to q + bevel * outwardNormal where
+ * q=(1-shrink)*point. Adjacent faces connect through normal-arc strips;
+ * all normal arcs are completed by round vertex caps.
+ * Supabase results / dice-face indexing are entirely unaffected.
+ */
+function roundedPolyhedron(polygons,{bevel=.105,shrink=.075,steps=6}={}){
+ const positions=[],shades=[];
+ const vertices=new Map(),edges=new Map();
+ const pointKey=p=>p.toArray().map(n=>Math.round(n*10000)).join(',');
+ const q=p=>p.clone().multiplyScalar(1-shrink);
+ const keyVertices=new Map();
+ const insertVertex=p=>{
+  const key=pointKey(p);
+  if(!keyVertices.has(key))keyVertices.set(key,p.clone());
+  return key;
+ };
+ const arc=(na,nb,t)=>{
+  const angle=na.angleTo(nb);
+  if(angle<1e-8)return na.clone();
+  const a=Math.sin((1-t)*angle)/Math.sin(angle),b=Math.sin(t*angle)/Math.sin(angle);
+  return na.clone().multiplyScalar(a).addScaledVector(nb,b).normalize();
+ };
+ const tri=(a,b,c,na,nb,nc)=>{
+  // Keep every patch outward-facing even when face ring winds differently.
+  const middle=na.clone().add(nb).add(nc).normalize();
+  if(b.clone().sub(a).cross(c.clone().sub(a)).dot(middle)<0){
+   [b,c]=[c,b];[nb,nc]=[nc,nb];
+  }
+  for(const [p,n] of [[a,na],[b,nb],[c,nc]]){
+   positions.push(...p.toArray());shades.push(...n.toArray());
+  }
+ };
+ for(const face of polygons){
+  const n=face.normal.clone().normalize();
+  const corners=face.corners;
+  // Planar face interiors are retained so every die still has N genuine faces.
+  const center=corners.reduce((acc,p)=>acc.add(p),new THREE.Vector3()).divideScalar(corners.length);
+  const middle=q(center).addScaledVector(n,bevel);
+  const shifted=corners.map(p=>q(p).addScaledVector(n,bevel));
+  for(let j=0;j<shifted.length;j++)tri(middle,shifted[j],shifted[(j+1)%shifted.length],n,n,n);
+  for(let j=0;j<corners.length;j++){
+   const a=insertVertex(corners[j]),b=insertVertex(corners[(j+1)%corners.length]);
+   const sorted=a<b?[a,b]:[b,a],key=sorted.join(':');
+   if(!edges.has(key))edges.set(key,{a:keyVertices.get(sorted[0]),b:keyVertices.get(sorted[1]),normals:[]});
+   edges.get(key).normals.push(n.clone());
+   for(const vertexKey of [a,b]){
+    if(!vertices.has(vertexKey))vertices.set(vertexKey,{position:keyVertices.get(vertexKey),normals:[]});
+    if(!vertices.get(vertexKey).normals.some(old=>old.distanceToSquared(n)<1e-8))
+      vertices.get(vertexKey).normals.push(n.clone());
+   }
+  }
+ }
+ // A real swept round fillet around each original polyhedron edge.
+ for(const edge of edges.values()){
+  if(edge.normals.length!==2)throw Error('Non-manifold die edge');
+  const [na,nb]=edge.normals,qa=q(edge.a),qb=q(edge.b);
+  for(let j=0;j<steps;j++){
+   const n0=arc(na,nb,j/steps),n1=arc(na,nb,(j+1)/steps);
+   const a=qa.clone().addScaledVector(n0,bevel);
+   const b=qb.clone().addScaledVector(n0,bevel);
+   const cc=qb.clone().addScaledVector(n1,bevel);
+   const d=qa.clone().addScaledVector(n1,bevel);
+   tri(a,b,cc,n0,n0,n1);tri(a,cc,d,n0,n1,n1);
+  }
+ }
+ // Smooth corner caps complete the junction of all round bevels.
+ for(const corner of vertices.values()){
+  const centerNormal=corner.position.clone().normalize();
+  const base=q(corner.position),ns=corner.normals;
+  const u=new THREE.Vector3(0,1,0).cross(centerNormal);
+  if(u.lengthSq()<.01)u.set(1,0,0).cross(centerNormal);
+  u.normalize();
+  const v=centerNormal.clone().cross(u).normalize();
+  ns.sort((a,b)=>Math.atan2(a.dot(v),a.dot(u))-Math.atan2(b.dot(v),b.dot(u)));
+  const apex=base.clone().addScaledVector(centerNormal,bevel);
+  for(let i=0;i<ns.length;i++){
+   const na=ns[i],nb=ns[(i+1)%ns.length];
+   for(let j=0;j<steps;j++){
+    const n0=arc(na,nb,j/steps),n1=arc(na,nb,(j+1)/steps);
+    tri(apex,base.clone().addScaledVector(n0,bevel),
+      base.clone().addScaledVector(n1,bevel),centerNormal,n0,n1);
+   }
+  }
+ }
+ const geo=new THREE.BufferGeometry();
+ geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ geo.setAttribute('normal',new THREE.Float32BufferAttribute(shades,3));
+ geo.computeBoundingSphere();
+ return geo;
+}
+function twentyPolygons(geo){
+ const p=geo.getAttribute('position'),faces=[];
+ for(let i=0;i<p.count;i+=3){
+  const corners=[0,1,2].map(j=>new THREE.Vector3().fromBufferAttribute(p,i+j));
+  const center=corners.reduce((a,v)=>a.add(v),new THREE.Vector3()).divideScalar(3);
+  const n=corners[1].clone().sub(corners[0])
+    .cross(corners[2].clone().sub(corners[0])).normalize();
+  if(n.dot(center)<0)n.negate();
+  faces.push({value:i/3+1,corners,normal:n});
+ }
+ if(faces.length!==20)throw Error('D20 must contain exactly 20 faces');
+ return faces;
 }
 
 function geometry(sides,pips=false){
  const group=new THREE.Group(),normals=new Map();
  const custom=sides===35?d35Geometry():null;
- const geo=custom?.geo||(sides===20?new THREE.IcosahedronGeometry(1.16,0):
-  new RoundedBoxGeometry(1.8,1.8,1.8,9,.30));
+ const original20=sides===20?new THREE.IcosahedronGeometry(1.16,0):null;
+ const polygons=sides===35?custom.polygons:sides===20?twentyPolygons(original20):null;
+ const geo=polygons?roundedPolyhedron(polygons,{bevel:sides===20?.13:.095,shrink:sides===20?.095:.07,steps:8}):
+  new RoundedBoxGeometry(1.8,1.8,1.8,9,.30);
+ original20?.dispose();
+ custom?.geo.dispose();
+ custom?.edges.dispose();
  const mat=new THREE.MeshPhysicalMaterial({
   color:0x130716,metalness:.13,roughness:.10,
   clearcoat:1,clearcoatRoughness:.035,
   specularIntensity:1.65,ior:1.5,transmission:0,thickness:.8,
-  side:THREE.FrontSide,flatShading:sides!==6
+  side:THREE.FrontSide,flatShading:false
  });
  group.add(new THREE.Mesh(geo,mat));
- // On the D6, the rounded glossy body supplies its own natural highlight.
- // Pink LineSegments used to look like a wireframe; keep polygon outlines for D20/D35 only.
- if(sides!==6){
-  const edges=new THREE.LineSegments(custom?.edges||new THREE.EdgesGeometry(geo),
-   new THREE.LineBasicMaterial({color:0xf23891,transparent:true,opacity:.68}));
-  edges.scale.setScalar(1.004);group.add(edges);
- }
+ // No wireframe: smooth bevel geometry and PBR specular highlights are the
+ // only visible transitions between the real black faces on D6, D20 and D35.
  const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
   [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
  for(let value=1;value<=sides;value++){
   let normal,depth;
-  if(custom){normal=custom.normals.get(value);}
+  const polygon=polygons?.[value-1];
+  if(polygon){normal=polygon.normal.clone();}
   else if(layout){normal=new THREE.Vector3(...layout.find(row=>row[0]===value)[1]);depth=.91;}
-  else{
-   const p=geo.getAttribute('position'),i=(value-1)*3;
-   const a=new THREE.Vector3().fromBufferAttribute(p,i),b=new THREE.Vector3().fromBufferAttribute(p,i+1),
-    c=new THREE.Vector3().fromBufferAttribute(p,i+2);
-   const center=a.clone().add(b).add(c).multiplyScalar(1/3);
-   normal=b.sub(a).cross(c.sub(a)).normalize();
-   if(normal.dot(center)<0)normal.negate();
-   depth=center.length()+.04;
-  }
   normals.set(value,normal);
   const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===35?.27:sides===20?.36:1.64,
    sides===35?.27:sides===20?.36:1.64),
     new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
-  if(custom)plane.position.copy(custom.labelCenters.get(value));
-  else plane.position.copy(normal).multiplyScalar(depth);
+  if(polygon){
+   const center=polygon.corners.reduce((a,p)=>a.add(p),new THREE.Vector3())
+    .divideScalar(polygon.corners.length);
+   const shrink=sides===20?.095:.07,bevel=sides===20?.13:.095;
+   plane.position.copy(center.multiplyScalar(1-shrink)).addScaledVector(normal,bevel+.013);
+  }else plane.position.copy(normal).multiplyScalar(depth);
   plane.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),normal);
   group.add(plane);
  }

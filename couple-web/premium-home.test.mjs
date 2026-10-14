@@ -133,7 +133,8 @@ test('Unpaired statistics are zero or no-data instead of invented sample figures
 });
 test('D6 uses an actual bevel and no neon wireframe; fallback hidden during throws',()=>{
  assert.match(die,/RoundedBoxGeometry\(1\.8,1\.8,1\.8,9,\.30\)/);
- assert.match(die,/if\(sides!==6\)/);
+ assert.doesNotMatch(die,/new THREE\.LineSegments/);
+ assert.match(die,/function roundedPolyhedron\(/);
  assert.match(die,/if\(rolling\)\{[\s\S]*built\.group\.quaternion\.setFromEuler/);
  assert.match(css,/webgl-ready \.dice-fallback/);
  assert.match(css,/safe-area-inset-top/);
