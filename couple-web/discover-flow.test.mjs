@@ -8,29 +8,50 @@ const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const css=readFileSync(new URL('./discover.css',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./migrations/20261014_safe_unpair_portable_library.sql',import.meta.url),'utf8');
 
-test('Discover is a public premium visual tour, not another authentication page',()=>{
+test('Invitation immediately renders the approved premium visual, not authentication',()=>{
  const h=discoverHtml(true);
- for(const value of ['D6','D20','D35','Défis à deux','Dates et surprises','Votre match privé','calendrier de l’Avent','Revenir à mon invitation'])
-  assert.ok(h.includes(value),value);
- assert.match(h,/data-action="discover-back"/);
+ for(const label of ['LA COMPLICITÉ SE JOUE À DEUX','Jeux','Défis','Dates','Surprises','Un dé.','Une surprise.','Deux sourires.','UN ESPACE RIEN QU'])
+  assert.ok(h.includes(label),label);
+ assert.match(h,/data-action="invite-start"/);
+ assert.match(h,/ACCEPTER L’INVITATION/);
+ assert.doesNotMatch(h,/\bD6\b|\bD20\b|\bD35\b/);
  assert.doesNotMatch(h,/data-action="(show-auth|google|apple|email-login|verify-email-code)"/);
- assert.doesNotMatch(h,/CRÉER MON COMPTE|ME CONNECTER|Continuer avec Google|Continuer avec Apple/);
- assert.match(css,/\.discover-gallery/);
- assert.match(css,/\.discover-back/);
+ assert.doesNotMatch(h,/Revenir à mon invitation|Continuer avec Google/);
+ assert.match(h,/discover-premium-die/);
+ assert.match(css,/\.discover-premium-die/);
+ assert.match(css,/\.discover-accept/);
+});
+
+test('Public homepage shares the same premium visual while retaining account entry',()=>{
+ const h=discoverHtml(false);
+ assert.match(h,/data-action="show-auth"/);
+ assert.match(h,/COMMENCER NOTRE AVENTURE/);
+ assert.doesNotMatch(h,/data-action="invite-start"/);
  assert.match(marketingHtml(),/love-onepage/);
 });
 
-test('Invitation ACCEPT action is gated before auth in both logged-out and logged-in paths',()=>{
- assert.ok(app.indexOf("if(pendingInvite&&!state.inviteAccepted)")<app.indexOf("if(!state.user){",app.indexOf("function render(){")));
+test('Invitation remains the first screen, Google and email follow explicit acceptance only',()=>{
+ const firstGate=app.indexOf('if(state.showDiscover||(pendingInvite&&!state.inviteAccepted))');
+ const authGate=app.indexOf('if(!state.user){',app.indexOf('function render(){'));
+ assert.ok(firstGate>0&&firstGate<authGate);
+ assert.match(app,/root\.innerHTML=discoverHtml\(!!pendingInvite\)/);
  assert.match(app,/sessionStorage\.setItem\('loverollInviteAccepted',invite\.kind\+':'\+invite\.value\)/);
- assert.match(app,/state\.inviteAccepted=sessionStorage\.getItem\('loverollInviteAccepted'\)===key/);
- assert.match(app,/frame\(invitationLandingHeader\(true\)/);
+ assert.match(app,/state\.showDiscover=false;/);
+ assert.match(app,/if\(verb==='invite-start'\)/);
  assert.match(app,/frame\(authHtml\(!!pendingInvite\)/);
- assert.match(app,/if\(verb==='discover-loveroll'\)/);
- assert.match(app,/if\(verb==='discover-back'\|\|verb==='invite-return'\)/);
  assert.doesNotMatch(authHtml(true),/data-action="show-landing"/);
- assert.match(authHtml(true),/data-action="discover-loveroll"/);
- assert.match(authHtml(true),/data-action="invite-return"/);
+});
+
+test('App-wide theme brings premium visual language to all signed-in sections',()=>{
+ const theme=readFileSync(new URL('./premium-theme.css',import.meta.url),'utf8');
+ const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
+ const worker=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ for(const selector of ['.card','.nav','.die','.settings-group','.auth-panel','button','.header']){
+  assert.ok(theme.includes(selector),selector);
+ }
+ assert.match(html,/premium-theme\.css/);
+ assert.match(worker,/premium-theme\.css/);
+ assert.match(worker,/loveroll-static-v24/);
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
