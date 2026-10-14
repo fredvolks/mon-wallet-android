@@ -651,7 +651,7 @@ function renderSession(){
    if(pending){
     const card=resolvedCard(pending),receiver=pending.recipient;
     body+='<section class="card challenge-present"><div class="premium-eyebrow">♡ NOTRE DÉFI EN COURS</div>'+
-     '<div class="eyebrow">'+safe(names[pending.category])+' · surprise '+safe(pending.card_id||pending.face)+'/35</div>'+
+     '<div class="eyebrow">'+(pending.is_gifted?'🎁 DÉFI CADEAU · ':'')+safe(names[pending.category])+' · surprise '+safe(pending.card_id||pending.face)+'/35</div>'+
      heroDice(pending.face,35,'Notre défi surprise')+
      '<div class="challenge-roles">♡ DÉFI REÇU PAR '+safe(person(receiver)).toUpperCase()+'</div>'+
      '<h3>'+safe(card.title)+'</h3><p>'+safe(card.description)+'</p>'+
@@ -671,7 +671,7 @@ function renderSession(){
       '<div class="chipline">'+EVENING_CATEGORIES.map(category=>
        '<button class="pill '+(state.category===category?'selected':'')+
        '" data-action="category:'+category+'">'+safe(names[category])+'</button>').join('')+'</div>'+
-      '<p class="tiny-note">88 % dans ta catégorie choisie · 12 % dans l’autre, selon les cartes disponibles.</p>'+
+      '<p class="tiny-note">Pour un défi ordinaire, préférence 88 % / 12 %. Pour un défi cadeau, la catégorie choisie sera respectée à 100 %.</p>'+
       (EVENING_CATEGORIES.includes(state.category)?
        button('new-challenge','🎲 LANCER MON DÉFI'):
        '<p>Sélectionne Sensuel ou Sexuel pour continuer.</p>')+'</section>';
