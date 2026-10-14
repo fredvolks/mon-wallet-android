@@ -36,6 +36,8 @@ Deno.serve(async req=>{
   webpush.setVapidDetails('https://fredvolks.github.io/mon-wallet-android/',keys.public,keys.private);
   const {error:weeklyError}=await admin.rpc('love_push_enqueue_weekly');
   if(weeklyError)throw weeklyError;
+  const {error:calendarError}=await admin.rpc('love_push_enqueue_calendar');
+  if(calendarError)throw calendarError;
   const {data:queued,error:queueError}=await admin.from('love_push_outbox')
    .select('id,user_id,kind,title,body,attempts')
    .is('sent_at',null).lte('due_at',new Date().toISOString())
