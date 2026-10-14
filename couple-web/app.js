@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-full40';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-full40';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-full40';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-auth41';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-auth41';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-auth41';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-full40';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-auth41';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -25,7 +25,7 @@ import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,instal
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
-const WEB_RELEASE='2026-10-14.40';
+const WEB_RELEASE='2026-10-14.41';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -135,7 +135,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-full40').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-auth41').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -227,17 +227,25 @@ async function autoAcceptPendingInvite(){
  finally{inviteAcceptanceBusy=false;}
 }
 function verificationPendingHtml(email){
+ // A successful signUp/resend request does not prove delivery. Supabase may
+ // deliberately return success for an address already registered with Google.
+ const needsSignIn=!state.user;
  return '<div class="invite-account-screen email-confirm-screen">'+
  '<header class="invite-account-hero"><div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
  '<p>LA COMPLICITÉ SE JOUE À DEUX</p></header>'+
  '<section class="invite-auth-card"><div class="email-confirm-envelope" aria-hidden="true">✉ ♡</div>'+
  '<h1>♡ Encore une petite étape !</h1>'+
- '<p>Nous venons de vous envoyer un lien de confirmation.</p>'+
+ '<p>'+(needsSignIn?'Vérifiez votre adresse ou connectez-vous à votre compte existant.':
+   'Votre courriel doit être confirmé pour entrer dans LoveRoll.')+'</p>'+
  '<p class="email-confirm-recipient">'+safe(email||'Votre adresse courriel')+'</p>'+
- '<p>Vérifiez votre boîte courriel pour entrer dans notre univers LoveRoll.</p>'+
- '<p class="invite-small-note">Pensez aussi à vérifier vos courriels indésirables.</p>'+
+ '<p>'+(needsSignIn?
+   'Si vous avez déjà utilisé Google avec cette adresse, aucun nouveau courriel ne sera nécessaire.':
+   'Ouvrez le lien de confirmation reçu dans votre boîte courriel.')+'</p>'+
+ '<p class="invite-small-note">Pour un nouveau compte, vérifiez aussi les indésirables. Un renvoi accepté ne garantit pas la livraison.</p>'+
  '<div id="email-confirm-status" role="status" aria-live="polite"></div>'+
- button('email-confirm-recheck','J’ai confirmé mon courriel')+
+ (needsSignIn?'<button type="button" data-action="google" class="invite-google"><span class="invite-google-mark" aria-hidden="true">G</span> Continuer avec Google</button>'+
+  button('email-confirm-login','Se connecter avec un compte existant','class="subtle"'):
+  button('email-confirm-recheck','J’ai confirmé mon courriel'))+
  button('email-confirm-resend','Renvoyer le courriel','class="subtle"')+
  button('email-confirm-edit','Modifier mon adresse','class="subtle"')+
  '</section></div>';
@@ -264,7 +272,7 @@ function render(){
  if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted))){
   root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
  }
- if(!state.passwordRecovery&&(state.emailVerificationPending||
+ if(!state.passwordRecovery&&((state.emailVerificationPending&&!state.user)||
   (state.user&&!verifiedLoveEmail(state.user)))){
   root.innerHTML=verificationPendingHtml(state.authDraftEmail||state.user?.email);
   bindActions();return;
@@ -1848,6 +1856,8 @@ async function handle(action,element){
     if(data?.session?.user&&verifiedLoveEmail(data.session.user)){
      state.user=data.session.user;state.showAuth=false;await reload();return;
     }
+    // No session: this may be a new signup awaiting verification OR an
+    // existing Google identity. Never claim that a message was delivered.
     state.emailVerificationPending=true;
     state.authNotice=null;render();
    }else{
@@ -1861,7 +1871,24 @@ async function handle(action,element){
   finally{if(btn)btn.disabled=false;}
   return;
  }
+ if(verb==='email-confirm-login'){
+  if(state.user&&!verifiedLoveEmail(state.user)){
+   const {error}=await client.auth.signOut();
+   if(error)throw error;
+   state.user=null;
+  }
+  state.emailVerificationPending=false;state.showDiscover=false;state.showAuth=true;
+  state.authMode='signin';
+  state.authNotice='Si vous avez déjà créé un compte avec Google, utilisez « Continuer avec Google ».';
+  render();return;
+ }
  if(verb==='email-confirm-recheck'){
+  if(!state.user){
+   state.emailVerificationPending=false;state.showDiscover=false;state.showAuth=true;
+   state.authMode='signin';
+   state.authNotice='Connectez-vous pour que LoveRoll vérifie votre compte confirmé auprès de Supabase.';
+   render();return;
+  }
   if(await refreshVerifiedIdentity()){
    state.emailVerificationPending=false;state.authNotice=null;
    await reload();return;
@@ -1880,7 +1907,7 @@ async function handle(action,element){
   if(error){authMessage(passwordAuthMessage(error));return;}
   sessionStorage.setItem('loverollConfirmResendAfter',String(Date.now()+60000));
   const status=id('email-confirm-status');
-  if(status)status.textContent='Demande de renvoi acceptée par Supabase. Vérifiez votre boîte courriel.';
+  if(status)status.textContent='Supabase a accepté la demande. Si cette adresse appartient déjà à un compte Google confirmé, aucun nouveau courriel ne sera envoyé. Essayez « Continuer avec Google ».';
   return;
  }
  if(verb==='email-confirm-edit'){
@@ -2391,6 +2418,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-full40',
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-auth41',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
