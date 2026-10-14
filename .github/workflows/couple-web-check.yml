@@ -25,6 +25,7 @@ jobs:
           node --check couple-web/json-library-ui.mjs
           node --check couple-web/invite-email.mjs
           node --check couple-web/push-notifications.mjs
+          node --check couple-web/evening-turns.mjs
           node --check couple-web/service-worker.js
       - name: Validate Messenger image renderer
         run: |
@@ -43,7 +44,7 @@ jobs:
           assert scene.stat().st_size>30000
           PY
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |
