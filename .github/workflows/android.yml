@@ -87,7 +87,7 @@ jobs:
           assert 'LoveOccasions.SURPRISES' in src
           assert 'specialSaved(now)' in src
           assert 'new PremiumD20View(this)' in src
-          assert '80 % dans la catégorie choisie' in src
+          assert '88 % dans la catégorie choisie' in src
           assert 'drawEveningTimer(resultCard,receiver,actual,face)' in src
           assert 'Category.SENSUEL,Category.SEXUEL' in src
           assert '♥  Votre rituel   ·   2 catégories de défis' in src
