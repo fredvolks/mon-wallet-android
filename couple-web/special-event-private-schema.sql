@@ -21,16 +21,17 @@ alter table public.couple_occasion_rolls
  drop constraint if exists couple_occasion_rolls_roll_type_check;
 alter table public.couple_occasion_rolls
  add constraint couple_occasion_rolls_roll_type_check
- check(roll_type in ('surprise','host','modifier'));
+ check(roll_type in ('surprise','host','activity','modifier'));
 alter table public.couple_occasion_rolls
  drop constraint if exists couple_occasion_rolls_check;
 alter table public.couple_occasion_rolls
  add constraint couple_occasion_rolls_check
- check(roll_type not in ('host','modifier') or face<=6);
+ check(roll_type not in ('host','activity','modifier') or face<=6);
 create table if not exists public.love_special_modifier_snapshots(
  couple_id uuid not null references public.couples(id) on delete cascade,
  event_year integer not null,occasion_key text not null,
  modifier_title text not null,modifier_options jsonb not null,
+ activity_options jsonb not null default '[]'::jsonb,
  primary key(couple_id,event_year,occasion_key)
 );
 alter table public.love_special_modifier_snapshots enable row level security;
