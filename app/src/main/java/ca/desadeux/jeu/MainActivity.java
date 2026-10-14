@@ -1436,8 +1436,10 @@ public final class MainActivity extends Activity {
   settingTile("♡  Ajouter / retirer un partenaire","Gérez vos invitations et vos séparations depuis l’espace connecté. Le journal intime local reste intact.",
    "GÉRER MON COUPLE CONNECTÉ",()->openConnectedLoveRoll("settings"));
   section("🎲  Le jeu");
-  settingTile("♡  Bibliothèque des 40 défis","Sensuel · Sexuel, 20 défis par catégorie et durées.",
-   "CONSULTER LES DÉFIS",()->{tab="library";draw();});
+  // Full catalogue is restricted to the authenticated creator of the couple,
+  // therefore it cannot be listed in the legacy offline settings.
+  settingTile("♡  Cartes et défis personnels","Gestion privée des 25 + 25 défis de base et des 20 emplacements personnalisés. Seul le créateur du couple peut voir la bibliothèque.",
+   "GÉRER MES CARTES EN LIGNE",()->openConnectedLoveRoll("settings"));
   settingTile("⚙  Règles et réinitialisation","Probabilités, dé hebdomadaire et règles des tirages.",
    "VOIR LES RÈGLES",()->{tab="rules";draw();});
   section("🔐  Application");

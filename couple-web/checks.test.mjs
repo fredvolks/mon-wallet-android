@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
-import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
+import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,resolvedCard } from './evening-challenges.mjs';
 import { drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE } from './solo-mode.mjs';
-import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
+import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
 test('User names originate from the authenticated profile',()=>{
@@ -119,7 +119,7 @@ test('LoveRoll special events have twenty separate fully-worded surprises',()=>{
  assert.equal(SPECIAL_SURPRISES.length,20);
  assert.equal(new Set(SPECIAL_SURPRISES.map(x=>x.title)).size,20);
  assert.ok(SPECIAL_SURPRISES.every(x=>x.title.length>6&&x.detail.length>36));
- assert.equal(OCCASIONS.length,5);
+ assert.equal(OCCASIONS.length,7);
  for(let i=1;i<=20;i++)assert.equal(specialSurprise(i),SPECIAL_SURPRISES[i-1]);
  assert.throws(()=>specialSurprise(0));
  assert.throws(()=>specialSurprise(21));
@@ -166,19 +166,28 @@ test('The evening shows exactly two categories and per-draw 80/20 odds',()=>{
  assert.match(app,/80 % de chances/);
  assert.doesNotMatch(app,/Aléatoire : Sexuel 40/);
 });
-test('All forty live evening cards have a positive minute duration',()=>{
+test('50 built-in cards and 20 optional creator-only slots',()=>{
  for(const category of EVENING_CATEGORIES){
-  assert.equal(EVENING_CHALLENGES[category].length,20);
-  for(let face=1;face<=20;face++){
-   const card=eveningCard(category,face);
+  assert.equal(EVENING_CHALLENGES[category].length,25);
+  for(let cardId=1;cardId<=25;cardId++){
+   const card=eveningCard(category,cardId);
    assert.ok(card.title.length>=5);
-   assert.ok(card.description.length>25);
-   assert.ok(card.minutes>=1&&card.minutes<=15);
+   assert.ok(card.description.length>35);
+   assert.ok(Number.isInteger(card.minutes)&&card.minutes>=0&&card.minutes<=15);
   }
+  const slots=customCardSlots(category);
+  assert.equal(slots.length,10);
+  assert.ok(slots.every(s=>s.cardId>=26&&s.cardId<=35&&!s.filled));
  }
- assert.equal(eveningCard('SENSUEL',3).minutes,10);
- assert.equal(eveningCard('SEXUEL',5).minutes,10);
+ assert.equal(eveningCard('SENSUEL',3).minutes,8);
+ assert.equal(eveningCard('SEXUEL',5).minutes,12);
+ assert.equal(eveningCard('SEXUEL',16).minutes,0);
  assert.throws(()=>eveningCard('COQUIN',1));
+ assert.throws(()=>eveningCard('SEXUEL',26));
+ const snapshot={category:'SEXUEL',card_id:29,face:5,card_title:'Une carte libre',
+  card_description:'Une proposition personnalisée sans durée.',card_timer_minutes:null};
+ assert.equal(resolvedCard(snapshot).minutes,null);
+ assert.equal(resolvedCard(snapshot).cardId,29);
 });
 test('Countdown uses a monotonic wall deadline, pause reset and optional signals',()=>{
  assert.equal(formatCountdown(600_000),'10:00');
@@ -282,7 +291,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v7/);
+ assert.match(sw,/loveroll-static-v8/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -406,4 +415,54 @@ test('Solo dice roll locally and shared database actions require two accounts',(
  }
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.ok(sw.includes('solo-mode.mjs'));
+});
+
+test('Creator-only access and private draws are enforced server side',()=>{
+ const sql=readFileSync(new URL('./creator-only-custom-challenges.sql',import.meta.url),'utf8');
+ assert.ok(sql.includes('owner_user_id'));
+ assert.ok(sql.includes('creator-only'));
+ assert.ok(sql.includes('love_custom_owner_read'));
+ assert.ok(sql.includes('save_love_custom_card'));
+ assert.ok(sql.includes('delete_love_custom_card'));
+ assert.ok(sql.includes('my_love_roll_status'));
+ assert.ok(sql.includes('both_rolls_ready'));
+ assert.ok(sql.includes('card_id between 26 and 35'));
+ assert.ok(sql.includes('card<=25'));
+ assert.ok(sql.includes('card_title,card_description,card_timer_minutes'));
+ assert.ok(app.includes("function isLoveAdmin()"));
+ assert.ok(app.includes("function renderCardLibrary()"));
+ assert.ok(app.includes("button('tab:library'"));
+ assert.ok(app.includes("Seul l’administrateur")||app.includes("Accès réservé à l’administrateur"));
+ assert.ok(app.includes('state.rollStatus?.both_ready'));
+ assert.ok(app.includes("p_card_id:state.customSlot"));
+ assert.ok(app.includes("state.couple?.owner_user_id===state.user?.id"));
+ assert.ok(app.includes("state.tab==='library')renderCardLibrary()"));
+ assert.ok(app.includes("challenge.cardId||active.card_id||active.face"));
+ assert.ok(app.includes("REÇOIT"));
+ assert.ok(app.includes("OFFRE"));
+ assert.ok(app.includes('Sans minuteur'));
+});
+
+
+test('Fixed celebration roles and shared couple anniversary',()=>{
+ const couple=[{user_id:'a',name:'A'},{user_id:'b',name:'B'}];
+ const conf={celebrants:{mothers_day:'b',womens_day:'b',fathers_day:'a',mens_day:'a'}};
+ for(const key of TARGETED_OCCASIONS){
+  const role=occasionRoles({key},conf,couple);
+  assert.equal(role.shared,false);
+  assert.ok(role.receiver&&role.giver&&role.receiver.user_id!==role.giver.user_id);
+ }
+ assert.equal(occasionRoles({key:'mothers_day'},conf,couple).giver.user_id,'a');
+ assert.equal(occasionRoles({key:'fathers_day'},conf,couple).giver.user_id,'b');
+ assert.equal(occasionRoles({key:'birthday',actorId:'a'},conf,couple).giver.user_id,'b');
+ assert.equal(occasionRoles({key:'anniversary'},conf,couple).shared,true);
+ assert.equal(occasionRoles({key:'valentine'},conf,couple).shared,true);
+ assert.equal(occasionRoles({key:'mothers_day'},null,couple).receiver,null);
+ assert.equal(occasionDate('womens_day',2026,{},null),'2026-03-08');
+ assert.equal(occasionDate('mens_day',2026,{},null),'2026-11-19');
+ const sql=readFileSync(new URL('./celebration-roles.sql',import.meta.url),'utf8');
+ assert.ok(sql.includes("set_love_celebrant"));
+ assert.ok(sql.includes("owner_user_id=auth.uid()"));
+ assert.ok(sql.includes("p_kind in ('mothers_day','fathers_day','womens_day','mens_day','birthday','anniversary','valentine')"));
+ assert.ok(app.includes("data-action=\"set-celebrant:"));
 });

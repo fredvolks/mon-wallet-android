@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
-import { eveningCard, EVENING_CATEGORIES, formatCountdown } from './evening-challenges.mjs';
+import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 import {drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE} from './solo-mode.mjs';
-import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
+import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 
@@ -15,9 +15,9 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
 const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
+ tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:26,
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false,
+ occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false,
  solo:{weekly:null,session:null,challenge:null,challengeCategory:'SENSUEL',special:null,host:null,occasion:null,occasionDay:null,adventDay:null}};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 let timerCtx=null;
@@ -130,6 +130,7 @@ function render(){
     '♡ NOTRE MATCH','Vous pouvez aussi découvrir LoveRoll sans partenaire');return;
   }
   if(state.tab==='settings')renderSettings();
+  else if(state.tab==='library')renderCardLibrary();
   else if(state.tab==='personal-journal'||state.tab==='journal')
    renderPersonalJournal().catch(fail);
   else if(state.tab==='ideas')renderIdeas();
@@ -150,6 +151,7 @@ function render(){
  else if(state.tab==='journal')renderJournal().catch(fail);
  else if(state.tab==='feedback')renderFeedback().catch(fail);
  else if(state.tab==='settings')renderSettings();
+ else if(state.tab==='library')renderCardLibrary();
 }
 async function reload(){
  if(!state.user)return;
@@ -166,7 +168,7 @@ async function reload(){
  state.coupleId=membership[0]?.couple_id||null;
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
-  state.couple=null;state.members=[];state.weekly=null;state.monthly={};
+  state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.rollStatus=null;
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
   state.feedback=[];state.advent=[];state.unlockKey=null;
   state.tab=['settings','personal-journal','ideas','session','special','occasions','advent','journal'].includes(state.tab)?state.tab:'home';
@@ -179,6 +181,8 @@ async function reload(){
   query('couple_members',{eq:{couple_id:state.coupleId}})
  ]);
  state.couple=couple[0]||null;
+ state.customCards=state.couple?.owner_user_id===state.user.id?
+  await query('love_custom_challenges',{eq:{couple_id:state.coupleId}}):[];
  const profilesAll=await query('couple_profiles');
  state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter'}));
  state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
@@ -204,12 +208,13 @@ async function refreshShared(){
  state.session=sessions.find(s=>s.finished_at===null)||null;
  state.sessions=sessions;state.events=events;state.journal=diary;state.advent=advents;
  if(state.session){
-  const [personal,challenges]=await Promise.all([
+  const [personal,challenges,status]=await Promise.all([
     query('couple_personal_rolls',{eq:{session_id:state.session.id}}),
-    query('couple_challenges',{eq:{session_id:state.session.id},order:'created_at'})
+    query('couple_challenges',{eq:{session_id:state.session.id},order:'created_at'}),
+    rpc('my_love_roll_status',{p_session:state.session.id})
   ]);
-  state.personal=personal;state.challenges=challenges;
- }else{state.personal=[];state.challenges=[];}
+  state.personal=personal;state.challenges=challenges;state.rollStatus=status?.[0]||null;
+ }else{state.personal=[];state.challenges=[];state.rollStatus=null;}
  state.feedback=await query('couple_feedback',{eq:{couple_id:c}});
 }
 function subscribe(){
@@ -442,6 +447,7 @@ function updateChallengeClock(){
 }
 setInterval(updateChallengeClock,500);
 function timerWidget(challenge,minutes){
+ if(minutes===null||minutes===undefined||minutes===0)return '<p class="tiny-note">♡ Sans minuteur · l’activité se termine quand vous le souhaitez.</p>';
  activeTimer(challenge,minutes);
  return '<div class="timer-panel"><div class="eyebrow">⏱ Minuteur du défi · '+minutes+' min</div>'+
    '<div id="challenge-timer-clock" class="timer-clock">'+formatCountdown(clockMs())+'</div>'+
@@ -457,7 +463,7 @@ function timerWidget(challenge,minutes){
 function renderSession(){
  let s=state.session; const p=other();
  let body='<section class="card"><h2>Une soirée, deux D6 individuels</h2>'+
- '<p>Chacun brasse uniquement son propre dé. Le résultat est immédiatement visible par l’autre.</p>';
+ '<p>Chacun lance son D6 sur son compte. Les deux résultats apparaissent ensemble dès que les deux ont joué.</p>';
  if(!s)body+=button('new-session','Commencer une soirée commune');
  else{
   const mine=state.personal.find(x=>x.user_id===state.user.id);
@@ -465,8 +471,14 @@ function renderSession(){
   body+=heroDice(mine?.face,6,'Mon dé personnel')+
   '<div class="two"><div class="stat"><strong>'+safe(mine?.face||'—')+'</strong><small>'+safe(state.profile.display_name)+'</small></div>'+
   '<div class="stat"><strong>'+safe(theirs?.face||'—')+'</strong><small>'+safe(p.name)+'</small></div></div>';
-  if(!mine)body+=button('my-d6','🎲 Brasser MON D6');
-  else if(!theirs)body+='<p>En attente du D6 de '+safe(p.name)+'.</p>';
+  if(!state.rollStatus?.both_ready){
+   body+='<section class="card"><h3>Deux D6 · révélation commune</h3>'+
+    '<p>Mon D6 : '+(state.rollStatus?.my_rolled?'✓ Lancé · résultat secret':'Pas encore lancé')+'</p>'+
+    '<p>D6 de '+safe(p.name)+' : '+(state.rollStatus?.partner_rolled?'✓ Lancé · résultat secret':'En attente')+'</p>';
+   if(!state.rollStatus?.my_rolled)body+=button('my-d6','🎲 Brasser MON D6');
+   else body+='<p>Tu as joué. Le compte à rebours ne démarre pas : attends le D6 de '+safe(p.name)+'.</p>';
+   body+='</section>';
+  }
   else{
    const proposed=state.challenges.filter(x=>x.recipient===state.user.id);
    const active=proposed.filter(x=>['proposed','accepted'].includes(x.status)).at(-1);
@@ -474,13 +486,12 @@ function renderSession(){
    body+='<p>Mes défis terminés : '+completed+' / '+mine.face+
     ' · '+safe(p.name)+' donne mes défis.</p>';
    if(active){
-    const challenge=EVENING_CATEGORIES.includes(active.category)?
-      eveningCard(active.category,active.face):
-      {title:ideas[active.category]?.[active.face-1]||'Défi précédent',minutes:3,description:'Une proposition de votre partenaire.'};
-    body+='<div class="card"><div class="eyebrow">'+safe(names[active.category])+
-     ' · Face '+active.face+'</div><h3>'+safe(challenge.title)+'</h3>'+
-     '<p>'+safe(challenge.description)+'</p>'+
-     '<p>'+safe(p.name)+' propose → '+safe(state.profile.display_name)+' reçoit</p>'+
+    const challenge=resolvedCard(active);
+    body+='<div class="card challenge-present"><div class="eyebrow">'+safe(names[active.category])+
+     ' · CARTE '+safe(challenge.cardId||active.card_id||active.face)+' · D20 : '+active.face+'</div>'+
+     '<div class="challenge-roles">♡ '+safe(p.name).toUpperCase()+' OFFRE → '+safe(state.profile.display_name).toUpperCase()+' REÇOIT</div>'+
+     '<h3>'+safe(challenge.title)+'</h3>'+
+     '<p>'+safe(challenge.description)+'</p>' +
      timerWidget(active,challenge.minutes)+
      '<div class="actions">'+
      (active.status==='proposed'?button('answer:'+active.id+':accepted','Accepter'):'')+
@@ -495,8 +506,12 @@ function renderSession(){
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
      '<p>Chaque défi : 80 % de chances de tomber dans la catégorie choisie, 20 % dans l’autre.</p>'+
      button('new-challenge','🎲 Brasser le D20 pour '+safe(p.name))+'</div>';
-   }else if(otherActive){body+='<p>Défi proposé à '+safe(p.name)+
-    ' : '+safe(EVENING_CATEGORIES.includes(otherActive.category)?eveningCard(otherActive.category,otherActive.face).title:ideas[otherActive.category]?.[otherActive.face-1]||'Défi')+'</p>';}
+   }else if(otherActive){const giving=resolvedCard(otherActive);
+    body+='<section class="card"><div class="challenge-roles">♡ '+safe(state.profile.display_name).toUpperCase()+' OFFRE → '+safe(p.name).toUpperCase()+' REÇOIT</div>'+
+    '<h3>Mon défi à offrir : '+safe(giving.title)+'</h3><p>'+safe(giving.description)+'</p>'+
+    (active?'<p class="tiny-note">Minuteur et contrôle principal accessibles dans le défi reçu.</p>':
+     timerWidget(otherActive,giving.minutes))+'</section>';
+   }
   }
   const myTarget=mine?.face||0,otherTarget=theirs?.face||0;
   const mineCompleted=state.challenges.filter(x=>x.recipient===state.user.id&&x.status==='completed').length;
@@ -563,22 +578,32 @@ function renderOccasions(){
   const prize=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='surprise');
   const host=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='host');
   const displayName=ev.actorId?person(ev.actorId):'';
+  const role=occasionRoles(ev,settings,state.members);
   body+='<section class="card"><div class="eyebrow">'+safe(ev.emoji)+' '+safe(ev.title)+
     (displayName?' · '+safe(displayName):'')+'</div>';
   body+='<p>'+safe(ev.date||'Date non définie')+
     (ev.daysLeft!==null?' · '+(ev.daysLeft===0?"Aujourd’hui":ev.daysLeft>0?"Dans "+ev.daysLeft+" jours":"Il y a "+(-ev.daysLeft)+" jours"):'')+'</p>';
+  if(!role.shared&&!role.receiver){
+   body+='<p class="tag">Personne célébrée non renseignée. L’administrateur la désigne dans Réglages.</p>';
+  }else if(role.shared){
+   body+='<div class="challenge-roles">♡ DÉFI COMMUN · À ORGANISER ENSEMBLE</div>'+
+    '<p>Un rendez-vous plus original que d’habitude, préparé ensemble et jamais imposé.</p>';
+  }else{
+   body+='<div class="challenge-roles">♡ '+safe(role.giver.name).toUpperCase()+
+    ' OFFRE → '+safe(role.receiver.name).toUpperCase()+' REÇOIT</div>';
+  }
   if(!ev.date)body+='<p>Ajoutez cette date dans Réglages pour activer le tirage.</p>';
   else if(ev.daysLeft===null)body+='<p>Ouverture 14 jours avant la fête, fermeture 7 jours après. Cela laisse le temps de trouver une gardienne.</p>';
-  else if(!prize)body+=heroDice(null,20,'Dé de fête')+
-    button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 Brasser le D20 de la surprise');
+  else if(!prize){if(role.shared||role.receiver)body+=heroDice(null,20,'Dé de fête')+
+    button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 Brasser le D20 de la surprise');}
   else{
    const idea=specialSurprise(prize.face);
    body+=heroDice(prize.face,20,'Résultat officiel')+
      '<h3>'+safe(idea.title)+'</h3><p>'+safe(idea.detail)+'</p>'+
      '<p class="tag">'+safe(idea.level)+' · Tiré par '+safe(person(prize.actor))+'</p>';
-   if(!host)body+=button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':host',
-      '🎲 Brasser le D6 : qui organise ?');
-   else{
+   if(!host&&role.shared)body+='<p class="tag">Surprise commune · vous l’organisez à deux.</p>';
+   else if(!host&&role.receiver)body+='<p class="tag">L’offrant prépare la surprise pour la personne célébrée.</p>';
+   else if(host){
     const giver=state.members[host.face<=3?0:1];
     body+='<div class="result">♡ '+safe(giver?.name||'Partenaire')+' organise</div>'+
      '<p>D6 face '+host.face+' · Ensemble, vous fixez vos limites, le budget et la gardienne.</p>';
@@ -779,6 +804,53 @@ async function renderFeedback(){
  }
  body+='</section>';frame(body,'NOS QUESTIONNAIRES','Une réponse individuelle, visible par le couple');
 }
+function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
+function renderCardLibrary(){
+ if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
+ const category=state.customCategory,slots=customCardSlots(category,state.customCards);
+ const slot=slots.find(x=>x.cardId===state.customSlot)||slots[0];
+ let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
+  '<h2>Bibliothèque de défis</h2>'+
+  '<p>25 cartes Sensuel + 25 cartes Sexuel prêtes à jouer, avec 10 emplacements libres par catégorie. Votre partenaire ne peut pas consulter ce catalogue.</p>'+
+  '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
+  '<button class="pill '+(category===c?'selected':'')+
+  '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div></section>'+
+  '<section class="card"><h3>25 cartes · '+safe(names[category])+'</h3>'+
+  Array.from({length:25},(_,i)=>{
+   const card=eveningCard(category,i+1);
+   return '<details class="custom-detail"><summary>'+String(i+1).padStart(2,'0')+
+    ' · '+safe(card.title)+' · '+(card.minutes?card.minutes+' min':'Sans minuteur')+'</summary>'+
+    '<p>'+safe(card.description)+'</p></details>';
+  }).join('')+'</section>'+
+  '<section class="card"><div class="eyebrow">VOS EMPLACEMENTS PRIVÉS</div>'+
+  '<h3>10 cartes personnalisées</h3>'+
+  '<p>Vous pouvez en remplir une, quelques-unes ou aucune. Les emplacements vides ne sont jamais tirés.</p>'+
+  '<div class="custom-slot-grid">'+slots.map(c=>'<button type="button" class="'+
+  (c.filled?'custom-filled ':'')+(slot.cardId===c.cardId?'custom-active':'')+
+  '" data-action="custom-slot:'+c.cardId+'">N° '+(c.cardId-25)+
+  (c.filled?' ✓':' · Vide')+'</button>').join('')+'</div>'+
+  '<h3>Carte personnalisée N° '+(slot.cardId-25)+'</h3>'+
+  '<label>Titre<input id="custom-title" maxlength="120" value="'+safe(slot.title)+
+  '" placeholder="Le nom de votre carte"></label>'+
+  '<label>Consigne<textarea id="custom-description" maxlength="900" rows="4"'+
+  ' placeholder="Votre défi personnalisé, écrit librement.">'+safe(slot.description)+'</textarea></label>'+
+  '<div class="custom-receiver"><strong>Qui peut recevoir cette carte ?</strong>'+
+  '<label><input type="radio" name="custom-recipient" value=""'+(!slot.recipientId?' checked':'')+
+  '> Les deux partenaires</label>'+
+  state.members.map(m=>'<label><input type="radio" name="custom-recipient" value="'+safe(m.user_id)+'"'+
+    (slot.recipientId===m.user_id?' checked':'')+'> Seulement '+safe(m.name)+'</label>').join('')+
+  '<p class="tiny-note">Si une carte est réservée à une personne, elle ne peut jamais sortir pour l’autre.</p></div>'+
+  '<label><input type="checkbox" id="custom-timer-enabled"'+
+  (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
+  '<label>Durée en minutes<input id="custom-minutes" type="number" min="1" max="60"'+
+  ' value="'+(slot.minutes||5)+'"></label>'+
+  '<p class="tiny-note">Sans case cochée, la carte est libre de durée.</p>'+
+  button('save-custom-card','Enregistrer cette carte')+
+  (slot.filled?button('delete-custom-card','Vider cet emplacement','class="subtle"'):'')+
+  '</section>'+
+  '<section class="card">'+button('tab:settings','← Réglages','class="subtle"')+'</section>';
+ frame(body,'MES CARTES','Réservé au compte administrateur');
+}
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
  let partner='<section class="card"><h3>♡ Gérer mon couple</h3>';
@@ -796,11 +868,15 @@ function renderSettings(){
   button('start-couple','Ajouter un conjoint ou une conjointe');
  }
  partner+='</section>';
+ const libraryPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+ 
+ '<h3>♡ Mes défis et cartes personnalisées</h3>'+ 
+ '<p>25 Sensuel, 25 Sexuel et jusqu’à 10 cartes personnelles par catégorie.</p>'+ 
+ button('tab:library','Gérer les défis')+'</section>':'';
  frame('<section class="card"><h2>Mon compte</h2><p>'+
   safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
   '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
   button('profile','Mettre à jour mon nom')+'</section>'+
-  partner+
+  partner+libraryPanel+
   '<section class="card"><h3>♥ Mon calendrier personnel</h3>'+
   '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
   button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
@@ -815,7 +891,18 @@ function renderSettings(){
   '<section class="card"><h3>🎂 Mes dates</h3><p>Mon anniversaire : '+
   safe(state.profile.birthday_md)+' (enregistré à mon inscription).</p>'+
   (linked?'<p>Anniversaire du couple : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>':'')+
-  '</section>',
+  '</section>'+
+  (isLoveAdmin()&&hasPartner?'<section class="card"><div class="eyebrow">FÊTES · ADMINISTRATEUR</div>'+
+   '<h3>À qui offrir la surprise ?</h3>'+
+   '<p>Fête des Mères / Femmes : l’autre partenaire offre. Fête des Pères / Hommes : même règle inversée. On ne brasse pas pour changer ces rôles.</p>'+
+   TARGETED_OCCASIONS.map(key=>{
+    const entry=OCCASIONS.find(o=>o.key===key),chosen=state.occasionSettings?.celebrants?.[key];
+    return '<div class="muted-line"><strong>'+safe(entry.title)+'</strong>'+
+     '<div class="chipline">'+state.members.map(m=>
+      '<button class="pill '+(chosen===m.user_id?'selected':'')+
+      '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+'</div></div>';
+   }).join('')+'</section>':''),
+
  'RÉGLAGES','Profil, confidentialité et gestion du partenaire');
 }
 async function refreshAndShow(){await refreshShared();render();}
@@ -839,6 +926,45 @@ async function handle(action,element){
  if(verb==='skip-couple'){
   if(sessionStorage.getItem('pendingInvite'))throw Error('Traitez ou fermez d’abord votre invitation en attente.');
   localStorage.setItem('loveroll-skip-'+state.user.id,'1');state.tab='home';render();return;
+ }
+ if(verb==='set-celebrant'){
+  if(!isLoveAdmin())throw Error('Réglage réservé à l’administrateur.');
+  if(!TARGETED_OCCASIONS.includes(parts[0])||
+    !state.members.some(m=>m.user_id===parts[1]))throw Error('Personne célébrée invalide.');
+  await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
+  await reload();notify('Personne célébrée enregistrée.');return;
+ }
+ if(verb==='custom-category'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie invalide.');
+  state.customCategory=parts[0];state.customSlot=26;render();return;
+ }
+ if(verb==='custom-slot'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<26||slot>35)throw Error('Emplacement invalide.');
+  state.customSlot=slot;render();return;
+ }
+ if(verb==='save-custom-card'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const title=id('custom-title')?.value.trim(),description=id('custom-description')?.value.trim();
+  const timer=id('custom-timer-enabled')?.checked;
+  const minutes=timer?Number(id('custom-minutes')?.value):null;
+  if(!title||title.length<3||title.length>120||!description||description.length<10||
+     description.length>900||(timer&&(!Number.isInteger(minutes)||minutes<1||minutes>60)))
+   throw Error('Titre de 3 à 120 caractères, description de 10 à 900 caractères et minuteur facultatif de 1 à 60 minutes.');
+  const recipient=document.querySelector('[name="custom-recipient"]:checked')?.value||null;
+  if(recipient&&!state.members.some(m=>m.user_id===recipient))throw Error('Destinataire inconnu.');
+  await rpc('save_love_custom_card',{p_couple:state.coupleId,
+   p_category:state.customCategory,p_card_id:state.customSlot,
+   p_title:title,p_description:description,p_timer_minutes:minutes,p_recipient:recipient});
+  await reload();notify('Carte enregistrée.');return;
+ }
+ if(verb==='delete-custom-card'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  if(!confirm('Vider cet emplacement ? Les cartes déjà tirées restent dans l’historique.'))return;
+  await rpc('delete_love_custom_card',{p_couple:state.coupleId,
+   p_category:state.customCategory,p_card_id:state.customSlot});
+  await reload();notify('Emplacement vidé, historique conservé.');return;
  }
  if(verb==='start-couple'){
   if(state.coupleId){state.tab='settings';render();return;}
@@ -980,8 +1106,9 @@ async function handle(action,element){
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
  if(verb==='tab'){
-  const allowed=['home','session','special','occasions','advent','settings',
+  const allowed=['home','session','special','occasions','advent','settings','library',
    'personal-journal','journal','ideas','feedback'];
+  if(parts[0]==='library'&&!isLoveAdmin())throw Error('Bibliothèque réservée à l’administrateur du couple.');
   if(!allowed.includes(parts[0]))throw Error('Onglet inconnu.');
   // The full discovery experience is available in solo mode. No shared writes.
   state.tab=parts[0]==='feedback'&&!isSharedCoupleReady(state.coupleId,state.members)?
@@ -1017,8 +1144,9 @@ async function handle(action,element){
  }
  if(verb==='my-d6'){
   if(!state.session)throw Error('Aucune soirée active.');
-  const result=await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}));
-  notify('Votre D6 : '+result.face);return;
+  await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}));
+  if(!state.rollStatus?.both_ready)notify('D6 lancé! Les deux résultats apparaîtront ensemble après le dernier tirage.');
+  else notify('♡ Les deux résultats D6 sont maintenant révélés!');return;
  }
  if(verb==='category'){if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');state.category=parts[0];state.randomMode=false;render();return;}
   if(verb==='timer-mode'){

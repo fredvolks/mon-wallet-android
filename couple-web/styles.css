@@ -274,3 +274,24 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
  border:1px solid #86506d;border-radius:13px;font-weight:650;color:#e5c0d8}
 @media(max-height:670px){dialog.love-answer-dialog{max-height:84dvh;padding:14px 12px}
  button.love-answer-option{min-height:46px;padding:10px 11px}}
+
+
+/* Creator-only LoveRoll challenge catalogue and precise offer -> receive label. */
+.challenge-present{border-color:#bb5f98!important;background:linear-gradient(145deg,#35162f,#1f1027)!important}
+.challenge-roles{color:#ffd6eb;font-weight:850;letter-spacing:.04em;font-size:.85rem;
+ border:1px solid #ab558c;background:linear-gradient(95deg,#5e244b,#2e1733);
+ border-radius:12px;padding:12px 14px;margin:11px 0 13px;line-height:1.6}
+.custom-detail{padding:12px 10px;border-bottom:1px solid #724060;line-height:1.5}
+.custom-detail summary{cursor:pointer;color:#ffe1f0;font-weight:600}
+.custom-detail p{color:#d8bdce;margin:10px 0 2px}
+.custom-slot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 20px}
+.custom-slot-grid button{min-height:50px;border:1px solid #8c5179;border-radius:12px;
+ color:#f9dff0;background:#2b1830;text-align:center;font-size:.9rem;font-weight:650}
+.custom-slot-grid .custom-filled{color:#ffe3f4;background:#44233d;border-color:#a96b91}
+.custom-slot-grid .custom-active{color:white;border:2px solid #ff64ae;box-shadow:0 0 11px #db428c70;background:#69284f}
+
+
+.custom-receiver{margin:16px 0;padding:14px;background:#251329;border:1px solid #7c4365;border-radius:13px}
+.custom-receiver strong{display:block;margin-bottom:7px;color:#ffe4f2}
+.custom-receiver label{display:flex;align-items:center;gap:9px;padding:6px 3px;margin:0;font-size:.92rem;color:#efd2e7}
+.custom-receiver input[type="radio"]{accent-color:#ff64ad;width:18px;height:18px;flex-shrink:0}
