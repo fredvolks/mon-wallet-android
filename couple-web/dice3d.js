@@ -76,7 +76,7 @@ function geometry(sides){
  const group=new THREE.Group(),normals=new Map();
  const custom=sides===35?d35Geometry():null;
  const geo=custom?.geo||(sides===20?new THREE.IcosahedronGeometry(1.16,0):
-  new RoundedBoxGeometry(1.8,1.8,1.8,5,.17));
+  new RoundedBoxGeometry(1.8,1.8,1.8,9,.30));
  const mat=new THREE.MeshPhysicalMaterial({
   color:0x130716,metalness:.13,roughness:.10,
   clearcoat:1,clearcoatRoughness:.035,
@@ -84,9 +84,13 @@ function geometry(sides){
   side:THREE.FrontSide,flatShading:sides!==6
  });
  group.add(new THREE.Mesh(geo,mat));
- const edges=new THREE.LineSegments(custom?.edges||(sides===6?new THREE.EdgesGeometry(new THREE.BoxGeometry(1.78,1.78,1.78)):new THREE.EdgesGeometry(geo)),
-  new THREE.LineBasicMaterial({color:0xf23891,transparent:true,opacity:.68}));
- edges.scale.setScalar(sides===6?.97:1.004);group.add(edges);
+ // On the D6, the rounded glossy body supplies its own natural highlight.
+ // Pink LineSegments used to look like a wireframe; keep polygon outlines for D20/D35 only.
+ if(sides!==6){
+  const edges=new THREE.LineSegments(custom?.edges||new THREE.EdgesGeometry(geo),
+   new THREE.LineBasicMaterial({color:0xf23891,transparent:true,opacity:.68}));
+  edges.scale.setScalar(1.004);group.add(edges);
+ }
  const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
   [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
  for(let value=1;value<=sides;value++){
@@ -114,7 +118,7 @@ function geometry(sides){
  return {group,normals};
 }
 export function dieOn(canvas,sides,value,rolling){
- let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';}catch{return ()=>{};}
+ let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';canvas.closest('.home-die-platform')?.classList.add('webgl-ready');}catch{return ()=>{};}
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
  renderer.setSize(canvas.clientWidth||124,canvas.clientHeight||124,false);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -133,6 +137,13 @@ export function dieOn(canvas,sides,value,rolling){
  built.group.quaternion.copy(target);
  let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true;
  const start=performance.now(),duration=rolling?2650:0;
+ // An animated throw MUST NEVER begin already displaying the winning face.
+ // Uniform random initial rotation, independent of the server-issued face.
+ if(rolling){
+  built.group.quaternion.setFromEuler(new THREE.Euler(
+   Math.random()*Math.PI*2,Math.random()*Math.PI*2,Math.random()*Math.PI*2));
+  built.group.position.y=0;
+ }
  function step(now){
   frame=0;if(!shown||document.hidden)return;
   const t=duration?Math.min(1,(now-start)/duration):1;
@@ -146,7 +157,7 @@ export function dieOn(canvas,sides,value,rolling){
     built.group.rotateZ(.065*f);
    }else{
     const p=Math.min(1,(t-.77)/.23),smooth=p*p*(3-2*p);
-    built.group.quaternion.slerp(target,.12+.88*smooth);
+    built.group.quaternion.slerp(target,smooth);
    }
    built.group.position.y=.19*Math.sin(Math.PI*t);
   }else{
