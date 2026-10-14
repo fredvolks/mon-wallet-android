@@ -303,8 +303,8 @@ function render(){
   return;
  }
  if(!state.wellbeing){
-  if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteWellbeingHtml();bindActions();}
-  else frame(wellbeingHtml(),'♡ MON RESSENTI','Vos réponses sont personnelles');
+  if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteWellbeingHtml(null,state.user);bindActions();}
+  else frame(wellbeingHtml(null,state.user),'♡ MON RESSENTI','Vos réponses sont personnelles');
   return;
  }
  if(state.inviteWelcome){
@@ -1613,6 +1613,26 @@ async function handle(action,element){
    CONFIG.siteUrl+'?v='+INVITATION_REVISION+'#invite='+invite.value;
   await navigator.clipboard.writeText(url);
   notify('Lien complet copié. Collez-le dans Chrome ou Safari.');return;
+ }
+ if(verb==='use-existing-account'){
+  // The profile step can also be reached with an old or wrong authenticated
+  // account. Never force the user to overwrite that account's personal profile.
+  // The pending invitation stays intact across this local sign-out.
+  const hadInvite=!!pendingInviteReference(sessionStorage);
+  const priorConsent=!!state.inviteAccepted;
+  if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
+  state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
+  // No profile, couple, challenge, invitation or user row is deleted.
+  const {error}=await client.auth.signOut({scope:'local'});
+  if(error)throw error;
+  state.user=null;state.profile=null;state.coupleId=null;state.couple=null;
+  state.members=[];state.wellbeing=null;state.emailVerificationPending=false;
+  state.passwordRecovery=false;state.showDiscover=false;state.showAuth=true;
+  state.authMode='signin';state.authDraftEmail='';state.inviteError=null;
+  state.inviteAttemptKey=null;
+  state.inviteAccepted=hadInvite&&priorConsent;
+  state.authNotice='Connectez-vous à votre compte existant avec votre mot de passe ou « Continuer avec Google ».';
+  render();return;
  }
  if(verb==='switch-account-invite'){
   if(state.user&&window.LoveRollNativeAuth?.nativePushToken?.()){
