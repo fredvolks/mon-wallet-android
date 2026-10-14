@@ -13,7 +13,10 @@ test('Messenger URL has only non-secret UUID query; preview card remains clickab
  assert.match(url,/&v=/);
  assert.ok(!url.includes('#'),'Browser handoff must not depend on a fragment');
  assert.equal(parseInvitationFromUrl(url).id,id);
- assert.equal(invitationMessengerText(url),url,'No duplicate link or text in Messenger');
+ const message=invitationMessengerText(url);
+ assert.ok(message.includes('LoveRoll'));
+ assert.equal(message.split(url).length,2,'One personal invitation link per Messenger share');
+ assert.ok(message.endsWith('\n'+url),'Link remains a separate clickable line');
  assert.ok(url.includes(INVITATION_REVISION));
 });
 
