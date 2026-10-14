@@ -43,6 +43,7 @@ export function discoverHtml(hasInvitation=false){
   <p>Des jeux, des défis et des attentions pour créer des souvenirs inoubliables, à votre rythme.</p>
  </header>
  <section class="discover-showcase" aria-label="Un aperçu des surprises LoveRoll">
+  <img class="discover-hero-premium" src="./assets/loveroll-invitation-hero-hd.webp" width="1630" height="870" alt="Un dé. Une surprise. Deux sourires. Deux dés noirs brillants aux cœurs roses lumineux sur du satin bordeaux. Des instants complices pour vous rapprocher encore plus." fetchpriority="high" loading="eager" decoding="async">
   <div class="discover-die-stage" aria-hidden="true"><span class="discover-heart-float">♡</span>${diceArt}<img class="discover-approved-die" src="./assets/loveroll-die-approved.webp" alt="" loading="eager"></div>
   <div class="discover-preview-copy">
    <small>♡ VOTRE PROCHAIN INSTANT</small>
