@@ -126,13 +126,13 @@ public final class ConnectedLoveRollActivity extends Activity {
      "android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED){
      requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},6831);
     }else{
-     LoveRollWeeklyReminderReceiver.setEnabled(this,true);
+     LoveRollWeeklyReminderReceiver.setEnabled(ConnectedLoveRollActivity.this,true);
      show("Rappel LoveRoll activé chaque lundi à 9 h.");
     }
    });
   }
   @JavascriptInterface public void disableWeeklyReminder(){
-   runOnUiThread(()->LoveRollWeeklyReminderReceiver.setEnabled(this,false));
+   runOnUiThread(()->LoveRollWeeklyReminderReceiver.setEnabled(ConnectedLoveRollActivity.this,false));
   }
   @JavascriptInterface public boolean weeklyReminderEnabled(){
    return LoveRollWeeklyReminderReceiver.isEnabled(ConnectedLoveRollActivity.this);
