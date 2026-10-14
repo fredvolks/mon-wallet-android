@@ -5,13 +5,14 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {shouldOfferInstall,dismissInstall,installOfferHtml,isStandalone} from './home-install.mjs';
 
 test('Invitation has accurate states and never claims unsent share was delivered',()=>{
+ const NOW=Date.parse('2026-10-14T12:00:00Z');
  const prepared={expires_at:'2026-12-01T00:00:00Z',sent_at:null};
  assert.equal(invitationStatus(null,false).code,'none');
- assert.equal(invitationStatus(prepared,false).code,'prepared');
- assert.equal(invitationStatus({...prepared,sent_at:'2026-10-14T08:00:00Z'},false).code,'pending');
- assert.equal(invitationStatus({...prepared,cancelled_at:'2026-10-14T08:00:00Z'},false).code,'cancelled');
- assert.equal(invitationStatus({...prepared,accepted_at:'2026-10-14T08:00:00Z'},false).code,'accepted');
- assert.equal(invitationStatus({...prepared,expires_at:'2026-01-01T00:00:00Z'},false).code,'expired');
+ assert.equal(invitationStatus(prepared,false,NOW).code,'prepared');
+ assert.equal(invitationStatus({...prepared,sent_at:'2026-10-14T08:00:00Z'},false,NOW).code,'pending');
+ assert.equal(invitationStatus({...prepared,cancelled_at:'2026-10-14T08:00:00Z'},false,NOW).code,'cancelled');
+ assert.equal(invitationStatus({...prepared,accepted_at:'2026-10-14T08:00:00Z'},false,NOW).code,'accepted');
+ assert.equal(invitationStatus({...prepared,expires_at:'2026-01-01T00:00:00Z'},false,NOW).code,'expired');
  assert.equal(invitationStatus(null,true).code,'accepted');
 });
 test('Couple success rate counts fully finished sessions only',()=>{
