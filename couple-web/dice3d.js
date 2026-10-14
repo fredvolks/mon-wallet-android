@@ -5,13 +5,13 @@ import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometri
 const pool=new Set();
 function digits(value,heart=false){const c=document.createElement('canvas');c.width=c.height=384;
  const x=c.getContext('2d');x.font=heart?'bold 87px sans-serif':'bold 180px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#ff1e91';x.shadowBlur=24;
- x.fillStyle='#ff80bc';
+ x.fillStyle='#ff9ccf';x.strokeStyle='#ffe3f3';x.lineWidth=1.5;
  if(!heart)x.fillText(String(value),192,200);
  else{
   const spots=[[192,192],[102,102],[282,282],[282,102],[102,282],[102,192],[282,192]];
   const indices={1:[0],2:[1,2],3:[1,0,2],4:[1,2,3,4],
    5:[1,2,3,4,0],6:[1,2,3,4,5,6]}[value]||[0];
-  for(const i of indices)x.fillText('♥',...spots[i]);
+  for(const i of indices){x.fillText('♥',...spots[i]);x.strokeText('♥',...spots[i]);}
  }
  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;}
 // A genuine convex 35-faced die. The polar dual of a 35-vertex convex hull
@@ -78,14 +78,14 @@ function geometry(sides){
  const geo=custom?.geo||(sides===20?new THREE.IcosahedronGeometry(1.16,0):
   new RoundedBoxGeometry(1.8,1.8,1.8,5,.17));
  const mat=new THREE.MeshPhysicalMaterial({
-  color:0x130915,metalness:.23,roughness:.075,
+  color:0x130716,metalness:.13,roughness:.10,
   clearcoat:1,clearcoatRoughness:.035,
-  specularIntensity:1,ior:1.5,transmission:.04,thickness:.8,
-  side:THREE.DoubleSide,flatShading:sides!==6
+  specularIntensity:1.65,ior:1.5,transmission:0,thickness:.8,
+  side:THREE.FrontSide,flatShading:sides!==6
  });
  group.add(new THREE.Mesh(geo,mat));
- const edges=new THREE.LineSegments(custom?.edges||new THREE.EdgesGeometry(geo),
-  new THREE.LineBasicMaterial({color:0xf23891,transparent:true,opacity:.56}));
+ const edges=new THREE.LineSegments(custom?.edges||(sides===6?new THREE.EdgesGeometry(new THREE.BoxGeometry(1.78,1.78,1.78)):new THREE.EdgesGeometry(geo)),
+  new THREE.LineBasicMaterial({color:0xf23891,transparent:true,opacity:.68}));
  edges.scale.setScalar(1.004);group.add(edges);
  const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
   [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
@@ -103,8 +103,8 @@ function geometry(sides){
    depth=center.length()+.04;
   }
   normals.set(value,normal);
-  const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===35?.27:sides===20?.36:.60,
-   sides===35?.27:sides===20?.36:.60),
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===35?.27:sides===20?.36:1.64,
+   sides===35?.27:sides===20?.36:1.64),
     new THREE.MeshBasicMaterial({map:digits(value,sides===6),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
   if(custom)plane.position.copy(custom.labelCenters.get(value));
   else plane.position.copy(normal).multiplyScalar(depth);
@@ -120,7 +120,7 @@ export function dieOn(canvas,sides,value,rolling){
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.6;
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=4.15;
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=sides===6?5.25:4.15;
  camera.aspect=(canvas.clientWidth||124)/(canvas.clientHeight||124);camera.updateProjectionMatrix();
  scene.add(new THREE.AmbientLight(0xffb7df,1.25));
  const key=new THREE.PointLight(0xff3e99,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
@@ -129,6 +129,7 @@ export function dieOn(canvas,sides,value,rolling){
  const built=geometry(sides);scene.add(built.group);
  const target=new THREE.Quaternion().setFromUnitVectors(built.normals.get(Number(value)||1),
   new THREE.Vector3(0,0,1));
+ if(sides===6){const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.18,.21,-.08));target.premultiply(tilt);}
  built.group.quaternion.copy(target);
  let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true;
  const start=performance.now(),duration=rolling?2650:0;
