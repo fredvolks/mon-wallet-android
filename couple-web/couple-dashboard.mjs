@@ -24,9 +24,11 @@ export function formatCoupleDate(iso){
 // Messenger supplies the title, description and artwork through Open Graph.
 // Keep the shared message short: no duplicate 'ACCEPTER' heading or paragraph.
 // The personalized URL is still required for the secure one-time invitation.
+// Send only a URL: Messenger builds its clickable image/title card from OG data.
+// Messenger controls whether the raw URL is also shown; duplicate caption removed.
 export function invitationMessengerText(url){
  if(typeof url!=='string'||!/^https:\/\//.test(url))throw Error('Lien d’invitation invalide.');
- return 'J’ai envie de partager quelque chose de spécial avec toi sur LoveRoll ❤️\n\nOuvre ton invitation ici :\n'+url;
+ return url;
 }
 export function invitationEmailText(url){
  return '♡ LoveRoll — Une invitation juste pour nous deux\n\n'

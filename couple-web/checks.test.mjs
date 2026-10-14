@@ -80,11 +80,12 @@ test('Cancelled evenings never consume a weekly game and completion needs both D
 test('Feedback can only be submitted after a completed or cancelled session',()=>{
  assert.match(sql,/couple_feedback\.couple_id and s.finished_at is not null/);
 });
-test('Invitation secret belongs in the URL fragment and is removed from address bar',()=>{
- assert.match(app,/url.hash='invite='\+token/);
- assert.match(app,/currentUrl.hash=fragment.toString\(\)/);
- assert.match(app,/history.replaceState/);
- assert.doesNotMatch(app,/url.searchParams.set\('invite',token\)/);
+test('Invitation URL uses non-secret UUID and removes legacy secret tokens from address',()=>{
+ assert.match(app,/inviteLinkForId\(CONFIG\.siteUrl,invitationId\)/);
+ assert.match(app,/sessionStorage\.setItem\('pendingInviteId',value\)/);
+ assert.match(app,/frag\.delete\('invite'\)/);
+ assert.match(app,/history\.replaceState/);
+ assert.doesNotMatch(app,/url\.searchParams\.set\('invite',token\)/);
 });
 test('No default opinion: every rating requires an actual user choice',()=>{
  assert.doesNotMatch(app,/\(v===4\?'checked':''\)/);
@@ -302,7 +303,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v22/);
+ assert.match(sw,/loveroll-static-v23/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
