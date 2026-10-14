@@ -26,7 +26,7 @@ jobs:
           assert version['build']=='2026-10-14.44',version
           assert 'loveroll-messenger-og-v43.jpg' in html
           assert '<meta property="og:image:type" content="image/jpeg">' in html
-          assert len(image)>80000 and image[:2]==b'\\xff\\xd8'
+          assert len(image)>80000 and image[:2].hex()=='ffd8'
           assert 'loveroll-invite-og.png?v=5' not in html
           print('LoveRoll preview LIVE:', version['build'],len(image),'bytes')
           PY
