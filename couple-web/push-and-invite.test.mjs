@@ -30,7 +30,7 @@ test('Supabase push endpoint requires a server-only dispatcher token',()=>{
  const db=readFileSync(new URL('./migrations/20261014_web_push.sql',import.meta.url),'utf8');
  const calendar=readFileSync(new URL('./migrations/20261014_push_calendar_test.sql',import.meta.url),'utf8');
  assert.match(edge,/love_push_verify_dispatch/);
- assert.match(edge,/verify_jwt/); // Verify delegated auth; never expose dispatch token.
+ assert.match(edge,/x-loveroll-dispatch/); // Custom server token is verified before any work.
  assert.match(db,/enable row level security/g);
  assert.match(db,/auth\.uid\(\)/);
  assert.match(db,/vault\.create_secret/);
