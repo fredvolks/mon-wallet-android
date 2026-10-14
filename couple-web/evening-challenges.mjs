@@ -286,9 +286,9 @@ export function resolvedCard(draw){
  if(!EVENING_CATEGORIES.includes(draw.category))return {title:'Défi historique',description:'Retrouvez votre ancien défi dans l’historique.',minutes:null,cardId:draw.card_id||draw.face};
  const cardId=draw.card_id||draw.face;
  if(cardId>=CUSTOM_CARD_START){
-  return {category:draw.category,cardId,title:draw.card_title||'Carte personnalisée',
-   description:draw.card_description||'Carte supprimée, contenu non disponible.',
-   minutes:draw.card_timer_minutes??null,custom:true};
+  return {category:draw.category,cardId,title:draw.card_title||'Défi surprise',
+   description:draw.card_description||'Consigne momentanément indisponible.',
+   minutes:draw.card_timer_minutes??null};
  }
- return {...eveningCard(draw.category,cardId),cardId,custom:false};
+ return {...eveningCard(draw.category,cardId),cardId};
 }
