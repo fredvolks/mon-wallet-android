@@ -15,7 +15,9 @@ export function jsonToolsPanel(kind,label,pending=null){
  '<input type="file" data-json-file="'+kind+'" accept=".json,application/json,text/plain"></label></div>'+
  (manual?'<label>Ou coller le JSON<textarea id="'+jsonInputId(kind)+
  '" rows="4" spellcheck="false" placeholder="Collez votre liste JSON ici"></textarea></label>':'')+
- '<p class="tiny-note">Durée facultative : <code>"timer_minutes": 5</code> active le minuteur 5 min. <code>null</code> le désactive.</p>'+
+ (kind==='special'?
+ '<p class="tiny-note">Minuteries D6 : ajoutez <code>"minuteurs":{"D6_activite":[5,null,null,null,null,null],"D6_modificateur":[null,null,null,null,null,null]}</code> dans chaque événement. Chaque position représente une face, <code>null</code> désactive le minuteur.</p>':
+ '<p class="tiny-note">Durée facultative par défi : <code>"timer_minutes": 5</code> prépare un minuteur de 5 minutes; <code>null</code> le désactive.</p>')+
  '<button type="button" class="subtle" data-action="json-preview:'+kind+'">Prévisualiser avant import</button>'+
  (pending?.kind===kind?'<div class="json-preview"><strong>♡ '+esc(pending.summary.label)+'</strong>'+
  '<p>'+pending.summary.count+' idées · '+pending.summary.timers+' minuteur(s) configuré(s)</p>'+
