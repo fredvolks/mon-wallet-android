@@ -12,7 +12,7 @@ as $$
 declare c uuid;
 begin
  if auth.uid() is null then raise exception 'Connexion requise';end if;
- if p_method not in ('partage','sms','courriel') then raise exception 'Méthode invalide';end if;
+ if p_method not in ('partage','sms','courriel','messenger') then raise exception 'Méthode invalide';end if;
  select i.couple_id into c from public.couple_invitations i
  where i.id=p_invitation and i.created_by=auth.uid()
   and i.accepted_at is null and i.cancelled_at is null and i.expires_at>now()
