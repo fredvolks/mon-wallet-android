@@ -33,6 +33,20 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Construire la bannière HD LoveRoll pour Messenger
+        run: |
+          python3 -m pip install --user 'Pillow>=10,<13'
+          python3 couple-web/make-social-preview.py
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          asset=Path('couple-web/assets/loveroll-invite-og.png')
+          with Image.open(asset) as im:
+              assert im.size==(1200,630), im.size
+              assert im.format=='PNG'
+          assert asset.stat().st_size>30000
+          print('Open Graph image OK:',asset.stat().st_size,'bytes')
+          PY
       - name: Téléverser uniquement la PWA (aucun fichier Android ni secret)
         uses: actions/upload-pages-artifact@v4
         with:
