@@ -265,7 +265,7 @@ export function eveningCard(category,cardId){
 }
 export function availableEveningCategories(preferred){
  if(!EVENING_CATEGORIES.includes(preferred))throw new Error('Catégorie non reconnue');
- return EVENING_CATEGORIES.map(category=>({category,weight:category===preferred?80:20}));
+ return EVENING_CATEGORIES.map(category=>({category,weight:category===preferred?88:12}));
 }
 export function formatCountdown(milliseconds){
  const seconds=Math.max(0,Math.ceil(milliseconds/1000));
