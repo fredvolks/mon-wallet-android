@@ -4,6 +4,7 @@ export function invitationStatus(invitation,connected,now=Date.now()){
  if(connected)return {code:'accepted',title:'Demande acceptée',hint:'Votre espace couple est connecté.'};
  if(!invitation)return {code:'none',title:'Aucune demande envoyée',hint:'Invitez votre partenaire quand vous serez prêts.'};
  if(invitation.accepted_at)return {code:'accepted',title:'Demande acceptée',hint:'Connexion du couple en cours de synchronisation.'};
+ if(invitation.cancelled_at)return {code:'cancelled',title:'Invitation annulée',hint:'Vous pouvez créer une nouvelle invitation.'};
  if(Date.parse(invitation.expires_at)<=now)return {code:'expired',title:'Invitation expirée',hint:'Créez un nouveau lien sécurisé.'};
  if(invitation.sent_at)return {code:'pending',title:'Demande envoyée',hint:'En attente que votre partenaire accepte.'};
  return {code:'prepared',title:'Invitation préparée',hint:'Confirmez l’envoi après l’avoir envoyée depuis votre messagerie.'};
