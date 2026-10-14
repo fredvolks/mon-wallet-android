@@ -126,7 +126,7 @@ export function editableMonthlyActivities(overrides=[]){
   const override=overrides.find(o=>Number(o.face)===activity.face);
   return {...activity,...(override?{
    title:override.title,description:override.description,
-   is_restaurant:override.is_restaurant
+   is_restaurant:override.is_restaurant,timer_minutes:override.timer_minutes??null
   }:{}),edited:!!override};
  });
 }
@@ -137,5 +137,6 @@ export function monthlyActivityForRoll(roll){
  return {face:initial.face,
   title:roll.activity_title??initial.title,
   description:roll.activity_description??initial.description,
-  is_restaurant:roll.activity_is_restaurant??initial.is_restaurant};
+  is_restaurant:roll.activity_is_restaurant??initial.is_restaurant,
+  timer_minutes:roll.activity_timer_minutes??null};
 }
