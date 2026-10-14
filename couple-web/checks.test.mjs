@@ -243,7 +243,7 @@ test('Birthday inputs reject invalid dates, and support leap day',()=>{
 test('New couple match uses two individual sign-ups',()=>{
  assert.match(matchHtml('Camille',false),/signup-couple-month/);
  assert.match(matchHtml('Camille',false),/Créer notre espace à deux/);
- assert.match(matchHtml('Alex',true),/Accepter ce match/);
+ assert.match(matchHtml('Alex',true),/ACCEPTER L’INVITATION/);
  assert.match(app,/create_love_match/);
  assert.match(app,/accept_love_match/);
  assert.match(app,/parseMonthDay\('signup-couple',false\)/);
@@ -302,7 +302,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v20/);
+ assert.match(sw,/loveroll-static-v21/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
