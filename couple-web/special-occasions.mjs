@@ -24,9 +24,11 @@ export const SPECIAL_SURPRISES=[
 ];
 export const OCCASIONS=[
  {key:"valentine",title:"Saint-Valentin",emoji:"💘",description:"Une fête des amoureux qui peut se préparer à l'avance."},
- {key:"anniversary",title:"Notre anniversaire de couple",emoji:"🥂",description:"La date importante de votre histoire, à choisir ensemble."},
- {key:"mothers_day",title:"Fête des Mères",emoji:"🌷",description:"Une attention pensée pour la personne célébrée."},
- {key:"fathers_day",title:"Fête des Pères",emoji:"🎩",description:"Un rendez-vous sans les obligations du quotidien."},
+ {key:"anniversary",title:"Notre anniversaire de couple",emoji:"🥂",description:"Une expérience hors du commun à préparer et découvrir ensemble, sans désigner un organisateur au hasard."},
+ {key:"mothers_day",title:"Fête des Mères",emoji:"🌷",description:"Le partenaire offre à la mère célébrée une surprise spécialement préparée."},
+ {key:"womens_day",title:"Journée internationale des droits des femmes",emoji:"🌹",description:"Le partenaire célèbre sa conjointe avec une attention séduisante ou romantique."},
+ {key:"fathers_day",title:"Fête des Pères",emoji:"🎩",description:"Le partenaire offre au père célébré une surprise spécialement préparée."},
+ {key:"mens_day",title:"Journée internationale des hommes",emoji:"🖤",description:"Le partenaire célèbre son conjoint avec une attention préparée pour lui."},
  {key:"birthday",title:"Mon anniversaire",emoji:"🎂",description:"Une surprise centrée sur la personne qui fête son anniversaire."}
 ];
 export function nthSunday(year,month,n){
@@ -37,6 +39,8 @@ export function occasionDate(kind,year,settings,userId){
  const full=(m,d)=>String(year).padStart(4,"0")+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
  if(kind==="valentine")return full(2,14);
  if(kind==="mothers_day")return full(5,nthSunday(year,5,2));
+ if(kind==="womens_day")return full(3,8);
+ if(kind==="mens_day")return full(11,19);
  if(kind==="fathers_day")return full(6,nthSunday(year,6,3));
  const md=kind==="anniversary"?settings?.anniversary_md:
     kind==="birthday"?settings?.birthday_by_user?.[userId]:null;
@@ -69,4 +73,16 @@ export function dueOccasions(now,settings,members){
 export function specialSurprise(face){
  if(!Number.isInteger(face)||face<1||face>20)throw Error("Dé spécial invalide");
  return SPECIAL_SURPRISES[face-1];
+}
+
+export const TARGETED_OCCASIONS=['mothers_day','fathers_day','womens_day','mens_day'];
+export function occasionRoles(event,settings,members){
+ if(!Array.isArray(members)||members.length!==2)return {giver:null,receiver:null,shared:true};
+ if(event.key==='anniversary'||event.key==='valentine')
+  return {giver:null,receiver:null,shared:true};
+ let celebrated=event.key==='birthday'?event.actorId:settings?.celebrants?.[event.key];
+ if(!celebrated||!members.some(m=>m.user_id===celebrated))
+  return {giver:null,receiver:null,shared:false};
+ return {giver:members.find(m=>m.user_id!==celebrated),
+  receiver:members.find(m=>m.user_id===celebrated),shared:false};
 }
