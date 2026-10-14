@@ -310,6 +310,7 @@ function renderInvitePanel(){
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
    button('invite',latest?'Créer un nouveau lien d’invitation':'Préparer une invitation');
   if(draft){
+   html+='<details class="invite-preview"><summary>♡ Aperçu de l’invitation LoveRoll</summary>'+invitationPreviewMarkup()+'</details>';
    html+='<div class="invite-actions">'+button('send-sms','✉ Envoyer par texto')+
     button('send-email','✉ Envoyer par courriel','class="subtle"')+
     button('copy-invite','Copier le lien','class="subtle"')+'</div>'+
