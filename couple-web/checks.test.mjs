@@ -3,7 +3,6 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
-import { drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE } from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
@@ -291,7 +290,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v11/);
+ assert.match(sw,/loveroll-static-v12/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -344,8 +343,10 @@ test('Removing a partner retains their own diary and removes access at the serve
  assert.match(app,/data-action="personal-date/);
 });
 test('Optional partner linking, settings management and individualized tips',()=>{
- assert.match(matchHtml('Camille',false),/skip-couple/);
- assert.match(app,/function renderSolo\(/);
+ assert.doesNotMatch(matchHtml('Camille',false),/skip-couple|Explorer sans partenaire/);
+ assert.match(matchHtml('Camille',false),/prepare-cards/);
+ assert.match(app,/function renderWaitingPartner\(/);
+ assert.doesNotMatch(app,/function renderSolo\(/);
  assert.match(app,/Retirer mon conjoint ou ma conjointe/);
  assert.match(app,/Ajouter un conjoint ou une conjointe/);
  assert.match(app,/function ideaHtml\(/);
@@ -382,41 +383,47 @@ test('Wellbeing selectors use dark custom dialogs, not white Android select popu
  assert.ok(manifest.includes('android:theme="@style/LoveRollConnectedTheme"'));
 });
 
-test('Solo users can explore all LoveRoll tabs without joining a couple',()=>{
- assert.equal(isSharedCoupleReady(null,[]),false);
- assert.equal(isSharedCoupleReady('demo',[{user_id:'only'}]),false);
- assert.equal(isSharedCoupleReady('demo',[{user_id:'a'},{user_id:'b'}]),true);
- assert.ok(SOLO_MESSAGE.includes('Mode découverte'));
- for(const label of ['renderSoloSession()','renderSoloSpecial()',
-  'renderSoloOccasions()','renderSoloAdvent()','renderPersonalJournal()',
-  "state.tab==='session')renderSoloSession()",
-  "state.tab==='advent')renderSoloAdvent()",
-  "state.tab==='special')renderSoloSpecial()",
-  "state.tab==='settings')renderSettings()",
-  "button('tab:session'","button('tab:special'","button('tab:advent'",
-  "button('tab:personal-journal'"]){
-   assert.ok(app.includes(label),'Missing solo UI: '+label);
+test('Unpaired members only see invitation, personal account, calendar and private card editing',()=>{
+ const match=matchHtml('Camille',false);
+ assert.ok(match.includes('prepare-cards'));
+ assert.ok(match.includes('create-couple'));
+ assert.ok(!match.includes('Explorer sans partenaire'));
+ assert.ok(!match.includes('skip-couple'));
+ assert.ok(app.includes('function renderWaitingPartner(){'));
+ assert.ok(app.includes('function renderCardLibrary(){'));
+ assert.ok(app.includes('function renderPersonalJournal(){'));
+ assert.ok(app.includes('function renderSettings(){'));
+ assert.ok(app.includes('function isSharedCoupleReady('));
+ assert.ok(app.includes("if(state.tab==='library'&&isLoveAdmin())renderCardLibrary()")||
+           app.includes("state.tab==='library'&&isLoveAdmin()"));
+ assert.ok(app.includes("if(verb==='prepare-cards')"));
+ assert.ok(app.includes("state.tab='library'"));
+ assert.ok(app.includes("['home','settings','library','personal-journal']"));
+ for(const forbidden of ['renderSoloSession','renderSoloSpecial','renderSoloOccasions',
+  'renderSoloAdvent','renderSolo()','solo-roll','solo-category','solo-advent',
+  'SOLO_MESSAGE','drawSoloFace','state.solo','loveroll-skip']){
+  assert.ok(!app.includes(forbidden),'Stale solo exploration code: '+forbidden);
  }
- assert.equal(app.includes('Ajoutez un partenaire pour utiliser les jeux partagés'),false);
-});
-test('Solo dice roll locally and shared database actions require two accounts',()=>{
- assert.equal(drawSoloFace(6,()=>0),1);
- assert.equal(drawSoloFace(6,()=>0.999),6);
- assert.equal(drawSoloFace(20,()=>0),1);
- assert.equal(drawSoloFace(20,()=>0.999),20);
- assert.throws(()=>drawSoloFace(8),/non pris en charge/);
- assert.throws(()=>drawSoloFace(6,()=>1),/invalide/);
- for(const label of ["verb==='solo-roll'","verb==='solo-advent'",
-  "verb==='solo-category'","drawSoloFace(sizes[kind])",
-  "!isSharedCoupleReady(state.coupleId,state.members)",
-  'Cette action nécessite deux comptes associés',
-  'Les démonstrations solo ne modifient pas les données du couple']){
-    assert.ok(app.includes(label),'Missing solo security contract: '+label);
+ for(const forbidden of ['Essayer le D35','Découvrir un défi D35',
+  'Découverte libre en mode solo','D6 individuel · essai']){
+  assert.ok(!app.includes(forbidden),'Stale solo UI: '+forbidden);
  }
- const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
- assert.ok(sw.includes('solo-mode.mjs'));
+ assert.ok(app.includes("Les jeux exigent deux comptes associés."));
+ assert.ok(app.includes("Cette action nécessite deux comptes associés."));
+ assert.ok(!readFileSync(new URL('./service-worker.js',import.meta.url),'utf8').includes('solo-mode.mjs'));
 });
-
+test('Before invitation the account retains its private cards and notes',()=>{
+ assert.ok(app.includes("p_anniversary_md:null"));
+ assert.ok(app.includes("if(!state.coupleId)await rpc('create_love_match'"));
+ assert.ok(app.includes("isLoveAdmin()"));
+ assert.ok(app.includes("state.customCards=state.couple?.owner_user_id===state.user.id"));
+ assert.ok(app.includes("save_love_card_with_roles"));
+ assert.ok(app.includes("button('tab:library','♡ Gérer mes 70 cartes')"));
+ assert.ok(app.includes("button('invite','♡ Préparer l’invitation')"));
+ assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
+ assert.ok(app.includes("button('tab:personal-journal','Ouvrir mon calendrier personnel')"));
+ assert.ok(!app.includes("if(verb==='skip-couple')"));
+});
 test('Creator-only access and private draws are enforced server side',()=>{
  const sql=readFileSync(new URL('./creator-only-custom-challenges.sql',import.meta.url),'utf8');
  assert.ok(sql.includes('owner_user_id'));
@@ -569,13 +576,13 @@ test('Challenge D35 gives 35 physical numbered faces without changing monthly D2
  assert.ok(db.includes("cc.drawer_role='owner'"));
  assert.ok(db.includes("cc.recipient_role='partner'"));
  assert.ok(db.includes('love_card_draw_history'));
- assert.ok(app.includes("heroDice(demo.challenge,35,'D35"));
+ assert.ok(!app.includes("heroDice(demo.challenge,35,'D35"));
  assert.ok(app.includes('Brasser le D35 pour'));
  assert.ok(app.includes('D35 :'));
  assert.ok(app.includes("heroDice(a.face,20,'Activité officielle')"));
  assert.ok(app.includes("heroDice(prize.face,20,'Résultat officiel')"));
- assert.equal(drawSoloFace(35,()=>0),1);
- assert.equal(drawSoloFace(35,()=>0.999),35);
+ assert.ok(!app.includes('solo-roll:challenge'));
+ assert.ok(!app.includes('heroDice(demo.challenge,35'));
 });
 test('Prepare cards privately before inviting a partner with future partner roles',()=>{
  const view=matchHtml('Test',false);
