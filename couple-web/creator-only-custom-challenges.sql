@@ -72,7 +72,7 @@ begin
  timer_minutes=excluded.timer_minutes,recipient_user_id=excluded.recipient_user_id,updated_at=now();
 end;$$;
 revoke all on function public.save_love_custom_card(uuid,text,integer,text,text,integer,uuid) from public,anon;
-grant execute on function public.save_love_custom_card(uuid,text,integer,text,text,integer) to authenticated;
+grant execute on function public.save_love_custom_card(uuid,text,integer,text,text,integer,uuid) to authenticated;
 
 create or replace function public.delete_love_custom_card(
  p_couple uuid,p_category text,p_card_id integer)
