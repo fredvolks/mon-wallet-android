@@ -250,7 +250,7 @@ test('New couple match uses two individual sign-ups',()=>{
 });
 test('Anniversary and dates are not re-entered in Settings',()=>{
  const fragment=app.slice(app.indexOf('function renderSettings()'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
- assert.match(fragment,/enregistré à mon inscription/);
+ assert.match(fragment,/Anniversaire du profil/);
  assert.doesNotMatch(fragment,/loveroll-birthday|save-occasion-date:birthday/);
 });
 test('Database onboarding enforces profile birthday and revokes old bypasses',()=>{
@@ -358,8 +358,8 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(matchHtml('Camille',false),/prepare-cards/);
  assert.match(app,/function renderWaitingPartner\(/);
  assert.doesNotMatch(app,/function renderSolo\(/);
- assert.match(app,/Retirer mon conjoint ou ma conjointe/);
- assert.match(app,/Ajouter un conjoint ou une conjointe/);
+ assert.match(app,/Retirer mon partenaire/);
+ assert.match(app,/Préparer mon couple/);
  assert.match(app,/function ideaHtml\(/);
  assert.match(app,/Chacun peut dire non/);
 });
@@ -884,4 +884,18 @@ test('Real-time server D35 odds mirror 88/12 preference and keep safeguards',()=
  assert.ok(sql.includes('d35:=floor(random()*35)::integer+1'));
  assert.ok(!sql.includes('delete from public.couple_challenges'));
  assert.ok(app.includes("p_preference:state.category,p_random:false"));
+});
+
+test('Settings groups remain settings-only; after-party forms live under Soirée',()=>{
+ const settings=app.slice(app.indexOf('function renderSettings(){'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
+ assert.match(settings,/settingGroup\('Compte'/);
+ assert.match(settings,/settingGroup\('Couple'/);
+ assert.match(settings,/settingGroup\('Notifications'/);
+ assert.match(settings,/settingGroup\('Application'/);
+ assert.doesNotMatch(settings,/button\('tab:feedback'/);
+ assert.match(app,/if\(!s&&state\.sessions\?\.some/);
+ assert.match(app,/if\(verb==='choose-feedback'\)/);
+ assert.match(app,/if\(verb==='send-messenger'\)/);
+ assert.match(app,/LoveRollNativeAuth\?\.openShare/);
+ assert.match(app,/navigator\.share/);
 });
