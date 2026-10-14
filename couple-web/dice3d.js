@@ -140,8 +140,10 @@ export function dieOn(canvas,sides,value,rolling){
  // An animated throw MUST NEVER begin already displaying the winning face.
  // Uniform random initial rotation, independent of the server-issued face.
  if(rolling){
+  // Randomness is for the camera-side tumble only; server decides the result.
+  const seed=new Uint32Array(3);crypto.getRandomValues(seed);
   built.group.quaternion.setFromEuler(new THREE.Euler(
-   Math.random()*Math.PI*2,Math.random()*Math.PI*2,Math.random()*Math.PI*2));
+   ...Array.from(seed,n=>n/4294967296*Math.PI*2)));
   built.group.position.y=0;
  }
  function step(now){
