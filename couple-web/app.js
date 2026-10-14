@@ -70,13 +70,14 @@ function inviteBrowserHelp(){
   '<p>Si la connexion ne s’ouvre pas, copiez l’invitation et collez-la dans '+(apple?'Safari':'Chrome')+'.</p>'+
   button('copy-invite-for-browser','Copier le lien sécurisé','class="subtle"')+'</details>';
 }
-function invitationLandingHeader(){
+function invitationLandingHeader(showAction=true){
  return '<section class="premium-invite-hero" aria-label="Votre invitation LoveRoll">'+
  '<div class="premium-invite-photo"><img src="./assets/loveroll-premium-scene.png" alt="Cœur rose lumineux et deux dés noirs LoveRoll" loading="eager"></div>'+
  '<div class="premium-eyebrow">♡ LOVEROLL · INVITATION PRIVÉE</div>'+
  '<h2>Une surprise rien que pour vous deux ❤️</h2>'+
  '<p>Partagez des moments de complicité, des défis et de belles surprises à votre rythme.</p>'+
- '<p class="premium-invite-note">♡ Votre invitation est privée · Un compte par personne</p></section>';
+ '<p class="premium-invite-note">♡ Votre invitation est privée · Un compte par personne</p>'+ 
+ (showAction?button('invite-start','♡ ACCEPTER L’INVITATION ❤️'):'')+'</section>';
 }
 function notify(message){toastEl.textContent=message;toastEl.classList.add('visible');
  clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>toastEl.classList.remove('visible'),4500);}
@@ -164,7 +165,7 @@ function render(){
  // owns the private card editor and personal journal before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
   if(!state.coupleId&&sessionStorage.getItem('pendingInvite')){
-   frame(invitationLandingHeader()+matchHtml(state.profile.display_name,true)+inviteBrowserHelp(),
+   frame(invitationLandingHeader(false)+matchHtml(state.profile.display_name,true)+inviteBrowserHelp(),
     'LOVEROLL','Votre invitation privée');return;
   }
   if(state.tab==='settings')renderSettings();
@@ -1261,6 +1262,11 @@ async function handle(action,element){
    throw Error('Mettez à jour l’APK pour désactiver le rappel Android.');
   window.LoveRollNativeAuth.disableWeeklyReminder();
   notify('Rappel local désactivé.');return;
+ }
+ if(verb==='invite-start'){
+  root.querySelector('.premium-auth-panel')?.scrollIntoView({behavior:'smooth',block:'center'});
+  root.querySelector('.premium-auth-panel [data-action="google"]')?.focus({preventScroll:true});
+  return;
  }
  if(verb==='copy-invite-for-browser'){
   const token=sessionStorage.getItem('pendingInvite');
