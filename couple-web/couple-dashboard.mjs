@@ -26,7 +26,7 @@ export function formatCoupleDate(iso){
 // The personalized URL is still required for the secure one-time invitation.
 export function invitationMessengerText(url){
  if(typeof url!=='string'||!/^https:\/\//.test(url))throw Error('Lien d’invitation invalide.');
- return '❤️ Une surprise à deux t’attend sur LoveRoll.\n\n'+url;
+ return 'J’ai envie de partager quelque chose de spécial avec toi sur LoveRoll ❤️\n\nOuvre ton invitation ici :\n'+url;
 }
 export function invitationEmailText(url){
  return '♡ LoveRoll — Une invitation juste pour nous deux\n\n'
@@ -38,7 +38,7 @@ export function invitationEmailText(url){
 }
 export function invitationPreviewMarkup(){
  return '<div class="loveroll-invite-preview" aria-label="Aperçu de l’invitation LoveRoll">'+
-  '<div class="loveroll-invite-heart">♥</div>'+
+  '<div class="loveroll-invite-heart"><img src="./assets/loveroll-hero.webp" alt="Cœur lumineux et dés LoveRoll" loading="lazy"></div>'+
   '<h3>LoveRoll</h3><p class="loveroll-invite-kicker">Une invitation juste pour vous deux</p>'+
   '<div class="loveroll-invite-divider"></div>'+
   '<h4>♡ Votre aventure commence ici</h4>'+
