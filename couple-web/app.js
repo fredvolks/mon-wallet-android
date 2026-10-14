@@ -1,5 +1,5 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
-import { eveningCard, EVENING_CATEGORIES, formatCountdown } from './evening-challenges.mjs';
+import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 import {drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE} from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise } from './special-occasions.mjs';
@@ -15,7 +15,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
 const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],
+ tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:26,
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'COQUIN',randomMode:false,chosenSession:null,confirmCancel:false,
  solo:{weekly:null,session:null,challenge:null,challengeCategory:'SENSUEL',special:null,host:null,occasion:null,occasionDay:null,adventDay:null}};
@@ -166,7 +166,7 @@ async function reload(){
  state.coupleId=membership[0]?.couple_id||null;
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
-  state.couple=null;state.members=[];state.weekly=null;state.monthly={};
+  state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.rollStatus=null;
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
   state.feedback=[];state.advent=[];state.unlockKey=null;
   state.tab=['settings','personal-journal','ideas','session','special','occasions','advent','journal'].includes(state.tab)?state.tab:'home';
@@ -179,6 +179,8 @@ async function reload(){
   query('couple_members',{eq:{couple_id:state.coupleId}})
  ]);
  state.couple=couple[0]||null;
+ state.customCards=state.couple?.owner_user_id===state.user.id?
+  await query('love_custom_challenges',{eq:{couple_id:state.coupleId}}):[];
  const profilesAll=await query('couple_profiles');
  state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter'}));
  state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
@@ -204,12 +206,13 @@ async function refreshShared(){
  state.session=sessions.find(s=>s.finished_at===null)||null;
  state.sessions=sessions;state.events=events;state.journal=diary;state.advent=advents;
  if(state.session){
-  const [personal,challenges]=await Promise.all([
+  const [personal,challenges,status]=await Promise.all([
     query('couple_personal_rolls',{eq:{session_id:state.session.id}}),
-    query('couple_challenges',{eq:{session_id:state.session.id},order:'created_at'})
+    query('couple_challenges',{eq:{session_id:state.session.id},order:'created_at'}),
+    rpc('my_love_roll_status',{p_session:state.session.id})
   ]);
-  state.personal=personal;state.challenges=challenges;
- }else{state.personal=[];state.challenges=[];}
+  state.personal=personal;state.challenges=challenges;state.rollStatus=status?.[0]||null;
+ }else{state.personal=[];state.challenges=[];state.rollStatus=null;}
  state.feedback=await query('couple_feedback',{eq:{couple_id:c}});
 }
 function subscribe(){
@@ -442,6 +445,7 @@ function updateChallengeClock(){
 }
 setInterval(updateChallengeClock,500);
 function timerWidget(challenge,minutes){
+ if(minutes===null||minutes===undefined||minutes===0)return '<p class="tiny-note">♡ Sans minuteur · l’activité se termine quand vous le souhaitez.</p>';
  activeTimer(challenge,minutes);
  return '<div class="timer-panel"><div class="eyebrow">⏱ Minuteur du défi · '+minutes+' min</div>'+
    '<div id="challenge-timer-clock" class="timer-clock">'+formatCountdown(clockMs())+'</div>'+
@@ -457,7 +461,7 @@ function timerWidget(challenge,minutes){
 function renderSession(){
  let s=state.session; const p=other();
  let body='<section class="card"><h2>Une soirée, deux D6 individuels</h2>'+
- '<p>Chacun brasse uniquement son propre dé. Le résultat est immédiatement visible par l’autre.</p>';
+ '<p>Chacun lance son D6 sur son compte. Les deux résultats apparaissent ensemble dès que les deux ont joué.</p>';
  if(!s)body+=button('new-session','Commencer une soirée commune');
  else{
   const mine=state.personal.find(x=>x.user_id===state.user.id);
@@ -465,8 +469,14 @@ function renderSession(){
   body+=heroDice(mine?.face,6,'Mon dé personnel')+
   '<div class="two"><div class="stat"><strong>'+safe(mine?.face||'—')+'</strong><small>'+safe(state.profile.display_name)+'</small></div>'+
   '<div class="stat"><strong>'+safe(theirs?.face||'—')+'</strong><small>'+safe(p.name)+'</small></div></div>';
-  if(!mine)body+=button('my-d6','🎲 Brasser MON D6');
-  else if(!theirs)body+='<p>En attente du D6 de '+safe(p.name)+'.</p>';
+  if(!state.rollStatus?.both_ready){
+   body+='<section class="card"><h3>Deux D6 · révélation commune</h3>'+
+    '<p>Mon D6 : '+(state.rollStatus?.my_rolled?'✓ Lancé · résultat secret':'Pas encore lancé')+'</p>'+
+    '<p>D6 de '+safe(p.name)+' : '+(state.rollStatus?.partner_rolled?'✓ Lancé · résultat secret':'En attente')+'</p>';
+   if(!state.rollStatus?.my_rolled)body+=button('my-d6','🎲 Brasser MON D6');
+   else body+='<p>Tu as joué. Le compte à rebours ne démarre pas : attends le D6 de '+safe(p.name)+'.</p>';
+   body+='</section>';
+  }
   else{
    const proposed=state.challenges.filter(x=>x.recipient===state.user.id);
    const active=proposed.filter(x=>['proposed','accepted'].includes(x.status)).at(-1);
@@ -474,13 +484,12 @@ function renderSession(){
    body+='<p>Mes défis terminés : '+completed+' / '+mine.face+
     ' · '+safe(p.name)+' donne mes défis.</p>';
    if(active){
-    const challenge=EVENING_CATEGORIES.includes(active.category)?
-      eveningCard(active.category,active.face):
-      {title:ideas[active.category]?.[active.face-1]||'Défi précédent',minutes:3,description:'Une proposition de votre partenaire.'};
-    body+='<div class="card"><div class="eyebrow">'+safe(names[active.category])+
-     ' · Face '+active.face+'</div><h3>'+safe(challenge.title)+'</h3>'+
-     '<p>'+safe(challenge.description)+'</p>'+
-     '<p>'+safe(p.name)+' propose → '+safe(state.profile.display_name)+' reçoit</p>'+
+    const challenge=resolvedCard(active);
+    body+='<div class="card challenge-present"><div class="eyebrow">'+safe(names[active.category])+
+     ' · CARTE '+safe(challenge.cardId||active.card_id||active.face)+' · D20 : '+active.face+'</div>'+
+     '<div class="challenge-roles">♡ '+safe(p.name).toUpperCase()+' OFFRE → '+safe(state.profile.display_name).toUpperCase()+' REÇOIT</div>'+
+     '<h3>'+safe(challenge.title)+'</h3>'+
+     '<p>'+safe(challenge.description)+'</p>' +
      timerWidget(active,challenge.minutes)+
      '<div class="actions">'+
      (active.status==='proposed'?button('answer:'+active.id+':accepted','Accepter'):'')+
@@ -495,8 +504,11 @@ function renderSession(){
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
      '<p>Chaque défi : 80 % de chances de tomber dans la catégorie choisie, 20 % dans l’autre.</p>'+
      button('new-challenge','🎲 Brasser le D20 pour '+safe(p.name))+'</div>';
-   }else if(otherActive){body+='<p>Défi proposé à '+safe(p.name)+
-    ' : '+safe(EVENING_CATEGORIES.includes(otherActive.category)?eveningCard(otherActive.category,otherActive.face).title:ideas[otherActive.category]?.[otherActive.face-1]||'Défi')+'</p>';}
+   }else if(otherActive){const giving=resolvedCard(otherActive);
+    body+='<section class="card"><div class="challenge-roles">♡ '+safe(state.profile.display_name).toUpperCase()+' OFFRE → '+safe(p.name).toUpperCase()+' REÇOIT</div>'+
+    '<h3>Mon défi à offrir : '+safe(giving.title)+'</h3><p>'+safe(giving.description)+'</p>'+
+    timerWidget(otherActive,giving.minutes)+'</section>';
+   }
   }
   const myTarget=mine?.face||0,otherTarget=theirs?.face||0;
   const mineCompleted=state.challenges.filter(x=>x.recipient===state.user.id&&x.status==='completed').length;
@@ -1017,8 +1029,9 @@ async function handle(action,element){
  }
  if(verb==='my-d6'){
   if(!state.session)throw Error('Aucune soirée active.');
-  const result=await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}));
-  notify('Votre D6 : '+result.face);return;
+  await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}));
+  if(!state.rollStatus?.both_ready)notify('D6 lancé! Les deux résultats apparaîtront ensemble après le dernier tirage.');
+  else notify('♡ Les deux résultats D6 sont maintenant révélés!');return;
  }
  if(verb==='category'){if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');state.category=parts[0];state.randomMode=false;render();return;}
   if(verb==='timer-mode'){
