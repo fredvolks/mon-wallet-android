@@ -13,7 +13,7 @@ import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
 import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup} from './push-notifications.mjs';
 import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
-import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationPreviewMarkup} from './couple-dashboard.mjs';
+import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
@@ -1514,12 +1514,12 @@ async function handle(action,element){
   // Generate a fresh, single-use link when the user chooses a sharing method.
   const d=await ensureInviteDraft(false);
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
-  const text=invitationEmailText(d.link);
+  const text=verb==='send-messenger'?invitationMessengerText(d.link):invitationEmailText(d.link);
   state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';
   if(verb==='send-messenger'){
    if(window.LoveRollNativeAuth?.openShare)window.LoveRollNativeAuth.openShare(text);
    else if(navigator.share){
-    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:'Je t’invite à rejoindre notre espace LoveRoll ❤️ Une invitation juste pour nous deux !',url:d.link});}
+    try{await navigator.share({title:'LoveRoll ❤️ Invitation privée',text:'Une surprise à deux t’attend ❤️',url:d.link});}
     catch(error){if(error.name!=='AbortError')throw error;}
    }else{
     await navigator.clipboard.writeText(d.link);
