@@ -4,7 +4,7 @@ import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometri
 /** Safari/Chrome WebGL die. Values come from the shared server, never from animation. */
 const pool=new Set();
 function digits(value,heart=false){const c=document.createElement('canvas');c.width=c.height=384;
- const x=c.getContext('2d');x.font=heart?'bold 87px sans-serif':'bold 180px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#ff1e91';x.shadowBlur=24;
+ const x=c.getContext('2d');x.font='bold '+(heart?({1:184,2:143,3:120,4:102,5:94,6:84}[value]||84):180)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#ff1e91';x.shadowBlur=24;
  x.fillStyle='#ff9ccf';x.strokeStyle='#ffe3f3';x.lineWidth=1.5;
  if(!heart)x.fillText(String(value),192,200);
  else{
@@ -86,7 +86,7 @@ function geometry(sides){
  group.add(new THREE.Mesh(geo,mat));
  const edges=new THREE.LineSegments(custom?.edges||(sides===6?new THREE.EdgesGeometry(new THREE.BoxGeometry(1.78,1.78,1.78)):new THREE.EdgesGeometry(geo)),
   new THREE.LineBasicMaterial({color:0xf23891,transparent:true,opacity:.68}));
- edges.scale.setScalar(1.004);group.add(edges);
+ edges.scale.setScalar(sides===6?.97:1.004);group.add(edges);
  const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
   [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
  for(let value=1;value<=sides;value++){
