@@ -20,7 +20,7 @@ const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -430,11 +430,15 @@ function renderSession(){
    const otherActive=state.challenges.filter(x=>x.recipient===p.user_id&&['proposed','accepted'].includes(x.status)).at(-1);
    const otherCompleted=state.challenges.filter(x=>x.recipient===p.user_id&&x.status==='completed').length;
    if(!otherActive&&otherCompleted<theirs.face){
-    body+='<div class="card"><h3>Offrir un défi à '+safe(p.name)+'</h3>'+
+    body+='<div class="card"><h3>Défi '+(otherCompleted+1)+' / '+theirs.face+
+     ' à offrir à '+safe(p.name)+'</h3>'+
+     '<p>Choisissez la catégorie pour ce défi. Vous pourrez changer pour chaque nouveau tirage.</p>'+
      '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
-     '<p>Chaque défi : 80 % de chances de tomber dans la catégorie choisie, 20 % dans l’autre.</p>'+
-     button('new-challenge','🎲 Brasser le D35 pour '+safe(p.name))+'</div>';
+     '<p>88 % dans votre catégorie choisie · 12 % dans l’autre. Choisissez à chaque défi.</p>'+
+     (EVENING_CATEGORIES.includes(state.category)?
+      button('new-challenge','🎲 Brasser le D35 pour '+safe(p.name)):
+      '<p class="tiny-note">Sélectionnez Sensuel ou Sexuel pour activer le tirage.</p>')+'</div>';
    }else if(otherActive){const giving=resolvedCard(otherActive);
     body+='<section class="card"><div class="challenge-roles">♡ '+safe(state.profile.display_name).toUpperCase()+' OFFRE → '+safe(p.name).toUpperCase()+' REÇOIT</div>'+
     '<h3>Mon défi à offrir : '+safe(giving.title)+'</h3><p>'+safe(giving.description)+'</p>'+
@@ -1328,8 +1332,12 @@ async function handle(action,element){
  }
  if(verb==='new-challenge'){
   if(!state.session)throw Error('Aucune soirée active.');
+  if(!EVENING_CATEGORIES.includes(state.category))
+   throw Error('Choisissez Sensuel ou Sexuel avant chaque nouveau défi.');
   await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
    p_preference:state.category,p_random:false}));
+  state.category=null; // Require a fresh category choice for the next challenge.
+  render();
   return;
  }
  if(verb==='answer'){await rpc('answer_challenge',{p_id:parts[0],p_status:parts[1]});

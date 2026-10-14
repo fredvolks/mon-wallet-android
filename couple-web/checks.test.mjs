@@ -160,12 +160,20 @@ test('Brand LoveRoll is applied to PWA',()=>{
  assert.match(app,/LoveRoll/);
 });
 
-test('The evening shows exactly two categories and per-draw 80/20 odds',()=>{
+test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.deepEqual(EVENING_CATEGORIES,['SENSUEL','SEXUEL']);
- assert.deepEqual(availableEveningCategories('SENSUEL'),[{category:'SENSUEL',weight:80},{category:'SEXUEL',weight:20}]);
- assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:20},{category:'SEXUEL',weight:80}]);
+ assert.deepEqual(availableEveningCategories('SENSUEL'),[{category:'SENSUEL',weight:88},{category:'SEXUEL',weight:12}]);
+ assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:12},{category:'SEXUEL',weight:88}]);
  assert.match(app,/EVENING_CATEGORIES\.map/);
- assert.match(app,/80 % de chances/);
+ assert.match(app,/88 % dans votre catégorie choisie · 12 % dans l’autre/);
+ assert.ok(app.includes('diceStatus:null,category:null,randomMode:false'));
+ assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
+ assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category))"));
+ assert.ok(app.includes("state.category=null; // Require a fresh category choice"));
+ assert.ok(app.includes('Sélectionnez Sensuel ou Sexuel pour activer le tirage.'));
+ const weights=availableEveningCategories('SENSUEL');
+ assert.equal(weights.reduce((sum,entry)=>sum+entry.weight,0),100);
+ assert.equal(availableEveningCategories('SEXUEL').reduce((sum,entry)=>sum+entry.weight,0),100);
  assert.doesNotMatch(app,/Aléatoire : Sexuel 40/);
 });
 test('50 built-in cards and 20 optional creator-only slots',()=>{
@@ -293,7 +301,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v16/);
+ assert.match(sw,/loveroll-static-v17/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -857,4 +865,22 @@ test('Server protects future D6 options, uses only random 1..6, and preserves pr
  assert.ok(app.includes('state.specialEventsConfig=specialSettings[0]?.events||null'));
  assert.ok(worker.includes("'./private-special-events.mjs'"));
  assert.ok(!rolls.includes('delete from public.couple_occasion_rolls'));
+});
+
+test('Real-time server D35 odds mirror 88/12 preference and keep safeguards',()=>{
+ const sql=readFileSync(new URL('./draw-category-88-12.sql',import.meta.url),'utf8');
+ assert.ok(sql.includes('weights:=array_append(weights,case when v_cat=p_preference then 88 else 12 end);'));
+ assert.ok(!sql.includes('then 80 else 20'));
+ assert.ok(sql.includes("if p_preference not in ('SENSUEL','SEXUEL')"));
+ assert.ok(sql.includes('if capacity>0 then'));
+ assert.ok(sql.includes('ticket:=floor(random()*total)::integer;'));
+ assert.ok(sql.includes('and history.card_id=card'));
+ assert.ok(sql.includes('coalesce(chosen.title,original.title)'));
+ assert.ok(sql.includes('coalesce(chosen.description,original.description)'));
+ assert.ok(sql.includes('insert into public.love_card_draw_history'));
+ assert.ok(sql.includes('cc.drawer_role'));
+ assert.ok(sql.includes('cc.recipient_role'));
+ assert.ok(sql.includes('d35:=floor(random()*35)::integer+1'));
+ assert.ok(!sql.includes('delete from public.couple_challenges'));
+ assert.ok(app.includes("p_preference:state.category,p_random:false"));
 });
