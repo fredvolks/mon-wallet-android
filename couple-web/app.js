@@ -730,7 +730,7 @@ function renderSpecialEventsEditor(){
   '<label>JSON de mes événements spéciaux<textarea id="special-events-json" rows="11"'+
    ' spellcheck="false" placeholder="{ &quot;evenements_speciaux&quot;: { ... } }">'+
    safe(current?JSON.stringify(current,null,2):'')+'</textarea></label>'+
-  button('import-special-events','♡ Enregistrer les 6 événements')+
+  button('import-special-events','♡ Prévisualiser avant remplacement')+
   '</section>'+jsonToolsPanel('special','6 événements spéciaux',state.jsonPending);
  if(current){
   body+='<section class="card"><h3>Mes surprises préparées</h3>'+
@@ -787,7 +787,7 @@ function renderAdventEditor(){
   '<label>Votre calendrier JSON<textarea id="advent-2026-json" spellcheck="false" rows="10"'+
   ' placeholder="{ &quot;calendar_title&quot;: &quot;...&quot;, &quot;year&quot;: 2026, &quot;days&quot;: [...] }">'+
    safe(calendar?JSON.stringify(calendar,null,2):'')+'</textarea></label>'+
-   button('import-advent-2026','♡ Enregistrer les 25 cases')+
+   button('import-advent-2026','♡ Prévisualiser avant remplacement')+
   '</section>'+jsonToolsPanel('advent','25 cases de l’Avent',state.jsonPending);
  if(calendar){
   body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
@@ -1277,25 +1277,11 @@ async function handle(action,element){
  }
  if(verb==='import-special-events'){
   if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
-  let data;
-  try{data=JSON.parse(id('special-events-json')?.value||'');}
-  catch{throw Error('JSON invalide : copiez le texte entier, entre les deux accolades.');}
-  validateSpecialEventsJson(data);
-  await rpc('import_love_special_events',{p_couple:state.coupleId,p_events:data});
-  await reload();
-  notify('Les 6 fêtes et leurs deux D6 sont enregistrés.');
-  return;
+  previewPortableJson('special');render();return;
  }
  if(verb==='import-advent-2026'){
   if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
-  let calendar;
-  try{calendar=JSON.parse(id('advent-2026-json')?.value||'');}
-  catch{throw Error('JSON invalide : vérifiez la syntaxe et les guillemets.');}
-  validateAdventJson(calendar);
-  await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:calendar});
-  await reload();
-  notify('Les 25 cases de décembre 2026 sont enregistrées.');
-  return;
+  previewPortableJson('advent');render();return;
  }
  if(verb==='advent-editor-day'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
