@@ -1,4 +1,14 @@
 // LoveRoll Web Push registration (Safari home-screen iOS/iPadOS and PWA browsers).
+// Android 0.13.4 exposed a bridge getter that accessed WebView off the UI
+// thread. A Java exception must NEVER prevent account sign-in or profile loads.
+export function safeNativePushToken(){
+ try{return typeof window!=='undefined'?String(window.LoveRollNativeAuth?.nativePushToken?.()||''):'';}
+ catch(error){return '';}
+}
+export function safeNativePushConfigured(){
+ try{return !!window?.LoveRollNativeAuth?.nativePushConfigured?.();}
+ catch(error){return false;}
+}
 // Android WebView APK does not implement PushManager; Android uses native local reminders.
 export function pushEnvironment(){
  const native=!!globalThis.window?.LoveRollNativeAuth;
@@ -18,7 +28,7 @@ const encodeB64=buffer=>btoa(String.fromCharCode(...new Uint8Array(buffer)));
 export async function enablePush(client,userId){
  const e=pushEnvironment();
  if(e.native){
-  if(!window.LoveRollNativeAuth?.nativePushConfigured?.())
+  if(!safeNativePushConfigured())
    throw Error('FCM n’est pas configuré dans cette version APK. Les identifiants Firebase publics sont nécessaires.');
   const token=await new Promise((resolve,reject)=>{
    const listener=event=>{clearTimeout(timeout);window.removeEventListener('loveroll-native-push-token',listener);resolve(event.detail?.token);};
@@ -67,7 +77,7 @@ export async function enablePush(client,userId){
 export async function disablePush(client,userId){
  const e=pushEnvironment();
  if(e.native){
-  const token=window.LoveRollNativeAuth?.nativePushToken?.();
+  const token=safeNativePushToken();
   if(token){
    const {error:rm}=await client.from('love_push_native_devices')
     .delete().eq('user_id',userId).eq('device_token',token);
@@ -106,8 +116,8 @@ export function notificationSettingsMarkup(prefs={}){
  let status='',actions='';
  if(e.native){
   const local=!!window.LoveRollNativeAuth?.weeklyReminderEnabled?.();
-  const configured=!!window.LoveRollNativeAuth?.nativePushConfigured?.();
-  const token=window.LoveRollNativeAuth?.nativePushToken?.()||'';
+  const configured=!!safeNativePushConfigured();
+  const token=safeNativePushToken()||'';
   const active=configured&&!!token&&enabled;
   status='<strong>'+(active?'✓ Notifications Android enregistrées':
    configured?'Autorisation ou inscription nécessaire':'Notifications distantes non disponibles')+'</strong>'+
@@ -135,7 +145,7 @@ export function notificationSettingsMarkup(prefs={}){
  return '<div class="invite-status push-status">'+status+'</div>'+
  '<div class="push-actions">'+actions+'</div>'+
  '<div class="push-options">'+categories.map(([key,title,desc])=>{
- const available=e.native?e.native&&!!window.LoveRollNativeAuth?.nativePushConfigured?.()&&enabled&&!!window.LoveRollNativeAuth?.nativePushToken?.():e.supported&&enabled&&e.permission==='granted';
+ const available=e.native?e.native&&!!safeNativePushConfigured()&&enabled&&!!safeNativePushToken():e.supported&&enabled&&e.permission==='granted';
  return '<label class="push-option"><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
  '<input type="checkbox" data-push-option="'+key+'"'+(available&&prefs[key]!==false?' checked':'')+
  (!available?' disabled':'')+' aria-label="'+title+'"></label>';
