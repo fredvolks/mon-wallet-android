@@ -836,7 +836,7 @@ public final class MainActivity extends Activity {
      prefs.edit().putString("selected",cat.name()).putBoolean("random_mode",false).apply();draw();
     },1);
    }
-   addText(selection,"80 % dans la catégorie choisie · 20 % dans l'autre",12,MUTED,false,3);
+   addText(selection,"88 % dans la catégorie choisie · 12 % dans l'autre",12,MUTED,false,3);
    addButton(selection,"🎲  "+other(player).toUpperCase()+" BRASSE LE D20",true,
      ()->offerChallenge(player));
   }else{
@@ -1453,7 +1453,7 @@ public final class MainActivity extends Activity {
  void drawRules(){
   heading("🎲  Règles du jeu","Comment fonctionnent nos tirages");
   card("Dé hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
-  card("D6 et D20","Chacun a son D6. Pour chaque D20 : Sensuel ou Sexuel, 80 % pour le choix, 20 % pour l'autre.");
+  card("D6 et D20","Chacun a son D6. Pour chaque D20 : Sensuel ou Sexuel, 88 % pour le choix, 12 % pour l'autre.");
   card("Les défis ne se répètent pas","Une proposition, même passée, ne ressort pas pour la même personne pendant sa soirée.");
   card("Calendrier de l'Avent","Les 25 cases s'ouvrent uniquement à leur date en décembre.");
   section("↻  Réinitialisation");
