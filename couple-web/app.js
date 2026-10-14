@@ -1,5 +1,5 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
-import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,resolvedCard } from './evening-challenges.mjs';
+import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 import {drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE} from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
@@ -15,7 +15,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
 const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:26,
+ tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false,
  solo:{weekly:null,session:null,challenge:null,challengeCategory:'SENSUEL',special:null,host:null,occasion:null,occasionDay:null,adventDay:null}};
@@ -807,49 +807,70 @@ async function renderFeedback(){
 function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
 function renderCardLibrary(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
- const category=state.customCategory,slots=customCardSlots(category,state.customCards);
+ const category=state.customCategory;
+ const slots=editableCardSlots(category,state.customCards);
  const slot=slots.find(x=>x.cardId===state.customSlot)||slots[0];
+ const eligibleOptions=(name,value,selected)=>'<label class="custom-person-option">'+
+  '<input type="radio" name="'+name+'" value="'+safe(value)+'"'+
+  (selected===value?' checked':'')+'> '+safe(value?state.members.find(m=>m.user_id===value)?.name||'Partenaire':'Les deux partenaires')+
+  '</label>';
+ const chooser=(name,current)=>'<div class="custom-receiver">'+
+  '<label class="custom-person-option"><input type="radio" name="'+name+'" value=""'+
+  (!current?' checked':'')+'> Les deux partenaires</label>'+
+  state.members.map(m=>eligibleOptions(name,m.user_id,current)).join('')+'</div>';
+ const table=(range)=>range.map(card=>{
+  const title=card.title||'Emplacement vide';
+  return '<button type="button" class="custom-card-tile '+
+   (card.saved?'custom-filled ':'')+
+   (slot.cardId===card.cardId?'custom-active':'')+
+   '" data-action="custom-slot:'+card.cardId+
+   '" aria-label="Modifier carte '+card.cardId+' : '+safe(title)+'">'+
+   '<span class="custom-tile-number">'+String(card.cardId).padStart(2,'0')+'</span>'+
+   '<span class="custom-tile-name">'+safe(title)+'</span></button>';
+ }).join('');
  let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>Bibliothèque de défis</h2>'+
-  '<p>25 cartes Sensuel + 25 cartes Sexuel prêtes à jouer, avec 10 emplacements libres par catégorie. Votre partenaire ne peut pas consulter ce catalogue.</p>'+
+  '<h2>Mes 70 cartes</h2>'+
+  '<p>25 cartes de base + 10 emplacements libres par catégorie. Chaque carte est modifiable, y compris les 50 déjà fournies.</p>'+
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
-  '<button class="pill '+(category===c?'selected':'')+
-  '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div></section>'+
-  '<section class="card"><h3>25 cartes · '+safe(names[category])+'</h3>'+
-  Array.from({length:25},(_,i)=>{
-   const card=eveningCard(category,i+1);
-   return '<details class="custom-detail"><summary>'+String(i+1).padStart(2,'0')+
-    ' · '+safe(card.title)+' · '+(card.minutes?card.minutes+' min':'Sans minuteur')+'</summary>'+
-    '<p>'+safe(card.description)+'</p></details>';
-  }).join('')+'</section>'+
-  '<section class="card"><div class="eyebrow">VOS EMPLACEMENTS PRIVÉS</div>'+
-  '<h3>10 cartes personnalisées</h3>'+
-  '<p>Vous pouvez en remplir une, quelques-unes ou aucune. Les emplacements vides ne sont jamais tirés.</p>'+
-  '<div class="custom-slot-grid">'+slots.map(c=>'<button type="button" class="'+
-  (c.filled?'custom-filled ':'')+(slot.cardId===c.cardId?'custom-active':'')+
-  '" data-action="custom-slot:'+c.cardId+'">N° '+(c.cardId-25)+
-  (c.filled?' ✓':' · Vide')+'</button>').join('')+'</div>'+
-  '<h3>Carte personnalisée N° '+(slot.cardId-25)+'</h3>'+
-  '<label>Titre<input id="custom-title" maxlength="120" value="'+safe(slot.title)+
-  '" placeholder="Le nom de votre carte"></label>'+
-  '<label>Consigne<textarea id="custom-description" maxlength="900" rows="4"'+
-  ' placeholder="Votre défi personnalisé, écrit librement.">'+safe(slot.description)+'</textarea></label>'+
-  '<div class="custom-receiver"><strong>Qui peut recevoir cette carte ?</strong>'+
-  '<label><input type="radio" name="custom-recipient" value=""'+(!slot.recipientId?' checked':'')+
-  '> Les deux partenaires</label>'+
-  state.members.map(m=>'<label><input type="radio" name="custom-recipient" value="'+safe(m.user_id)+'"'+
-    (slot.recipientId===m.user_id?' checked':'')+'> Seulement '+safe(m.name)+'</label>').join('')+
-  '<p class="tiny-note">Si une carte est réservée à une personne, elle ne peut jamais sortir pour l’autre.</p></div>'+
-  '<label><input type="checkbox" id="custom-timer-enabled"'+
-  (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
-  '<label>Durée en minutes<input id="custom-minutes" type="number" min="1" max="60"'+
-  ' value="'+(slot.minutes||5)+'"></label>'+
-  '<p class="tiny-note">Sans case cochée, la carte est libre de durée.</p>'+
-  button('save-custom-card','Enregistrer cette carte')+
-  (slot.filled?button('delete-custom-card','Vider cet emplacement','class="subtle"'):'')+
+    '<button class="pill '+(category===c?'selected':'')+
+    '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
   '</section>'+
-  '<section class="card">'+button('tab:settings','← Réglages','class="subtle"')+'</section>';
- frame(body,'MES CARTES','Réservé au compte administrateur');
+  '<section class="card"><div class="eyebrow">RÈGLE DE PIGE</div>'+
+  '<h3>Éviter les répétitions</h3>'+
+  '<label class="custom-draw-setting"><input type="checkbox" id="no-repeat-cards"'+
+    (state.couple?.no_repeat_challenges!==false?' checked':'')+'>'+
+    '<span>Ne pas ressortir une carte tant que toutes les cartes admissibles n’ont pas été pigées</span></label>'+
+  '<p class="tiny-note">Activé par défaut. Le cycle est conservé entre les soirées, séparément pour chaque personne qui reçoit, en tenant compte de qui est autorisé à piger et recevoir. Après épuisement, un nouveau cycle commence automatiquement.</p>'+
+  button('save-draw-rule','Enregistrer cette règle','class="subtle"')+
+  '</section>'+
+  '<section class="card"><div class="eyebrow">CHOISIR UNE CARTE À MODIFIER</div>'+
+  '<h3>25 cartes prêtes</h3><div class="custom-card-tiles">'+table(slots.slice(0,25))+
+  '</div><h3>10 emplacements facultatifs</h3><div class="custom-card-tiles">'+
+  table(slots.slice(25))+'</div>'+
+  '<p class="tiny-note">Les emplacements vides ne sont jamais pigés. Les cartes modifiées et les cartes officielles restent indiscernables pendant le jeu.</p></section>'+
+  '<section class="card"><div class="eyebrow">ÉDITEUR PRIVÉ · CARTE '+String(slot.cardId).padStart(2,'0')+'</div>'+
+  '<h2>'+safe(slot.title||'Nouvelle carte')+'</h2>'+
+  '<label>Titre de la carte<input id="custom-title" maxlength="120" value="'+
+   safe(slot.title)+'" placeholder="Titre du défi"></label>'+
+  '<label>Consigne<textarea id="custom-description" maxlength="900" rows="4"'+
+   ' placeholder="Décrivez librement le défi proposé">'+safe(slot.description)+'</textarea></label>'+
+  '<strong>Qui peut piger cette carte ?</strong>'+
+  chooser('custom-drawer',slot.drawerId)+
+  '<strong>Qui peut recevoir ce défi ?</strong>'+
+  chooser('custom-recipient',slot.recipientId)+
+  '<p class="tiny-note">Celui qui pige OFFRE le défi à l’autre, qui le REÇOIT. Ces restrictions sont vérifiées dans la base de données avant chaque tirage.</p>'+
+  '<label class="custom-draw-setting"><input type="checkbox" id="custom-timer-enabled"'+
+   (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
+  '<label>Durée (minutes)<input id="custom-minutes" type="number" min="1" max="60" value="'+
+   (slot.minutes||5)+'"></label>'+
+  '<p class="tiny-note">Sans minuteur, aucun compte à rebours n’est affiché.</p>'+
+  button('save-custom-card','♡ Enregistrer les modifications')+
+  (slot.saved?button('delete-custom-card',
+    slot.isOriginal?'Restaurer cette carte d’origine':'Vider cet emplacement',
+    'class="subtle"'):'')+
+  '</section><section class="card">'+
+  button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
+ frame(body,'MES CARTES','Gestion confidentielle, réservée à l’admin');
 }
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
