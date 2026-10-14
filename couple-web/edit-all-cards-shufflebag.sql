@@ -240,3 +240,6 @@ end;$$;
 
 revoke all on function public.draw_for_partner(uuid,text,boolean) from public,anon;
 grant execute on function public.draw_for_partner(uuid,text,boolean) to authenticated;
+
+-- Refresh PostgREST RPC signature cache for the new eight-argument endpoint.
+notify pgrst, 'reload schema';
