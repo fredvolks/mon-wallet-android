@@ -1327,13 +1327,13 @@ function renderSettings(){
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
  const adminWeekly=isLoveAdmin()&&hasPartner?
   '<div class="settings-item"><div><strong>🎲 Administration — tirage hebdomadaire</strong>'+
-  '<p>Réinitialiser uniquement le D6 de la semaine en cours. Aucun défi ni compte n’est supprimé.</p></div></div>'+
+  '<p>Réinitialiser le D6 de cette semaine, même si une soirée a commencé. Les défis, séances et comptes sont conservés.</p></div></div>'+
   '<div class="weekly-admin-status">'+
   '<p>Résultat : <strong>'+(state.weekly?state.weekly.face+' soirée(s)':'Non brassé')+'</strong></p>'+
   '<p>Brassé par : '+(state.weekly?safe(person(state.weekly.actor)):'—')+'</p>'+
   '<p>Date du brassage : '+(state.weekly?safe(new Date(state.weekly.created_at).toLocaleString('fr-CA',{timeZone:'America/Toronto'})):'—')+'</p>'+
   '<p>Prochain lundi : '+safe(nextMonday())+' à 00 h (Québec)</p></div>'+
-  '<p class="tiny-note">Pour préserver les défis, le reset est refusé si une soirée a commencé cette semaine.</p>'+
+  '<p class="tiny-note">Reset admin forcé : fonctionne même si une soirée est commencée. Les séances, défis, attributions et historiques sont conservés. Le nouveau tirage remplace seulement le D6 de cette semaine.</p>'+
   button('admin-reset-weekly','↺ Reset hebdomadaire','class="subtle danger-action" '+(!state.weekly?'disabled':'')):'';
  const notifications=notificationSettingsMarkup(state.pushPrefs||{});
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
@@ -1410,7 +1410,8 @@ async function handle(action,element){
   if(!state.weekly)throw Error('Aucun tirage hebdomadaire à réinitialiser.');
   const message='Réinitialiser le résultat hebdomadaire pour les DEUX partenaires ? '+
     'Cette action est enregistrée. Les défis et soirées restent intacts. '+
-    'Le reset est refusé si une soirée a déjà commencé cette semaine.';
+    'Même si une soirée a déjà commencé, elle et ses défis resteront enregistrés. ' +
+    'Seul le résultat hebdomadaire sera effacé et vous pourrez relancer le D6.';
   if(!confirm(message))return;
   const changed=await rpc('reset_love_weekly_roll_admin',{p_couple:state.coupleId});
   await refreshAndShow();
