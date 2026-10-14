@@ -4,6 +4,7 @@ import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
+import {ADVENT_YEAR,validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
@@ -291,7 +292,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v14/);
+ assert.match(sw,/loveroll-static-v15/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -732,4 +733,60 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("if(activity.is_restaurant){"));
  assert.ok(serviceWorker.includes("'./monthly-activities.mjs'"));
  assert.ok(!app.includes("safe(outings[a.face-1])"));
+});
+
+test('Private Advent 2026 import accepts 25 user-written days without altering the wording',()=>{
+ assert.equal(ADVENT_YEAR,2026);
+ const calendar={calendar_title:'Notre calendrier de Noël',year:2026,target_audience:'18+',
+  note:'Rester à la maison ou organiser deux sorties locales.',
+  days:Array.from({length:25},(_,i)=>({
+   day:i+1,type:i%2?'Repos':'Surprise',
+   title:'Notre journée '+(i+1),
+   description:'Un texte personnalisé de Noël pour notre couple, à partager seulement à deux.'
+  }))};
+ assert.equal(validateAdventJson(calendar),calendar);
+ const saved=calendarFromSaved({
+  calendar_title:calendar.calendar_title,target_audience:'18+',note:calendar.note
+ },calendar.days);
+ assert.deepEqual(saved,calendar);
+ assert.throws(()=>validateAdventJson({...calendar,year:2027}),/2026/);
+ assert.throws(()=>validateAdventJson({...calendar,days:calendar.days.slice(0,24)}),/25/);
+ assert.throws(()=>validateAdventJson({...calendar,days:[...calendar.days.slice(0,24),calendar.days[0]]}),/uniques/);
+ assert.throws(()=>validateAdventJson({...calendar,days:calendar.days.map((x,i)=>i===0?{...x,title:''}:x)}),/invalide/);
+ assert.throws(()=>validateAdventJson({...calendar,target_audience:'all'}),/18/);
+});
+test('Founder-only Advent editor, server date locks and shared immutable case snapshots',()=>{
+ const migration=readFileSync(new URL('./import-private-advent-2026.sql',import.meta.url),'utf8');
+ for(const part of [
+  'public.love_advent_2026_config',
+  'public.love_advent_2026_days',
+  'enable row level security',
+  'love_advent_config_owner_read',
+  'love_advent_days_owner_read',
+  'c.owner_user_id=(select auth.uid())',
+  'create or replace function public.import_love_advent_2026(',
+  'jsonb_array_length',
+  'count(distinct (value->>\'day\')::integer)',
+  'select 1 from public.couples c where c.id=p_couple and c.owner_user_id=auth.uid()',
+  'p_day>extract(day from d)::int',
+  'extract(year from d)::int=2026',
+  'advent_type,advent_title,advent_description',
+  'if found then return rowout;end if;',
+  "values(p_couple,'advent',auth.uid(),'Case de décembre')"
+ ])assert.ok(migration.includes(part),'Missing Advent SQL guarantee: '+part);
+ assert.ok(!migration.includes('delete from public.couple_advent'));
+ assert.ok(!migration.includes('delete from public.love_custom_challenges'));
+ assert.ok(!migration.includes('delete from public.couple_intimacy'));
+ assert.ok(app.includes("function renderAdventEditor()"));
+ assert.ok(app.includes("import_love_advent_2026"));
+ assert.ok(app.includes("validateAdventJson(calendar)"));
+ assert.ok(app.includes("state.advent2026Config=adventConfig[0]||null"));
+ assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor']"));
+ assert.ok(app.includes("['library','monthly-library','advent-editor'].includes(parts[0])"));
+ assert.ok(app.includes("selected.advent_description"));
+ assert.ok(app.includes("selected.advent_type"));
+ assert.ok(app.includes("selected.advent_title||advent[selected.day-1]"));
+ assert.ok(!app.includes('advent[selected.day-1])</h3>'));
+ const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
+ assert.ok(sw.includes("'./advent-calendar.mjs'"));
 });
