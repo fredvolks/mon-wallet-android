@@ -44,7 +44,7 @@ export function premiumEveningHtml({
  const currentStatus=turn.finished?'♡ Tous nos défis sont terminés':pending?'♡ Défi en cours · réponse attendue':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
  // animation face or guess a result while a D35 is being rolled.
- const d35Candidate=pending?.face??lastD35Face;
+ const d35Candidate=pending?.face??turn?.pending?.face??lastD35Face;
  const d35Number=Number(d35Candidate);
  const officialD35=ready&&!rolling&&d35Candidate!=null&&
   Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=35?d35Number:null;
