@@ -364,13 +364,14 @@ function renderSolo(){
  '<p>Découvrez toutes les fonctionnalités de LoveRoll sans avoir à ajouter de partenaire. '+
  'Les essais sont privés et ne modifient pas votre calendrier.</p>'+
  '<div class="solo-shortcuts">'+
- button('tab:session','🎲 Soirée et dés D6 / D20')+
+ button('tab:session','🎲 Soirée et dés D6 / D35')+
  button('tab:special','✦ Défis et sorties')+
  button('tab:advent','🎁 Calendrier de l’Avent')+
  button('tab:personal-journal','♥ Mon calendrier personnel')+
  '</div></section>'+ideaPreview()+
- '<section class="card"><h3>♡ Jouer à deux plus tard</h3>'+
- '<p>Vous pourrez lier une personne depuis les réglages lorsque vous serez prêt.</p>'+
+ '<section class="card"><h3>♡ Préparer avant d’inviter</h3>'+
+ '<p>Écrivez vos cartes, choisissez les rôles et les minuteurs en privé. Votre conjointe sera invitée plus tard.</p>'+
+ (state.coupleId?button('tab:library','♡ Gérer mes défis'):button('prepare-cards','♡ Créer mes défis maintenant'))+
  button('start-couple','Ajouter un conjoint ou une conjointe','class="subtle"')+
  '</section>','VOTRE ESPACE','Toute l’application, même en solo');
 }
@@ -885,8 +886,9 @@ function renderSettings(){
   button('invite','Inviter mon conjoint ou ma conjointe')+
   button('end-couple','Annuler cet espace à deux','class="subtle"');
  }else{
-  partner+='<p>Vous n’avez pas de partenaire lié. Votre calendrier personnel reste disponible.</p>'+
-  button('start-couple','Ajouter un conjoint ou une conjointe');
+  partner+='<p>Préparez vos défis avant même d’inviter votre conjointe.</p>'+
+  button('prepare-cards','♡ Créer mes défis avant l’invitation')+
+  button('start-couple','Ajouter un conjoint ou une conjointe','class="subtle"');
  }
  partner+='</section>';
  const libraryPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+ 
@@ -1114,6 +1116,15 @@ async function handle(action,element){
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:state.profile.birthday_md});
   await reload();return;
+ }
+ if(verb==='prepare-cards'){
+  if(sessionStorage.getItem('pendingInvite'))throw Error('Une invitation est en attente.');
+  if(!state.coupleId)await rpc('create_love_match',{p_anniversary_md:null});
+  localStorage.setItem('loveroll-skip-'+state.user.id,'1');
+  state.tab='library';
+  await reload();
+  notify('Votre bibliothèque privée est prête. Invitez votre conjointe plus tard.');
+  return;
  }
  if(verb==='create-couple'){
   const date=parseMonthDay('signup-couple',false);
