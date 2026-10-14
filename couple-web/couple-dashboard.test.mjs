@@ -58,23 +58,22 @@ test('Invitation status APIs and native SMS open only a composer',()=>{
  assert.match(app,/state\.invitations=await query/);
 });
 
-test('Messenger share stays readable even when the automatic preview is suppressed',()=>{
- const link='https://fredvolks.github.io/mon-wallet-android/?invite_id=72aa640b-2644-4d0d-bcf7-575587d27f31&v=20261014-messenger-v5';
- const text=invitationMessengerText(link);
- assert.ok(text.length<link.length+240,'Invitation should remain concise');
- assert.match(text,/LoveRoll/);
- assert.match(text,/notre espace privé/);
- assert.ok(text.endsWith('\n'+link),'The secure URL remains isolated on its own line');
- assert.equal(text.split(link).length,2,'The invite URL is included exactly once');
- assert.doesNotMatch(text,/ACCEPTER L’INVITATION/);
- assert.doesNotMatch(text,/Connecte-toi avec la même adresse/);
+test('Messenger invitation is one clickable link, not a giant blue block',()=>{
+ const link='https://fredvolks.github.io/mon-wallet-android/?invite_id=72aa640b-2644-4d0d-bcf7-575587d27f31';
+ const shared=invitationMessengerText(link);
+ assert.equal(shared,link);
+ assert.equal(shared.split(link).length,2,'Only one URL should be shared');
+ assert.doesNotMatch(shared,/Je t’invite|Ouvre ton invitation/);
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  assert.match(html,/og:image:width" content="1200"/);
  assert.match(html,/og:image:height" content="630"/);
- assert.match(html,/loveroll-invite-og.png\?v=5/);
+ assert.match(html,/loveroll-messenger-og-v43\.jpg/);
+ assert.doesNotMatch(html,/loveroll-invite-og\.png\?v=5/);
+ const image=readFileSync(new URL('./assets/loveroll-messenger-og-v43.jpg',import.meta.url));
+ assert.ok(image.byteLength>80000);
+ assert.equal(image[0],0xff);assert.equal(image[1],0xd8);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.match(app,/verb==='send-messenger'\?invitationMessengerText\(d.link\)/);
- assert.match(app,/navigator\.share\(\{title:'LoveRoll ❤️ Ton invitation privée',text\}\)/);
- assert.doesNotMatch(app,/navigator\.share\(\{title:'LoveRoll ❤️ Ton invitation privée',url:d.link\}\)/);
+ assert.match(app,/verb==='send-messenger'\?invitationMessengerText\(d\.link\)/);
+ assert.match(app,/navigator\.share\(\{url:d\.link\}\)/);
  assert.match(app,/inviteLinkForId\(CONFIG\.siteUrl,invitationId\)/);
 });

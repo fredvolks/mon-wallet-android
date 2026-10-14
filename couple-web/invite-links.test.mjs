@@ -7,17 +7,19 @@ import {invitationMessengerText} from './couple-dashboard.mjs';
 const id='72aa640b-2644-4d0d-bcf7-575587d27f31';
 const original='https://fredvolks.github.io/mon-wallet-android/';
 
-test('Messenger URL has only non-secret UUID query; preview card remains clickable',()=>{
+test('Messenger receives only a personal URL; previews supply the image and text',()=>{
  const url=inviteLinkForId(original,id);
  assert.match(url,/\\?invite_id=/);
- assert.match(url,/&v=/);
+ assert.doesNotMatch(url,/&v=/);
  assert.ok(!url.includes('#'),'Browser handoff must not depend on a fragment');
  assert.equal(parseInvitationFromUrl(url).id,id);
  const message=invitationMessengerText(url);
- assert.ok(message.includes('LoveRoll'));
- assert.equal(message.split(url).length,2,'One personal invitation link per Messenger share');
- assert.ok(message.endsWith('\n'+url),'Link remains a separate clickable line');
- assert.ok(url.includes(INVITATION_REVISION));
+ assert.equal(message,url,'Do not send a blue paragraph alongside the link preview');
+ assert.ok(!message.includes('\\n'));
+ assert.ok(!message.includes('Je t’invite'));
+ assert.throws(()=>invitationMessengerText('http://example.com'));
+ // Previously shared invitation URLs remain valid after the compact change.
+ assert.equal(parseInvitationFromUrl(url+'&v='+INVITATION_REVISION).id,id);
 });
 
 test('Browser handoff preserves invitation across Messenger and Chrome',()=>{

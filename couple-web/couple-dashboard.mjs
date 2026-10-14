@@ -28,11 +28,15 @@ export function formatCoupleDate(iso){
 // The URL carries only a non-secret invitation reference; Supabase validates
 // the authenticated recipient before joining the couple.
 export function invitationMessengerText(url){
- if(typeof url!=='string'||!/^https:\/\//.test(url))throw Error('Lien d’invitation invalide.');
- return '💌 LoveRoll ❤️ Une aventure rien qu’à deux\n\n'+
-  'Je t’invite dans notre espace privé pour partager des jeux, des défis et des surprises. ♡\n\n'+
-  'Ouvre ton invitation personnelle :\n'+url;
+ // URL-only share: Messenger is responsible for rendering the Open Graph image.
+ // The UUID is a non-secret reference, and Supabase authorizes the actual recipient.
+ if(typeof url!=='string'||!/^https:\/\/[^\s]+$/.test(url))
+  throw Error('Lien d’invitation invalide.');
+ const parsed=new URL(url);
+ if(parsed.username||parsed.password)throw Error('Lien d’invitation invalide.');
+ return parsed.href;
 }
+
 export function invitationEmailText(url){
  return '♡ LoveRoll — Une invitation juste pour nous deux\n\n'
   +'Notre aventure commence ici. Je t’invite à partager avec moi des moments de complicité, de surprises et de tendresse sur LoveRoll.\n\n'
@@ -43,7 +47,7 @@ export function invitationEmailText(url){
 }
 export function invitationPreviewMarkup(){
  return '<div class="loveroll-invite-preview" aria-label="Aperçu de l’invitation LoveRoll">'+
-  '<div class="loveroll-invite-heart"><img src="./assets/loveroll-premium-scene.png" alt="Cœur lumineux et dés LoveRoll" loading="lazy"></div>'+
+  '<div class="loveroll-invite-heart"><img src="./assets/loveroll-messenger-og-v43.jpg" alt="Cœur lumineux et dés LoveRoll" loading="lazy"></div>'+
   '<h3>LoveRoll</h3><p class="loveroll-invite-kicker">Une invitation juste pour vous deux</p>'+
   '<div class="loveroll-invite-divider"></div>'+
   '<h4>♡ Votre aventure commence ici</h4>'+
