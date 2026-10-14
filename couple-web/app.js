@@ -1771,6 +1771,22 @@ async function handle(action,element){
    }
    updateChallengeClock();return;
  }
+ if(verb==='give-challenge'){
+  if(!state.session?.paired_turns||!state.rollStatus?.both_ready)
+   throw Error('Attendez vos deux tirages personnels pour donner un défi.');
+  const me=state.user.id,otherPerson=other();
+  const turn=sharedEveningTurns(state.session,state.members,state.personal,state.challenges,state.gifts);
+  if(!turn.ready||turn.remaining[me]<=0)
+   throw Error('Aucun défi non commencé à donner.');
+  const monthCount=state.gifts.filter(g=>g.donor_user_id===me&&g.month_key?.slice(0,7)===month()).length;
+  if(monthCount>=3)throw Error('Vos 3 dons du mois sont utilisés.');
+  if(!confirm('Offrir un de tes défis restants à '+otherPerson.name+
+   ' ? Son nombre de tirages augmentera de 1 et tu auras un tirage de moins.'))return;
+  await rpc('give_love_challenge',{p_session:state.session.id});
+  await refreshAndShow();
+  notify('♥ Défi offert ! '+otherPerson.name+' choisira sa catégorie lors de son tour.');
+  return;
+ }
  if(verb==='new-challenge'){
   if(!state.session)throw Error('Aucune soirée active.');
   if(!EVENING_CATEGORIES.includes(state.category))
