@@ -1,259 +1,259 @@
-// LoveRoll — 50 propositions à sens unique, plus 20 emplacements personnalisés, sans minuterie obligatoire.
+// LoveRoll — 50 défis prêts à jouer, 25 Sensuel + 25 Sexuel, et 20 emplacements libres. Chaque défi a un titre, une consigne et une minuterie facultative.
 // Sur une carte, l’offrant propose l’activité; le destinataire peut accepter, adapter ou passer.
 export const EVENING_CATEGORIES=['SENSUEL','SEXUEL'];
 export const EVENING_CHALLENGES={
   "SENSUEL": [
     [
-      "La minute des regards",
-      1,
-      "Offre à la personne qui reçoit une minute de regards complices, assis face à face."
-    ],
-    [
-      "Un baiser sur mesure",
-      2,
-      "Propose un baiser lent; attends sa réponse et respecte son rythme."
-    ],
-    [
-      "Le massage des épaules",
-      8,
-      "Offre un massage des épaules en laissant l’autre choisir la pression."
-    ],
-    [
-      "La danse du salon",
-      4,
-      "Invite l’autre à danser sur une chanson, tout près si cette proximité lui plaît."
-    ],
-    [
-      "Trois mots irrésistibles",
-      2,
-      "Dis trois compliments précis que tu n’as pas encore formulés ce soir."
-    ],
-    [
-      "Le câlin sans attente",
-      5,
-      "Propose un câlin tranquille et reste présent sans chercher une suite."
-    ],
-    [
-      "La nuque apaisée",
-      5,
-      "Propose une attention douce à la nuque, selon les préférences de l’autre."
-    ],
-    [
-      "Une chanson rien qu’à toi",
-      0,
-      "Choisis une chanson qui lui ressemble et explique pourquoi tu l’as choisie."
-    ],
-    [
-      "Le chemin de baisers",
+      "Baisers dans le cou",
       3,
-      "Propose quelques baisers sur la main, la joue ou l’épaule, selon son choix."
+      "Propose à ton partenaire trois minutes de baisers délicats dans le cou et sur les épaules. Laisse-lui choisir le rythme et les endroits qui lui plaisent."
     ],
     [
-      "Le massage du dos",
+      "Le spa aux chandelles",
       12,
-      "Prépare une couverture et offre un massage du dos, à son rythme."
+      "Installe une serviette et une lumière tamisée, puis offre un vrai massage du dos et des épaules. Demande la pression souhaitée avant de commencer."
     ],
     [
-      "Notre premier rendez-vous",
-      0,
-      "Raconte-lui un souvenir marquant de votre premier rendez-vous."
-    ],
-    [
-      "Le murmure",
-      2,
-      "Chuchote à son oreille une attention ou une invitation tendre."
-    ],
-    [
-      "La danse les yeux fermés",
+      "Le slow collé-serré",
       4,
-      "Invite à danser les yeux fermés, uniquement si l’autre se sent à l’aise."
+      "Choisis une chanson lente et invite ton partenaire à danser très près de toi. Échangez les rôles pour guider la danse au milieu du morceau."
     ],
     [
-      "Le soin des cheveux",
-      3,
-      "Propose de caresser doucement les cheveux de l’autre, avec son accord."
+      "Douche à deux",
+      0,
+      "Prépare une douche chaude, une musique douce et une serviette moelleuse. Invite ton partenaire à partager ce moment et propose de lui laver le dos."
     ],
     [
-      "Le moment sans écran",
+      "Le menu des baisers",
+      5,
+      "Présente trois choix de baisers : tendre, passionné ou surprise. Ton partenaire choisit l'ordre et peut inventer une quatrième option."
+    ],
+    [
+      "Chocolat et frissons",
+      5,
+      "Prépare deux bouchées de chocolat ou un dessert favori. Faites une dégustation à tour de rôle, avec un compliment entre chaque bouchée."
+    ],
+    [
+      "Le fauteuil VIP",
+      8,
+      "Installe ton partenaire confortablement et prends en charge huit minutes de petites attentions : épaules, mains, cheveux ou pieds, selon ses préférences."
+    ],
+    [
+      "La chasse au rendez-vous",
+      0,
+      "Cache trois indices dans la maison menant à une surprise romantique simple : une chanson, une boisson ou un endroit préparé pour vous deux."
+    ],
+    [
+      "Le secret à l'oreille",
+      2,
+      "Glisse à l'oreille de ton partenaire une invitation séduisante pour ce soir. Laisse-le répondre par une proposition de son choix."
+    ],
+    [
+      "Le baiser de cinéma",
+      0,
+      "Rejoue une scène de retrouvailles comme dans un film romantique : approche, une phrase mémorable et un baiser seulement si l'autre en a envie."
+    ],
+    [
+      "Le parfum irrésistible",
+      0,
+      "Choisis ton parfum ou une odeur que ton partenaire aime. Fais-lui découvrir ton choix et raconte un souvenir qui lui donne une signification spéciale."
+    ],
+    [
+      "La chaleur des mains",
+      4,
+      "Réchauffe tes mains, puis propose un massage lent des avant-bras et des mains. Demande à ton partenaire de te guider sur la pression."
+    ],
+    [
+      "Un compliment audacieux",
+      0,
+      "Trouve trois détails chez ton partenaire qui te font craquer aujourd'hui. Dis-les avec précision et laisse-le choisir lequel lui plaît le plus."
+    ],
+    [
+      "Rendez-vous sans téléphone",
       10,
-      "Éloigne les écrans et offre dix minutes d’écoute attentive."
+      "Range les téléphones, allume une petite lumière et offre dix minutes de conversation rien qu'à deux, sans interruption ni sujet pratique."
     ],
     [
-      "La boisson réconfort",
+      "La tenue qui fait sourire",
       0,
-      "Prépare la boisson préférée de l’autre et sers-la comme un rendez-vous."
+      "Choisis une tenue que ton partenaire aime te voir porter et organise une petite entrée surprise, comme pour un vrai premier rendez-vous."
     ],
     [
-      "Une gratitude rare",
-      3,
-      "Dis à l’autre ce qu’il ou elle a fait récemment et qui t’a touché."
-    ],
-    [
-      "Le canapé secret",
-      6,
-      "Aménage un coin confortable et invite l’autre à s’y blottir."
-    ],
-    [
-      "Le billet doux",
+      "Le mot sous l'oreiller",
       0,
-      "Écris une courte note sincère à cacher pour qu’elle soit découverte plus tard."
+      "Écris une invitation romantique sur un billet et glisse-la sous l'oreiller. Ton partenaire décide quand et comment y répondre."
     ],
     [
-      "Un rendez-vous imaginé",
+      "Massage des pieds de luxe",
+      10,
+      "Prépare une serviette chaude et une crème adaptée, puis offre un massage des pieds. L'autre choisit la durée réelle et peut demander d'arrêter."
+    ],
+    [
+      "Le dessert à partager",
       0,
-      "Propose une véritable sortie surprise réalisable cette semaine."
+      "Prépare un dessert dans une seule assiette et propose de le déguster ensemble dans un coin chaleureux, comme un rendez-vous improvisé."
     ],
     [
-      "Les yeux bandés, douceur",
-      3,
-      "Propose un bandeau facultatif puis fais deviner un objet doux au toucher. Retire-le dès qu’on te le demande."
-    ],
-    [
-      "Les mains dans les mains",
-      2,
-      "Prends les mains de l’autre et décris un souvenir qui te fait sourire."
-    ],
-    [
-      "Le parfum du souvenir",
+      "La pièce métamorphosée",
       0,
-      "Fais sentir un parfum familier et raconte le souvenir qu’il évoque."
+      "Transforme une pièce avec une lumière douce, deux coussins et une chanson. Invite ton partenaire à découvrir votre nouvel endroit secret."
     ],
     [
-      "Le chemin de compliments",
-      4,
-      "Offre un compliment différent à chaque étape d’une courte promenade dans la maison."
-    ],
-    [
-      "Le massage des mains",
+      "Le refuge sous la couverture",
       7,
-      "Offre une attention aux mains, avec une crème adaptée si souhaitée."
+      "Prépare une couverture et invite ton partenaire à se blottir contre toi pendant sept minutes. Profitez de cette proximité sans objectif à atteindre."
+    ],
+    [
+      "Notre photo complice",
+      0,
+      "Propose une photo de couple originale, drôle ou séduisante, que vous garderez seulement si les deux personnes sont à l'aise avec le résultat."
+    ],
+    [
+      "La bande-son du désir",
+      0,
+      "Choisis trois chansons qui racontent votre histoire, de la plus tendre à la plus sensuelle. Présente-les comme une mini-playlist privée."
+    ],
+    [
+      "L'aveu du soir",
+      0,
+      "Raconte un moment récent où ton partenaire t'a particulièrement attiré. Invite-le à partager un souvenir du même genre s'il le souhaite."
+    ],
+    [
+      "Le choix des envies",
+      0,
+      "Propose trois façons de vous rapprocher : massage, câlin ou danse. Ton partenaire choisit l'une d'elles ou invente votre quatrième idée."
+    ],
+    [
+      "Séduction sans paroles",
+      3,
+      "Pendant une chanson, fais comprendre à ton partenaire qu'il te plaît sans parler : gestes, proximité et sourire. Les deux peuvent arrêter le jeu."
     ]
   ],
   "SEXUEL": [
     [
-      "Le rendez-vous mystérieux",
+      "Strip-tease privé",
+      6,
+      "Choisis deux chansons et offre un strip-tease à ton partenaire, à ton rythme et dans la tenue qui te plaît. Il peut choisir la musique ou simplement profiter du spectacle."
+    ],
+    [
+      "La rencontre au bar",
       0,
-      "Offre une invitation secrète indiquant une heure, une ambiance et une tenue facultative."
+      "Imagine que vous êtes deux inconnus qui se croisent pour la première fois. Lance une réplique de drague audacieuse et laissez le scénario évoluer ensemble."
     ],
     [
-      "La danse de séduction",
-      4,
-      "Présente une danse privée ludique; l’autre peut choisir la musique et interrompre le jeu."
-    ],
-    [
-      "La minute de suspense",
-      1,
-      "Maintiens un regard de séduction et approche-toi seulement si l’autre t’y invite."
-    ],
-    [
-      "La tenue surprise",
+      "L'hôtel à la maison",
       0,
-      "Propose une tenue séduisante de ton choix, sans obligation de la porter."
+      "Transforme la chambre en suite d'hôtel : éclairage, musique et accueil soigné. Invite ton partenaire à un rendez-vous où vous laissez les corvées à la porte."
     ],
     [
-      "Le massage à l’huile",
+      "Cinq surprises les yeux bandés",
+      5,
+      "Propose un bandeau facile à enlever et prépare cinq sensations inoffensives : plume, tissu doux, parfum, baiser sur la main ou murmure. Ton partenaire choisit."
+    ],
+    [
+      "Massage à l'huile",
       12,
-      "Prépare un massage sensoriel avec un produit adapté et demande quelles zones non intimes sont confortables."
+      "Prépare une huile adaptée à la peau et offre un massage enveloppant du dos, des épaules et des jambes. Laisse ton partenaire préciser les zones confortables."
     ],
     [
-      "Les yeux bandés",
+      "La tenue qui fait craquer",
+      0,
+      "Présente deux tenues séduisantes et laisse ton partenaire choisir celle que tu as envie de porter ce soir. Termine par une entrée théâtrale."
+    ],
+    [
+      "Le baiser à la demande",
       5,
-      "Propose un bandeau facile à retirer et fais deviner de petites sensations sur les mains ou les bras."
+      "Propose un jeu où ton partenaire choisit les baisers qu'il aime recevoir : lents, appuyés ou volés. Fais durer le suspense sans dépasser ses limites."
     ],
     [
-      "Les mains attachées, version douce",
+      "Le Kamasutra à deux",
+      0,
+      "Présente trois positions inspirées du Kamasutra et demande laquelle vous intrigue tous les deux. Choisissez seulement une option confortable et désirée."
+    ],
+    [
+      "Le scénario secret",
+      0,
+      "Écris le début d'un scénario de séduction en trois phrases. Laisse ton partenaire choisir la suite, les personnages et ce que vous voulez réellement jouer."
+    ],
+    [
+      "Duel de séduction",
       4,
-      "Propose de poser les mains sur un foulard lâche, libérable immédiatement; convenez d’un signal d’arrêt."
+      "Chacun dispose de deux minutes pour séduire l'autre avec des compliments, une danse ou des baisers. Choisissez ensuite le moment que vous avez préféré."
     ],
     [
-      "Le jeu des rôles",
+      "Le joker audacieux",
       0,
-      "Invente une rencontre fictive dans un bar ou un hôtel; propose le scénario à l’autre avant de commencer."
+      "Prépare trois propositions osées mais réalisables ce soir. Ton partenaire en choisit une, peut en modifier les règles ou décider de passer."
     ],
     [
-      "Un message de tentation",
-      0,
-      "Écris un court message de séduction et laisse l’autre choisir d’y répondre ou non."
-    ],
-    [
-      "Le mot interdit",
+      "Défense de toucher",
       3,
-      "Propose un jeu où l’on se séduit sans prononcer le mot choisi ensemble."
+      "Propose trois minutes où vous vous séduisez uniquement par la voix, les mouvements et la proximité, sans contact. Le premier qui veut arrêter gagne aussi."
     ],
     [
-      "Le rendez-vous sous les draps",
+      "Le rendez-vous en lumière rouge",
       0,
-      "Transforme votre chambre en lieu de rendez-vous avec lumière, musique et accueil soigné."
+      "Change l'éclairage de votre chambre, choisis une playlist plus intense et invite ton partenaire à un rendez-vous de séduction hors de vos habitudes."
     ],
     [
-      "La boîte à fantasmes",
-      0,
-      "Invite l’autre à partager une curiosité intime; aucune réalisation n’est attendue."
-    ],
-    [
-      "La surprise sensorielle",
-      6,
-      "Propose une exploration d’odeurs, de musique et de textures, les yeux ouverts ou bandés."
-    ],
-    [
-      "La confidence audacieuse",
-      0,
-      "Raconte une envie que tu n’as pas encore osé proposer, puis écoute sa réaction sans insister."
-    ],
-    [
-      "Le duel des regards",
-      3,
-      "Joue à séduire l’autre uniquement par le regard et le sourire pendant une chanson."
-    ],
-    [
-      "Le Kamasutra à découvrir",
-      0,
-      "Propose de parcourir ensemble un ouvrage de Kamasutra et de choisir une idée de position confortable à discuter."
-    ],
-    [
-      "La pause de suspense",
-      2,
-      "Crée une ambiance de rendez-vous privé puis fais une pause volontaire pour échanger vos envies."
-    ],
-    [
-      "La carte de limites",
-      0,
-      "Offre trois idées d’ambiance sensuelle; l’autre peut répondre oui, peut-être ou non à chacune."
-    ],
-    [
-      "Le défi du bandeau",
-      4,
-      "Laisse l’autre décider de porter ou non un bandeau, puis offre un court massage des mains."
-    ],
-    [
-      "La promesse de minuit",
-      0,
-      "Glisse une invitation à un rendez-vous ultérieur et laisse l’autre proposer une heure."
-    ],
-    [
-      "Une chorégraphie rien que pour toi",
-      6,
-      "Prépare une danse de séduction sur deux chansons choisies par la personne qui reçoit."
-    ],
-    [
-      "Le jeu des cartes secrètes",
-      0,
-      "Écris deux surprises séduisantes et laisse l’autre tirer ou refuser la proposition."
-    ],
-    [
-      "La chambre métamorphosée",
-      0,
-      "Prépare un éclairage différent et une playlist pour renouveler l’ambiance de votre rendez-vous."
-    ],
-    [
-      "Le ruban de confiance",
+      "Le choix du rythme",
       5,
-      "Propose une activité avec un ruban posé librement sur les poignets; aucune immobilisation réelle et arrêt immédiat sur demande."
+      "Propose une série de baisers et de pauses de séduction. Ton partenaire annonce quand ralentir, quand se rapprocher ou quand arrêter le jeu."
     ],
     [
-      "La question audacieuse",
+      "Le texto qui fait rougir",
       0,
-      "Demande à l’autre quelle nouveauté intime l’intrigue et ce qu’il ou elle préfère éviter."
+      "Envoie depuis la pièce d'à côté une invitation très suggestive pour ce soir. Laisse ton partenaire répondre par un oui, une autre idée ou un refus."
+    ],
+    [
+      "Le miroir complice",
+      0,
+      "Invite ton partenaire à choisir une tenue séduisante devant un miroir. Faites un mini-défilé privé et échangez ce qui vous plaît dans ce look."
+    ],
+    [
+      "Le tiroir des accessoires",
+      0,
+      "Présente trois accessoires doux et non contraignants : foulard, plume ou huile de massage. Ton partenaire choisit celui qui entrera dans le jeu."
+    ],
+    [
+      "Trois enveloppes osées",
+      0,
+      "Écris trois idées de rendez-vous intimes dans trois enveloppes : tendre, audacieuse et surprise. Ton partenaire ouvre celle qui lui fait envie."
+    ],
+    [
+      "Le baiser au ralenti",
+      4,
+      "Lance une chanson sensuelle et propose un jeu de baisers très lents, entrecoupés de petites pauses pour faire durer la tension."
+    ],
+    [
+      "La télécommande du désir",
+      6,
+      "Ton partenaire choisit la musique et contrôle les pauses de ta danse de séduction. À chaque pause, il peut demander une nouvelle ambiance."
+    ],
+    [
+      "Le bain confidentiel",
+      0,
+      "Prépare un bain ou un moment de détente à deux avec serviettes et éclairage doux. Propose un rendez-vous intime, sans obligation de poursuivre."
+    ],
+    [
+      "Le rendez-vous après minuit",
+      0,
+      "Prépare un carton d'invitation pour un rendez-vous privé plus tard cette semaine, avec lieu, tenue suggérée et ambiance. Ton partenaire confirme ou change tout."
+    ],
+    [
+      "Éteins les lumières",
+      0,
+      "Propose de découvrir un rendez-vous dans la pénombre, avec musique et conversations intimes. Chacun choisit son niveau de confort et peut rallumer."
+    ],
+    [
+      "L'inversion des rôles",
+      0,
+      "Laisse ton partenaire diriger l'organisation de votre soirée de séduction pendant que tu suis ses choix d'ambiance, de musique et de rythme."
+    ],
+    [
+      "Carte blanche à deux",
+      0,
+      "Offre à ton partenaire deux scénarios de séduction totalement différents. Il choisit celui qu'il préfère et vous en fixez les règles avant de commencer."
     ]
   ]
 };
