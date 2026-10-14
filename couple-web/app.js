@@ -130,6 +130,7 @@ function render(){
     '♡ NOTRE MATCH','Vous pouvez aussi découvrir LoveRoll sans partenaire');return;
   }
   if(state.tab==='settings')renderSettings();
+  else if(state.tab==='library')renderCardLibrary();
   else if(state.tab==='personal-journal'||state.tab==='journal')
    renderPersonalJournal().catch(fail);
   else if(state.tab==='ideas')renderIdeas();
