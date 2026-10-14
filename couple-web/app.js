@@ -497,7 +497,7 @@ function timerWidget(challenge,minutes){
    '<button class="pill '+(challengeTimer.mode==='vibrate'?'selected':'')+'" data-action="timer-mode:vibrate">〰 Vibration</button></div>'+
    '<small>Sonnerie discrète en fin de compte à rebours; sur iPhone, la vibration peut être indisponible. Le minuteur n’oblige jamais à poursuivre.</small></div>';
 }
-function renderSession(){
+function renderLegacySession(){
  let s=state.session; const p=other();
  let body='<section class="premium-intro"><div class="premium-eyebrow">🎲 NOTRE SOIRÉE À DEUX</div>'+
  '<h2>Les défis de notre soirée</h2><p>70 défis à découvrir ensemble, parmi nos deux univers de 35 idées.</p></section>'+
@@ -590,6 +590,109 @@ function renderSession(){
   button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>';
  if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
  frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
+}
+function renderSession(){
+ const session=state.session,partner=other(),me=state.user.id;
+ if(session&&!session.paired_turns)return renderLegacySession();
+ let body='<section class="premium-intro"><div class="premium-eyebrow">♥ NOTRE SOIRÉE PARTAGÉE</div>'+
+  '<h2>Nos 70 défis</h2><p>Deux univers de 35 surprises. Chaque tour et chaque résultat sont partagés sur vos deux comptes.</p></section>';
+ if(!session){
+  const latest=(state.sessions||[]).find(x=>x.finished_at&&x.counted);
+  if(latest){
+   const done=state.challengesHistory.filter(c=>c.session_id===latest.id&&c.status==='completed').length;
+   const reviews=state.feedback.filter(f=>f.session_id===latest.id).length;
+   body+='<section class="card"><div class="premium-eyebrow">♥ NOTRE DERNIÈRE SOIRÉE</div>'+
+    '<h2>Un moment à deux</h2><p>'+done+' défis réalisés · '+reviews+'/2 avis enregistrés.</p>'+
+    button('choose-feedback:'+latest.id,reviews===2?'Voir nos avis':'Donner mon avis sur notre soirée')+'</section>';
+  }
+  body+='<section class="card hero-game-card"><h2>Prêts pour une nouvelle soirée ?</h2>'+
+   '<p>Un tirage au sort choisit qui commence, puis vous jouez à tour de rôle.</p>'+
+   button('new-session','♡ COMMENCER NOTRE SOIRÉE')+'</section>';
+ }else{
+  const ready=!!state.rollStatus?.both_ready;
+  const mine=state.personal.find(x=>x.user_id===me);
+  const theirs=state.personal.find(x=>x.user_id===partner.user_id);
+  const turn=sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts);
+  body+='<section class="card hero-game-card"><div class="premium-eyebrow">ÉTAPE 1 · NOS DÉFIS DE CE SOIR</div>'+
+   '<h2>Combien de défis pour chacun ?</h2><p>Chacun lance son dé depuis son compte. Les deux résultats apparaissent ensemble.</p>'+
+   heroDice(ready?mine?.face:null,6,'Mon tirage')+
+   '<div class="two"><div class="stat"><strong>'+safe(ready?mine?.face:'♡')+'</strong><small>'+safe(state.profile.display_name)+'</small></div>'+
+   '<div class="stat"><strong>'+safe(ready?theirs?.face:'♡')+'</strong><small>'+safe(partner.name)+'</small></div></div>';
+  if(!ready){
+   body+='<div class="status-line">Mon lancer : '+(state.rollStatus?.my_rolled?'✓ enregistré':'à faire')+
+    ' · '+safe(partner.name)+' : '+(state.rollStatus?.partner_rolled?'✓ enregistré':'en attente')+'</div>';
+   if(!state.rollStatus?.my_rolled)body+=button('my-d6','🎲 DÉCOUVRIR MON NOMBRE DE DÉFIS');
+   else body+='<p class="tiny-note">Votre lancer est enregistré. Les deux résultats seront révélés quand votre partenaire aura joué.</p>';
+  }
+  body+='</section>';
+  if(ready&&turn.ready){
+   const myQuota=turn.targets[me],theirQuota=turn.targets[partner.user_id];
+   const myDone=turn.completed[me],theirDone=turn.completed[partner.user_id];
+   const monthGiftCount=state.gifts.filter(g=>g.donor_user_id===me&&g.month_key?.slice(0,7)===month()).length;
+   const receivedGiftCount=state.gifts.filter(g=>g.session_id===session.id&&g.receiver_user_id===me).length;
+   body+='<section class="card love-turn-card"><div class="premium-eyebrow">ÉTAPE 2 · NOTRE TOUR DE JEU</div>'+
+    '<h3>♥ '+safe(person(turn.first))+' commence !</h3>'+
+    '<p>Le premier lancer est attribué au hasard (50 % chacun), puis les défis alternent. Quand une personne a terminé ses tours, l’autre complète les siens.</p>'+
+    '<div class="two"><div class="stat"><strong>'+myDone+' / '+myQuota+'</strong><small>'+safe(state.profile.display_name)+'</small></div>'+
+    '<div class="stat"><strong>'+theirDone+' / '+theirQuota+'</strong><small>'+safe(partner.name)+'</small></div></div>'+
+    '<div class="turn-banner">'+(turn.finished?'♡ Tous nos défis sont terminés':
+      turn.pending?'⏳ Un défi est en cours · réponse attendue':
+      turn.next===me?'♡ C’est ton tour de lancer !':'⏳ Au tour de '+safe(partner.name))+'</div></section>';
+   body+='<section class="card gift-card"><div class="premium-eyebrow">🎁 UN PETIT CADEAU</div>'+
+    '<h3>Donner un défi à '+safe(partner.name)+'</h3>'+
+    '<p>Offre un de tes tirages restants. Ton partenaire aura un tour supplémentaire et choisira sa catégorie. Aucun minimum de défis n’est exigé.</p>'+
+    '<p class="tiny-note">Mes dons ce mois : '+monthGiftCount+'/3 · Dons reçus ce soir : '+receivedGiftCount+
+    ' · Mes défis disponibles à donner : '+turn.remaining[me]+'</p>'+
+    ((monthGiftCount<3&&turn.remaining[me]>0)?
+      button('give-challenge','♡ DONNER 1 DÉFI À '+safe(partner.name),'class="gift-cta"'):
+      '<p class="tiny-note">'+(monthGiftCount>=3?'Tes 3 dons du mois ont été utilisés.':'Tu n’as plus de défi non commencé à transférer.')+'</p>')+
+    '</section>';
+   const pending=turn.pending;
+   if(pending){
+    const card=resolvedCard(pending),receiver=pending.recipient;
+    body+='<section class="card challenge-present"><div class="premium-eyebrow">♡ NOTRE DÉFI EN COURS</div>'+
+     '<div class="eyebrow">'+safe(names[pending.category])+' · surprise '+safe(pending.card_id||pending.face)+'/35</div>'+
+     heroDice(pending.face,35,'Notre défi surprise')+
+     '<div class="challenge-roles">♡ '+safe(person(pending.offered_by))+' OFFRE → '+safe(person(receiver))+' REÇOIT</div>'+
+     '<h3>'+safe(card.title)+'</h3><p>'+safe(card.description)+'</p>'+
+     timerWidget(pending,card.minutes);
+    if(receiver===me){
+     body+='<div class="actions">'+
+      (pending.status==='proposed'?button('answer:'+pending.id+':accepted','♡ Accepter ce défi'):'')+
+      (pending.status==='accepted'?button('answer:'+pending.id+':completed','✓ Défi réalisé'):'')+
+      button('answer:'+pending.id+':passed','Passer ce défi','class="subtle"')+'</div>';
+    }else body+='<p class="tiny-note">En attente de la réponse de '+safe(partner.name)+'.</p>';
+    body+='</section>';
+   }else if(!turn.finished){
+    if(turn.next===me){
+     body+='<section class="card hero-game-card"><div class="premium-eyebrow">🎲 À TOI DE JOUER</div>'+
+      '<h2>À ton tour d’offrir un défi</h2><p>Choisis la catégorie pour ce tirage. Si tu as reçu un tour en cadeau, tu choisis aussi librement sa catégorie.</p>'+
+      heroDice(null,35,'Une surprise parmi nos 70 défis')+
+      '<div class="chipline">'+EVENING_CATEGORIES.map(category=>
+       '<button class="pill '+(state.category===category?'selected':'')+
+       '" data-action="category:'+category+'">'+safe(names[category])+'</button>').join('')+'</div>'+
+      '<p class="tiny-note">88 % dans ta catégorie choisie · 12 % dans l’autre, selon les cartes disponibles.</p>'+
+      (EVENING_CATEGORIES.includes(state.category)?
+       button('new-challenge','🎲 LANCER MON DÉFI'):
+       '<p>Sélectionne Sensuel ou Sexuel pour continuer.</p>')+'</section>';
+    }else{
+     body+='<section class="card"><h3>♥ À '+safe(partner.name)+' de jouer</h3>'+
+      '<p>Son prochain tirage apparaîtra automatiquement ici. Vous voyez tous les deux la même soirée.</p></section>';
+    }
+   }
+   if(turn.finished&&!turn.pending)body+=button('finish-session','✓ Terminer et compter notre soirée');
+   else body+='<p class="tiny-note">La soirée sera comptabilisée quand tous les défis des deux personnes seront réalisés.</p>';
+  }
+  if(state.confirmCancel){
+   body+='<section class="card"><h3>Arrêter sans compter ?</h3><p>Les défis ne compteront pas pour cette semaine.</p>'+
+    button('confirm-cancel','Oui, arrêter')+button('dismiss-cancel','Continuer','class="subtle"')+'</section>';
+  }else body+=button('cancel-session','Arrêter sans compter','class="subtle"');
+ }
+ body+='<section class="card"><h3>♡ Nos souvenirs</h3>'+
+  button('tab:journal','Notre calendrier partagé','class="subtle"')+
+  button('tab:personal-journal','Mon calendrier personnel')+'</section>';
+ if(!session&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
+ frame(body,'NOTRE SOIRÉE',session?'Un jeu synchronisé sur nos deux comptes':'Votre prochain moment à deux');
 }
 function optionalRolledTimer(roll){
  if(!roll?.timer_minutes)return '';
