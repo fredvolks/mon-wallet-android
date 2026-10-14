@@ -31,6 +31,17 @@ export function validateSpecialEventsJson(value){
      throw Error('Option '+face+' invalide dans '+dice+' : '+key);
    }
   }
+  if(event.minuteurs!==undefined){
+   if(!event.minuteurs||typeof event.minuteurs!=='object'||Array.isArray(event.minuteurs))
+    throw Error('Champ minuteurs invalide : '+key);
+   for(const dice of ['D6_activite','D6_modificateur']){
+    const timers=event.minuteurs[dice];
+    if(timers===undefined)continue;
+    if(!Array.isArray(timers)||timers.length!==6||timers.some(v=>
+      v!==null&&(!Number.isInteger(v)||v<1||v>60)))
+     throw Error('Minuteurs '+dice+' invalides dans '+key+' : 6 durées de 1 à 60 minutes ou null.');
+   }
+  }
  }
  return value;
 }
