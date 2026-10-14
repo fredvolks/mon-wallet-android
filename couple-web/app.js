@@ -1,5 +1,6 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
+import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
 import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
@@ -30,7 +31,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),showDiscover:false,inviteAccepted:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -182,6 +183,13 @@ function render(){
  if(!state.wellbeing){
   frame(wellbeingHtml(),'♡ MON RESSENTI','Vos réponses sont personnelles');return;
  }
+ if(state.demoMode){
+  for(const dispose of diceCleanup)dispose();diceCleanup=[];
+  root.innerHTML=demoCoupleHtml({userName:state.profile.display_name,
+   tab:state.demoTab,roll:state.demoRoll,surprise:state.demoSurprise,
+   day:state.demoDay,challengeComplete:state.demoChallengeComplete});
+  bindActions();return;
+ }
  // No demonstration games without two linked accounts. The creator still
  // owns the private card editor and personal journal before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
@@ -199,7 +207,11 @@ function render(){
   else if(state.tab==='special-editor'&&isLoveAdmin())renderSpecialEventsEditor();
   else if(!state.coupleId){
    state.tab='home';
-   frame(matchHtml(state.profile.display_name,false),
+   frame(matchHtml(state.profile.display_name,false)+
+    '<section class="card demo-preview-invite"><div class="eyebrow">♡ DÉMONSTRATION</div>'+
+    '<h3>Explorer l’espace avec une partenaire fictive</h3>'+
+    '<p>Aucun compte supplémentaire et aucun changement à vos défis.</p>'+
+    button('demo-enter','♡ Prévisualiser les pages du couple')+'</section>',
     '♡ NOTRE MATCH','Préparer vos cartes avant de jouer à deux');
   }else{
    state.tab='home';renderWaitingPartner();
@@ -429,6 +441,10 @@ function renderWaitingPartner(){
   button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
   button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
   '<p class="tiny-note">Importez ou exportez chaque bibliothèque en JSON pour renouveler vos idées.</p></section>'+
+  '<section class="card demo-preview-invite"><div class="eyebrow">♡ MODE DÉMONSTRATION</div>'+
+  '<h3>Voir LoveRoll à deux avant le jumelage</h3>'+
+  '<p>Explorez tous les onglets avec une conjointe fictive, sans invitation.</p>'+
+  button('demo-enter','♡ Explorer avec une conjointe fictive')+'</section>'+
   renderInvitePanel(),'MON ESPACE','Votre aventure à deux commence ici');
 }
 function renderHome(){
@@ -1277,10 +1293,12 @@ function renderSettings(){
  }else if(linked){
   partner=renderInvitePanel()+
    '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
+   button('demo-enter','♡ Explorer les pages en mode démo','class="subtle"')+
    button('end-couple','Annuler mon espace à deux','class="subtle danger-action"');
  }else partner='<p>Créez votre espace privé avant d’inviter votre partenaire.</p>'+
   button('prepare-cards','Créer mes défis avant l’invitation')+
-  button('start-couple','Préparer mon couple','class="subtle"');
+  button('start-couple','Préparer mon couple','class="subtle"')+
+  button('demo-enter','♡ Prévisualiser avec une partenaire fictive','class="subtle"');
  const celebrants=isLoveAdmin()&&hasPartner?
   '<div class="settings-item"><div><strong>Surprises des fêtes</strong>'+
   '<p>Choisissez le partenaire concerné pour chaque occasion.</p></div></div>'+
@@ -1362,6 +1380,36 @@ async function ensureInviteDraft(forceNew=false){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ // All demo actions are local, never database writes or new memberships.
+ if(verb==='demo-enter'){
+  if(!state.user||!state.profile?.birthday_md||!state.wellbeing)
+   throw Error('Complétez votre compte pour accéder à la démo.');
+  state.demoMode=true;state.demoTab='home';render();return;
+ }
+ if(verb==='demo-exit'){state.demoMode=false;state.demoTab='home';render();return;}
+ if(verb==='demo-tab'){
+  if(!state.demoMode||!DEMO_TABS.includes(parts[0]))return;
+  state.demoTab=parts[0];render();return;
+ }
+ if(verb==='demo-roll'){
+  if(!state.demoMode)return;
+  state.demoRoll=Math.floor(Math.random()*6)+1;render();return;
+ }
+ if(verb==='demo-surprise'){
+  if(!state.demoMode)return;
+  const ideas=['Souper romantique','Soirée cinéma à deux','Promenade au coucher du soleil',
+   'Massage en duo','Petit-déjeuner surprise','Pique-nique improvisé'];
+  state.demoSurprise=ideas[Math.floor(Math.random()*ideas.length)];render();return;
+ }
+ if(verb==='demo-day'){
+  if(!state.demoMode)return;
+  const day=Number(parts[0]);if(Number.isInteger(day)&&day>=1&&day<=25){state.demoDay=day;render();}
+  return;
+ }
+ if(verb==='demo-complete'){
+  if(!state.demoMode)return;
+  state.demoChallengeComplete=!state.demoChallengeComplete;render();return;
+ }
  if(verb==='push-enable'){
   await enablePush(client,state.user.id);
   state.pushPrefs={...(state.pushPrefs||{}),enabled:true};
