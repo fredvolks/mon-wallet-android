@@ -832,6 +832,12 @@ function renderCardLibrary(){
   '" placeholder="Le nom de votre carte"></label>'+
   '<label>Consigne<textarea id="custom-description" maxlength="900" rows="4"'+
   ' placeholder="Votre défi personnalisé, écrit librement.">'+safe(slot.description)+'</textarea></label>'+
+  '<div class="custom-receiver"><strong>Qui peut recevoir cette carte ?</strong>'+
+  '<label><input type="radio" name="custom-recipient" value=""'+(!slot.recipientId?' checked':'')+
+  '> Les deux partenaires</label>'+
+  state.members.map(m=>'<label><input type="radio" name="custom-recipient" value="'+safe(m.user_id)+'"'+
+    (slot.recipientId===m.user_id?' checked':'')+'> Seulement '+safe(m.name)+'</label>').join('')+
+  '<p class="tiny-note">Si une carte est réservée à une personne, elle ne peut jamais sortir pour l’autre.</p></div>'+
   '<label><input type="checkbox" id="custom-timer-enabled"'+
   (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
   '<label>Durée en minutes<input id="custom-minutes" type="number" min="1" max="60"'+
@@ -944,9 +950,11 @@ async function handle(action,element){
   if(!title||title.length<3||title.length>120||!description||description.length<10||
      description.length>900||(timer&&(!Number.isInteger(minutes)||minutes<1||minutes>60)))
    throw Error('Titre de 3 à 120 caractères, description de 10 à 900 caractères et minuteur facultatif de 1 à 60 minutes.');
+  const recipient=document.querySelector('[name="custom-recipient"]:checked')?.value||null;
+  if(recipient&&!state.members.some(m=>m.user_id===recipient))throw Error('Destinataire inconnu.');
   await rpc('save_love_custom_card',{p_couple:state.coupleId,
    p_category:state.customCategory,p_card_id:state.customSlot,
-   p_title:title,p_description:description,p_timer_minutes:minutes});
+   p_title:title,p_description:description,p_timer_minutes:minutes,p_recipient:recipient});
   await reload();notify('Carte enregistrée.');return;
  }
  if(verb==='delete-custom-card'){
