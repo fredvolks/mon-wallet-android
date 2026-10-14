@@ -1462,7 +1462,13 @@ async function animateRoll(fn,kind='general'){
  state.rollAnimationKind=kind;state.diceStatus='pending';render();
  try{
   const result=await fn(); // Supabase determines and persists the actual result
-  state.rollAnimationFace=Number(result?.face)||1;
+  // Never invent "1" when an RPC hides/misses the official face.
+  // All LoveRoll roll RPCs return a persisted record with an integer face.
+  const confirmedFace=Number(result?.face);
+  if(!Number.isInteger(confirmedFace)||confirmedFace<1||
+     (kind==='my-d6'&&confirmedFace>6))
+   throw new Error('Le serveur n’a pas confirmé le résultat officiel du dé.');
+  state.rollAnimationFace=confirmedFace;
   state.diceStatus='rolling';render();
   await new Promise(resolve=>setTimeout(resolve,3250));
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
