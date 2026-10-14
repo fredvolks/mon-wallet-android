@@ -1454,7 +1454,7 @@ async function animateRoll(fn,kind='general'){
   const result=await fn(); // Supabase determines and persists the actual result
   state.rollAnimationFace=Number(result?.face)||1;
   state.diceStatus='rolling';render();
-  await new Promise(resolve=>setTimeout(resolve,2750));
+  await new Promise(resolve=>setTimeout(resolve,3250));
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
   await refreshAndShow();return result;
  }catch(e){
@@ -2062,7 +2062,7 @@ async function handle(action,element){
     const result=await rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:'weekly'});
     state.rollAnimationFace=result.face;
     state.diceStatus='rolling';render();
-    await new Promise(resolve=>setTimeout(resolve,2750));
+    await new Promise(resolve=>setTimeout(resolve,3250));
     state.diceStatus=null;state.rollAnimationFace=null;
     state.weekly=result;
     await refreshAndShow();
