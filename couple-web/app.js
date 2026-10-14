@@ -1,6 +1,7 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
+import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
@@ -17,7 +18,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
 const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
- events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
+ events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
@@ -129,6 +130,7 @@ function render(){
   else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
   else if(state.tab==='library'&&isLoveAdmin())renderCardLibrary();
   else if(state.tab==='monthly-library'&&isLoveAdmin())renderMonthlyLibrary();
+  else if(state.tab==='advent-editor'&&isLoveAdmin())renderAdventEditor();
   else if(!state.coupleId){
    state.tab='home';
    frame(matchHtml(state.profile.display_name,false),
@@ -145,6 +147,7 @@ function render(){
  else if(state.tab==='special')renderSpecial();
  else if(state.tab==='occasions')renderOccasions();
  else if(state.tab==='advent')renderAdvent();
+ else if(state.tab==='advent-editor')renderAdventEditor();
  else if(state.tab==='journal')renderJournal().catch(fail);
  else if(state.tab==='feedback')renderFeedback().catch(fail);
  else if(state.tab==='settings')renderSettings();
@@ -168,7 +171,7 @@ async function reload(){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
-  state.feedback=[];state.advent=[];state.unlockKey=null;
+  state.feedback=[];state.advent=[];state.advent2026Config=null;state.advent2026Days=[];state.unlockKey=null;
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
   render();return;
@@ -180,11 +183,18 @@ async function reload(){
  ]);
  state.couple=couple[0]||null;
  if(state.couple?.owner_user_id===state.user.id){
-  [state.customCards,state.monthlyActivities]=await Promise.all([
+  const [cards,activities,adventConfig,adventDays]=await Promise.all([
    query('love_custom_challenges',{eq:{couple_id:state.coupleId}}),
-   query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})
+   query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}}),
+   query('love_advent_2026_config',{eq:{couple_id:state.coupleId}}),
+   query('love_advent_2026_days',{eq:{couple_id:state.coupleId}})
   ]);
- }else{state.customCards=[];state.monthlyActivities=[];}
+  state.customCards=cards;state.monthlyActivities=activities;
+  state.advent2026Config=adventConfig[0]||null;state.advent2026Days=adventDays;
+ }else{
+  state.customCards=[];state.monthlyActivities=[];
+  state.advent2026Config=null;state.advent2026Days=[];
+ }
  const profilesAll=await query('couple_profiles');
  state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter'}));
  state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
@@ -277,6 +287,7 @@ function renderWaitingPartner(){
   '<p>Vous pouvez créer et modifier vos cartes maintenant. Les dés et les défis du couple seront accessibles lorsque votre partenaire aura rejoint LoveRoll.</p>'+
   button('tab:library','♡ Gérer mes 70 cartes')+
   button('tab:monthly-library','✦ Modifier les 20 activités du mois','class="subtle"')+
+  button('tab:advent-editor','🎁 Préparer l’Avent 2026','class="subtle"')+
   '</section><section class="card"><h3>Inviter votre partenaire</h3>'+
   '<p>Invitez votre conjointe quand vous le souhaitez. Aucune carte n’est révélée avant la partie.</p>'+
   '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
@@ -528,7 +539,8 @@ function renderOccasions(){
  frame(body,'FÊTES ET ANNIVERSAIRES','Un moment LoveRoll pensé pour chaque grande occasion');
 }
 function renderAdvent(){
- const now=today();const [year,mo,day]=now.split('-').map(Number),unlocked=mo===12?Math.min(day,25):0;
+ const now=today(),[year,mo,day]=now.split('-').map(Number);
+ const unlocked=mo===12?Math.min(day,25):0;
  let body='<section class="card"><h2>25 surprises secrètes</h2>'+
   '<p>Une seule case officielle par jour de décembre, ouverte par l’un ou l’autre.</p>'+
   '<div class="day-grid">';
@@ -540,15 +552,47 @@ function renderAdvent(){
  body+='</div>';
  const selected=state.advent.find(x=>x.year===year&&x.day===state.selectedDay);
  if(selected){
-  body+='<div class="card"><h3>Case '+selected.day+' · '+safe(advent[selected.day-1])+'</h3>'+
-   '<p>Ouverte par '+safe(person(selected.opened_by))+
-   '. À proposer par '+safe(person(selected.performed_by))+
-   ' (vous pouvez toujours modifier ou passer l’activité ensemble).</p></div>';
+  const customized=!!selected.advent_title;
+  body+='<div class="card"><div class="eyebrow">CASE '+selected.day+
+   (selected.advent_type?' · '+safe(selected.advent_type):'')+'</div>'+
+   '<h3>'+safe(selected.advent_title||advent[selected.day-1])+'</h3>'+
+   (selected.advent_description?'<p>'+safe(selected.advent_description)+'</p>':'')+
+   '<p>Ouverte par '+safe(person(selected.opened_by))+'. '+
+   (customized?'Ce défi est une proposition à accepter, adapter ou passer librement.':
+    'À proposer par '+safe(person(selected.performed_by))+
+    ' (vous pouvez toujours modifier ou passer l’activité ensemble).')+'</p></div>';
  }
  body+='</section>';
  frame(body,'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
 }
 
+function renderAdventEditor(){
+ if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
+ const calendar=calendarFromSaved(state.advent2026Config,state.advent2026Days);
+ const title='Calendrier de l’Avent 2026';
+ let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
+  '<h2>Préparer les 25 cases de décembre</h2>'+
+  '<p>Collez ici votre JSON complet (jours 1 à 25) pour remplacer le contenu du calendrier 2026. Le texte de chaque case est conservé exactement, sans reformulation.</p>'+
+  '<p class="tiny-note">Vous pouvez importer les cases avant d’inviter votre partenaire. Les défis restent privés, et seul le jour déverrouillé est révélé aux deux comptes.</p>'+
+  (calendar?'<p>✓ '+safe(calendar.calendar_title)+' · 25/25 cases enregistrées.</p>':
+    '<p>Les 25 cases personnalisées ne sont pas encore enregistrées.</p>')+
+  '<label>Votre calendrier JSON<textarea id="advent-2026-json" spellcheck="false" rows="10"'+
+  ' placeholder="{ &quot;calendar_title&quot;: &quot;...&quot;, &quot;year&quot;: 2026, &quot;days&quot;: [...] }">'+
+   safe(calendar?JSON.stringify(calendar,null,2):'')+'</textarea></label>'+
+   button('import-advent-2026','♡ Enregistrer les 25 cases')+
+  '</section>';
+ if(calendar){
+  body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
+   '<p class="tiny-note">Ce récapitulatif est privé. Votre partenaire ne voit les consignes qu’en ouvrant les cases autorisées.</p>'+
+   '<div class="custom-card-tiles">'+calendar.days.map(entry=>
+    '<button type="button" class="custom-card-tile" data-action="advent-editor-day:'+entry.day+'">'+
+    '<span class="custom-tile-number">'+String(entry.day).padStart(2,'0')+'</span>'+
+    '<span class="custom-tile-name">'+safe(entry.title)+'</span></button>').join('')+
+   '</div></section>';
+ }
+ body+='<section class="card">'+button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
+ frame(body,title,'Éditeur privé, année 2026');
+}
 function isoDate(d){return new Date(d).toISOString().slice(0,10);}
 const weekStart=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()-(x.getUTCDay()+6)%7);return isoDate(x);};
 function formattedStars(r){return r?'★ '.repeat(r)+'☆ '.repeat(5-r):'Non noté';}
@@ -845,6 +889,10 @@ function renderSettings(){
   '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
   button('profile','Mettre à jour mon nom')+'</section>'+
   partner+libraryPanel+monthlyPanel+
+  (isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
+  '<h3>🎁 Calendrier de l’Avent 2026</h3>'+
+  '<p>Importer les 25 journées de votre calendrier JSON, sans modifier les titres ni les consignes.</p>'+
+  button('tab:advent-editor','Importer mon calendrier 2026')+'</section>':'')+
   '<section class="card"><h3>♥ Mon calendrier personnel</h3>'+
   '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
   button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
@@ -897,6 +945,26 @@ async function handle(action,element){
     !state.members.some(m=>m.user_id===parts[1]))throw Error('Personne célébrée invalide.');
   await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
   await reload();notify('Personne célébrée enregistrée.');return;
+ }
+ if(verb==='import-advent-2026'){
+  if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
+  let calendar;
+  try{calendar=JSON.parse(id('advent-2026-json')?.value||'');}
+  catch{throw Error('JSON invalide : vérifiez la syntaxe et les guillemets.');}
+  validateAdventJson(calendar);
+  await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:calendar});
+  await reload();
+  notify('Les 25 cases de décembre 2026 sont enregistrées.');
+  return;
+ }
+ if(verb==='advent-editor-day'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const day=Number(parts[0]);
+  if(!Number.isInteger(day)||day<1||day>25)throw Error('Journée invalide.');
+  const contents=id('advent-2026-json');
+  if(contents)contents.focus();
+  notify('Jour '+day+' : modifiez sa section dans le JSON, puis enregistrez les 25 cases.');
+  return;
  }
  if(verb==='monthly-slot'){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
@@ -1099,10 +1167,10 @@ async function handle(action,element){
   const ready=isSharedCoupleReady(state.coupleId,state.members);
   const allowed=ready?
    ['home','session','special','occasions','advent','settings','library',
-    'personal-journal','journal','ideas','feedback','monthly-library']:
-   ['home','settings','library','personal-journal','monthly-library'];
+    'personal-journal','journal','ideas','feedback','monthly-library','advent-editor']:
+   ['home','settings','library','personal-journal','monthly-library','advent-editor'];
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
-  if(['library','monthly-library'].includes(parts[0])&&!isLoveAdmin())
+  if(['library','monthly-library','advent-editor'].includes(parts[0])&&!isLoveAdmin())
    throw Error('Modification réservée à l’administrateur du couple.');
   state.tab=parts[0];state.confirmCancel=false;render();return;
  }
