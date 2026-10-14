@@ -324,16 +324,17 @@ function renderInvitePanel(){
  if(!ready){
   html+='<label>Courriel Google de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   button('invite',latest?'Renvoyer une invitation (nouveau lien)':'Préparer une invitation');
-  if(draft){
-   html+='<details class="invite-preview"><summary>♡ Aperçu de l’invitation LoveRoll</summary>'+invitationPreviewMarkup()+'</details>';
-   html+='<div class="invite-actions">'+button('send-sms','💬 Texto SMS')+
-    button('send-messenger','♡ Messenger','class="subtle"')+
+   button('invite',latest?'↻ Renouveler mon lien sécurisé':'Créer mon invitation');
+  html+='<div class="invite-actions">'+
+    button('send-messenger','♡ Messenger')+
+    button('send-sms','💬 Texto SMS','class="subtle"')+
     button('send-email','✉ Courriel','class="subtle"')+
-    button('copy-invite','Copier le lien','class="subtle"')+'</div>'+
+    (draft?button('copy-invite','Copier le lien','class="subtle"'):'')+'</div>';
+  if(draft)html+='<details class="invite-preview"><summary>♡ Aperçu de votre invitation</summary>'+
+    invitationPreviewMarkup()+'</details>'+
     button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
-    '<p class="tiny-note">Le téléphone ouvre votre messagerie; LoveRoll ne peut pas savoir si vous avez réellement appuyé sur Envoyer.</p>';
-  }
+    '<p class="tiny-note">Choisissez Messenger, SMS ou courriel dans votre application, puis confirmez l’envoi ici.</p>';
+  else html+='<p class="tiny-note">Choisir un moyen de partage prépare un nouveau lien personnel. Cela invalide l’ancien lien d’invitation. Aucun message n’est envoyé sans votre confirmation.</p>';
   if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
    html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
  }
@@ -359,18 +360,28 @@ function renderCoupleOverview(){
  button('tab:journal','Ouvrir nos statistiques et le calendrier','class="subtle"')+'</section>';
 }
 function renderWaitingPartner(){
- const title=safe(state.profile.display_name);
- frame('<section class="card"><div class="eyebrow">♡ ESPACE PRIVÉ</div>'+
-  '<h2>Votre espace est prêt, '+title+'</h2>'+
-  '<p>Vous pouvez créer et modifier vos cartes maintenant. Les dés et les défis du couple seront accessibles lorsque votre partenaire aura rejoint LoveRoll.</p>'+
-  button('tab:library','♡ Gérer mes 70 cartes')+
-  button('tab:monthly-library','✦ Modifier les 20 activités du mois','class="subtle"')+
-  button('tab:advent-editor','🎁 Préparer l’Avent 2026','class="subtle"')+
-  button('tab:special-editor','💘 Préparer les événements spéciaux','class="subtle"')+
-  '</section><section class="card"><h3>Inviter votre partenaire</h3>'+
-  '<p>Invitez votre conjointe quand vous le souhaitez. Aucune carte n’est révélée avant la partie.</p>'+
-  '</section>'+renderInvitePanel(),
- 'MON ESPACE','Préparer vos cartes avant l’invitation');
+ const name=safe(state.profile.display_name);
+ const latest=state.invitations?.find(x=>!x.cancelled_at)||state.invitations?.[0];
+ const invited=!!latest;
+ frame('<div class="waiting-hero"><div class="waiting-heart">♡</div>'+
+  '<div class="eyebrow">♡ VOTRE UNIVERS LOVEROLL</div>'+
+  '<h2>Votre espace est prêt, '+name+' !</h2>'+
+  '<p>Il ne reste qu’à inviter votre partenaire pour commencer vos premiers jeux à deux.</p>'+
+  '<div class="waiting-avatars"><span>♥ '+name+'</span><span class="waiting-connection">·····</span><span>♡ Partenaire</span></div>'+
+  '<div class="waiting-status">● '+(invited?'Invitation à compléter':'En attente de votre partenaire')+'</div>'+
+  button('tab:settings','♡ Inviter mon partenaire')+'</div>'+
+  '<section class="card"><div class="eyebrow">LES 3 ÉTAPES</div>'+
+  '<div class="waiting-steps"><p><strong>✓ 1.</strong> Votre espace personnel est créé</p>'+
+  '<p><strong>2.</strong> Partager l’invitation par Messenger, SMS ou courriel</p>'+
+  '<p><strong>3.</strong> Dès qu’elle est acceptée, vos dés et soirées seront activés</p></div></section>'+
+  '<section class="card"><h3>♡ À préparer pendant l’attente</h3>'+
+  '<div class="waiting-actions">'+
+  button('tab:library','♡ Mes 70 cartes')+
+  button('tab:monthly-library','✦ 20 activités du mois','class="subtle"')+
+  button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
+  button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
+  '<p class="tiny-note">Importez ou exportez chaque bibliothèque en JSON pour renouveler vos idées.</p></section>'+
+  renderInvitePanel(),'MON ESPACE','Votre aventure à deux commence ici');
 }
 function renderHome(){
  const name=state.profile.display_name,partner=other()?.name;
