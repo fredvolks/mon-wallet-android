@@ -118,7 +118,7 @@ function geometry(sides){
  return {group,normals};
 }
 export function dieOn(canvas,sides,value,rolling){
- let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';canvas.closest('.home-die-platform')?.classList.add('webgl-ready');}catch{return ()=>{};}
+ let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';canvas.closest('.home-die-platform, .love3d-stage')?.classList.add('webgl-ready');}catch{return ()=>{};}
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
  renderer.setSize(canvas.clientWidth||124,canvas.clientHeight||124,false);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
