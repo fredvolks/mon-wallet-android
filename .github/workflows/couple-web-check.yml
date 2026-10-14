@@ -16,6 +16,8 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check couple-web/app.js
+          node --check couple-web/premium-home.mjs
+          node --check couple-web/dice3d.js
           node --check couple-web/onboarding.mjs
           node --check couple-web/email-auth.mjs
           node --check couple-web/discover.mjs
@@ -64,7 +66,7 @@ jobs:
           assert '.discover-approved-die' in styles
           PY
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |
@@ -293,6 +295,85 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           EOF
           node verify-premium-invitation.cjs
+      - name: Verify and capture true premium couple home with WebGL
+        run: |
+          set -euo pipefail
+          cat > couple-web/__real-home-test.html <<'EOF'
+          <!doctype html><html lang="fr-CA"><head>
+          <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+          <link rel="stylesheet" href="./styles.css">
+          <link rel="stylesheet" href="./premium-theme.css">
+          <link rel="stylesheet" href="./premium-home.css">
+          <link rel="stylesheet" href="./satin-reference.css">
+          </head><body><main id="app" class="loveroll-real-home"></main>
+          <script type="module">
+          import {premiumHomeHtml} from './premium-home.mjs';
+          import {dieOn} from './dice3d.js';
+          const root=document.querySelector('#app');
+          const weekly=new URLSearchParams(location.search).has('unrolled')?null:{
+            face:2,actor:'owner',created_at:'2026-10-14T15:00:00Z'
+          };
+          root.innerHTML='<header class="home-brandbar"><div class="home-brand">'+
+            '<b>♡ Love<em>Roll</em>♡</b><small>LA COMPLICITÉ SE JOUE À DEUX</small></div>'+
+            '<div class="home-brand-actions"><button>♧</button><button>♙</button></div></header>'+
+          premiumHomeHtml({
+            weekly,members:[{user_id:'owner',name:'Fred'},{user_id:'partner',name:'Émilie'}],
+            challenges:[
+              {recipient:'owner',category:'SENSUEL',status:'pending'},
+              {recipient:'owner',category:'SEXUEL',status:'done'},
+              {recipient:'partner',category:'SENSUEL',status:'pending'}
+            ], now:new Date('2026-10-14T15:00:00Z')
+          })+
+          '<nav class="nav"><div class="nav-inner">'+
+          [['⌂','Accueil'],['🎲','Soirée'],['✦','Défi spécial'],['🎁','Avent'],['⚙','Réglages']].map(
+           ([ic,name],i)=>'<button class="'+(i===0?'active':'')+'"><span>'+ic+'</span>'+name+'</button>').join('')+
+          '</div></nav>';
+          const canvas=root.querySelector('canvas');
+          window.__dieCleanup=dieOn(canvas,6,weekly?.face||1,false);
+          </script></body></html>
+          EOF
+          cat > verify-real-home.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+           const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+           for(const d of [{name:'S25-Ultra',width:412,height:824},
+                            {name:'S25-Ultra-long',width:412,height:915}]){
+            const page=await browser.newPage({viewport:{width:d.width,height:d.height},
+             deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            const errors=[];page.on('pageerror',e=>errors.push(e.message));
+            await page.goto('http://127.0.0.1:8765/__real-home-test.html',{waitUntil:'load'});
+            await page.locator('.home-die-platform canvas').waitFor();
+            await page.waitForFunction(()=>document.querySelector('.home-die-platform canvas')?.dataset.webglReady==='true',null,{timeout:18000});
+            await page.waitForTimeout(800);
+            const data=await page.evaluate(()=>{
+             const nav=document.querySelector('.nav').getBoundingClientRect();
+             const shorts=document.querySelector('.home-shortcuts').getBoundingClientRect();
+             const weights=document.querySelectorAll('.home-weight');
+             const root=document.querySelector('#app');
+             const canvas=document.querySelector('.home-die-platform canvas');
+             return {
+              oneScreen:document.documentElement.scrollHeight<=innerHeight+2&&root.scrollHeight<=innerHeight+2,
+              lastCardVisible:shorts.bottom<=nav.top+2,
+              horizontalOverflow:document.documentElement.scrollWidth>innerWidth+2,
+              weights:weights.length,shortcuts:document.querySelectorAll('.home-shortcut').length,
+              nav:document.querySelectorAll('.nav button').length,
+              webgl:canvas.dataset.webglReady==='true',
+              canvasHeight:Math.round(canvas.getBoundingClientRect().height),
+              pageHeight:document.documentElement.scrollHeight,windowHeight:innerHeight,
+              cardBottom:Math.round(shorts.bottom),navTop:Math.round(nav.top)
+             };
+            });
+            console.log(d.name,JSON.stringify({data,errors}));
+            if(errors.length||!data.oneScreen||!data.lastCardVisible||data.horizontalOverflow||
+              data.weights!==6||data.shortcuts!==4||data.nav!==5||!data.webgl||data.canvasHeight<100)
+             throw Error('Accueil réel non conforme '+d.name+' '+JSON.stringify({data,errors}));
+            await page.screenshot({path:'landing-captures/'+d.name+'-VRAI-ACCUEIL-PREMIUM.png'});
+            await page.close();
+           }
+           await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          EOF
+          node verify-real-home.cjs
       - name: Publier les captures comparatives
         if: always()
         uses: actions/upload-artifact@v4
