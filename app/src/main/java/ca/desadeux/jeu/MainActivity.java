@@ -466,7 +466,9 @@ public final class MainActivity extends Activity {
  void drawNav(){
   for(String[] item:new String[][]{{"home","⌂","Accueil"},{"game","⚄","Soirée"},{"special","✦","Défi spécial"},{"advent","🎁","Avent"},{"settings","⚙","Réglages"}}){
    LinearLayout col=vertical();col.setGravity(Gravity.CENTER);
-   boolean active=tab.equals(item[0])||(item[0].equals("special")&&(tab.equals("occasions")||tab.equals("occasion_detail")))||(item[0].equals("settings")&&java.util.Arrays.asList("library","journal","intimacy","feedback","feedback_answer","privacy","rules","updater").contains(tab));
+   boolean active=tab.equals(item[0])||(item[0].equals("special")&&(tab.equals("occasions")||tab.equals("occasion_detail")))||
+    (item[0].equals("game")&&(tab.equals("feedback")||tab.equals("feedback_answer")||tab.equals("journal")||tab.equals("intimacy")))||
+    (item[0].equals("settings")&&java.util.Arrays.asList("library","privacy","rules","updater").contains(tab));
    TextView icon=text(item[1],item[0].equals("advent")?22:24,active?PINK:MUTED,false);icon.setGravity(Gravity.CENTER);col.addView(icon);
    TextView name=text(item[2],item[0].equals("special")?10:11,active?PALE:MUTED,active);name.setGravity(Gravity.CENTER);col.addView(name);
    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);
@@ -719,6 +721,13 @@ public final class MainActivity extends Activity {
  }
  void drawGame(){
   heading("🔥  Votre soirée","Chacun décide de son rythme et reçoit ses propres défis");
+  if(!prefs.getBoolean("active",false)&&!prefs.getString("last_feedback_session","").isEmpty()){
+   LinearLayout completed=card("♥  Votre dernière soirée",
+    "Soirée enregistrée. Prenez quelques instants pour partager vos trois réponses.");
+   addButton(completed,"RÉPONDRE À NOS 3 QUESTIONS",true,()->{tab="feedback";draw();});
+  }
+  LinearLayout journals=card("♡  Nos calendriers et statistiques","Vos moments enregistrés, anciens et nouveaux.");
+  addButton(journals,"OUVRIR LE JOURNAL INTIME",false,()->openJournal());
   if(prefs.getInt("goal",-1)<0){
    card("D'abord le dé hebdomadaire","Brassez le dé hebdomadaire à l'accueil avant de commencer.");
    addButton(page,"ALLER À L'ACCUEIL",true,()->{tab="home";draw();});
@@ -827,7 +836,7 @@ public final class MainActivity extends Activity {
      prefs.edit().putString("selected",cat.name()).putBoolean("random_mode",false).apply();draw();
     },1);
    }
-   addText(selection,"80 % dans la catégorie choisie · 20 % dans l'autre",12,MUTED,false,3);
+   addText(selection,"88 % dans la catégorie choisie · 12 % dans l'autre",12,MUTED,false,3);
    addButton(selection,"🎲  "+other(player).toUpperCase()+" BRASSE LE D20",true,
      ()->offerChallenge(player));
   }else{
@@ -1410,41 +1419,41 @@ public final class MainActivity extends Activity {
   addButton(c,action,false,click);
  }
  void drawSettings(){
-  heading("⚙  Réglages","Votre espace à deux");
-  section("♡  Notre vie à deux");
-  LinearLayout journalCard=card("♥  Notre journal intime","Calendrier des relations, statistiques et moments enregistrés.");
-  try{
-   List<JournalStats.Entry> all=loadJournalStats();
-   LocalDate today=LocalDate.now(ZoneId.of("America/Montreal"));
-   addText(journalCard,"Cette semaine "+JournalStats.week(all,today)+"  ·  Ce mois "+JournalStats.month(all,today)+
-    "  ·  Cette année "+JournalStats.year(all,today),14,PALE,true,5);
-  }catch(Exception ex){addText(journalCard,"Journal temporairement inaccessible",12,PINK,false,5);}
-  addButton(journalCard,"OUVRIR MON CALENDRIER ET MES STATS   →",true,()->openJournal());
-  settingTile("★  Nos avis après les soirées","3 questions simples, une réponse par personne (ancien mode hors ligne).",
-   "REMPLIR LES QUESTIONNAIRES",()->{tab="feedback";draw();});
-  section("♡  Mon compte connecté");
-  settingTile("LoveRoll Android + iPhone","Les noms et anniversaires sont renseignés lors de l’inscription. Vos données du mode hors ligne ne sont pas synchronisées.",
-   "OUVRIR L'ESPACE CONNECTÉ",()->{tab="welcome";drawWelcome();});
-  settingTile("♡  Ajouter / retirer un partenaire","Gérez vos invitations et vos séparations depuis l’espace connecté. Le journal intime local reste intact.",
-   "GÉRER MON COUPLE CONNECTÉ",()->openConnectedLoveRoll("settings"));
-  section("🎲  Le jeu");
-  // Full catalogue is restricted to the authenticated creator of the couple,
-  // therefore it cannot be listed in the legacy offline settings.
-  settingTile("♡  Cartes et défis personnels","Gestion privée des 25 + 25 défis de base et des 20 emplacements personnalisés. Seul le créateur du couple peut voir la bibliothèque.",
-   "GÉRER MES CARTES EN LIGNE",()->openConnectedLoveRoll("settings"));
-  settingTile("⚙  Règles et réinitialisation","Probabilités, dé hebdomadaire et règles des tirages.",
-   "VOIR LES RÈGLES",()->{tab="rules";draw();});
-  section("🔐  Application");
-  settingTile("↻  Mises à jour","Recherche automatique des nouvelles versions signées.",
+  heading("⚙  Réglages","Compte, couple, application et confidentialité");
+  section("♡  Compte et couple");
+  LinearLayout connected=card("♥  Mon espace connecté",
+   "Gérez votre profil, votre partenaire, vos invitations et votre date de couple.");
+  addButton(connected,"OUVRIR MES RÉGLAGES LOVEROLL",true,()->openConnectedLoveRoll("settings"));
+  section("♧  Notifications");
+  LinearLayout reminders=card("Rappels de LoveRoll",
+   "Dé hebdomadaire, événements et invitation acceptée.");
+  addText(reminders,"Aucun SMS payant. Les notifications automatiques ne seront activées qu’une fois le service push configuré.",
+   12,MUTED,false,2);
+  section("🎲  Personnalisation du jeu");
+  settingTile("Cartes, défis et activités",
+   "Les réglages des cartes privées sont gérés dans votre espace LoveRoll sécurisé.",
+   "MES CARTES ET ACTIVITÉS",()->openConnectedLoveRoll("settings"));
+  settingTile("Règles des dés","Probabilités, rejouer et réinitialisation des tirages hors ligne.",
+   "VOIR LES RÈGLES HORS LIGNE",()->{tab="rules";draw();});
+  section("▣  Application");
+  settingTile("Mises à jour Android",
+   "Vérifier les nouvelles versions APK signées et les paramètres de mise à jour.",
    "GÉRER LES MISES À JOUR",()->{tab="updater";draw();});
-  settingTile("🔒  Vie privée et données","Journal chiffré localement, suppression et futur accès iPhone.",
+  section("🔒  Confidentialité");
+  settingTile("Journal et données locales",
+   "Verrouillage, suppression et sécurité de votre ancien espace hors ligne.",
    "CONFIDENTIALITÉ",()->{tab="privacy";draw();});
-  addText(page,"LoveRoll  ·  v"+BuildConfig.VERSION_NAME,12,MUTED,false,5);
+  section("?  Aide");
+  LinearLayout help=card("LoveRoll",
+   "Pour inviter votre partenaire : ouvrez Mon espace connecté, puis Couple.");
+  addText(help,"Partage gratuit par SMS, Messenger ou courriel. L’envoi doit être confirmé dans votre messagerie.",
+   12,MUTED,false,3);
+  addText(page,"LoveRoll · version "+BuildConfig.VERSION_NAME,12,MUTED,false,5);
  }
  void drawRules(){
   heading("🎲  Règles du jeu","Comment fonctionnent nos tirages");
   card("Dé hebdomadaire","1× 50 % · 2× 25 % · 3× 12 % · 4× 8 % · 5× 4 % · 6× 1 %");
-  card("D6 et D20","Chacun a son D6. Pour chaque D20 : Sensuel ou Sexuel, 80 % pour le choix, 20 % pour l'autre.");
+  card("D6 et D20","Chacun a son D6. Pour chaque D20 : Sensuel ou Sexuel, 88 % pour le choix, 12 % pour l'autre.");
   card("Les défis ne se répètent pas","Une proposition, même passée, ne ressort pas pour la même personne pendant sa soirée.");
   card("Calendrier de l'Avent","Les 25 cases s'ouvrent uniquement à leur date en décembre.");
   section("↻  Réinitialisation");
@@ -1511,8 +1520,8 @@ public final class MainActivity extends Activity {
   else if(tab.equals("feedback_answer")){tab="feedback";draw();}
   else if(tab.equals("occasion_detail")){tab="occasions";draw();}
   else if(tab.equals("occasions")){tab="special";draw();}
-  else if(tab.equals("library")||tab.equals("journal")||tab.equals("feedback")
-   ||tab.equals("privacy")||tab.equals("rules")||tab.equals("updater")){
+  else if(tab.equals("journal")||tab.equals("feedback")){tab="game";draw();}
+  else if(tab.equals("library")||tab.equals("privacy")||tab.equals("rules")||tab.equals("updater")){
    tab="settings";draw();
   }else if(!tab.equals("home")){tab="home";draw();}
   else super.onBackPressed();

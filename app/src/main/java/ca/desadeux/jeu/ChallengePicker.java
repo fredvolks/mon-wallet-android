@@ -33,17 +33,17 @@ public final class ChallengePicker {
  private static final Category[] ACTIVE={Category.SENSUEL,Category.SEXUEL};
  public static Pick draw(Category preferred,long seenMask){return draw(preferred,false,seenMask);}
  public static Pick draw(Category preferred,boolean unusedRandomMode,long seenMask){
-  // Each challenge uses the current preference; 80% selected, 20% the other.
+  // Each challenge uses the current preference; 88% selected, 12% the other.
   if(preferred!=Category.SENSUEL&&preferred!=Category.SEXUEL)preferred=Category.SENSUEL;
   int total=0;
   for(Category cat:ACTIVE)if(remaining(seenMask,cat)>0)
-   total+=cat==preferred?80:20;
+   total+=cat==preferred?88:12;
   if(total==0)return null;
   int ticket=RANDOM.nextInt(total);
   Category chosen=null;
   for(Category cat:ACTIVE){
    if(remaining(seenMask,cat)==0)continue;
-   ticket-=cat==preferred?80:20;
+   ticket-=cat==preferred?88:12;
    if(ticket<0){chosen=cat;break;}
   }
   if(chosen==null)throw new IllegalStateException("No category available");

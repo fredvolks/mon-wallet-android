@@ -28,7 +28,7 @@ jobs:
           set -euo pipefail
           node --check couple-web/app.js
           node --check couple-web/config.js
-          node --test couple-web/checks.test.mjs
+          node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs
       - name: Activer Pages et préparer le site
         uses: actions/configure-pages@v5
         with:

@@ -62,6 +62,29 @@ public final class ConnectedLoveRollActivity extends Activity {
   @JavascriptInterface public void closeLoveRoll() {
    runOnUiThread(() -> finish());
   }
+  // Android shares the personal invitation using the system chooser (Messenger supported).
+  @JavascriptInterface public void openShare(String message) {
+   runOnUiThread(() -> {
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    try {
+     Intent share=new Intent(Intent.ACTION_SEND);
+     share.setType("text/plain");
+     share.putExtra(Intent.EXTRA_TEXT,message==null?"":message);
+     startActivity(Intent.createChooser(share,"Partager mon invitation LoveRoll"));
+    } catch(Exception ignored){show("Partage non disponible sur cet appareil.");}
+   });
+  }
+  // Free SMS share: opens the system composer, never sends silently.
+  @JavascriptInterface public void openSms(String message) {
+   runOnUiThread(() -> {
+    if(web==null || !pageReady || !isTrusted(Uri.parse(web.getUrl())))return;
+    try {
+     Intent sms = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"));
+     sms.putExtra("sms_body", message == null ? "" : message);
+     startActivity(sms);
+    } catch(Exception ignored) {show("Aucune application SMS disponible.");}
+   });
+  }
  }
  @Override public void onCreate(Bundle savedInstanceState) {
   super.onCreate(savedInstanceState);
