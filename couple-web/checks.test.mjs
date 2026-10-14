@@ -168,7 +168,7 @@ test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:12},{category:'SEXUEL',weight:88}]);
  assert.match(app,/EVENING_CATEGORIES\.map/);
  assert.match(app,/88 % dans votre catégorie choisie · 12 % dans l’autre/);
- assert.ok(app.includes('diceStatus:null,category:null,randomMode:false'));
+ assert.match(app,/diceStatus:null,rollAnimationFace:null,category:null,randomMode:false/);
  assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
  assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category))"));
  assert.ok(app.includes("state.category=null; // Require a fresh category choice"));
