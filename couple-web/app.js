@@ -36,7 +36,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -659,7 +659,7 @@ function renderSession(){
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
- const pending=turn.pending;
+ const pending=state.rollAnimationKind==='new-challenge'&&state.diceStatus?null:turn.pending;
  if(session&&pending&&state.showEveningChallenge){
   const card=resolvedCard(pending),receiver=pending.recipient;
   overlay='<div class="surprise-modal" role="dialog" aria-label="Notre défi en cours">'+
@@ -677,7 +677,7 @@ function renderSession(){
  }
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
-   turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,
+   turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
    showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
@@ -689,11 +689,16 @@ function optionalRolledTimer(roll){
   button('special-timer:'+key,'⏱ Minuteur · '+roll.timer_minutes+' min','class="subtle"');
 }
 function renderSpecial(){
- const monthly=state.monthly||{},active=monthly.monthly_activity;
+ const original=state.monthly||{},active=original.monthly_activity;
+ const rollingKind=state.diceStatus?state.rollAnimationKind:null;
+ const monthly={...original};
+ if(rollingKind==='monthly_activity')monthly.monthly_activity=null;
+ if(rollingKind==='monthly_host')monthly.monthly_host=null;
  frame(premiumSurpriseHtml({
    monthly,members:state.members,settings:state.occasionSettings,
    activity:active?monthlyActivityForRoll(active):null,
-   rolling:!!state.diceStatus,showActivity:state.showSurpriseActivity
+   rolling:!!state.diceStatus,rollingKind,rollFace:state.rollAnimationFace,
+   showActivity:state.showSurpriseActivity
  }), 'RENDEZ-VOUS SURPRISE','Un mois, un tirage, une expérience à deux');
 }
 function renderOccasions(){
@@ -1291,12 +1296,20 @@ function renderSettings(){
   'RÉGLAGES','Compte, couple, notifications et confidentialité');
 }
 async function refreshAndShow(){await refreshShared();render();}
-async function animateRoll(fn){
- state.diceStatus='rolling';render();
- const minDelay=new Promise(resolve=>setTimeout(resolve,1450));
- try{const result=await fn();await minDelay;
-  state.diceStatus=null;await refreshAndShow();return result;
- }catch(e){state.diceStatus=null;render();throw e;}
+async function animateRoll(fn,kind='general'){
+ if(state.diceStatus)throw Error('Un dé est déjà en cours de brassage.');
+ state.rollAnimationKind=kind;state.diceStatus='pending';render();
+ try{
+  const result=await fn(); // Supabase determines and persists the actual result
+  state.rollAnimationFace=Number(result?.face)||1;
+  state.diceStatus='rolling';render();
+  await new Promise(resolve=>setTimeout(resolve,2750));
+  state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
+  await refreshAndShow();return result;
+ }catch(e){
+  state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
+  await refreshAndShow();throw e;
+ }
 }
 async function hashToken(token){
  const digest=await crypto.subtle.digest('SHA-256',enc.encode(token));
@@ -1828,7 +1841,7 @@ async function handle(action,element){
  if(verb==='occasion-roll'){
   const [kind,owner,rollType]=parts;
   const x=await animateRoll(()=>rpc('roll_love_occasion_once',{p_couple:state.coupleId,
-   p_kind:kind,p_owner:owner==='-'?null:owner,p_roll:rollType}));
+   p_kind:kind,p_owner:owner==='-'?null:owner,p_roll:rollType}),'occasion');
   notify('Résultat '+x.face+' · '+person(x.actor));return;
  }
  if(verb==='roll'){
@@ -1853,7 +1866,7 @@ async function handle(action,element){
     }catch(error){state.diceStatus=null;state.rollAnimationFace=null;await refreshAndShow();throw error;}
    return;
   }
-  const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}));
+  const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}),kind);
   notify('Résultat officiel : '+result.face+' · tirage de '+person(result.actor));return;
  }
  if(verb==='new-session'){
@@ -1863,7 +1876,7 @@ async function handle(action,element){
  }
  if(verb==='my-d6'){
   if(!state.session)throw Error('Aucune soirée active.');
-  await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}));
+  await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}),'my-d6');
   if(!state.rollStatus?.both_ready)notify('Dé lancé! Les deux résultats apparaîtront ensemble après le dernier tirage.');
   else notify('♡ Les deux résultats sont maintenant révélés!');return;
  }
@@ -1920,7 +1933,7 @@ async function handle(action,element){
   if(!EVENING_CATEGORIES.includes(state.category))
    throw Error('Choisissez Sensuel ou Sexuel avant chaque nouveau défi.');
   await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
-   p_preference:state.category,p_random:false}));
+   p_preference:state.category,p_random:false}),'new-challenge');
   state.category=null; // Require a fresh category choice for the next challenge.
   render();
   return;
