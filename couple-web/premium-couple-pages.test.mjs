@@ -42,10 +42,11 @@ test('Private personal D6 results remain hidden until BOTH partner rolls are com
 test('D35 always visible and rolling face not displayed as text before settling',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:{...turns,pending:{face:21}},rollFace:11,
   rollingKind:'new-challenge',rolling:true,category:'SENSUEL'});
- assert.match(html,/data-dice-sides="35" data-face="11" data-dice-markers="numbers" data-spinning="true"/);
+ assert.match(html,/data-dice-sides="35" data-face="11" data-dice-zoom="1.07" data-dice-markers="numbers" data-spinning="true"/);
  assert.match(html,/class="dice-fallback" aria-hidden="true"><\/strong>/);
  assert.match(css,/\.love3d-stage\.is-rolling \.dice-fallback/);
  assert.match(die, /canvas\.dataset\.diceMarkers==='pips'/);
+ assert.match(die,/canvas\.dataset\.diceZoom/);
  assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,2750\)\)/);
 });
 test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
