@@ -541,7 +541,7 @@ test('All card draws respect drawer eligibility and persistent no-repeat cycles'
   'and history.card_id=card',
   'if v_no_repeat then',
   'insert into public.love_card_draw_history',
-  'if chosen.card_id is not null'
+  'case when chosen.card_id is not null'
  ])assert.ok(sql.includes(fragment),'Missing draw or permission rule: '+fragment);
  assert.ok(app.includes("function isLoveAdmin()"));
  assert.ok(app.includes("button('save-draw-rule'"));
