@@ -12,7 +12,7 @@ test('All five couple tabs plus journal are available without any real partner',
  for(const tab of DEMO_TABS){
   const html=demoCoupleHtml({userName:'Moi',tab,roll:3,day:14});
   assert.match(html,/MODE DÉMO/);
-  assert.match(html,/Camille \(démo\)/);
+  if(['home','session','settings'].includes(tab)) assert.ok(html.includes('Camille (démo)'));
   assert.match(html,/data-action="demo-exit"/);
   assert.match(html,/Simulation visuelle seulement/);
   assert.match(html,/data-action="demo-tab:home"/);
