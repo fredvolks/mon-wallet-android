@@ -322,7 +322,13 @@ jobs:
               {recipient:'owner',category:'SENSUEL',status:'pending'},
               {recipient:'owner',category:'SEXUEL',status:'done'},
               {recipient:'partner',category:'SENSUEL',status:'pending'}
-            ], now:new Date('2026-10-14T15:00:00Z')
+            ],
+            history:[
+              {session_id:'historical-1',recipient:'owner',category:'SENSUEL',status:'completed',created_at:'2026-10-07T15:00:00Z'},
+              {session_id:'historical-1',recipient:'partner',category:'SEXUEL',status:'completed',created_at:'2026-10-07T15:00:00Z'}
+            ],
+            sessions:[{id:'historical-1',finished_at:'2026-10-07T18:00:00Z',counted:true}],
+            now:new Date('2026-10-14T15:00:00Z')
           })+
           '<nav class="nav"><div class="nav-inner">'+
           [['⌂','Accueil'],['🎲','Soirée'],['✦','Défi spécial'],['🎁','Avent'],['⚙','Réglages']].map(
@@ -347,7 +353,7 @@ jobs:
             await page.waitForTimeout(800);
             const data=await page.evaluate(()=>{
              const nav=document.querySelector('.nav').getBoundingClientRect();
-             const shorts=document.querySelector('.home-shortcuts').getBoundingClientRect();
+             const shorts=document.querySelector('.home-stats-grid').getBoundingClientRect();
              const weights=document.querySelectorAll('.home-weight');
              const root=document.querySelector('#app');
              const canvas=document.querySelector('.home-die-platform canvas');
@@ -355,7 +361,7 @@ jobs:
               oneScreen:document.documentElement.scrollHeight<=innerHeight+2&&root.scrollHeight<=innerHeight+2,
               lastCardVisible:shorts.bottom<=nav.top+2,
               horizontalOverflow:document.documentElement.scrollWidth>innerWidth+2,
-              weights:weights.length,shortcuts:document.querySelectorAll('.home-shortcut').length,
+              weights:weights.length,stats:document.querySelectorAll('.home-stat-card').length,
               nav:document.querySelectorAll('.nav button').length,
               webgl:canvas.dataset.webglReady==='true',
               canvasHeight:Math.round(canvas.getBoundingClientRect().height),
@@ -365,7 +371,7 @@ jobs:
             });
             console.log(d.name,JSON.stringify({data,errors}));
             if(errors.length||!data.oneScreen||!data.lastCardVisible||data.horizontalOverflow||
-              data.weights!==6||data.shortcuts!==4||data.nav!==5||!data.webgl||data.canvasHeight<100)
+              data.weights!==6||data.stats!==4||data.nav!==5||!data.webgl||data.canvasHeight<100)
              throw Error('Accueil réel non conforme '+d.name+' '+JSON.stringify({data,errors}));
             await page.screenshot({path:'landing-captures/'+d.name+'-VRAI-ACCUEIL-PREMIUM.png'});
             await page.close();

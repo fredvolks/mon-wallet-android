@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
  WEEKLY_ODDS,PIP_POSITIONS,pipFace,nextMonday,nextMonthly,
- assignedTonight,premiumHomeHtml
+ assignedTonight,coupleHomeStats,premiumHomeHtml
 } from './premium-home.mjs';
 
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
@@ -57,7 +57,7 @@ test('Production home uses actual saved weekly result, disabled state and live c
  assert.match(h,/data-dice-sides="6"/);
  assert.match(h,/data-face="2"/);
  assert.equal((h.match(/class="home-weight"/g)||[]).length,6);
- assert.equal((h.match(/class="home-shortcut /g)||[]).length,4);
+ assert.equal((h.match(/class="home-stat-card /g)||[]).length,4);
  assert.match(h,/Fred/);assert.match(h,/Camille/);
  assert.match(h,/18 jours/);
  assert.match(h,/tab:special/);
@@ -65,8 +65,13 @@ test('Production home uses actual saved weekly result, disabled state and live c
  const waiting=premiumHomeHtml({...args,weekly:null});
  assert.match(waiting,/data-action="roll:weekly"/);
  assert.match(waiting,/Brassage disponible 1x par semaine/);
- const rolling=premiumHomeHtml({...args,weekly:args.weekly,rolling:true});
+ const rolling=premiumHomeHtml({...args,weekly:args.weekly,rolling:true,rollFace:5});
  assert.match(rolling,/data-spinning="true"/);
+ assert.match(rolling,/data-face="5"/);
+ assert.doesNotMatch(rolling,/2 soirée\(s\) de défi/);
+ assert.doesNotMatch(rolling,/Dé déjà brassé cette semaine/);
+ assert.match(rolling,/Brassage 3D en cours/);
+ assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true"><\/strong>/);
 });
 test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and real 2.65s tumble',()=>{
  assert.match(die,/\[1,\[0,0,1\]\],\[6,\[0,0,-1\]\]/);
@@ -95,4 +100,42 @@ test('Admin reset requires privileged server action and never touches custom cha
  assert.doesNotMatch(sql,/delete from auth\.users/);
  assert.match(css,/100dvh/);
  assert.match(css,/overflow:hidden/);
+});
+
+test('Monthly stats only use completed records, real categories, partner IDs and actual session history',()=>{
+ const members=[{user_id:'a',name:'Fred'},{user_id:'b',name:'Émilie'}];
+ const sessions=[
+  {id:'one',finished_at:'2026-10-07T19:00:00Z',counted:true},
+  {id:'two',finished_at:'2026-10-14T19:00:00Z',counted:true},
+  {id:'old',finished_at:'2026-09-24T18:00:00Z',counted:true}
+ ];
+ const challenges=[
+  {session_id:'one',recipient:'a',status:'completed',category:'SENSUEL',created_at:'2026-10-06T18:00:00Z'},
+  {session_id:'one',recipient:'b',status:'completed',category:'SEXUEL',created_at:'2026-10-06T18:00:00Z'},
+  {session_id:'two',recipient:'a',status:'completed',category:'COQUIN',created_at:'2026-10-13T18:00:00Z'},
+  {session_id:'two',recipient:'b',status:'proposed',category:'SENSUEL',created_at:'2026-10-13T18:00:00Z'},
+  {session_id:'old',recipient:'a',status:'completed',category:'SENSUEL',created_at:'2026-09-23T18:00:00Z'}
+ ];
+ const stats=coupleHomeStats(challenges,sessions,members,new Date('2026-10-14T20:00:00Z'));
+ assert.deepEqual(stats,{completed:3,byPartner:[2,1],sensualPercent:33,sexualPercent:67,streak:2});
+ const html=premiumHomeHtml({history:challenges,sessions,members,now:new Date('2026-10-14T20:00:00Z')});
+ assert.match(html,/class="home-stat-card completed"/);
+ assert.match(html,/class="home-stat-card partners"/);
+ assert.match(html,/class="home-stat-card categories"/);
+ assert.match(html,/class="home-stat-card streak"/);
+ assert.match(html,/33 \/ 67 %/);
+ assert.match(html,/Fred \/ Émilie/);
+ assert.doesNotMatch(html,/class="home-shortcut /);
+});
+test('Unpaired statistics are zero or no-data instead of invented sample figures',()=>{
+ const noData=coupleHomeStats([],[],[{user_id:'x'},{user_id:'y'}]);
+ assert.deepEqual(noData,{completed:0,byPartner:[0,0],sensualPercent:null,sexualPercent:null,streak:0});
+});
+test('D6 uses an actual bevel and no neon wireframe; fallback hidden during throws',()=>{
+ assert.match(die,/RoundedBoxGeometry\(1\.8,1\.8,1\.8,9,\.30\)/);
+ assert.match(die,/if\(sides!==6\)/);
+ assert.match(die,/if\(rolling\)\{[\s\S]*built\.group\.quaternion\.setFromEuler/);
+ assert.match(css,/webgl-ready \.dice-fallback/);
+ assert.match(css,/safe-area-inset-top/);
+ assert.match(css,/home-stats-grid/);
 });

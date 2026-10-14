@@ -168,7 +168,7 @@ test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:12},{category:'SEXUEL',weight:88}]);
  assert.match(app,/EVENING_CATEGORIES\.map/);
  assert.match(app,/88 % dans votre catégorie choisie · 12 % dans l’autre/);
- assert.ok(app.includes('diceStatus:null,category:null,randomMode:false'));
+ assert.match(app,/diceStatus:null,rollAnimationFace:null,category:null,randomMode:false/);
  assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
  assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category))"));
  assert.ok(app.includes("state.category=null; // Require a fresh category choice"));
@@ -303,7 +303,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v30/);
+ assert.match(sw,/loveroll-static-v31/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
