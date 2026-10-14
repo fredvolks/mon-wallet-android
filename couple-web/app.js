@@ -1,4 +1,5 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
+import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
@@ -25,7 +26,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
 const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
+ tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
@@ -215,7 +216,7 @@ async function reload(){
  state.coupleId=membership[0]?.couple_id||null;
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
-  state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;
+  state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;state.gifts=[];
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
   state.feedback=[];state.advent=[];state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
   state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];
@@ -254,7 +255,7 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
@@ -263,8 +264,10 @@ async function refreshShared(){
  query('couple_occasion_settings',{eq:{couple_id:c}}),
  query('couple_occasion_rolls',{eq:{couple_id:c}}),
  rpc('my_love_special_event_keys',{p_couple:c}),
- query('couple_challenges',{eq:{couple_id:c}})
+ query('couple_challenges',{eq:{couple_id:c}}),
+ query('couple_challenge_gifts',{eq:{couple_id:c}})
  ]);
+ state.gifts=gifts;
  state.challengesHistory=challengeHistory;
  state.occasionSettings=occasionSettings[0]||null;
  state.occasionRolls=occasionRolls;
@@ -293,7 +296,7 @@ function subscribe(){
    try{await reload();if(state.coupleId&&state.members.length===2)notify('♡ Votre partenaire a accepté le match !');}catch(e){fail(e);}
  });
  if(state.members.length<2){state.channel=channel.subscribe();return;}
- for(const table of ['couple_occasion_rolls','couple_occasion_settings','couple_rolls','couple_sessions','couple_challenges',
+ for(const table of ['couple_occasion_rolls','couple_occasion_settings','couple_rolls','couple_sessions','couple_challenges','couple_challenge_gifts',
   'couple_advent','couple_feedback','couple_intimacy','couple_events'])
   channel=channel.on('postgres_changes',{event:'*',schema:'public',table,
    filter:'couple_id=eq.'+state.coupleId},async payload=>{
@@ -399,7 +402,7 @@ function renderWaitingPartner(){
   '<p><strong>3.</strong> Dès qu’elle est acceptée, vos dés et soirées seront activés</p></div></section>'+
   '<section class="card"><h3>♡ À préparer pendant l’attente</h3>'+
   '<div class="waiting-actions">'+
-  button('tab:library','♡ Mes 70 cartes')+
+  button('tab:library','♡ Nos 70 défis')+
   button('tab:monthly-library','✦ 20 activités du mois','class="subtle"')+
   button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
   button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
@@ -497,9 +500,9 @@ function timerWidget(challenge,minutes){
 function renderSession(){
  let s=state.session; const p=other();
  let body='<section class="premium-intro"><div class="premium-eyebrow">🎲 NOTRE SOIRÉE À DEUX</div>'+
- '<h2>Les défis de notre soirée</h2><p>35 cartes de surprises à offrir et à recevoir, révélées par le dé.</p></section>'+
+ '<h2>Les défis de notre soirée</h2><p>70 défis à découvrir ensemble, parmi nos deux univers de 35 idées.</p></section>'+
  '<section class="card hero-game-card"><div class="premium-eyebrow">♡ LE DÉ DES DÉFIS</div>'+
- heroDice(null,35,'Nos 35 défis')+
+ heroDice(null,35,'Nos 70 défis')+
  '<p class="tiny-note">Pour commencer, chacun lance son dé personnel pour découvrir combien de défis il recevra. Vos résultats sont révélés ensemble.</p>';
  if(!s){
   const latest=(state.sessions||[]).find(x=>x.finished_at&&x.counted);
@@ -554,7 +557,7 @@ function renderSession(){
    if(!otherActive&&otherCompleted<theirs.face){
     body+='<div class="card"><h3>Défi '+(otherCompleted+1)+' / '+theirs.face+
      ' à offrir à '+safe(p.name)+'</h3>'+
-     '<p>Votre prochain lancer choisira l’une de vos 35 cartes. Sélectionnez la catégorie avant chaque surprise.</p>'+
+     '<p>Choisissez votre catégorie. LoveRoll sélectionnera le défi parmi nos 70 idées.</p>'+
      '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
      '<p>88 % dans votre catégorie choisie · 12 % dans l’autre. Choisissez à chaque défi.</p>'+
@@ -1032,7 +1035,7 @@ function renderCardLibrary(){
    '<span class="custom-tile-name">'+safe(title)+'</span></button>';
  }).join('');
  let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>Mes 70 cartes</h2>'+
+  '<h2>Nos 70 défis</h2>'+
   '<p>25 cartes de base + 10 emplacements libres par catégorie. Chaque carte est modifiable, y compris les 50 déjà fournies.</p>'+
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
     '<button class="pill '+(category===c?'selected':'')+
