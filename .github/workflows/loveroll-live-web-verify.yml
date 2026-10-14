@@ -1,0 +1,28 @@
+name: Verify Live LoveRoll Web v36
+on:
+  pull_request:
+    branches: [des-a-deux-apk-20261013]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check live LoveRoll deployed build and entrypoint
+        run: |
+          set -euo pipefail
+          SITE='https://fredvolks.github.io/mon-wallet-android/'
+          echo "Checking ${SITE}web-version.json"
+          curl --fail --silent --show-error --location --max-time 20 --retry 2 --retry-delay 2 "${SITE}web-version.json" -o /tmp/loveroll-live.json
+          cat /tmp/loveroll-live.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/loveroll-live.json', encoding='utf-8') as f: data=json.load(f)
+          assert data.get('build') == '2026-10-14.36', f"Live version does not match: {data}"
+          PY
+          curl --fail --silent --show-error --location --max-time 20 "${SITE}index.html" -o /tmp/loveroll-live.html
+          grep -F 'settings-premium.css?v=20261014-settings36' /tmp/loveroll-live.html
+          curl --fail --silent --show-error --location --max-time 20 "${SITE}settings-premium.css" -o /tmp/loveroll-settings.css
+          grep -F 'main#app.loveroll-settings-page' /tmp/loveroll-settings.css
+          echo 'Verified latest LoveRoll web settings are publicly served.'
