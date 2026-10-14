@@ -447,7 +447,21 @@ function renderSession(){
  let s=state.session; const p=other();
  let body='<section class="card"><h2>Une soirée, deux D6 individuels</h2>'+
  '<p>Chacun lance son D6 sur son compte. Les deux résultats apparaissent ensemble dès que les deux ont joué.</p>';
- if(!s)body+=button('new-session','Commencer une soirée commune');
+ if(!s){
+  const latest=(state.sessions||[]).find(x=>x.finished_at&&x.counted);
+  if(latest){
+   const total=state.challengesHistory.filter(c=>c.session_id===latest.id);
+   const done=total.filter(c=>c.status==='completed').length;
+   const responses=state.feedback.filter(f=>f.session_id===latest.id).length;
+   body+='<div class="aftercare-card"><h2>♥ Soirée terminée</h2>'+
+    '<p>Un moment partagé à deux. Prenez quelques instants pour donner votre avis.</p>'+
+    '<div class="stat-grid"><div class="stat"><strong>'+done+'</strong><small>Défis réalisés</small></div>'+
+    '<div class="stat"><strong>'+responses+'/2</strong><small>Avis enregistrés</small></div></div>'+
+    button('choose-feedback:'+latest.id,responses===2?'Voir nos avis ❤️':'Répondre à mes 3 questions')+
+    button('tab:journal','Voir notre calendrier','class="subtle"')+'</div>';
+  }
+  body+=button('new-session','Commencer une nouvelle soirée');
+ }
  else{
   const mine=state.personal.find(x=>x.user_id===state.user.id);
   const theirs=state.personal.find(x=>x.user_id===p.user_id);
@@ -513,7 +527,9 @@ function renderSession(){
     button('dismiss-cancel','Continuer','class="subtle"')+'</div></div>';
   }else body+=button('cancel-session','Arrêter sans la compter','class="subtle"');
  }
- body+='</section>';frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
+ body+='</section>';
+ if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
+ frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
 function renderSpecial(){
  const a=state.monthly.monthly_activity,h=state.monthly.monthly_host,r=state.monthly.monthly_restaurant;
@@ -852,44 +868,54 @@ async function renderJournal(){
   }
   body+='</section>';
  }
- body+='<section class="card"><h3>★ Avis de nos soirées</h3>'+
-  button('tab:feedback','Consulter et répondre aux questionnaires')+'</section>';
+ body+='<section class="card"><h3>Nos moments à deux</h3>'+
+  button('tab:session','Retour à notre soirée','class="subtle"')+'</section>';
  frame(body,'NOTRE JOURNAL','Un calendrier partagé, du contenu chiffré');
 }
 async function renderFeedback(){
- let sessions=state.sessions||[];
- let session=sessions.find(x=>x.id===state.chosenSession)||
-  sessions.find(x=>x.finished_at) || sessions[0];
+ const sessions=state.sessions||[];
+ const session=sessions.find(x=>x.id===state.chosenSession&&x.finished_at&&x.counted)||
+  sessions.find(x=>x.finished_at&&x.counted);
  if(!session){
-  frame('<section class="card"><p>Terminez une soirée pour partager vos avis respectifs.</p></section>',
-   'NOS AVIS','Les deux réponses sont consultables ensemble');return;
+  frame('<section class="card"><p>Terminez d’abord une soirée pour répondre à vos questions.</p>'+
+   button('tab:session','Retour à notre soirée')+'</section>','NOS AVIS','Après une soirée terminée');return;
  }
  state.chosenSession=session.id;
  const entries=state.feedback.filter(f=>f.session_id===session.id);
- let body='<section class="card"><h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
- '<p>Chacun répond sur son propre compte. Les deux partenaires peuvent ensuite lire les deux avis.</p>';
+ const yours=entries.find(x=>x.author_id===state.user.id);
+ const complete=state.members.every(m=>entries.some(x=>x.author_id===m.user_id));
+ let body='<section class="card"><div class="eyebrow">♥ APRÈS LA SOIRÉE</div>'+
+ '<h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
+ '<p>Trois questions pour chacun. Votre partenaire ne pourra lire vos réponses qu’une fois que vous aurez répondu tous les deux.</p>'+
+ '<div class="stat-grid"><div class="stat"><strong>'+entries.length+'/2</strong><small>Avis déposés</small></div></div>';
  if(!state.unlockKey){
-  body+='<p>Déverrouillez le journal chiffré pour lire les réponses.</p>'+
+  body+='<p>Déverrouillez votre journal chiffré pour répondre ou voir les résultats.</p>'+
    '<input type="password" id="journal-pass" placeholder="Phrase secrète commune">'+button('unlock','Déverrouiller');
+ }else if(!complete){
+  if(yours)body+='<div class="invite-status"><strong>✓ Votre avis est enregistré</strong>'+
+   '<p>En attente de la réponse de votre partenaire. Les avis ne sont pas encore visibles.</p></div>';
+  else body+='<h3>Mes 3 questions</h3>'+
+   '<label>1. Comment avez-vous aimé la soirée ?'+ratingChoice('rating')+'</label>'+
+   '<label>2. Votre moment préféré<select id="feedback-liked">'+
+   ['La complicité','La tendresse','Les défis','L’ambiance','Les surprises'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   '</select></label><label>3. Pour la prochaine fois<select id="feedback-next">'+
+   ['Rien à changer','Plus de douceur','Plus de temps','Plus de surprises','Rythme différent'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   '</select></label>'+button('save-feedback','Enregistrer mon avis ❤️');
  }else{
+  body+='<h3>♡ Vos deux avis</h3>';
   for(const member of state.members){
    const entry=entries.find(x=>x.author_id===member.user_id);
-   let answer;
-   if(entry){try{answer=await decryptJson(entry.ciphertext)}catch{}}
+   let answer=null;
+   try{answer=await decryptJson(entry.ciphertext);}catch{}
    body+='<div class="muted-line"><h3>'+safe(member.name)+'</h3>'+
     (answer?'<p>'+formattedStars(answer.rating)+'<br>Préféré : '+safe(answer.liked)+
-     '<br>Pour la prochaine fois : '+safe(answer.next)+'</p>':
-     '<p>En attente de réponse ou phrase secrète incorrecte.</p>')+'</div>';
+      '<br>Pour la prochaine fois : '+safe(answer.next)+'</p>':
+      '<p>Impossible de lire cette réponse. Vérifiez la phrase secrète.</p>')+'</div>';
   }
-  if(!entries.find(x=>x.author_id===state.user.id))
-  body+='<h3>Mon questionnaire</h3><label>Ma note'+ratingChoice('rating')+'</label>'+
-   '<label>J’ai préféré<select id="feedback-liked">'+
-   ['La complicité','La tendresse','Les défis','L’ambiance','Les surprises'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label><label>Pour la prochaine fois<select id="feedback-next">'+
-   ['Rien à changer','Plus de douceur','Plus de temps','Plus de surprises','Rythme différent'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label>'+button('save-feedback','Enregistrer MON avis');
  }
- body+='</section>';frame(body,'NOS QUESTIONNAIRES','Une réponse individuelle, visible par le couple');
+ body+='</section><section class="card">'+
+ button('tab:session','← Retour à Soirée','class="subtle"')+'</section>';
+ frame(body,'NOS AVIS APRÈS LA SOIRÉE','Un moment pour partager vos ressentis');
 }
 function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
 function renderCardLibrary(){
@@ -1369,6 +1395,9 @@ async function handle(action,element){
   state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
   render();notify('Invitation annulée.');return;
  }
+ if(verb==='choose-feedback'){
+  state.chosenSession=parts[0];state.tab='feedback';render();return;
+ }
  if(verb==='save-couple-date'){
   const value=id('couple-started-on')?.value||null;
   await rpc('set_love_relationship_date',{p_couple:state.coupleId,p_date:value});
@@ -1471,7 +1500,7 @@ async function handle(action,element){
  if(verb==='finish-session'){
   if(!state.session)return;
   await rpc('finish_couple_session',{p_session:state.session.id,p_count:true});
-  state.chosenSession=state.session.id;state.tab='feedback';await refreshAndShow();return;
+  state.chosenSession=state.session.id;state.tab='session';await refreshAndShow();return;
  }
  if(verb==='cancel-session'){state.confirmCancel=true;render();return;}
  if(verb==='dismiss-cancel'){state.confirmCancel=false;render();return;}
