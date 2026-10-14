@@ -109,7 +109,11 @@ export function authHtml(invitation=false,mode='signup',notice='',emailValue='')
  const misc=recovering?button('auth-mode:signin','← Retour à la connexion','invite-auth-link'):
   (signingIn?button('auth-reset-request','Mot de passe oublié ?','invite-auth-link'):'')+
   '<div class="invite-or"><span>ou</span></div>'+
-  '<button type="button" data-action="google" class="invite-google"><span class="invite-google-mark" aria-hidden="true">G</span> Continuer avec Google</button>';
+  '<button type="button" data-action="google" class="invite-google"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true">'+
+ '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/>'+
+ '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.28 5.48-4.81 7.18l7.75 6.01C44.4 38.03 46.98 31.84 46.98 24.55Z"/>'+
+ '<path fill="#FBBC05" d="M10.53 28.59A14.3 14.3 0 0 1 9.75 24c0-1.59.27-3.13.77-4.59l-7.98-6.2A23.84 23.84 0 0 0 0 24c0 3.87.93 7.52 2.56 10.78l7.97-6.19Z"/>'+
+ '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.79l-7.75-6.01c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.97 6.19C6.51 42.62 14.62 48 24 48Z"/></svg> Continuer avec Google</button>';
  return '<div class="invite-account-screen'+(recovering?' invite-recover':'')+'" aria-label="Compte LoveRoll">'+
   '<header class="invite-account-hero"><div class="invite-decor-heart" aria-hidden="true">♡</div>'+
   '<div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
@@ -208,8 +212,7 @@ export function matchHtml(name,invitation){
  return '<div class="auth-panel"><div class="eyebrow">ÉTAPE 2 SUR 2 · NOTRE MATCH</div>'+
  '<h2>Bienvenue '+esc(name)+' ♡</h2>'+
  (invitation?
- '<p>Votre espace à deux est prêt à être créé. Vous choisissez de le rejoindre avec votre propre compte.</p>'+
- button('accept-invite','♡ CONFIRMER NOTRE MATCH ❤️'):
+ '<p>Votre invitation sera associée automatiquement après la vérification du compte.</p>':
  '<p>Créez votre duo, puis invitez votre partenaire par courriel. Elle ou il remplira son propre profil.</p>'+
  '<h3>🥂 Anniversaire de votre couple</h3>'+
  monthDayInputs('signup-couple','',true)+
