@@ -127,7 +127,7 @@ export function dieOn(canvas,sides,value,rolling){
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.6;
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=sides===6?5.25:4.15;
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=(sides===6?5.25:4.15)/Math.min(1.4,Math.max(.8,Number(canvas.dataset.diceZoom)||1));
  camera.aspect=(canvas.clientWidth||124)/(canvas.clientHeight||124);camera.updateProjectionMatrix();
  scene.add(new THREE.AmbientLight(0xffb7df,1.25));
  const key=new THREE.PointLight(0xff3e99,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
