@@ -1,5 +1,6 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
+import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
@@ -15,7 +16,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
 const launchParams=new URLSearchParams(location.search);
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,
+ tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],selectedDay:1,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),diceStatus:null,category:'SENSUEL',randomMode:false,chosenSession:null,confirmCancel:false};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
@@ -28,13 +29,6 @@ try{const saved=localStorage.getItem('loveroll-timer-mode');if(saved==='vibrate'
 
 const kinds={weekly:'Dé hebdomadaire',monthly_activity:'Sortie du mois',
  monthly_host:'Qui invite',monthly_restaurant:'Type de restaurant'};
-const outings=['Souper en amoureux','Spa nordique','Brunch prolongé','Spectacle ou théâtre',
- 'Soirée humour','Cinéma et dessert','Restaurant dégustation','Cours de cuisine',
- 'Jeu d’évasion en duo','Musée ou exposition','Massage en duo','Café chic',
- 'Balade Vieux-Québec et resto','Bistro et jeu de société','Cocktails ou mocktails',
- 'Quilles ou billard','Traversier Québec–Lévis','Fondue ou tapas','Mini-escapade locale',
- 'Rendez-vous de saison'];
-const restaurantFaces=new Set([1,3,7,13,18]);
 const ideas={
  SENSUEL:['Baiser prolongé','Massage relaxant','Danse collée','Trois compliments','Baisers dans le cou','Câlin prolongé','Souvenir romantique','Baiser au choix','Massage des mains','Regard complice','Promenade main dans la main','Moment sans écran','Surprise tendre','Écoute à deux','Baiser surprise','Chanson romantique','Massage du dos','Déclaration douce','Lumière tamisée','Choix de douceur'],
  COQUIN:['Danse privée','Baiser à la carte','Jeu du regard','Massage coquin','Petit strip-tease','Défi du vêtement','Une envie secrète','Séduction au ralenti','Bandeau et baisers','Invitation discrète','Un compliment osé','Massage à l’huile','Une chanson à deux','Rôle de séduction','Cinq baisers','Un petit fantasme','Défi de la surprise','Ambiance de soirée','Deux choix coquins','Un jeu à deux'],
@@ -134,6 +128,7 @@ function render(){
   if(state.tab==='settings')renderSettings();
   else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
   else if(state.tab==='library'&&isLoveAdmin())renderCardLibrary();
+  else if(state.tab==='monthly-library'&&isLoveAdmin())renderMonthlyLibrary();
   else if(!state.coupleId){
    state.tab='home';
    frame(matchHtml(state.profile.display_name,false),
@@ -154,6 +149,7 @@ function render(){
  else if(state.tab==='feedback')renderFeedback().catch(fail);
  else if(state.tab==='settings')renderSettings();
  else if(state.tab==='library')renderCardLibrary();
+ else if(state.tab==='monthly-library')renderMonthlyLibrary();
 }
 async function reload(){
  if(!state.user)return;
@@ -170,7 +166,7 @@ async function reload(){
  state.coupleId=membership[0]?.couple_id||null;
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
-  state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.rollStatus=null;
+  state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;
   state.session=null;state.sessions=[];state.events=[];state.journal=[];
   state.feedback=[];state.advent=[];state.unlockKey=null;
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
@@ -183,8 +179,12 @@ async function reload(){
   query('couple_members',{eq:{couple_id:state.coupleId}})
  ]);
  state.couple=couple[0]||null;
- state.customCards=state.couple?.owner_user_id===state.user.id?
-  await query('love_custom_challenges',{eq:{couple_id:state.coupleId}}):[];
+ if(state.couple?.owner_user_id===state.user.id){
+  [state.customCards,state.monthlyActivities]=await Promise.all([
+   query('love_custom_challenges',{eq:{couple_id:state.coupleId}}),
+   query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})
+  ]);
+ }else{state.customCards=[];state.monthlyActivities=[];}
  const profilesAll=await query('couple_profiles');
  state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter'}));
  state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
@@ -276,6 +276,7 @@ function renderWaitingPartner(){
   '<h2>Votre espace est prêt, '+title+'</h2>'+
   '<p>Vous pouvez créer et modifier vos cartes maintenant. Les dés et les défis du couple seront accessibles lorsque votre partenaire aura rejoint LoveRoll.</p>'+
   button('tab:library','♡ Gérer mes 70 cartes')+
+  button('tab:monthly-library','✦ Modifier les 20 activités du mois','class="subtle"')+
   '</section><section class="card"><h3>Inviter votre partenaire</h3>'+
   '<p>Invitez votre conjointe quand vous le souhaitez. Aucune carte n’est révélée avant la partie.</p>'+
   '<label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com"></label>'+
@@ -296,7 +297,7 @@ function renderHome(){
  '<section class="card"><h3>♥ Notre soirée</h3>'+statsRow()+
  button('tab:session','Ouvrir notre soirée')+'</section>'+
  '<section class="card"><h3>✦ Activité du mois</h3><p>'+
- (state.monthly.monthly_activity?safe(outings[state.monthly.monthly_activity.face-1]):'Surprise à découvrir')+
+ (state.monthly.monthly_activity?safe(monthlyActivityForRoll(state.monthly.monthly_activity).title):'Surprise à découvrir')+
  '</p>'+button('tab:special','Voir le défi spécial')+'</section>'+
  '<section class="card"><h3>Vos notifications</h3>'+
  (state.events.length?state.events.slice(0,4).map(e=>'<p>'+safe(person(e.actor_id))+' · '+safe(e.title)+' · '+safe(e.happened_at.slice(0,10))+'</p>').join(''):
@@ -444,14 +445,17 @@ function renderSpecial(){
  if(!a)body+=heroDice(null,20,'Une des 20 idées de sortie')+
   button('roll:monthly_activity','🎲 Brasser le D20 mensuel');
  else{
-  body+=heroDice(a.face,20,'Activité officielle')+'<div class="result">'+safe(outings[a.face-1])+'</div>'+
+  const activity=monthlyActivityForRoll(a);
+  body+=heroDice(a.face,20,'Activité officielle')+
+  '<div class="result">'+safe(activity.title)+'</div>'+
+  '<p>'+safe(activity.description)+'</p>'+
   '<p>Tiré par '+safe(person(a.actor))+'.</p>';
   if(!h)body+=button('roll:monthly_host','🎲 Brasser le D6 : qui invite ?');
   else{
    const host=h.face<=3?state.members[0]:state.members[1]; // ordered by join time, identically on both devices
    body+='<p class="tag">♡ '+safe(host.name)+' invite '+safe(state.members.find(m=>m.user_id!==host.user_id).name)+
     ' · D6 face '+h.face+'</p>';
-   if(restaurantFaces.has(a.face)){
+   if(activity.is_restaurant){
     if(!r)body+=button('roll:monthly_restaurant','🎲 Resto connu ou nouveau ?');
     else body+='<p>🎯 '+(r.face<=3?'Retourner dans un restaurant connu':'Découvrir une nouvelle adresse')+
       ' · D6 face '+r.face+'</p>';
@@ -780,6 +784,36 @@ function renderCardLibrary(){
   button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
  frame(body,'MES CARTES','Gestion confidentielle, réservée à l’admin');
 }
+function renderMonthlyLibrary(){
+ if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
+ const items=editableMonthlyActivities(state.monthlyActivities);
+ const entry=items.find(x=>x.face===state.monthlySlot)||items[0];
+ const tiles=items.map(x=>'<button type="button" class="custom-card-tile '+
+  (x.edited?'custom-filled ':'')+
+  (x.face===entry.face?'custom-active':'')+
+  '" data-action="monthly-slot:'+x.face+'">'+
+  '<span class="custom-tile-number">'+String(x.face).padStart(2,'0')+'</span>'+
+  '<span class="custom-tile-name">'+safe(x.title)+'</span></button>').join('');
+ const body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
+  '<h2>Mes 20 activités du mois</h2>'+
+  '<p>Changez les 20 résultats du D20, même avant d’inviter votre partenaire. Vous pouvez remplacer complètement une idée de sortie et sa description.</p>'+
+  '<div class="custom-card-tiles">'+tiles+'</div>'+
+  '<p class="tiny-note">Les changements seront utilisés aux prochains tirages. Le résultat déjà obtenu ce mois-ci reste inchangé pour les deux partenaires.</p>'+
+  '</section><section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
+  '<h3>'+safe(entry.title)+'</h3>'+
+  '<label>Nom de l’activité<input id="monthly-title" maxlength="120" value="'+
+    safe(entry.title)+'" placeholder="Ex. Soirée au chalet"></label>'+
+  '<label>Description et consignes<textarea id="monthly-description" maxlength="900" rows="4"'+
+    ' placeholder="Décrivez la sortie prévue">'+safe(entry.description)+'</textarea></label>'+
+  '<label class="custom-draw-setting"><input id="monthly-restaurant" type="checkbox"'+
+    (entry.is_restaurant?' checked':'')+'> Activité de restaurant / repas à réserver</label>'+
+  '<p class="tiny-note">Si cette option est activée, LoveRoll propose également le dé « restaurant connu ou nouveau » après le tirage de cette activité.</p>'+
+  button('save-monthly-activity','♡ Enregistrer l’activité')+
+  (entry.edited?button('reset-monthly-activity','Restaurer l’activité d’origine','class="subtle"'):'')+
+  '</section><section class="card">'+
+  button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
+ frame(body,'MES ACTIVITÉS','20 sorties personnalisables et privées');
+}
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
  let partner='<section class="card"><h3>♡ Gérer mon couple</h3>';
@@ -802,11 +836,15 @@ function renderSettings(){
  '<h3>♡ Mes défis et cartes personnalisées</h3>'+ 
  '<p>Modifier les 70 cartes : durée, minuteur, personnes autorisées et règle anti-répétition.</p>'+ 
  button('tab:library','Gérer les défis')+'</section>':'';
+ const monthlyPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+
+ '<h3>✦ Mes 20 activités du mois</h3>'+
+ '<p>Remplacer les activités du D20, personnaliser leurs consignes et choisir celles qui sont liées à un restaurant.</p>'+
+ button('tab:monthly-library','Modifier les 20 activités')+'</section>':'';
  frame('<section class="card"><h2>Mon compte</h2><p>'+
   safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
   '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
   button('profile','Mettre à jour mon nom')+'</section>'+
-  partner+libraryPanel+
+  partner+libraryPanel+monthlyPanel+
   '<section class="card"><h3>♥ Mon calendrier personnel</h3>'+
   '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
   button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
@@ -859,6 +897,31 @@ async function handle(action,element){
     !state.members.some(m=>m.user_id===parts[1]))throw Error('Personne célébrée invalide.');
   await rpc('set_love_celebrant',{p_couple:state.coupleId,p_kind:parts[0],p_user:parts[1]});
   await reload();notify('Personne célébrée enregistrée.');return;
+ }
+ if(verb==='monthly-slot'){
+  if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
+  const face=Number(parts[0]);
+  if(!Number.isInteger(face)||face<1||face>20)throw Error('Activité invalide.');
+  state.monthlySlot=face;render();return;
+ }
+ if(verb==='save-monthly-activity'){
+  if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
+  const title=id('monthly-title')?.value.trim();
+  const description=id('monthly-description')?.value.trim();
+  const restaurant=!!id('monthly-restaurant')?.checked;
+  if(!title||title.length<3||title.length>120||
+    !description||description.length<10||description.length>900)
+    throw Error('Titre de 3 à 120 caractères et description de 10 à 900 caractères requis.');
+  await rpc('save_love_monthly_activity',{
+   p_couple:state.coupleId,p_face:state.monthlySlot,p_title:title,
+   p_description:description,p_is_restaurant:restaurant});
+  await reload();notify('Activité enregistrée pour les prochains tirages.');return;
+ }
+ if(verb==='reset-monthly-activity'){
+  if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
+  if(!confirm('Restaurer cette activité comme à l’origine ? Les anciens tirages resteront inchangés.'))return;
+  await rpc('reset_love_monthly_activity',{p_couple:state.coupleId,p_face:state.monthlySlot});
+  await reload();notify('Activité d’origine restaurée.');return;
  }
  if(verb==='save-draw-rule'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
@@ -1036,11 +1099,11 @@ async function handle(action,element){
   const ready=isSharedCoupleReady(state.coupleId,state.members);
   const allowed=ready?
    ['home','session','special','occasions','advent','settings','library',
-    'personal-journal','journal','ideas','feedback']:
-   ['home','settings','library','personal-journal'];
+    'personal-journal','journal','ideas','feedback','monthly-library']:
+   ['home','settings','library','personal-journal','monthly-library'];
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
-  if(parts[0]==='library'&&!isLoveAdmin())
-   throw Error('Bibliothèque réservée à l’administrateur du couple.');
+  if(['library','monthly-library'].includes(parts[0])&&!isLoveAdmin())
+   throw Error('Modification réservée à l’administrateur du couple.');
   state.tab=parts[0];state.confirmCancel=false;render();return;
  }
  if(['save-occasion-date','occasion-roll','roll','new-session','my-d6',
