@@ -38,7 +38,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':'home',weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -226,6 +226,29 @@ async function autoAcceptPendingInvite(){
  }catch(error){state.inviteError=invitationAuthMessage(error);}
  finally{inviteAcceptanceBusy=false;}
 }
+function verificationPendingHtml(email){
+ return '<div class="invite-account-screen email-confirm-screen">'+
+ '<header class="invite-account-hero"><div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
+ '<p>LA COMPLICITÉ SE JOUE À DEUX</p></header>'+
+ '<section class="invite-auth-card"><div class="email-confirm-envelope" aria-hidden="true">✉ ♡</div>'+
+ '<h1>♡ Encore une petite étape !</h1>'+
+ '<p>Nous venons de vous envoyer un lien de confirmation.</p>'+
+ '<p class="email-confirm-recipient">'+safe(email||'Votre adresse courriel')+'</p>'+
+ '<p>Vérifiez votre boîte courriel pour entrer dans notre univers LoveRoll.</p>'+
+ '<p class="invite-small-note">Pensez aussi à vérifier vos courriels indésirables.</p>'+
+ '<div id="email-confirm-status" role="status" aria-live="polite"></div>'+
+ button('email-confirm-recheck','J’ai confirmé mon courriel')+
+ button('email-confirm-resend','Renvoyer le courriel','class="subtle"')+
+ button('email-confirm-edit','Modifier mon adresse','class="subtle"')+
+ '</section></div>';
+}
+async function refreshVerifiedIdentity(){
+ if(!state.user)return false;
+ const {data,error}=await client.auth.getUser();
+ if(error||!data?.user){state.user=null;return false;}
+ state.user=data.user;
+ return verifiedLoveEmail(data.user);
+}
 function authMessage(message){
  const feedback=id('auth-form-feedback');
  if(feedback){feedback.textContent=message;feedback.setAttribute('role','alert');}
@@ -240,6 +263,11 @@ function render(){
  // Consent is mandatory before the connection controls appear.
  if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted))){
   root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
+ }
+ if(!state.passwordRecovery&&(state.emailVerificationPending||
+  (state.user&&!verifiedLoveEmail(state.user)))){
+  root.innerHTML=verificationPendingHtml(state.authDraftEmail||state.user?.email);
+  bindActions();return;
  }
  if(!state.user||state.passwordRecovery){
   if(!state.user&&!state.showAuth){root.innerHTML=discoverHtml(false);bindActions();}
@@ -339,6 +367,13 @@ function render(){
 }
 async function reload(){
  if(!state.user)return;
+ if(!(await refreshVerifiedIdentity())){
+  state.profile=null;state.coupleId=null;state.members=[];state.wellbeing=null;
+  state.personalJournal=[];state.pushPrefs=null;
+  state.emailVerificationPending=true;state.showAuth=true;
+  render();return;
+ }
+ state.emailVerificationPending=false;
  const [profiles,assessments,personal,pushSettings]=await Promise.all([
   query('couple_profiles',{eq:{id:state.user.id}}),
   query('love_wellbeing',{eq:{user_id:state.user.id}}),
@@ -1804,7 +1839,8 @@ async function handle(action,element){
     if(data?.session?.user&&verifiedLoveEmail(data.session.user)){
      state.user=data.session.user;state.showAuth=false;await reload();return;
     }
-    authMessage('Vérifiez votre courriel : ouvrez le lien de confirmation puis revenez dans LoveRoll. Votre invitation est conservée.');
+    state.emailVerificationPending=true;
+    state.authNotice=null;render();
    }else{
     const {data,error}=await client.auth.signInWithPassword({email,password});
     if(error){authMessage(passwordAuthMessage(error));return;}
@@ -1815,6 +1851,33 @@ async function handle(action,element){
   }catch(error){authMessage(passwordAuthMessage(error));}
   finally{if(btn)btn.disabled=false;}
   return;
+ }
+ if(verb==='email-confirm-recheck'){
+  if(await refreshVerifiedIdentity()){
+   state.emailVerificationPending=false;state.authNotice=null;
+   await reload();return;
+  }
+  const status=id('email-confirm-status');if(status)status.textContent=
+   'Votre adresse n’est pas encore confirmée dans Supabase. Ouvrez le lien reçu.';
+  return;
+ }
+ if(verb==='email-confirm-resend'){
+  const email=state.authDraftEmail||state.user?.email;
+  if(!email)throw Error('Indiquez votre adresse courriel.');
+  const until=Number(sessionStorage.getItem('loverollConfirmResendAfter')||0);
+  if(Date.now()<until)throw Error('Attendez une minute avant de renvoyer le courriel.');
+  const {error}=await client.auth.resend({type:'signup',email,
+   options:{emailRedirectTo:pendingInviteUrl()}});
+  if(error){authMessage(passwordAuthMessage(error));return;}
+  sessionStorage.setItem('loverollConfirmResendAfter',String(Date.now()+60000));
+  const status=id('email-confirm-status');
+  if(status)status.textContent='Demande de renvoi acceptée par Supabase. Vérifiez votre boîte courriel.';
+  return;
+ }
+ if(verb==='email-confirm-edit'){
+  if(state.user)await client.auth.signOut();
+  state.user=null;state.emailVerificationPending=false;state.authDraftEmail='';
+  state.authMode='signup';state.showAuth=true;render();return;
  }
  if(verb==='auth-reset-request'){
   let email;
@@ -2241,7 +2304,7 @@ async function start(){
     state.passwordRecovery=true;state.showAuth=true;
     state.user=session?.user||state.user;render();
    }
-   if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];render();}
+   if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];state.emailVerificationPending=false;render();}
  });
 }
 // Version probe bypasses WebView/Chrome and service worker HTTP cache.
