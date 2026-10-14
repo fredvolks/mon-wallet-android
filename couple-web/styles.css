@@ -342,3 +342,26 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
  padding:12px 16px;margin:10px auto 0;min-height:38px;display:block}
 @media(max-height:690px){.install-modal{padding:17px 19px}.install-symbol{width:52px;height:52px;font-size:35px}
  .install-modal h2{font-size:1.27rem}.install-modal p{font-size:.88rem}.install-recommend{margin:9px auto}}
+
+/* LoveRoll invitation and couple overview panels */
+.invite-status{margin:10px 0;padding:13px 14px;border:1px solid #875071;
+ border-radius:14px;background:linear-gradient(110deg,#432039,#29152d)}
+.invite-status strong{color:#ffb8dc;font-size:1.05rem}
+.invite-status p{margin:5px 0 0;color:#e4c4d9;font-size:.88rem}
+.invite-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.invite-actions button{min-width:0;font-size:.87rem;margin:0;padding:10px 8px;overflow-wrap:anywhere}
+.invite-preview{margin:14px 0;border:1px solid #79435f;border-radius:12px;padding:10px 12px}
+.invite-preview summary{cursor:pointer;color:#ffd5eb;font-weight:700}
+.loveroll-invite-preview{padding:21px 14px 16px;margin-top:10px;border-radius:16px;
+ background:linear-gradient(160deg,#401830 0%,#200c20 75%);color:#fce7f4;text-align:center}
+.loveroll-invite-heart{color:#fc529f;font-size:3rem;text-shadow:0 4px 19px #f543a0b0}
+.loveroll-invite-preview h3{font-size:2rem;margin:4px 0;color:#fff}
+.loveroll-invite-kicker{font-size:.8rem;color:#f5b1d2;letter-spacing:.03em}
+.loveroll-invite-divider{height:1px;background:#733b5c;margin:13px 0}
+.loveroll-invite-preview h4{font-size:1.17rem;margin:11px 0;color:#fff5fb}
+.loveroll-invite-preview p{color:#ead0dd;line-height:1.5;font-size:.9rem}
+.loveroll-invite-cta{background:linear-gradient(115deg,#e34496,#d02b7f);border-radius:11px;
+ padding:14px 6px;color:white;font-weight:800;margin:20px auto 14px}
+.loveroll-invite-preview small{display:block;color:#be9aaf;font-size:.71rem}
+.couple-progress{background:#3b2137;border-radius:20px;height:11px;margin:14px 0;overflow:hidden}
+.couple-progress span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#ff82b5,#dc3385)}
