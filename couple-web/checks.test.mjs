@@ -119,7 +119,7 @@ test('LoveRoll special events have twenty separate fully-worded surprises',()=>{
  assert.equal(SPECIAL_SURPRISES.length,20);
  assert.equal(new Set(SPECIAL_SURPRISES.map(x=>x.title)).size,20);
  assert.ok(SPECIAL_SURPRISES.every(x=>x.title.length>6&&x.detail.length>36));
- assert.equal(OCCASIONS.length,5);
+ assert.equal(OCCASIONS.length,7);
  for(let i=1;i<=20;i++)assert.equal(specialSurprise(i),SPECIAL_SURPRISES[i-1]);
  assert.throws(()=>specialSurprise(0));
  assert.throws(()=>specialSurprise(21));
