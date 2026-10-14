@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
-import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,resolvedCard } from './evening-challenges.mjs';
+import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import { drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE } from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
@@ -490,4 +490,68 @@ test('Neither partner sees whether a drawn card was created by the admin',()=>{
  assert.ok(gameScreen.includes('REÇOIT'));
  // The existing admin-only catalogue can retain its internal slot numbers.
  assert.ok(app.includes('function isLoveAdmin()'));
+});
+
+test('The administrator can edit all 70 cards without replacing the fixed originals',()=>{
+ for(const category of EVENING_CATEGORIES){
+  const original=editableCardSlots(category);
+  assert.equal(original.length,35);
+  assert.equal(original.filter(c=>c.isOriginal).length,25);
+  assert.equal(original.filter(c=>!c.isOriginal).length,10);
+  assert.equal(original.filter(c=>c.filled).length,25);
+  assert.equal(original.filter(c=>c.saved).length,0);
+  const edited=editableCardSlots(category,[
+   {category,card_id:3,title:'Une version adaptée',description:'Des consignes pour un nouveau défi.',
+    timer_minutes:null,recipient_user_id:'recipient',drawer_user_id:'drawer'},
+   {category,card_id:30,title:'Une nouvelle carte',description:'Description d’une carte.',
+    timer_minutes:9,recipient_user_id:null,drawer_user_id:null}
+  ]);
+  assert.equal(edited[2].title,'Une version adaptée');
+  assert.equal(edited[2].minutes,null);
+  assert.equal(edited[2].recipientId,'recipient');
+  assert.equal(edited[2].drawerId,'drawer');
+  assert.equal(edited[2].saved,true);
+  assert.equal(edited[29].minutes,9);
+  assert.equal(edited[29].filled,true);
+  assert.equal(edited[30].filled,false);
+  const snapshot=resolvedCard({category,card_id:3,face:19,
+   card_title:'Une version adaptée',card_description:'Des consignes pour un nouveau défi.',
+   card_timer_minutes:null});
+  assert.equal(snapshot.title,'Une version adaptée');
+  assert.equal(snapshot.minutes,null);
+  assert.equal(Object.hasOwn(snapshot,'custom'),false);
+ }
+});
+test('All card draws respect drawer eligibility and persistent no-repeat cycles',()=>{
+ const sql=readFileSync(new URL('./edit-all-cards-shufflebag.sql',import.meta.url),'utf8');
+ for(const fragment of [
+  'add constraint love_custom_challenges_card_id_check check(card_id between 1 and 35)',
+  'add column if not exists drawer_user_id uuid',
+  'no_repeat_challenges boolean not null default true',
+  'create table if not exists public.love_card_draw_history',
+  'primary key(couple_id,recipient_user_id,category,card_id)',
+  'create or replace function public.set_love_draw_rule(',
+  'owner_user_id=auth.uid()',
+  'select coalesce(no_repeat_challenges,true) into v_no_repeat',
+  "where cc.couple_id=s.couple_id and cc.category=cats.category",
+  'cc.drawer_user_id<>auth.uid()',
+  'cc.recipient_user_id<>target',
+  'and not exists(',
+  'delete from public.love_card_draw_history',
+  'and history.card_id=card',
+  'if v_no_repeat then',
+  'insert into public.love_card_draw_history',
+  'if chosen.card_id is not null'
+ ])assert.ok(sql.includes(fragment),'Missing draw or permission rule: '+fragment);
+ assert.ok(app.includes("function isLoveAdmin()"));
+ assert.ok(app.includes("button('save-draw-rule'"));
+ assert.ok(app.includes("id=\"no-repeat-cards\""));
+ assert.ok(app.includes("rpc('set_love_draw_rule'"));
+ assert.ok(app.includes("p_drawer:drawer"));
+ assert.ok(app.includes("custom-drawer"));
+ assert.ok(app.includes("custom-recipient"));
+ assert.ok(app.includes("state.customSlot=slot"));
+ assert.ok(app.includes("slot<1||slot>35"));
+ assert.ok(app.includes("Restaurer cette carte d’origine"));
+ assert.ok(!app.includes("CARTE '+safe(challenge.cardId"));
 });
