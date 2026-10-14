@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-advent35';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-advent35';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-advent35';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-settings36';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-settings36';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-settings36';
 import {loginEmail,loginCode,emailAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-advent35';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-settings36';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -135,7 +135,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-advent35').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-settings36').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -2223,6 +2223,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-advent35',
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-settings36',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
