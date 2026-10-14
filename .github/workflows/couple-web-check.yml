@@ -79,7 +79,7 @@ jobs:
           assert '.discover-approved-die' in styles
           PY
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs couple-web/force-weekly-reset.test.mjs couple-web/pwa-update.test.mjs couple-web/premium-couple-pages.test.mjs couple-web/settings-premium.test.mjs couple-web/invite-password-auth.test.mjs couple-web/auth-push-dice.test.mjs couple-web/email-confirm-existing-google.test.mjs couple-web/premium-advent.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs couple-web/force-weekly-reset.test.mjs couple-web/pwa-update.test.mjs couple-web/premium-couple-pages.test.mjs couple-web/settings-premium.test.mjs couple-web/invite-password-auth.test.mjs couple-web/auth-push-dice.test.mjs couple-web/email-confirm-existing-google.test.mjs couple-web/existing-account-profile.test.mjs couple-web/premium-advent.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |
