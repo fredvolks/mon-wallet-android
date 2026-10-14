@@ -150,6 +150,7 @@ function render(){
  else if(state.tab==='journal')renderJournal().catch(fail);
  else if(state.tab==='feedback')renderFeedback().catch(fail);
  else if(state.tab==='settings')renderSettings();
+ else if(state.tab==='library')renderCardLibrary();
 }
 async function reload(){
  if(!state.user)return;
@@ -791,6 +792,47 @@ async function renderFeedback(){
  }
  body+='</section>';frame(body,'NOS QUESTIONNAIRES','Une réponse individuelle, visible par le couple');
 }
+function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
+function renderCardLibrary(){
+ if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
+ const category=state.customCategory,slots=customCardSlots(category,state.customCards);
+ const slot=slots.find(x=>x.cardId===state.customSlot)||slots[0];
+ let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
+  '<h2>Bibliothèque de défis</h2>'+
+  '<p>25 cartes Sensuel + 25 cartes Sexuel prêtes à jouer, avec 10 emplacements libres par catégorie. Votre partenaire ne peut pas consulter ce catalogue.</p>'+
+  '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
+  '<button class="pill '+(category===c?'selected':'')+
+  '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div></section>'+
+  '<section class="card"><h3>25 cartes · '+safe(names[category])+'</h3>'+
+  Array.from({length:25},(_,i)=>{
+   const card=eveningCard(category,i+1);
+   return '<details class="custom-detail"><summary>'+String(i+1).padStart(2,'0')+
+    ' · '+safe(card.title)+' · '+(card.minutes?card.minutes+' min':'Sans minuteur')+'</summary>'+
+    '<p>'+safe(card.description)+'</p></details>';
+  }).join('')+'</section>'+
+  '<section class="card"><div class="eyebrow">VOS EMPLACEMENTS PRIVÉS</div>'+
+  '<h3>10 cartes personnalisées</h3>'+
+  '<p>Vous pouvez en remplir une, quelques-unes ou aucune. Les emplacements vides ne sont jamais tirés.</p>'+
+  '<div class="custom-slot-grid">'+slots.map(c=>'<button type="button" class="'+
+  (c.filled?'custom-filled ':'')+(slot.cardId===c.cardId?'custom-active':'')+
+  '" data-action="custom-slot:'+c.cardId+'">N° '+(c.cardId-25)+
+  (c.filled?' ✓':' · Vide')+'</button>').join('')+'</div>'+
+  '<h3>Carte personnalisée N° '+(slot.cardId-25)+'</h3>'+
+  '<label>Titre<input id="custom-title" maxlength="120" value="'+safe(slot.title)+
+  '" placeholder="Le nom de votre carte"></label>'+
+  '<label>Consigne<textarea id="custom-description" maxlength="900" rows="4"'+
+  ' placeholder="Votre défi personnalisé, écrit librement.">'+safe(slot.description)+'</textarea></label>'+
+  '<label><input type="checkbox" id="custom-timer-enabled"'+
+  (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
+  '<label>Durée en minutes<input id="custom-minutes" type="number" min="1" max="60"'+
+  ' value="'+(slot.minutes||5)+'"></label>'+
+  '<p class="tiny-note">Sans case cochée, la carte est libre de durée.</p>'+
+  button('save-custom-card','Enregistrer cette carte')+
+  (slot.filled?button('delete-custom-card','Vider cet emplacement','class="subtle"'):'')+
+  '</section>'+
+  '<section class="card">'+button('tab:settings','← Réglages','class="subtle"')+'</section>';
+ frame(body,'MES CARTES','Réservé au compte administrateur');
+}
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
  let partner='<section class="card"><h3>♡ Gérer mon couple</h3>';
@@ -808,11 +850,15 @@ function renderSettings(){
   button('start-couple','Ajouter un conjoint ou une conjointe');
  }
  partner+='</section>';
+ const libraryPanel=isLoveAdmin()?'<section class="card"><div class="eyebrow">ADMINISTRATEUR</div>'+ 
+ '<h3>♡ Mes défis et cartes personnalisées</h3>'+ 
+ '<p>25 Sensuel, 25 Sexuel et jusqu’à 10 cartes personnelles par catégorie.</p>'+ 
+ button('tab:library','Gérer les défis')+'</section>':'';
  frame('<section class="card"><h2>Mon compte</h2><p>'+
   safe(state.profile.display_name)+' · '+safe(state.user.email||'Courriel privé')+'</p>'+
   '<label>Mon nom à afficher<input id="profile-name" value="'+safe(state.profile.display_name)+'" maxlength="80"></label>'+
   button('profile','Mettre à jour mon nom')+'</section>'+
-  partner+
+  partner+libraryPanel+
   '<section class="card"><h3>♥ Mon calendrier personnel</h3>'+
   '<p>Vos propres moments demeurent dans votre espace privé, même après avoir retiré un partenaire. Une nouvelle personne ne peut pas consulter votre ancien historique.</p>'+
   button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>'+
@@ -851,6 +897,36 @@ async function handle(action,element){
  if(verb==='skip-couple'){
   if(sessionStorage.getItem('pendingInvite'))throw Error('Traitez ou fermez d’abord votre invitation en attente.');
   localStorage.setItem('loveroll-skip-'+state.user.id,'1');state.tab='home';render();return;
+ }
+ if(verb==='custom-category'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie invalide.');
+  state.customCategory=parts[0];state.customSlot=26;render();return;
+ }
+ if(verb==='custom-slot'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<26||slot>35)throw Error('Emplacement invalide.');
+  state.customSlot=slot;render();return;
+ }
+ if(verb==='save-custom-card'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const title=id('custom-title')?.value.trim(),description=id('custom-description')?.value.trim();
+  const timer=id('custom-timer-enabled')?.checked;
+  const minutes=timer?Number(id('custom-minutes')?.value):null;
+  if(!title||title.length<3||title.length>120||!description||description.length<10||
+     description.length>900||(timer&&(!Number.isInteger(minutes)||minutes<1||minutes>60)))
+   throw Error('Titre de 3 à 120 caractères, description de 10 à 900 caractères et minuteur facultatif de 1 à 60 minutes.');
+  await rpc('save_love_custom_card',{p_couple:state.coupleId,
+   p_category:state.customCategory,p_card_id:state.customSlot,
+   p_title:title,p_description:description,p_timer_minutes:minutes});
+  await reload();notify('Carte enregistrée.');return;
+ }
+ if(verb==='delete-custom-card'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  if(!confirm('Vider cet emplacement ? Les cartes déjà tirées restent dans l’historique.'))return;
+  await rpc('delete_love_custom_card',{p_couple:state.coupleId,
+   p_category:state.customCategory,p_card_id:state.customSlot});
+  await reload();notify('Emplacement vidé, historique conservé.');return;
  }
  if(verb==='start-couple'){
   if(state.coupleId){state.tab='settings';render();return;}
@@ -992,8 +1068,9 @@ async function handle(action,element){
   sessionStorage.removeItem('pendingInvite');await reload();return;
  }
  if(verb==='tab'){
-  const allowed=['home','session','special','occasions','advent','settings',
+  const allowed=['home','session','special','occasions','advent','settings','library',
    'personal-journal','journal','ideas','feedback'];
+  if(parts[0]==='library'&&!isLoveAdmin())throw Error('Bibliothèque réservée à l’administrateur du couple.');
   if(!allowed.includes(parts[0]))throw Error('Onglet inconnu.');
   // The full discovery experience is available in solo mode. No shared writes.
   state.tab=parts[0]==='feedback'&&!isSharedCoupleReady(state.coupleId,state.members)?
