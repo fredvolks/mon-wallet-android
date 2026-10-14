@@ -248,3 +248,37 @@ main#app.loveroll-surprise-page{
 @media (prefers-reduced-motion:reduce){
  .evening-premium-view *, .surprise-premium-view *{scroll-behavior:auto;transition:none}
 }
+
+/* Reference-match finish: transparent burgundy tiles, not generic bright-pink buttons. */
+main#app.loveroll-surprise-page .surprise-event-card{
+ background:linear-gradient(151deg,#541334ed,#250a22f5 66%,#170614f7)!important;
+ color:#fff4fb!important;
+ border:1px solid #f45e9bbd!important;
+ box-shadow:inset 0 1px #ffaad757,0 0 9px #fc418522!important;
+}
+main#app.loveroll-surprise-page .surprise-event-card:active{
+ background:linear-gradient(146deg,#962151,#420d30)!important;
+}
+.surprise-event-symbol{
+ display:grid;place-items:center;
+ line-height:1!important;width:clamp(27px,6.4vw,47px);height:clamp(27px,6.4vw,47px);
+}
+.surprise-event-svg{
+ width:100%;height:100%;
+ filter:drop-shadow(0 0 5px #ff4b9d) drop-shadow(0 0 8px #f31d80a0);
+}
+.surprise-event-title{
+ color:#fff5fa;font-size:clamp(.61rem,1.95vw,.83rem);
+ text-shadow:0 0 8px #f6257548;
+}
+.surprise-event-days{
+ background:linear-gradient(100deg,#e62983,#940552)!important;
+ border:1px solid #ff7ebfa8;
+}
+.surprise-event-chevron{font-size:clamp(1rem,3.2vw,1.35rem)}
+.surprise-event-card.no-date .surprise-event-days{
+ padding:2px 4px;font-size:clamp(.49rem,1.5vw,.62rem);
+}
+.surprise-d20-scene{
+ box-shadow:inset 0 -12px 25px #ff2e7c11;
+}
