@@ -168,7 +168,7 @@ test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:12},{category:'SEXUEL',weight:88}]);
  assert.match(app,/EVENING_CATEGORIES\.map/);
  assert.match(app,/88 % dans votre catégorie choisie · 12 % dans l’autre/);
- assert.match(app,/diceStatus:null,rollAnimationFace:null,category:null,randomMode:false/);
+ assert.match(app,/diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false/);
  assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
  assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category))"));
  assert.ok(app.includes("state.category=null; // Require a fresh category choice"));
@@ -593,7 +593,7 @@ test('Challenge D35 gives 35 physical numbered faces without changing monthly D2
  assert.ok(!app.includes("heroDice(demo.challenge,35,'D35"));
  assert.ok(app.includes('DÉCOUVRIR UN DÉFI POUR'));
  assert.ok(app.includes('CARTE N° '));
- assert.ok(app.includes("heroDice(a.face,20,'Activité officielle')"));
+ assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/premiumPolyDie\(20,/);
  assert.ok(app.includes("heroDice(prize.face,20,'Résultat officiel')"));
  assert.ok(!app.includes('solo-roll:challenge'));
  assert.ok(!app.includes('heroDice(demo.challenge,35'));
@@ -741,8 +741,8 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
  assert.ok(app.includes("settingRow('Activités du mois'"));
  assert.ok(app.includes("premiumHomeHtml({")); // monthly activity now displayed via live monthly countdown
- assert.ok(app.includes("const activity=monthlyActivityForRoll(a)"));
- assert.ok(app.includes("if(activity.is_restaurant){"));
+ assert.ok(app.includes("activity:active?monthlyActivityForRoll(active):null"));
+ assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/activity\?\.is_restaurant/);
  assert.ok(serviceWorker.includes("'./monthly-activities.mjs'"));
  assert.ok(!app.includes("safe(outings[a.face-1])"));
 });
@@ -931,7 +931,7 @@ test('LoveRoll user-facing navigation uses inviting words instead of technical d
  assert.doesNotMatch(nav,/D6|D20|D35/);
  assert.match(readFileSync(new URL('./premium-home.mjs',import.meta.url),'utf8'),/BRASSER LE DÉ/);
  assert.match(app,/DÉCOUVRIR UN DÉFI POUR/);
- assert.match(app,/DÉCOUVRIR NOTRE SORTIE/);
+ assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/Brasser le dé 20 faces/);
  assert.match(app,/SURPRISE DU MOIS|RENDEZ-VOUS SURPRISE/);
  assert.doesNotMatch(app,/LANCER LE D35 POUR|LANCER LE D20 MENSUEL/);
 });
