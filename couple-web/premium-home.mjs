@@ -42,6 +42,45 @@ export function assignedTonight(challenges,members){
  return {total:forFirst+forSecond,forFirst,forSecond};
 }
 
+
+function monthKeyToronto(date){
+ const d=new Date(date);
+ return Number.isFinite(d.getTime())?inToronto(d).slice(0,7):null;
+}
+function torontoWeekIndex(date){
+ const key=inToronto(new Date(date));
+ const noon=new Date(key+'T12:00:00Z');
+ const day=(noon.getUTCDay()+6)%7;
+ return Math.floor((noon.getTime()-day*86400000)/604800000);
+}
+// Computed exclusively from completed couple_challenges and counted couple_sessions.
+// Never infer completions from "proposed", "accepted" or a mockup value.
+export function coupleHomeStats(challenges=[],sessions=[],members=[],now=new Date()){
+ const month=inToronto(now).slice(0,7);
+ const byId=new Map((sessions||[]).map(s=>[s.id,s]));
+ const completed=(challenges||[]).filter(c=>c?.status==='completed');
+ const monthDone=completed.filter(c=>{
+  const session=byId.get(c.session_id);
+  return monthKeyToronto(session?.finished_at||c.created_at)===month;
+ });
+ const counts=(members||[]).map(m=>monthDone.filter(c=>c.recipient===m.user_id).length);
+ const sensual=monthDone.filter(c=>String(c.category||'').toUpperCase()==='SENSUEL').length;
+ const sexual=monthDone.filter(c=>['SEXUEL','COQUIN'].includes(String(c.category||'').toUpperCase())).length;
+ const categorized=sensual+sexual;
+ const activeWeeks=new Set((sessions||[]).filter(s=>s.counted&&s.finished_at)
+  .map(s=>torontoWeekIndex(s.finished_at)));
+ let current=torontoWeekIndex(now);
+ if(!activeWeeks.has(current))current--;
+ let streak=0;
+ while(activeWeeks.has(current)){streak++;current--;}
+ return {
+  completed:monthDone.length,byPartner:counts,
+  sensualPercent:categorized?Math.round(sensual*100/categorized):null,
+  sexualPercent:categorized?Math.round(sexual*100/categorized):null,
+  streak,
+ };
+}
+
 const iconSvg=(kind)=>{
  const paths={
   games:'<g transform="translate(7 6) rotate(-12 15 17)"><rect x="2" y="6" width="31" height="31" rx="7" fill="#240919" stroke="#ff82bd" stroke-width="2.4"/><circle cx="11" cy="15" r="3" fill="#ff60ac"/><circle cx="25" cy="28" r="3" fill="#ff60ac"/></g><g transform="translate(10 8) rotate(13 30 29)"><rect x="18" y="18" width="30" height="30" rx="7" fill="#110712" stroke="#ff8dbc" stroke-width="2.4"/><path d="M33 27c-5-7-13 0 0 11 13-11 5-18 0-11z" fill="#ff5ba3"/></g>',
@@ -53,21 +92,24 @@ const iconSvg=(kind)=>{
 };
 
 export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,members=[],
-  challenges=[],events=[],now=new Date()}={}){
+  challenges=[],history=[],sessions=[],events=[],rollFace=1,now=new Date()}={}){
  const weights=WEEKLY_ODDS.map((pct,i)=>
   '<span class="home-weight" title="'+(i+1)+' soirée(s) : '+pct+' %">'+pipFace(i+1)+
   '<b>'+(i+1)+'x</b><span>'+pct+'%</span></span>').join('');
  const stats=assignedTonight(challenges,members),m=nextMonthly(now);
- const ready=weekly&&Number.isInteger(weekly.face),next=nextMonday(now);
+ const ready=!rolling&&weekly&&Number.isInteger(weekly.face),next=nextMonday(now);
+ const coupleStats=coupleHomeStats(history,sessions,members,now);
  const memberA=escape(members[0]?.name||'Partenaire 1');
  const memberB=escape(members[1]?.name||'Partenaire 2');
  const weeklyTitle=ready?weekly.face+' soirée(s) de défi':'Prêts pour votre prochain rituel ?';
  const weeklySubtitle=ready?'cette semaine':'Brassez votre dé hebdomadaire';
- const shortcut=(ico,title,subtitle,target,cls='')=>
-  '<button class="home-shortcut '+cls+'" type="button" data-action="tab:'+target+'">'+
-    '<span class="home-shortcut-icon" aria-hidden="true">'+ico+'</span>'+
-    '<span class="home-shortcut-name">'+title+'</span>'+
-    '<small>'+subtitle+'</small></button>';
+ const statistic=(value,label,subtitle,cls='')=>
+  '<div class="home-stat-card '+cls+'"><strong>'+escape(value)+'</strong>'+
+  '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div>';
+ const nameA=String(members[0]?.name||'Joueur 1').split(' ')[0];
+ const nameB=String(members[1]?.name||'Joueur 2').split(' ')[0];
+ const percent=coupleStats.sensualPercent==null?'—':
+  coupleStats.sensualPercent+' / '+coupleStats.sexualPercent+' %';
  const pending=rolling||disabled;
  return '<section class="real-home-shell" aria-label="Tableau de bord du couple">'+
    '<div class="home-ritual"><span>NOTRE RITUEL DE LA SEMAINE</span>'+
@@ -76,15 +118,16 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+
    '<div class="home-fabric-photo" aria-hidden="true"></div>'+
    '<div class="home-satin-orbit" aria-hidden="true"></div>'+
-   '<div class="home-die-platform"><strong class="dice-fallback">'+(ready?weekly.face:'♡')+'</strong>'+
+   '<div class="home-die-platform"><strong class="dice-fallback" '+(rolling?'aria-hidden="true"':'')+'>'+
+   (rolling?'':ready?weekly.face:'♡')+'</strong>'+
    '<canvas class="dice-canvas" width="300" height="300" data-dice-sides="6" '+
-   'data-face="'+(ready?weekly.face:1)+'" data-spinning="'+(rolling?'true':'false')+'" '+
-   'aria-label="Dé 3D, '+(ready?'face '+weekly.face:'en attente du tirage')+'"></canvas></div></div>'+
+   'data-face="'+(rolling?rollFace:ready?weekly.face:1)+'" data-spinning="'+(rolling?'true':'false')+'" '+
+   'aria-label="Dé 3D, '+(rolling?'en cours de brassage':ready?'face '+weekly.face:'en attente du tirage')+'"></canvas></div></div>'+
    '<div class="home-roll-area">'+
    (ready?
     '<button class="home-roll-button is-used" type="button" disabled>♡ Dé déjà brassé cette semaine</button>':
     '<button class="home-roll-button" type="button" data-action="roll:weekly" '+(pending?'disabled':'')+'>'+
-    (rolling?'Brassage 3D en cours…':'🎲 BRASSER LE DÉ')+'</button>')+
+    (rolling?'Brassage 3D en cours…':disabled?'Préparation du brassage…':'🎲 BRASSER LE DÉ')+'</button>')+
    '<p>Info : '+(ready?'Par '+escape(members.find(p=>p.user_id===weekly.actor)?.name||'un partenaire')+'. ':
    'Brassage disponible 1x par semaine et par couple. ')+
    'Prochain tirage : lundi '+escape(next.slice(8,10)+'/'+next.slice(5,7))+' à 00 h (Québec)</p>'+
@@ -98,10 +141,10 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    '<span><small>Prochain défi mensuel</small><strong>'+m.days+' jours</strong>'+
    '<em>'+escape(m.label)+'</em></span>'+
    '<span class="home-gift-icon" aria-hidden="true">'+iconSvg('surprises')+'</span></button>'+ 
-   '<div class="home-shortcuts" aria-label="Raccourcis">'+
-   shortcut(iconSvg('games'),'Jeux','Jouez ensemble','session','games')+
-   shortcut(iconSvg('challenges'),'Défis','Sensuels ou coquins','session','challenges')+
-   shortcut(iconSvg('dates'),'Dates','Votre rendez-vous','special','dates')+
-   shortcut(iconSvg('surprises'),'Surprises','Fêtes et attentions','occasions','surprises')+
+   '<div class="home-stats-grid" aria-label="Statistiques réelles du couple">'+
+   statistic(String(coupleStats.completed),'Complétés','Ce mois','completed')+
+   statistic(coupleStats.byPartner.join(' / '),'Répartition',nameA+' / '+nameB,'partners')+
+   statistic(percent,'Sensuel / Sexuel','Ce mois','categories')+
+   statistic(String(coupleStats.streak),'Semaines actives','Série actuelle','streak')+
    '</div></section>';
 }
