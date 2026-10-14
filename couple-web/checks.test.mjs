@@ -740,7 +740,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("rpc('save_love_monthly_activity_with_timer'"));
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
  assert.ok(app.includes("settingRow('Activités du mois'"));
- assert.ok(app.includes("monthlyActivityForRoll(state.monthly.monthly_activity)"));
+ assert.ok(app.includes("premiumHomeHtml({")); // monthly activity now displayed via live monthly countdown
  assert.ok(app.includes("const activity=monthlyActivityForRoll(a)"));
  assert.ok(app.includes("if(activity.is_restaurant){"));
  assert.ok(serviceWorker.includes("'./monthly-activities.mjs'"));
@@ -929,7 +929,7 @@ test('LoveRoll user-facing navigation uses inviting words instead of technical d
  const nav=app.slice(app.indexOf('function nav(){'),app.indexOf('function bindActions(){'));
  assert.match(nav,/Surprise/);
  assert.doesNotMatch(nav,/D6|D20|D35/);
- assert.match(app,/LANCER LE DÉ DE LA SEMAINE/);
+ assert.match(readFileSync(new URL('./premium-home.mjs',import.meta.url),'utf8'),/BRASSER LE DÉ/);
  assert.match(app,/DÉCOUVRIR UN DÉFI POUR/);
  assert.match(app,/DÉCOUVRIR NOTRE SORTIE/);
  assert.match(app,/SURPRISE DU MOIS|RENDEZ-VOUS SURPRISE/);
@@ -944,7 +944,7 @@ test('Premium screens share a responsive dice and invitation layout on mobile an
   assert.ok(css.includes('.'+cls),'Missing responsive component: '+cls);
  }
  assert.match(css,/@media\(min-width:768px\)/);
- assert.match(app,/heroDice\(state\.weekly\?\.face,6/);
+ assert.match(app,/premiumHomeHtml\(\{/);
  assert.match(app,/heroDice\(null,35/);
  assert.match(app,/heroDice\(null,20/);
  assert.match(onboarding,/premium-email-disclosure/);
