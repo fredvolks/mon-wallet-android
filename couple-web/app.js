@@ -153,19 +153,14 @@ function render(){
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
  const pendingInvite=pendingInviteReference(sessionStorage);
  // Discover always shows a visual tour, never a second sign-in page.
- if(state.showDiscover){
+ // The approved premium discovery IS the first invitation screen.
+ // Consent is mandatory before the connection controls appear.
+ if(state.showDiscover||(pendingInvite&&!state.inviteAccepted)){
   root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
- }
- // An invitee must press ACCEPT before Google/Apple/email are visible.
- if(pendingInvite&&!state.inviteAccepted){
-  frame(invitationLandingHeader(true)+
-   '<div class="invite-discover-link">'+button('discover-loveroll','♡ Découvrir LoveRoll','class="subtle"')+'</div>'+
-   inviteBrowserHelp(),'LOVEROLL','Votre invitation privée');
-  return;
  }
  if(!state.user){
   if(!state.showAuth){
-   root.innerHTML=marketingHtml();bindActions();
+   root.innerHTML=discoverHtml(false);bindActions();
   }else frame(authHtml(!!pendingInvite)+inviteBrowserHelp(),'LOVEROLL',pendingInvite?'Connexion après acceptation':'Votre espace privé à deux');
   return;
  }
@@ -1398,7 +1393,7 @@ async function handle(action,element){
  if(verb==='invite-start'){
   const invite=pendingInviteReference(sessionStorage);
   if(!invite)throw Error('Invitation introuvable.');
-  state.inviteAccepted=true;state.showAuth=true;
+  state.inviteAccepted=true;state.showAuth=true;state.showDiscover=false;
   sessionStorage.setItem('loverollInviteAccepted',invite.kind+':'+invite.value);
   render();return;
  }
@@ -1613,8 +1608,12 @@ async function handle(action,element){
   d.setUTCMonth(d.getUTCMonth()+(verb==='personal-month-next'?1:-1));
   state.personalCalendarMonth=d.toISOString().slice(0,7);render();return;
  }
- if(verb==='show-auth'){state.showAuth=true;render();return;}
- if(verb==='show-landing'){state.showAuth=false;render();return;}
+ if(verb==='show-auth'){
+  if(pendingInviteReference(sessionStorage)&&!state.inviteAccepted)
+   throw Error('Acceptez d’abord l’invitation.');
+  state.showDiscover=false;state.showAuth=true;render();return;
+ }
+ if(verb==='show-landing'){state.showDiscover=false;state.showAuth=false;render();return;}
  if(verb==='google'&&window.LoveRollNativeAuth?.googleSignIn){
   window.LoveRollNativeAuth.googleSignIn();return;
  }
