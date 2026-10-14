@@ -17,6 +17,8 @@ jobs:
         run: |
           node --check couple-web/app.js
           node --check couple-web/premium-home.mjs
+          node --check couple-web/premium-evening.mjs
+          node --check couple-web/premium-surprise.mjs
           node --check couple-web/dice3d.js
           node --check couple-web/onboarding.mjs
           node --check couple-web/email-auth.mjs
@@ -66,7 +68,7 @@ jobs:
           assert '.discover-approved-die' in styles
           PY
       - name: Static security and logic contracts
-        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs couple-web/force-weekly-reset.test.mjs couple-web/pwa-update.test.mjs
+        run: node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs couple-web/force-weekly-reset.test.mjs couple-web/pwa-update.test.mjs couple-web/premium-couple-pages.test.mjs
 
       - name: Capture landing on Galaxy S25 Ultra representative viewport
         run: |
@@ -380,6 +382,10 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           EOF
           node verify-real-home.cjs
+      - name: Verify real couple Evening and Surprise in WebGL at S25 sizes
+        run: |
+          node couple-web/premium-couple-visual-check.cjs
+
       - name: Publier les captures comparatives
         if: always()
         uses: actions/upload-artifact@v4
