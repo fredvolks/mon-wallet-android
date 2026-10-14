@@ -1312,8 +1312,11 @@ async function handle(action,element){
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
   const text=invitationEmailText(d.link);
   if(verb==='send-sms'){
-   const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-   window.location.href='sms:'+(isApple?'&':'?')+'body='+encodeURIComponent(text);
+   if(window.LoveRollNativeAuth?.openSms)window.LoveRollNativeAuth.openSms(text);
+   else{
+    const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+    window.location.href='sms:'+(isApple?'&':'?')+'body='+encodeURIComponent(text);
+   }
   }else{
    const mail='mailto:'+encodeURIComponent(d.email)+'?subject='+encodeURIComponent('LoveRoll ❤️ Une invitation juste pour nous deux')+
     '&body='+encodeURIComponent(text);
