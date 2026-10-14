@@ -24,14 +24,15 @@ const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=
  const has=Number.isInteger(roll?.face)&&roll.face>=1&&roll.face<=6;
  // Only gift transfers modify the separate challenge total, not D6 history.
  const officialTarget=Number(effectiveTarget);
- const adjusted=has&&effectiveTarget!=null&&Number.isInteger(officialTarget)&&
+ const reveal=has&&!(localUser&&rolling);
+ const adjusted=reveal&&effectiveTarget!=null&&Number.isInteger(officialTarget)&&
   officialTarget>=0&&officialTarget!==roll.face;
- const displayCount=adjusted?officialTarget:has?roll.face:null;
+ const displayCount=adjusted?officialTarget:reveal?roll.face:null;
  return '<article class="evening-user-die">'+
   '<strong class="evening-person">'+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
   premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser&&Number.isInteger(rollFace)) +
-  '<div class="evening-face-result" aria-label="'+(has?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(has?esc(displayCount):'♡')+'</strong>'+
-  '<small>'+(has?'défi'+(displayCount>1?'s':'')+' ce soir':roll?'Résultat caché':'Pas encore lancé')+'</small>'+
+  '<div class="evening-face-result" aria-label="'+(reveal?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(reveal?esc(displayCount):'♡')+'</strong>'+
+  '<small>'+(reveal?'défi'+(displayCount>1?'s':'')+' ce soir':localUser&&rolling?'Brassage…':roll?'Résultat en attente':'Pas encore lancé')+'</small>'+
   (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>'+
   (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):(!roll?'<small class="evening-wait">En attente</small>':''))+
   '</article>';
