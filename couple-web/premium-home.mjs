@@ -76,7 +76,7 @@ export function coupleHomeStats(challenges=[],sessions=[],members=[],now=new Dat
  return {
   completed:monthDone.length,byPartner:counts,
   sensualPercent:categorized?Math.round(sensual*100/categorized):null,
-  sexualPercent:categorized?Math.round(sexual*100/categorized):null,
+  sexualPercent:categorized?100-Math.round(sensual*100/categorized):null,
   streak,
  };
 }
