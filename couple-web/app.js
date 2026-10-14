@@ -295,10 +295,10 @@ function subscribe(){
  state.channel=channel.subscribe();
 }
 function heroDice(face,sides,label){
- return '<div class="dice-row"><div class="die"><strong class="dice-fallback">'+safe(face||'?')+'</strong><canvas class="dice-canvas" width="190" height="190"'+
+ return '<div class="dice-row premium-dice-row"><div class="die premium-die premium-die-'+sides+'"><strong class="dice-fallback">'+safe(face||'?')+'</strong><canvas class="dice-canvas" width="190" height="190"'+
   ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
   ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
- '<div><div class="eyebrow">D'+sides+' · '+safe(label)+'</div>'+
+ '<div class="premium-die-caption"><div class="eyebrow">D'+sides+' · '+safe(label)+'</div>'+
  '<p>'+(!face?'En attente du tirage officiel.':'Face gagnante : '+face)+
  '. Faites glisser le dé pour le tourner.</p></div></div>';
 }
@@ -397,19 +397,21 @@ function renderWaitingPartner(){
 }
 function renderHome(){
  const name=state.profile.display_name,partner=other()?.name;
- frame('<div class="eyebrow">Votre couple</div>'+
- '<section class="card"><h2>'+safe(name)+' ♡ '+safe(partner)+'</h2>'+
- '<p>Votre rituel de la semaine · un seul dé pour votre couple.</p>'+
+ frame('<section class="premium-intro"><div class="premium-eyebrow">♡ NOTRE RITUEL À DEUX</div>'+
+ '<h2>'+safe(name)+' <span>♥</span> '+safe(partner)+'</h2>'+
+ '<p>Une semaine, un dé, de nouvelles surprises à partager.</p></section>'+
+ '<section class="card hero-game-card"><div class="premium-eyebrow">🎲 D6 · NOTRE RITUEL HEBDOMADAIRE</div>'+
+ '<h2>Lancer le dé hebdomadaire</h2><p>Découvrez combien de soirées partager cette semaine.</p>'+
  heroDice(state.weekly?.face,6,'Dé hebdomadaire')+
  (state.weekly?'<div class="result">'+state.weekly.face+' soirée(s) cette semaine</div>'+
  '<p>Ce résultat a été brassé par '+safe(person(state.weekly.actor))+'. Prochain tirage lundi.</p>':
- button('roll:weekly','🎲 Brasser notre D6 hebdomadaire'))+'</section>'+
+ button('roll:weekly','🎲 LANCER LE DÉ HEBDOMADAIRE'))+'</section>'+
  ideaPreview()+
  '<section class="card"><h3>♥ Notre soirée</h3>'+statsRow()+
- button('tab:session','Ouvrir notre soirée')+'</section>'+
+ button('tab:session','🎲 OUVRIR LES DÉFIS D35')+'</section>'+
  '<section class="card"><h3>✦ Activité du mois</h3><p>'+
  (state.monthly.monthly_activity?safe(monthlyActivityForRoll(state.monthly.monthly_activity).title):'Surprise à découvrir')+
- '</p>'+button('tab:special','Voir le défi spécial')+'</section>'+
+ '</p>'+button('tab:special','✦ DÉCOUVRIR LE D20 MENSUEL')+'</section>'+
  '<section class="card"><h3>Vos notifications</h3>'+
  (state.events.length?state.events.slice(0,4).map(e=>'<p>'+safe(person(e.actor_id))+' · '+safe(e.title)+' · '+safe(e.happened_at.slice(0,10))+'</p>').join(''):
  '<p>Les tirages et les réponses de votre partenaire apparaîtront ici pendant que vous utilisez l’application.</p>')+
@@ -483,8 +485,11 @@ function timerWidget(challenge,minutes){
 }
 function renderSession(){
  let s=state.session; const p=other();
- let body='<section class="card"><h2>Une soirée, deux D6 individuels</h2>'+
- '<p>Chacun lance son D6 sur son compte. Les deux résultats apparaissent ensemble dès que les deux ont joué.</p>';
+ let body='<section class="premium-intro"><div class="premium-eyebrow">🎲 SOIRÉE · D35</div>'+
+ '<h2>Les défis de notre soirée</h2><p>Un dé à 35 faces pour découvrir les surprises à offrir et à recevoir.</p></section>'+
+ '<section class="card hero-game-card"><div class="premium-eyebrow">♡ D35 · DÉFIS SENSUELS ET SEXUELS</div>'+
+ heroDice(null,35,'Le dé des 35 cartes')+
+ '<p class="tiny-note">Avant les défis D35, chacun lance son petit D6 personnel : il détermine combien de défis recevoir pendant la soirée. Les deux résultats sont révélés ensemble.</p>';
  if(!s){
   const latest=(state.sessions||[]).find(x=>x.finished_at&&x.counted);
   if(latest){
@@ -503,7 +508,7 @@ function renderSession(){
  else{
   const mine=state.personal.find(x=>x.user_id===state.user.id);
   const theirs=state.personal.find(x=>x.user_id===p.user_id);
-  body+=heroDice(mine?.face,6,'Mon dé personnel')+
+  body+='<div class="premium-eyebrow">ÉTAPE 1 · NOS DEUX D6</div>'+heroDice(mine?.face,6,'Mon dé personnel')+
   '<div class="two"><div class="stat"><strong>'+safe(mine?.face||'—')+'</strong><small>'+safe(state.profile.display_name)+'</small></div>'+
   '<div class="stat"><strong>'+safe(theirs?.face||'—')+'</strong><small>'+safe(p.name)+'</small></div></div>';
   if(!state.rollStatus?.both_ready){
@@ -523,7 +528,7 @@ function renderSession(){
    if(active){
     const challenge=resolvedCard(active);
     body+='<div class="card challenge-present"><div class="eyebrow">'+safe(names[active.category])+
-     ' · D35 : '+safe(active.face)+'</div>'+
+     ' · D35 : '+safe(active.face)+'</div>'+heroDice(active.face,35,'Défi tiré')+
      '<div class="challenge-roles">♡ '+safe(p.name).toUpperCase()+' OFFRE → '+safe(state.profile.display_name).toUpperCase()+' REÇOIT</div>'+
      '<h3>'+safe(challenge.title)+'</h3>'+
      '<p>'+safe(challenge.description)+'</p>' +
@@ -538,12 +543,12 @@ function renderSession(){
    if(!otherActive&&otherCompleted<theirs.face){
     body+='<div class="card"><h3>Défi '+(otherCompleted+1)+' / '+theirs.face+
      ' à offrir à '+safe(p.name)+'</h3>'+
-     '<p>Choisissez la catégorie pour ce défi. Vous pourrez changer pour chaque nouveau tirage.</p>'+
+     '<p>Le D35 choisira parmi les 35 cartes de votre bibliothèque. Sélectionnez la catégorie avant chaque nouveau tirage.</p>'+
      '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
      '<p>88 % dans votre catégorie choisie · 12 % dans l’autre. Choisissez à chaque défi.</p>'+
      (EVENING_CATEGORIES.includes(state.category)?
-      button('new-challenge','🎲 Brasser le D35 pour '+safe(p.name)):
+      button('new-challenge','🎲 LANCER LE D35 POUR '+safe(p.name)):
       '<p class="tiny-note">Sélectionnez Sensuel ou Sexuel pour activer le tirage.</p>')+'</div>';
    }else if(otherActive){const giving=resolvedCard(otherActive);
     body+='<section class="card"><div class="challenge-roles">♡ '+safe(state.profile.display_name).toUpperCase()+' OFFRE → '+safe(p.name).toUpperCase()+' REÇOIT</div>'+
@@ -580,10 +585,10 @@ function optionalRolledTimer(roll){
 }
 function renderSpecial(){
  const a=state.monthly.monthly_activity,h=state.monthly.monthly_host,r=state.monthly.monthly_restaurant;
- let body='<div class="eyebrow">Défi spécial · '+safe(month())+'</div>'+
- '<section class="card"><h2>Votre rendez-vous du mois</h2>';
+ let body='<section class="premium-intro"><div class="premium-eyebrow">✦ D20 · SURPRISE DU MOIS</div><h2>Notre rendez-vous surprise</h2><p>20 idées, un seul tirage officiel, une nouvelle expérience à vivre à deux.</p></section>'+ 
+ '<section class="card hero-game-card"><h2>Quel sera notre prochain rendez-vous ?</h2>';
  if(!a)body+=heroDice(null,20,'Une des 20 idées de sortie')+
-  button('roll:monthly_activity','🎲 Brasser le D20 mensuel');
+  button('roll:monthly_activity','🎲 LANCER LE D20 MENSUEL');
  else{
   const activity=monthlyActivityForRoll(a);
   body+=heroDice(a.face,20,'Activité officielle')+
@@ -624,8 +629,9 @@ function renderOccasions(){
     year:due?.year||next?.year||year,daysLeft:due?.daysLeft??null});
   }
  }
- let body='<section class="card"><h2>Nos événements spéciaux</h2>'+
-  '<p>Une surprise de fête au D20, et un D6 de variation quand elle a été personnalisée.</p>'+
+ let body='<section class="premium-intro"><div class="premium-eyebrow">♥ NOS DATES IMPORTANTES</div><h2>Des occasions à célébrer</h2><p>Saint-Valentin, anniversaires et fêtes : chaque date réserve sa propre surprise.</p></section>'+ 
+ '<section class="card"><h2>Les dés de nos événements</h2>'+
+  '<p>Le D20 sélectionne une surprise lors des fêtes classiques; vos événements personnalisés utilisent deux D6.</p>'+
   '<p>Chaque idée est facultative : vous pouvez en discuter, la modifier ou la refuser.</p></section>';
  for(const ev of all.sort((a,b)=>(a.daysLeft===null?1:0)-(b.daysLeft===null?1:0))){
   const k=ev.key+(ev.actorId?':'+ev.actorId:'');
@@ -760,8 +766,8 @@ function renderSpecialEventsEditor(){
 function renderAdvent(){
  const now=today(),[year,mo,day]=now.split('-').map(Number);
  const unlocked=mo===12?Math.min(day,25):0;
- let body='<section class="card"><h2>25 surprises secrètes</h2>'+
-  '<p>Une seule case officielle par jour de décembre, ouverte par l’un ou l’autre.</p>'+
+ let body='<section class="premium-intro"><div class="premium-eyebrow">🎁 NOTRE AVENT</div><h2>25 moments à découvrir</h2><p>Chaque jour de décembre, une nouvelle surprise rien que pour nous.</p></section>'+ 
+ '<section class="card hero-game-card"><h2>Ouvrons une surprise à la fois</h2><p>Une seule case officielle se déverrouille chaque jour du 1er au 25 décembre.</p>'+
   '<div class="day-grid">';
  for(let d=1;d<=25;d++){
   const allowed=d<=unlocked,opened=state.advent.find(x=>x.year===year&&x.day===d);
