@@ -238,7 +238,7 @@ function render(){
  // Discover always shows a visual tour, never a second sign-in page.
  // The approved premium discovery IS the first invitation screen.
  // Consent is mandatory before the connection controls appear.
- if(state.showDiscover||(pendingInvite&&!state.inviteAccepted)){
+ if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted))){
   root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
  }
  if(!state.user||state.passwordRecovery){
@@ -1775,52 +1775,81 @@ async function handle(action,element){
   const {error}=await client.auth.signInWithOAuth({provider:verb,options:{redirectTo}});
   if(error)throw error;return;
  }
- if(verb==='email-login'){
-  const email=loginEmail(id('signin-email')?.value);
-  const lastAttempt=Number(sessionStorage.getItem('loverollEmailSentAt')||0);
-  // Avoid a repeat click immediately exhausting Supabase's email quota.
-  if(lastAttempt&&Date.now()-lastAttempt<60000){
-   const msg="Un courriel a déjà été demandé. Vérifie le message reçu et ouvre son lien de confirmation plutôt que de renvoyer un autre courriel.";
-   const help=id('auth-email-help');if(help)help.textContent=msg;
-   notify(msg);return;
-  }
-  const redirectUrl=new URL(CONFIG.siteUrl||location.origin+location.pathname);
-  const pendingId=sessionStorage.getItem('pendingInviteId');
-  if(pendingId){redirectUrl.searchParams.set('invite_id',pendingId);redirectUrl.searchParams.set('v',INVITATION_REVISION);}
-  const redirectTo=redirectUrl.toString();
-  const buttonElement=element;
-  if(buttonElement)buttonElement.disabled=true;
-  try{
-   const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
-   if(error){
-    const msg=emailAuthMessage(error);
-    const help=id('auth-email-help');if(help)help.textContent=msg;
-    notify(msg);return;
-   }
-   sessionStorage.setItem('loverollEmailSentAt',String(Date.now()));
-   const msg="Courriel demandé. Ouvre le message de Supabase Auth et clique sur « Confirm email address » ou sur le lien de connexion. S'il n'y a pas de code à 6 chiffres, c'est normal.";
-   const help=id('auth-email-help');if(help)help.textContent=msg;
-   notify('Courriel envoyé : ouvre le lien de confirmation reçu.');
-  }finally{if(buttonElement)buttonElement.disabled=false;}
+ if(verb==='auth-mode'){
+  state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
+  state.authMode=parts[0]==='signin'?'signin':'signup';
+  state.authNotice=null;state.passwordRecovery=false;render();return;
+ }
+ if(verb==='auth-eye'){
+  const field=id('signin-password');if(!field)return;
+  field.type=field.type==='password'?'text':'password';
+  element?.setAttribute('aria-pressed',String(field.type==='text'));
+  element?.setAttribute('aria-label',field.type==='password'?'Afficher le mot de passe':'Masquer le mot de passe');
   return;
  }
- if(verb==='verify-email-code'){
-  const email=loginEmail(id('signin-email')?.value);
-  const token=loginCode(id('signin-code')?.value);
-  const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});
-  if(error){
-   const msg=emailAuthMessage(error);
-   const help=id('auth-email-help');if(help)help.textContent=msg;
-   notify(msg);return;
-  }
-  if(data?.user){state.user=data.user;state.showAuth=false;await reload();}
+ if(verb==='auth-signup-password'||verb==='auth-signin-password'){
+  let email,password;
+  try{email=loginEmail(id('signin-email')?.value);
+    password=id('signin-password')?.value||'';
+    if(verb==='auth-signup-password')requireLovePassword(password);
+    else if(!password)throw Error('Entrez votre mot de passe.');
+  }catch(error){authMessage(error.message);return;}
+  const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
+  try{
+   if(verb==='auth-signup-password'){
+    const {data,error}=await client.auth.signUp({email,password,
+     options:{emailRedirectTo:pendingInviteUrl()}});
+    if(error){authMessage(passwordAuthMessage(error));return;}
+    state.authDraftEmail=email;
+    if(data?.session?.user&&verifiedLoveEmail(data.session.user)){
+     state.user=data.session.user;state.showAuth=false;await reload();return;
+    }
+    authMessage('Vérifiez votre courriel : ouvrez le lien de confirmation puis revenez dans LoveRoll. Votre invitation est conservée.');
+   }else{
+    const {data,error}=await client.auth.signInWithPassword({email,password});
+    if(error){authMessage(passwordAuthMessage(error));return;}
+    if(!data?.user)throw Error('Aucune session ouverte.');
+    state.user=data.user;state.authNotice=null;state.showAuth=false;
+    await reload();
+   }
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
+  return;
+ }
+ if(verb==='auth-reset-request'){
+  let email;
+  try{email=loginEmail(id('signin-email')?.value);}catch(error){authMessage(error.message);return;}
+  const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
+  try{
+   const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pendingInviteUrl(true)});
+   if(error){authMessage(passwordAuthMessage(error));return;}
+   authMessage('Si cette adresse possède un compte, un lien de réinitialisation a été envoyé. Vérifiez votre courriel.');
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
+  return;
+ }
+ if(verb==='auth-update-password'){
+  if(!state.passwordRecovery||!state.user){authMessage('Ouvrez le lien sécurisé reçu par courriel.');return;}
+  let password;
+  try{password=requireLovePassword(id('signin-password')?.value);}
+  catch(error){authMessage(error.message);return;}
+  const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
+  try{
+   const {error}=await client.auth.updateUser({password});
+   if(error){authMessage(passwordAuthMessage(error));return;}
+   state.passwordRecovery=false;state.authMode='signin';state.authNotice=null;
+   const url=new URL(location.href);url.searchParams.delete('auth');url.searchParams.delete('type');
+   history.replaceState(null,'',url.pathname+url.search+url.hash);
+   await reload();
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
   return;
  }
  if(verb==='signout'){
   state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
-  state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;render();return;
+  state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;state.passwordRecovery=false;render();return;
  }
  if(verb==='complete-registration'){
   const name=id('profile-name')?.value.trim();
@@ -2208,7 +2237,11 @@ async function start(){
    state.user=session.user;
    setTimeout(()=>reload().catch(fail),0);
   }
-  if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];render();}
+  if(event==='PASSWORD_RECOVERY'){
+    state.passwordRecovery=true;state.showAuth=true;
+    state.user=session?.user||state.user;render();
+   }
+   if(event==='SIGNED_OUT'){state.user=null;state.profile=null;state.coupleId=null;state.wellbeing=null;state.personalPass=null;state.personalJournal=[];render();}
  });
 }
 // Version probe bypasses WebView/Chrome and service worker HTTP cache.
