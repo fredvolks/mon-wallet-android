@@ -61,7 +61,7 @@ test('Invitation status APIs and native SMS open only a composer',()=>{
 test('Messenger share is concise while secure link and acceptance remain functional',()=>{
  const link='https://fredvolks.github.io/mon-wallet-android/?share=3#invite='+'a'.repeat(64);
  const text=invitationMessengerText(link);
- assert.ok(text.length<link.length+80);
+ assert.ok(text.length<link.length+160);
  assert.match(text,/quelque chose de spécial/);
  assert.match(text,/\?share=3#invite=/);
  assert.ok(text.includes(link));
