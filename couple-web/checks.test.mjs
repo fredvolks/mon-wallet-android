@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
-import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown } from './evening-challenges.mjs';
+import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,resolvedCard } from './evening-challenges.mjs';
 import { drawSoloFace,isSharedCoupleReady,SOLO_MESSAGE } from './solo-mode.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
@@ -166,19 +166,28 @@ test('The evening shows exactly two categories and per-draw 80/20 odds',()=>{
  assert.match(app,/80 % de chances/);
  assert.doesNotMatch(app,/Aléatoire : Sexuel 40/);
 });
-test('All forty live evening cards have a positive minute duration',()=>{
+test('50 built-in cards and 20 optional creator-only slots',()=>{
  for(const category of EVENING_CATEGORIES){
-  assert.equal(EVENING_CHALLENGES[category].length,20);
-  for(let face=1;face<=20;face++){
-   const card=eveningCard(category,face);
+  assert.equal(EVENING_CHALLENGES[category].length,25);
+  for(let cardId=1;cardId<=25;cardId++){
+   const card=eveningCard(category,cardId);
    assert.ok(card.title.length>=5);
-   assert.ok(card.description.length>25);
-   assert.ok(card.minutes>=1&&card.minutes<=15);
+   assert.ok(card.description.length>35);
+   assert.ok(Number.isInteger(card.minutes)&&card.minutes>=0&&card.minutes<=15);
   }
+  const slots=customCardSlots(category);
+  assert.equal(slots.length,10);
+  assert.ok(slots.every(s=>s.cardId>=26&&s.cardId<=35&&!s.filled));
  }
- assert.equal(eveningCard('SENSUEL',3).minutes,10);
- assert.equal(eveningCard('SEXUEL',5).minutes,10);
+ assert.equal(eveningCard('SENSUEL',3).minutes,8);
+ assert.equal(eveningCard('SEXUEL',5).minutes,12);
+ assert.equal(eveningCard('SEXUEL',16).minutes,0);
  assert.throws(()=>eveningCard('COQUIN',1));
+ assert.throws(()=>eveningCard('SEXUEL',26));
+ const snapshot={category:'SEXUEL',card_id:29,face:5,card_title:'Une carte libre',
+  card_description:'Une proposition personnalisée sans durée.',card_timer_minutes:null};
+ assert.equal(resolvedCard(snapshot).minutes,null);
+ assert.equal(resolvedCard(snapshot).cardId,29);
 });
 test('Countdown uses a monotonic wall deadline, pause reset and optional signals',()=>{
  assert.equal(formatCountdown(600_000),'10:00');
@@ -406,4 +415,30 @@ test('Solo dice roll locally and shared database actions require two accounts',(
  }
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.ok(sw.includes('solo-mode.mjs'));
+});
+
+test('Creator-only access and private draws are enforced server side',()=>{
+ const sql=readFileSync(new URL('./creator-only-custom-challenges.sql',import.meta.url),'utf8');
+ assert.ok(sql.includes('owner_user_id'));
+ assert.ok(sql.includes('creator-only'));
+ assert.ok(sql.includes('love_custom_owner_read'));
+ assert.ok(sql.includes('save_love_custom_card'));
+ assert.ok(sql.includes('delete_love_custom_card'));
+ assert.ok(sql.includes('my_love_roll_status'));
+ assert.ok(sql.includes('both_rolls_ready'));
+ assert.ok(sql.includes('card_id between 26 and 35'));
+ assert.ok(sql.includes('card<=25'));
+ assert.ok(sql.includes('card_title,card_description,card_timer_minutes'));
+ assert.ok(app.includes("function isLoveAdmin()"));
+ assert.ok(app.includes("function renderCardLibrary()"));
+ assert.ok(app.includes("button('tab:library'"));
+ assert.ok(app.includes("Seul l’administrateur")||app.includes("Accès réservé à l’administrateur"));
+ assert.ok(app.includes('state.rollStatus?.both_ready'));
+ assert.ok(app.includes("p_card_id:state.customSlot"));
+ assert.ok(app.includes("state.couple?.owner_user_id===state.user?.id"));
+ assert.ok(app.includes("state.tab==='library')renderCardLibrary()"));
+ assert.ok(app.includes("challenge.cardId||active.card_id||active.face"));
+ assert.ok(app.includes("REÇOIT"));
+ assert.ok(app.includes("OFFRE"));
+ assert.ok(app.includes('Sans minuteur'));
 });
