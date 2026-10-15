@@ -27,20 +27,23 @@ fs.writeFileSync(path.join(__dirname,'__discover-actual-test.html'),html);
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.goto('http://127.0.0.1:8765/__discover-actual-test.html'+(invite?'?invite=1':''),{waitUntil:'load'});
   await page.locator('.love-discover').waitFor();
-  await page.locator('.discover-hero-premium').evaluate(el=>el.decode().catch(()=>{}));
-  const cta=page.locator(invite?'[data-action="invite-start"]':'.discover-accept[data-action="show-auth"]');
+  await page.locator('.discover-editorial-die>img').evaluate(el=>el.decode().catch(()=>{}));
+  const cta=page.locator(invite?'[data-action="invite-start"]':'.discover-accept[data-action="show-auth:signup"]');
   await cta.scrollIntoViewIfNeeded();
   const metrics=await page.evaluate(invite=>{
-   const hero=document.querySelector('.discover-hero-premium'),cta=document.querySelector('.discover-accept'),
-     buttons=[...document.querySelectorAll('[data-action="show-auth"],[data-action="invite-start"]')],r=cta.getBoundingClientRect();
+   const hero=document.querySelector('.discover-editorial-die>img'),cta=document.querySelector('.discover-accept'),
+     buttons=[...document.querySelectorAll('[data-action^="show-auth:"],[data-action="invite-start"]')],r=cta.getBoundingClientRect();
    return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,heroLoaded:hero.naturalWidth>100,
     primaryHeight:Math.round(r.height),primaryVisible:r.bottom>0&&r.top<innerHeight,
     actions:buttons.map(el=>el.dataset.action),hasRealDiscover:!!document.querySelector('.love-discover'),
+    realRows:document.querySelectorAll('.discover-editorial-item').length,
+    allRowsStatic:[...document.querySelectorAll('.discover-editorial-item')].every(x=>!x.hasAttribute('data-action')&&!x.querySelector('button,a')),
+    hasTitle:!!document.querySelector('.discover-editorial-title'),
     noFalseAcceptance:invite?!document.body.textContent.includes('Invitation acceptée'):true};
   },invite);
   console.log('Production-discover',config.name,invite?'invitation':'public',JSON.stringify({metrics,errors}));
   if(errors.length||metrics.scrollWidth>metrics.width+2||!metrics.heroLoaded||!metrics.hasRealDiscover||
-    !metrics.primaryVisible||metrics.primaryHeight<44||
+    !metrics.primaryVisible||metrics.primaryHeight<44||metrics.realRows!==4||!metrics.allRowsStatic||!metrics.hasTitle||
     metrics.actions.length!==(invite?1:2)||!metrics.noFalseAcceptance)
    throw Error('Le vrai parcours découverte déborde ou manque une commande: '+config.name+' '+(invite?'invite':'public'));
   await page.screenshot({path:'landing-captures/'+config.name+'-ACTUEL-'+(invite?'INVITATION':'ACCUEIL')+'.png',fullPage:true});
