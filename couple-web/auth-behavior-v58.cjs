@@ -121,6 +121,16 @@ async function open(browser,mode,extra=''){
   console.log('BEHAVIOR_OK','signup confirmation gate, resend requested but receipt unproven, return signin');
   await page.close();
  }
+ // Expired recovery token should not strand the user on an unusable password editor.
+ {
+  const {page,errors}=await open(browser,'anonymous','&auth=recover&error_code=otp_expired');
+  await page.locator('[data-action="auth-signin-password"]').waitFor({timeout:20000});
+  if(await page.locator('[data-action="auth-update-password"]').count())throw Error('Expired link left password update form enabled');
+  if(!(await page.locator('#auth-form-feedback').innerText()).includes('expiré'))throw Error('Expired link error is not visible');
+  if(errors.length)throw Error('Expired recovery errors '+JSON.stringify(errors));
+  console.log('BEHAVIOR_OK','expired recovery returns to sign-in without loop');
+  await page.close();
+ }
  // An existing valid invite must retain its UUID through reload without creating another.
  {
   const {page,errors}=await open(browser,'owner');
