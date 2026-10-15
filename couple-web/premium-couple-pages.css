@@ -408,3 +408,11 @@ main#app.loveroll-evening-page .evening-empty{overflow-y:auto;justify-content:fl
 @media(prefers-reduced-motion:reduce){
  main#app.loveroll-evening-page .evening-choice-btn{transition:none!important}
 }
+
+/* Recover die viewing area on the S25 while keeping the roll button 46px. */
+@media (min-height:761px) and (max-width:650px){
+ main#app.loveroll-evening-page .evening-user-die{
+  grid-template-rows:15px minmax(0,1fr) auto;
+  padding:3px;gap:1px;
+ }
+}
