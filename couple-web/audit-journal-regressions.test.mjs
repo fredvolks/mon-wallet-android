@@ -62,3 +62,14 @@ test('Actual landing and invitation are tested from discoverHtml, not legacy mar
  assert.match(visual,/primaryHeight<44/);
  assert.doesNotMatch(visual,/marketingHtml/);
 });
+
+test('Only the current couple can learn playable counts; private catalogue text remains inaccessible',()=>{
+ assert.match(sql,/create or replace function public\.my_love_evening_card_totals/);
+ assert.match(sql,/couple_private\.is_member\(p_couple\)/);
+ assert.match(sql,/count\(\*\) filter\(where c\.category='SENSUEL'\)/);
+ assert.match(sql,/count\(\*\) filter\(where c\.category='SEXUEL'\)/);
+ assert.match(sql,/c\.card_id between 26 and 35/);
+ assert.match(sql,/revoke all on function public\.my_love_evening_card_totals/);
+ assert.match(app,/rpc\('my_love_evening_card_totals'/);
+ assert.match(app,/playable:state\.playableCounts/);
+});
