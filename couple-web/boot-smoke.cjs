@@ -63,6 +63,20 @@ export function createClient(){
    if(args?.provider!=='google'||args.options?.queryParams?.prompt!=='select_account')
     throw Error('Google OAuth selector missing '+JSON.stringify(args));
   }
+  if(name==='existing-paired'){
+   // Regression: tap Soirée after weekly reset. This used to throw
+   // Cannot read properties of null (reading 'items') on Samsung.
+   await page.locator('.nav [data-action="tab:session"]').click();
+   await page.locator('.evening-locked-view').waitFor({timeout:10000});
+   const copy=await page.locator('.evening-locked-view').innerText();
+   if(!copy.includes('Brassez')||errors.length)
+    throw Error('S25 Soirée access after reset broke '+JSON.stringify({copy:copy.slice(0,200),errors}));
+   if((await page.locator('.toast.visible').allInnerTexts()).some(t=>/reading ['"]items['"]/.test(t)))
+    throw Error('S25 user still sees null items error');
+   await page.locator('[data-action="tab:home"]').last().click();
+   await page.locator('.real-home-shell').waitFor({timeout:10000});
+   console.log('SOIREE_LOCKED_ACCESS_OK','Samsung viewport: weekly reset, no feedback items, no technical error');
+  }
   console.log('BOOT_OK',name,text.slice(0,180).replace(/\\s+/g,' '));
   await page.close();
  }
