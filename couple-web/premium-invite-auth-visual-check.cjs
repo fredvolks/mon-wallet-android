@@ -9,7 +9,7 @@ const fs=require('node:fs'),path=require('node:path');
  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
  <link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./premium-theme.css">
  <link rel="stylesheet" href="./discover.css"><link rel="stylesheet" href="./approved-artwork.css">
- <link rel="stylesheet" href="./satin-reference.css"><link rel="stylesheet" href="./invite-account.css">
+ <link rel="stylesheet" href="./satin-reference.css"><link rel="stylesheet" href="./invite-account.css"><link rel="stylesheet" href="./invitation-poster.css"><link rel="stylesheet" href="./responsive-tablet-desktop.css">
  </head><body><main id="app"></main><script type="module">
  import {discoverHtml} from './discover.mjs';
  import {authHtml} from './onboarding.mjs';
@@ -38,7 +38,10 @@ const fs=require('node:fs'),path=require('node:path');
   {name:'S25-Ultra-short',width:412,height:824},
   {name:'iPhone',width:393,height:852},
   {name:'Android-small',width:360,height:700},
-  {name:'keyboard-open',width:412,height:550}
+  {name:'keyboard-open',width:412,height:550},
+  {name:'iPad-portrait',width:820,height:1180},
+  {name:'iPad-landscape',width:1180,height:820},
+  {name:'Windows-PC',width:1440,height:900}
  ]){
   const page=await browser.newPage({viewport:{width:v.width,height:v.height},deviceScaleFactor:2,isMobile:true,hasTouch:true});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -50,10 +53,12 @@ const fs=require('node:fs'),path=require('node:path');
    return {screen:innerWidth,scroll:document.documentElement.scrollWidth,
     imageLoaded:img?.complete&&img.naturalWidth>100,rows:rows.length,
     informational:rows.every(x=>!x.querySelector('button,a')&&!x.dataset.action),
+    posterWidth:Math.round(document.querySelector('.love-discover').getBoundingClientRect().width),
     editorial:document.querySelector('.discover-editorial-title')?.textContent};
   });
   if(first.scroll>first.screen+2||first.rows!==4||!first.informational||!first.imageLoaded||
-     !first.editorial.includes('Ce soir')||errors.length)
+     !first.editorial.includes('Ce soir')||errors.length||
+     (v.width>=1100&&first.posterWidth<980)||(v.width>=768&&v.width<1100&&first.posterWidth<720))
    throw Error('Invitation layout '+v.name+' '+JSON.stringify({first,errors}));
   await page.locator('[data-action="invite-start"]').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(captures,v.name+'-PAGE1-INVITATION-v58.png'),fullPage:true});
@@ -63,10 +68,11 @@ const fs=require('node:fs'),path=require('node:path');
    const button=document.querySelector('[data-action="auth-signup-password"]').getBoundingClientRect();
    return {horizontal:document.documentElement.scrollWidth>innerWidth+2,submitHeight:button.height,
     signup:!!document.querySelector('.invite-auth-segments .is-active[data-action="auth-mode:signup"]'),
+    formWidth:Math.round(document.querySelector('.invite-account-screen').getBoundingClientRect().width),
     email:document.querySelector('#signin-email')?.type,
     pass:document.querySelector('#signin-password')?.type};
   });
-  if(signup.horizontal||signup.submitHeight<44||!signup.signup||signup.email!=='email'||signup.pass!=='password'||errors.length)
+  if(signup.horizontal||signup.submitHeight<44||!signup.signup||signup.email!=='email'||signup.pass!=='password'||errors.length||(v.width>=768&&signup.formWidth<550))
    throw Error('Signup layout '+v.name+JSON.stringify({signup,errors}));
   await page.screenshot({path:path.join(captures,v.name+'-PAGE2-CREER-v58.png'),fullPage:true});
   await page.locator('[data-action="auth-eye"]').click();
