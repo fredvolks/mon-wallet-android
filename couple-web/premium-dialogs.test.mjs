@@ -36,7 +36,7 @@ test('Gift and dissociation are styled as premium accessible actions, not browse
  assert.match(styles,/\.lr-dialog-card/);
  assert.match(styles,/\.lr-dialog-icon/);
  assert.match(styles,/\.lr-dialog-accept\.lr-dialog-danger/);
- assert.match(html,/premium-dialogs\.css\?v=20261014-surprise53/);
+ assert.match(html,/premium-dialogs\.css\?v=20261014-couple54/);
  assert.match(sw,/premium-dialogs\.mjs/);
 });
 test('Result toast respects device safe area and displays only official number',()=>{
