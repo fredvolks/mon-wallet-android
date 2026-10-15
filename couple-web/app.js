@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-profile45';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-profile45';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-profile45';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-auth46';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-auth46';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-auth46';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-profile45';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-auth46';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -20,12 +20,12 @@ import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,o
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
-import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup} from './push-notifications.mjs';
+import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken} from './push-notifications.mjs';
 import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
-const WEB_RELEASE='2026-10-14.45';
+const WEB_RELEASE='2026-10-14.46';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -135,7 +135,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  bindActions();
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-profile45').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-auth46').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -389,7 +389,7 @@ async function reload(){
   query('love_push_preferences',{eq:{user_id:state.user.id}})
  ]);
  state.pushPrefs=pushSettings[0]||{enabled:false,weekly:true,invitation:true,monthly:true,special:true};
- const nativeToken=window.LoveRollNativeAuth?.nativePushToken?.();
+ const nativeToken=safeNativePushToken();
  if(state.pushPrefs.enabled&&nativeToken){
   client.rpc('love_claim_native_push_token',{p_token:nativeToken})
    .then(({error})=>{if(error)console.warn('Enregistrement FCM impossible',error.code||'');});
@@ -1635,7 +1635,7 @@ async function handle(action,element){
   render();return;
  }
  if(verb==='switch-account-invite'){
-  if(state.user&&window.LoveRollNativeAuth?.nativePushToken?.()){
+  if(state.user&&safeNativePushToken()){
    try{await disablePush(client,state.user.id);}catch(error){console.warn('Déconnexion FCM',error.code||'');}
   }
   if(!pendingInviteReference(sessionStorage))throw Error('Invitation introuvable.');
@@ -1838,7 +1838,17 @@ async function handle(action,element){
  }
  if(verb==='show-landing'){state.showDiscover=false;state.showAuth=false;render();return;}
  if(verb==='google'&&window.LoveRollNativeAuth?.googleSignIn){
-  window.LoveRollNativeAuth.googleSignIn();return;
+  try{
+   state.authNotice='Connexion Google en cours… Sélectionnez votre compte dans la fenêtre Android.';
+   const message=id('auth-form-feedback');
+   if(message)message.textContent=state.authNotice;
+   window.LoveRollNativeAuth.googleSignIn();
+  }catch(error){
+   state.authNotice='Connexion Google Android indisponible. Réessayez, ou utilisez le courriel et le mot de passe de votre compte existant.';
+   const message=id('auth-form-feedback');
+   if(message)message.textContent=state.authNotice;
+  }
+  return;
  }
  if(verb==='google'||verb==='apple'){
   sessionStorage.setItem('authStarted','1');
@@ -1967,7 +1977,7 @@ async function handle(action,element){
   return;
  }
  if(verb==='signout'){
-  if(state.user&&window.LoveRollNativeAuth?.nativePushToken?.()){
+  if(state.user&&safeNativePushToken()){
    try{await disablePush(client,state.user.id);}catch(err){console.warn('Désinscription FCM',err.code||'');}
   }
   state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
@@ -2425,8 +2435,11 @@ document.addEventListener('visibilitychange',()=>{
 // Android native Google chooser passes the selected ID token to Supabase.
 window.addEventListener('loveroll-native-google-result',async event=>{
  const {token,nonce,error}=event.detail||{};
- if(error){notify(error);return;}
- if(!token){notify('Aucun identifiant Google reçu.');return;}
+ if(error){
+  state.authNotice=error;
+  authMessage(error);return;
+ }
+ if(!token){authMessage('Aucun identifiant Google reçu. Réessayez ou connectez-vous avec votre mot de passe.');return;}
  try{
   const result=await client.auth.signInWithIdToken({provider:'google',token,nonce});
   if(result.error)throw result.error;
@@ -2434,12 +2447,15 @@ window.addEventListener('loveroll-native-google-result',async event=>{
    state.user=result.data.user;state.showAuth=false;
    await reload();
   }
- }catch(err){fail(err);}
+  }catch(err){
+  authMessage('Google n’a pas pu ouvrir la session LoveRoll. Vérifiez le compte choisi et réessayez, ou utilisez votre mot de passe.');
+  console.warn('Google Supabase auth failed',err?.code||'unknown');
+ }
 });
 start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-profile45',
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-auth46',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
