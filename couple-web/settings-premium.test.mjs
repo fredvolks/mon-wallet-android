@@ -13,7 +13,7 @@ test('Eight settings groups remain present and collapsed unless remembered',()=>
  for(const label of ['Compte','Couple','Notifications','Jeu et personnalisation',
   'Administration','Application','Confidentialité','Aide'])
   assert.ok(app.includes("settingGroup('"+label+"'"),label);
- assert.match(app,/adminWeekly\|\|'<p class="settings-limited">/);
+ assert.match(app,/isLoveAdmin\(\)\?settingGroup\('Administration'/);
  assert.match(app,/sessionStorage\.getItem\('loveroll-settings-section'\)/);
 });
 
