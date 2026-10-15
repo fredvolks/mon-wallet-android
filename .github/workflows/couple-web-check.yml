@@ -401,6 +401,9 @@ jobs:
       - name: Real app boot in Chromium (anonymous, Google callback, existing session)
         run: node couple-web/boot-smoke.cjs
 
+      - name: Verify REAL account and invite behaviors against mocked Supabase API
+        run: node couple-web/auth-behavior-v58.cjs
+
       - name: Verify REAL public discover and invitation on Android / iPhone responsive widths
         run: node couple-web/actual-discover-visual-check.cjs
 
