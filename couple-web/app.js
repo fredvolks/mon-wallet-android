@@ -128,7 +128,65 @@ async function query(table,options={}){
  if(options.order)q=q.order(options.order,{ascending:options.asc??false});
  const {data,error}=await q;if(error)throw error;return data;
 }
+
+// Unsaved form text lives ONLY in process memory: no LocalStorage, logs or cloud.
+// It is restored after partner realtime refreshes and activity resume.
+let lastFormTab=null;
+function snapshotDraft(){
+ const inputs=[...root.querySelectorAll('input[id],select[id],textarea[id]')].filter(el=>
+  !el.disabled&&!el.readOnly&&!['password','file','hidden'].includes(el.type));
+ return inputs.filter(el=>el.type==='checkbox'||el.type==='radio'?
+   el.checked!==el.defaultChecked:el.value!==el.defaultValue).map(el=>({
+    id:el.id,value:el.value,checked:el.checked,type:el.type
+ }));
+}
+function hasUnsavedForm(){return snapshotDraft().length>0;}
+function restoreDraft(draft){
+ for(const field of draft||[]){
+  const el=document.getElementById(field.id);
+  if(!el||!root.contains(el)||['password','file','hidden'].includes(el.type))continue;
+  if(field.type==='checkbox'||field.type==='radio')el.checked=field.checked;
+  else el.value=field.value;
+ }
+}
+function backFromLoveRoll(){
+ if(document.querySelector('.lr-dialog-overlay'))return true;
+ if(state.showEveningChallenge){state.showEveningChallenge=false;render();return true;}
+ if(state.showSurpriseActivity){state.showSurpriseActivity=false;render();return true;}
+ if(state.adventSelected!==null){state.adventSelected=null;render();return true;}
+ if(state.adventHistory){state.adventHistory=false;render();return true;}
+ if(state.eveningMore){state.eveningMore=false;render();return true;}
+ if(state.confirmCancel){state.confirmCancel=false;render();return true;}
+ if(state.specialFocus){state.specialFocus=null;state.tab='special';render();return true;}
+ const parent={
+  library:'settings','monthly-library':'settings','advent-editor':'settings',
+  'special-editor':'settings','personal-journal':'settings',journal:'session',
+  feedback:'session',occasions:'special',ideas:'home',invitation:'settings'
+ }[state.tab];
+ const target=parent||state.tab!=='home'?'home':null;
+ const destination=parent||target;
+ if(destination){
+  handle('tab:'+destination).catch(fail);
+  return true;
+ }
+ if(hasUnsavedForm()){
+  premiumConfirm('Vous avez une saisie non enregistrée. La quitter sans enregistrer ?',{
+   kind:'library',title:'Quitter le formulaire ?',accept:'Quitter',cancel:'Continuer'
+  }).then(ok=>{if(ok){restoreDraft([]);notify('Saisie non enregistrée : vérifiez avant de quitter LoveRoll.');}});
+  return true;
+ }
+ return false;
+}
+window.loveRollHandleBack=backFromLoveRoll;
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&!document.querySelector('.lr-dialog-overlay')){
+  if(backFromLoveRoll())event.preventDefault();
+ }
+});
+
 function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
+ const draft=lastFormTab===state.tab?snapshotDraft():[];
+ lastFormTab=state.tab;
  const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
  const isCouple=connected&&isSharedCoupleReady(state.coupleId,state.members);
  const realHome=isCouple&&state.tab==='home';
@@ -168,6 +226,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   '<p>Aucune notification pour le moment.</p>')+
   '<button data-action="home-notices" class="subtle">Fermer</button></div>':'';
  root.innerHTML=(realHome?homeHeader:usualHeader)+body+notifications+(connected?nav():'')+installation;
+ restoreDraft(draft);
  bindActions();
  // Render idle evening D6 in WebGL too: each side is a neutral heart,
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
@@ -2183,6 +2242,10 @@ async function handle(action,element){
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
   if(['library','monthly-library','advent-editor','special-editor'].includes(parts[0])&&!isLoveAdmin())
    throw Error('Modification réservée à l’administrateur du couple.');
+  if(parts[0]!==state.tab&&hasUnsavedForm()&&
+    !(await premiumConfirm('Vos modifications non enregistrées seront perdues. Voulez-vous quitter cette page ?',{
+      kind:'library',title:'Quitter sans enregistrer ?',accept:'Quitter',cancel:'Rester'
+    })))return;
   state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.eveningMore=false;}
