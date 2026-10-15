@@ -270,3 +270,23 @@ test('Seventh day after the occasion is the last available day, then next year',
  const after=sixSpecialEvents(new Date('2026-10-22T16:00:00Z'),settings,people);
  assert.equal(after[0].year,2027);
 });
+
+test('Fullscreen v61 renders all six event choices in two columns and three rows',()=>{
+ const responsive=read('responsive-fullscreen.css');
+ const html=premiumSurpriseHtml({members:people,monthly:{},settings:{}});
+ assert.equal((html.match(/class="surprise-event-card /g)||[]).length,6);
+ assert.equal((html.match(/class="surprise-event-details"/g)||[]).length,6);
+ assert.match(responsive,/surprise-special-grid/);
+ assert.match(responsive,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+ assert.match(responsive,/grid-template-rows:repeat\(3,minmax\(0,1fr\)\)!important/);
+ assert.match(responsive,/var\(--lr-nav-space\)/);
+ assert.match(responsive,/overflow-y:auto!important/);
+});
+test('Soirée never crashes if the last session and feedback status are both missing',()=>{
+ assert.doesNotMatch(app,/const official=state.feedbackStatus\?\.sessionId===last\?\.id\?state.feedbackStatus.items:null/);
+ assert.match(app,/const official=last&&state.feedbackStatus\?\.sessionId===last.id&&Array.isArray/);
+ assert.match(app,/if\(!state.weekly\)\{/);
+ assert.match(app,/evening-locked-view/);
+ assert.match(app,/Brassez d’abord le dé hebdomadaire/);
+ assert.match(app,/if\(parts\[0\]==='session'&&!state.weekly\)/);
+});
