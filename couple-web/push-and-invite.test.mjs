@@ -44,7 +44,7 @@ test('PWA push displays generic notification without leaking personal journal',(
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert.match(sw,/self\.addEventListener\('push'/);
  assert.match(sw,/self\.addEventListener\('notificationclick'/);
- assert.match(sw,/loveroll-static-v46/);
+ assert.match(sw,/loveroll-static-v47/);
  assert.match(app,/notificationSettingsMarkup\(state\.pushPrefs\|\|\{\}\)/);
  assert.match(app,/sendTestPush\(client\)/);
  assert.match(app,/enablePush\(client,state\.user\.id\)/);
