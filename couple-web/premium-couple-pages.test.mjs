@@ -26,18 +26,49 @@ test('Evening reuses both real partner names, two D6, one D35 and existing actio
  assert.match(html,/12 % autre/);
  assert.doesNotMatch(html,/Fred|Émilie|Player 1/);
 });
-test('Private personal D6 results remain hidden until BOTH partner rolls are complete',()=>{
- const html=premiumEveningHtml({session,members:people,me:'first',
-  rolls:[{user_id:'first',face:5}],status:{both_ready:false,my_rolled:true,partner_rolled:false},
+test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 2 remains locked',()=>{
+ const first=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:4}],status:{both_ready:false,my_rolled:true,partner_rolled:false},
   turn:{ready:false}});
- assert.doesNotMatch(html,/5 défis ce soir/);
- assert.match(html,/Résultat caché/);
- assert.match(html,/Étape 2 verrouillée/);
- assert.match(html,/En attente/);
- assert.match(html,/data-action="new-challenge"[^>]*disabled/);
- const otherUser=premiumEveningHtml({session,members:people,me:'second',
-  rolls:[{user_id:'first',face:5}],status:{both_ready:false,my_rolled:false,partner_rolled:true},turn:{}});
- assert.match(otherUser,/data-action="my-d6"/);
+ assert.match(first,/data-dice-sides="6" data-face="4"/);
+ assert.match(first,/aria-label="Total actuel 4 défis; dé initial 4"><strong>4<\/strong>/);
+ assert.match(first,/Étape 2 verrouillée/);
+ assert.match(first,/data-action="new-challenge"[^>]*disabled/);
+ assert.doesNotMatch(first,/Dé initial : 4/);
+ assert.equal((first.match(/data-dice-sides="6"/g)||[]).length,2,'Keep two consistent D6 components');
+ assert.match(first,/class="love3d-stage is-unrolled"/);
+ assert.match(first,/data-dice-unrolled="true"/);
+ assert.match(css,/\.love3d-stage\.is-unrolled \.dice-canvas\{visibility:hidden/);
+ assert.match(app,/canvas\.dataset\.diceUnrolled!=='true'/);
+ // Server RLS hides the first player's result from the other account
+ // until BOTH have rolled; only the owner can view their early face.
+ const secondView=premiumEveningHtml({session,members:people,me:'second',
+  rolls:[],status:{both_ready:false,my_rolled:false,partner_rolled:true},
+  turn:{ready:false}});
+ assert.doesNotMatch(secondView,/aria-label="Total actuel 4 défis/);
+ assert.match(secondView,/data-action="my-d6"/);
+ const both=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:4},{user_id:'second',face:2}],
+  status:{both_ready:true,my_rolled:true,partner_rolled:true},
+  turn:{...turns,targets:{first:4,second:2}}});
+ assert.match(both,/data-dice-sides="6" data-face="4"/);
+ assert.match(both,/aria-label="Total actuel 4 défis; dé initial 4"><strong>4<\/strong>/);
+ assert.match(both,/data-dice-sides="6" data-face="2"/);
+ assert.match(both,/Étape 2 débloquée/);
+ const spinning=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:4}],status:{both_ready:false,my_rolled:true,partner_rolled:false},
+  rolling:true,rollingKind:'my-d6',rollFace:4,turn:{ready:false}});
+ assert.match(spinning,/Brassage…/);
+ assert.doesNotMatch(spinning,/aria-label="Total actuel 4 défis/);
+ const migration=read('migrations/20261014_d6_immediate_official_result.sql');
+ assert.match(migration,/RETURN r;/);
+ assert.doesNotMatch(migration,/r\.face\s*:=\s*null/i);
+ assert.match(migration,/couple_private\.is_member/);
+ assert.match(migration,/user_id=auth\.uid\(\)/);
+ assert.match(migration,/couple_private\.both_rolls_ready\(session_id\)/);
+ assert.match(migration,/love_require_verified_identity/);
+ assert.doesNotMatch(app,/Number\(result\?\.face\)\|\|1/);
+ assert.match(app,/Le serveur n’a pas confirmé le résultat officiel/);
 });
 test('Giving challenges updates both Step 1 totals while the dice show original faces',()=>{
  // Original dice: Camille 5, Noémie 2; two gifts transfer from Camille to Noémie.
@@ -60,11 +91,13 @@ test('Giving challenges updates both Step 1 totals while the dice show original 
   status:{both_ready:true},turn:{...gifted,targets:{first:5,second:2}}});
  assert.doesNotMatch(normal,/Dé initial :/);
  assert.match(normal,/aria-label="Total actuel 5 défis; dé initial 5"><strong>5<\/strong>/);
- // When the second D6 is not rolled yet, no totals are revealed.
+ // Before the second D6, the first official face remains visible but no
+ // gift-adjusted totals or step-2 progress are available.
  const waiting=premiumEveningHtml({session,members:people,me:'first',
   rolls:[{user_id:'first',face:5}],status:{both_ready:false},
   turn:{...gifted,ready:false}});
- assert.doesNotMatch(waiting,/Total actuel/);
+ assert.match(waiting,/Total actuel 5 défis/);
+ assert.doesNotMatch(waiting,/Total actuel 3 défis/);
  assert.doesNotMatch(waiting,/Dé initial :/);
 });
 test('D35 always visible and rolling face not displayed as text before settling',()=>{

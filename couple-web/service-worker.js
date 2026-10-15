@@ -1,4 +1,4 @@
-const CACHE='loveroll-static-v46';
+const CACHE='loveroll-static-v47';
 const SHELL=['./','./index.html','./app.js','./styles.css','./premium-theme.css','./premium-home.css','./premium-couple-pages.css','./premium-advent.css','./premium-advent.mjs','./settings-premium.css','./invite-account.css','./premium-evening.mjs','./premium-surprise.mjs','./satin-reference.css','./premium-home.mjs','./discover.css','./approved-artwork.css','./demo-couple.css','./demo-couple.mjs','./assets/loveroll-die-approved.webp','./assets/loveroll-invitation-hero-hd.webp','./discover.mjs','./invite-links.mjs','./email-auth.mjs','./dice3d.js',
  './special-occasions.mjs','./evening-challenges.mjs','./monthly-activities.mjs','./advent-calendar.mjs','./private-special-events.mjs','./onboarding.mjs','./evening-turns.mjs','./wellbeing.mjs',
  './config.js','./invite-email.mjs','./push-notifications.mjs','./home-install.mjs','./couple-dashboard.mjs','./web-version.json','./manifest.webmanifest','./assets/loveroll-hero.webp','./assets/loveroll-messenger-og-v43.jpg'];
