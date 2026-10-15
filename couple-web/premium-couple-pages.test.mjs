@@ -159,11 +159,34 @@ test('Surprise page has official D20, D6, six custom event cards and correct par
  assert.match(html,/1 · 2 · 3/);
  assert.match(html,/4 · 5 · 6/);
  assert.match(html,/Camille/);assert.match(html,/Noémie/);
- assert.match(html,/data-action="roll:monthly_activity"/);
+ assert.match(html,/data-action="roll:monthly_activity">Brasser le dé<\/button>/);
+ assert.match(html,/Brasse le dé pour découvrir une des 20 activités du mois\./);
+ assert.doesNotMatch(html,/Brasse le dé 20 faces pour découvrir/);
  assert.match(html,/data-action="roll:monthly_host"[^>]*disabled/);
+ assert.match(html,/class="surprise-host-die"/);
+ assert.match(html,/class="love3d love3d-6"/);
+ assert.match(html,/data-dice-unrolled="true"/);
+ assert.match(html,/data-dice-markers="hearts"/);
+ assert.match(css,/\.surprise-host-die \.love3d-stage\.is-unrolled \.dice-canvas\{visibility:visible!important\}/);
+ assert.match(css,/\.surprise-host>\.surprise-primary:disabled/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\) minmax\(82px,\.9fr\) minmax\(0,1fr\)/);
  assert.match(html,/Fête des Mères/);
  assert.match(html,/Fête des Pères/);
  assert.match(html,/data-action="open-occasion:birthday:first"/);
+});
+test('Monthly D20 unlocks the separate D6 button without covering partner cards',()=>{
+ const html=premiumSurpriseHtml({members:people,monthly:{monthly_activity:{face:13}},
+  activity:{title:'Une escapade',description:'Une sortie pour deux'}});
+ assert.match(html,/data-action="surprise-activity"/);
+ assert.doesNotMatch(html,/data-action="roll:monthly_activity"/);
+ assert.match(html,/data-action="roll:monthly_host">🎲 Brasser le dé 6 faces<\/button>/);
+ assert.match(html,/class="surprise-host-grid"[^>]*>[\s\S]*class="surprise-host-die"[\s\S]*class="surprise-host-partner"/);
+ assert.match(css,/\.surprise-host-grid\{[\s\S]*flex:0 0 83px/);
+ assert.match(css,/\.surprise-host>\.surprise-primary\{[\s\S]*margin:1px auto 0!important/);
+ const assigned=premiumSurpriseHtml({members:people,monthly:{
+  monthly_activity:{face:13},monthly_host:{face:5}}});
+ assert.match(assigned,/Noémie prépare notre rendez-vous/);
+ assert.doesNotMatch(assigned,/data-action="roll:monthly_host"/);
 });
 test('Special event Canadian date rollovers and missing anniversary remain correct',()=>{
  const settings={anniversary_md:'01-04',birthday_by_user:{first:'02-29',second:'12-25'}};
