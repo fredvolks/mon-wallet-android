@@ -141,7 +141,9 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   '<button data-action="home-notices" class="subtle">Fermer</button></div>':'';
  root.innerHTML=(realHome?homeHeader:usualHeader)+body+notifications+(connected?nav():'')+installation;
  bindActions();
- const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')].filter(canvas=>canvas.dataset.diceUnrolled!=='true');
+ // Render idle evening D6 in WebGL too: each side is a neutral heart,
+ // never a fabricated pip result. Actual face comes from Supabase after rolling.
+ const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
   import('./dice3d.js?v=20261014-home49').then(({dieOn})=>{
    if(token!==renderToken)return;
