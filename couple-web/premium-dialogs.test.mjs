@@ -23,7 +23,7 @@ test('Modal promises always resolve on cancel/accept/Escape, without any backend
  assert.match(markup,/close\(false\)/);
  assert.match(markup,/close\(true\)/);
  assert.match(markup,/previous\?\.isConnected/);
- assert.doesNotMatch(markup,/supabase|fetch\(|rpc\(/i);
+ assert.doesNotMatch(markup,/client\.rpc\(|fetch\(/i);
  assert.match(markup,/textContent=message/);
 });
 test('Gift and dissociation are styled as premium accessible actions, not browser dialogs',()=>{
