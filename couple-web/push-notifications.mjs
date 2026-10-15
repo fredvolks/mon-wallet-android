@@ -29,17 +29,17 @@ export async function enablePush(client,userId){
  const e=pushEnvironment();
  if(e.native){
   if(!safeNativePushConfigured())
-   throw Error('FCM n’est pas configuré dans cette version APK. Les identifiants Firebase publics sont nécessaires.');
+   throw Error('Les notifications à distance ne sont pas disponibles dans cette version de LoveRoll.');
   const token=await new Promise((resolve,reject)=>{
    const listener=event=>{clearTimeout(timeout);window.removeEventListener('loveroll-native-push-token',listener);resolve(event.detail?.token);};
    const timeout=setTimeout(()=>{
     window.removeEventListener('loveroll-native-push-token',listener);
-    reject(Error('Jeton Firebase non reçu. Vérifiez les autorisations et votre connexion.'));
+    reject(Error('Activation non confirmée par votre téléphone. Vérifiez les autorisations de notification et votre connexion.'));
    },25000);
    window.addEventListener('loveroll-native-push-token',listener,{once:true});
    window.LoveRollNativeAuth.enableRemotePush();
   });
-  if(!token)throw Error('Firebase n’a pas fourni de jeton.');
+  if(!token)throw Error('Activation non confirmée par votre téléphone. Réessayez.');
   const {error:claimError}=await client.rpc('love_claim_native_push_token',{p_token:token});
   if(claimError)throw claimError;
   const {error:prefError}=await client.from('love_push_preferences')
@@ -121,8 +121,8 @@ export function notificationSettingsMarkup(prefs={}){
   const active=configured&&!!token&&enabled;
   status='<strong>'+(active?'✓ Notifications Android enregistrées':
    configured?'Autorisation ou inscription nécessaire':'Notifications distantes non disponibles')+'</strong>'+
-   '<p>'+(configured?'Service Firebase disponible sur cet APK. ':
-   'FCM nécessite la configuration Firebase native dans une prochaine version signée. ')+
+   '<p>'+(configured?'Service de notifications disponible sur cet appareil. ':
+   'Les notifications à distance nécessitent une mise à jour de LoveRoll. ')+
    (local?'Rappel local du lundi 9 h actif.':'Rappel local du lundi 9 h inactif.')+'</p>';
   actions=(configured?(active?
    '<button class="subtle" data-action="push-disable">Désactiver les notifications</button>'+
