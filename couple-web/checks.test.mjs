@@ -435,7 +435,7 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("save_love_card_with_roles"));
  assert.ok(app.includes("button('tab:library','♡ Nos 70 défis')"));
  assert.ok(app.includes("renderInvitePanel()"));
- assert.ok(app.includes("button('invite',latest?'↻ Renouveler mon lien sécurisé'"));
+ assert.ok(app.includes("button('invite','Remplacer le lien actuel'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
  assert.ok(app.includes("button('tab:personal-journal','Ouvrir mon calendrier personnel')"));
  assert.ok(!app.includes("if(verb==='skip-couple')"));
