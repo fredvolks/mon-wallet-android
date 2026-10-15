@@ -12,7 +12,7 @@ let runningBrowser=null;
   const index=await fetch(url+'?diagnostic='+Date.now(),
    {signal:controller.signal,cache:'no-store'});
   const html=await index.text();
-  version=html.match(/app\\.js\\?v=([^"']+)/)?.[1]||'missing';
+  version=html.match(/app\.js\?v=([^"']+)/)?.[1]||'missing';
   const res=await fetch(url+'app.js?v='+encodeURIComponent(version)+'&diagnostic='+Date.now(),
    {signal:controller.signal,cache:'no-store'});
   status=res.status;remote=await res.text();
