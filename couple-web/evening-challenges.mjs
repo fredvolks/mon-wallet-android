@@ -317,3 +317,10 @@ export function resolvedCard(draw){
  }
  return {...eveningCard(draw.category,cardId),cardId};
 }
+
+// Count only playable saved cards, never optional blank slots.
+export function playableEveningCount(cards=[]){
+ const sensual=editableCardSlots('SENSUEL',cards).filter(x=>x.filled).length;
+ const sexual=editableCardSlots('SEXUEL',cards).filter(x=>x.filled).length;
+ return {sensual,sexual,total:sensual+sexual};
+}
