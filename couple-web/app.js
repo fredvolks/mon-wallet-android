@@ -1011,7 +1011,7 @@ function renderOccasions(){
    day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
   }).format(new Date(ev.date+'T12:00:00Z')):'Date non définie';
   body+='<p class="occasion-date">'+safe(eventDate)+
-   (ev.daysLeft!==null?' · '+(ev.daysLeft<0?'Disponible encore '+(7+ev.daysLeft)+' jours':
+   (ev.daysLeft!==null?' · '+(ev.daysLeft<0?(ev.daysLeft<=-7?'Dernier jour de disponibilité':'Disponible encore '+(7+ev.daysLeft)+' jours'):
     ev.daysLeft===0?'Disponible aujourd’hui':'Dans '+ev.daysLeft+' jours'):'')+'</p>';
   if(!role.shared&&!role.receiver){
    body+='<p class="tag">Personne célébrée non renseignée. L’administrateur la désigne dans Réglages.</p>';
