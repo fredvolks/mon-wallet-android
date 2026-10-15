@@ -72,3 +72,16 @@ jobs:
       - name: Déployer sur Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Vérifier le site réellement publié et la console de Chromium
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            echo "Validation production - tentative $attempt"
+            if LOVEROLL_REQUIRE_HEALTHY=1 node couple-web/boot-diagnostic.cjs; then
+              echo "LoveRoll Pages démarre réellement sur le domaine public."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Le site public ne démarre pas avec la version publiée."
+          exit 1
