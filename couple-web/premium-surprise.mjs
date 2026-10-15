@@ -77,9 +77,10 @@ export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new D
  '<div class="surprise-special-grid">'+cards.map((e,i)=>
   button('open-occasion:'+e.key+':'+(e.owner||'-'),
    '<span class="surprise-event-symbol" aria-hidden="true">'+eventSymbol(e.key)+'</span>'+
-   '<span class="surprise-event-title">'+esc(e.title)+'</span>'+
-   '<span class="surprise-event-days">'+(e.daysLeft===null?'Configurer la date':e.availability||e.daysLeft+' jours')+'</span>'+
-   '<span class="surprise-event-chevron" aria-hidden="true">›</span>',
+   '<span class="surprise-event-details">'+
+    '<span class="surprise-event-title">'+esc(e.title)+'</span>'+
+    '<span class="surprise-event-days">'+(e.daysLeft===null?'Configurer la date':e.availability||e.daysLeft+' jours')+'</span>'+
+   '</span><span class="surprise-event-chevron" aria-hidden="true">›</span>',
    'surprise-event-card '+(i===0?'couple':'')+
     (e.daysLeft===null?' no-date':''))).join('')+'</div>'+
  '<div class="surprise-bottom-info">🎲 &nbsp; Chaque événement comporte 6 activités et 6 variantes.'+
