@@ -85,7 +85,7 @@ export function premiumEveningHtml({
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
   '<small>'+(first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
-  '</div></div>'+
+  '</div>'+
   '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
