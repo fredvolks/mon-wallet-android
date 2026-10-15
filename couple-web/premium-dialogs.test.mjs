@@ -28,7 +28,7 @@ test('Modal promises always resolve on cancel/accept/Escape, without any backend
 });
 test('Gift and dissociation are styled as premium accessible actions, not browser dialogs',()=>{
  for(const kind of ['gift','couple','reset','library','delete','legacy'])
-  assert.match(markup,new RegExp(kind+':\\\\{title:'));
+  assert.ok(markup.includes(kind+':{title:'),kind);
  assert.match(markup,/Offrir 1 défi \?/);
  assert.match(markup,/Garder notre couple/);
  assert.match(markup,/activeDialog=null/);
