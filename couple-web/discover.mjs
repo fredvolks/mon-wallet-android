@@ -35,37 +35,34 @@ const feature=(icon,title,description,klass)=>`<article class="discover-feature 
  </article>`;
 
 export function discoverHtml(hasInvitation=false,externalBrowserHelp=''){
- return `<div class="love-discover ${hasInvitation?'discover-invite':'discover-public'}" aria-label="${hasInvitation?'Invitation LoveRoll':'Présentation LoveRoll'}">
- <header class="discover-header">
-  <div class="discover-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>
-  <span class="discover-kicker">LA COMPLICITÉ SE JOUE À DEUX</span>
-  <h1>Faites de chaque moment <em>une surprise.</em></h1>
-  <p>Des jeux, des défis et des attentions pour créer des souvenirs inoubliables, à votre rythme.</p>
- </header>
- <section class="discover-showcase" aria-label="Un aperçu des surprises LoveRoll">
-  <img class="discover-hero-premium" src="./assets/loveroll-invitation-hero-hd.webp" width="1630" height="870" alt="Un dé. Une surprise. Deux sourires. Deux dés noirs brillants aux cœurs roses lumineux sur du satin bordeaux. Des instants complices pour vous rapprocher encore plus." fetchpriority="high" loading="eager" decoding="async">
-  <div class="discover-die-stage" aria-hidden="true"><span class="discover-heart-float">♡</span>${diceArt}<img class="discover-approved-die" src="./assets/loveroll-die-approved.webp" alt="" loading="eager"></div>
-  <div class="discover-preview-copy">
-   <small>♡ VOTRE PROCHAIN INSTANT</small>
-   <h2>Un dé.<span>Une surprise.</span><em>Deux sourires.</em></h2>
-   <p>Des instants complices pour vous rapprocher encore plus.</p>
-  </div>
- </section>
- <section class="discover-gallery" aria-label="Votre univers LoveRoll">
-  ${feature('<span class="discover-icon-dice">🎲</span>','Jeux','Des jeux ludiques pour pimenter votre quotidien.','discover-games')}
-  ${feature('♡','Défis','Des défis sensuels ou coquins, à votre rythme.','discover-challenges')}
-  ${feature('▦','Rendez-vous','Des idées de rendez-vous et des occasions spéciales.','discover-dates')}
-  ${feature('🎁','Surprises','Des attentions uniques et des souvenirs à partager.','discover-surprises')}
- </section>
- <section class="discover-finale"><span class="discover-finale-art" aria-hidden="true">♡</span>
-  <div><strong>UN ESPACE RIEN QU'À NOUS</strong><p>Rires, complicité, désir… et tellement plus encore.</p></div>
-  <span class="discover-finale-heart" aria-hidden="true">♡</span>
- </section>
- <div class="discover-action-area">
-  ${hasInvitation?'<button class="discover-accept" type="button" data-action="invite-start">♡ ACCEPTER L’INVITATION <span aria-hidden="true">›</span></button>':
-  '<button class="discover-accept" type="button" data-action="show-auth">♡ COMMENCER NOTRE AVENTURE <span aria-hidden="true">›</span></button><button class="discover-login" type="button" data-action="show-auth">J’ai déjà un compte · Me connecter</button>'}
-  ${hasInvitation?externalBrowserHelp:''}
-  <p class="discover-privacy">♡ Votre rythme · Votre intimité · Réservé aux adultes de 18 ans et plus.</p>
- </div>
- </div>`;
+ const features=[
+  ['🥂','Soirée','Défis à tour de rôle','soiree'],
+  ['🎁','Surprise','Votre activité du mois','surprise'],
+  ['▦','Avent','25 cases à ouvrir ensemble','avent'],
+  ['♡','Couple','Un espace commun, discret et synchronisé','couple']
+ ];
+ return '<div class="love-discover discover-v58 '+(hasInvitation?'discover-invite':'discover-public')+'" aria-label="'+
+ (hasInvitation?'Invitation LoveRoll':'Présentation LoveRoll')+'">'+
+ '<header class="discover-header"><div class="discover-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
+ '<span class="discover-kicker">'+(hasInvitation?'UNE INVITATION POUR VOTRE COUPLE':'LA COMPLICITÉ SE JOUE À DEUX')+'</span>'+
+ '<h1 class="discover-editorial-title"><span>Ce soir,</span><em>on joue<br>ensemble.</em></h1>'+
+ '<p class="discover-editorial-intro">LoveRoll transforme vos envies en défis, surprises et rituels complices.</p></header>'+
+ '<section class="discover-editorial-stage" aria-label="Les quatre expériences LoveRoll">'+
+ '<div class="discover-editorial-die" aria-hidden="true"><div class="discover-editorial-satin"></div>'+
+ '<img src="./assets/loveroll-die-approved.webp" alt="" decoding="async" loading="eager" fetchpriority="high">'+
+ '<span class="discover-editorial-sparkle discover-sparkle-one">♡</span>'+
+ '<span class="discover-editorial-sparkle discover-sparkle-two">✧</span></div>'+
+ '<div class="discover-editorial-list" aria-label="Découvrir les fonctions">'+
+ features.map(([icon,title,description,kind])=>
+  '<article class="discover-editorial-item discover-editorial-'+kind+'">'+
+   '<span class="discover-editorial-icon" aria-hidden="true">'+icon+'</span>'+
+   '<div><h2>'+title+'</h2><p>'+description+'</p></div></article>').join('')+
+ '</div></section>'+
+ '<section class="discover-editorial-bottom"><h2>Prêts à lancer le dé ?</h2>'+
+ (hasInvitation?'<button class="discover-accept" type="button" data-action="invite-start">ACCEPTER L’INVITATION</button>':
+  '<button class="discover-accept" type="button" data-action="show-auth:signup">COMMENCER NOTRE AVENTURE</button>'+
+  '<button class="discover-login" type="button" data-action="show-auth:signin">J’ai déjà un compte · Me connecter</button>')+
+ (hasInvitation?externalBrowserHelp:'')+
+ '<p class="discover-privacy">'+(hasInvitation?'Invitation privée · LoveRoll':'Votre rythme · Votre intimité · 18 ans et plus')+'</p>'+
+ '</section></div>';
 }
