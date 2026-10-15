@@ -40,7 +40,7 @@ test('Invitation remains the first screen, Google and email follow explicit acce
  const firstGate=app.indexOf('if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted)))');
  const authGate=app.indexOf('if(!state.user||state.passwordRecovery){',app.indexOf('function render(){'));
  assert.ok(firstGate>0&&firstGate<authGate);
- assert.match(app,/root\.innerHTML=discoverHtml\(!!pendingInvite\)/);
+ assert.match(app,/root\.innerHTML=discoverHtml\(!!pendingInvite,inviteBrowserHelp\(\)\)/);
  assert.match(app,/sessionStorage\.setItem\('loverollInviteAccepted',invite\.kind\+':'\+invite\.value\)/);
  assert.match(app,/state\.showDiscover=false;/);
  assert.match(app,/if\(verb==='invite-start'\)/);
