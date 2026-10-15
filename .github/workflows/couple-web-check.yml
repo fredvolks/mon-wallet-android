@@ -21,6 +21,8 @@ jobs:
           node --check couple-web/app.js
           node --check couple-web/premium-home.mjs
           node --check couple-web/premium-evening.mjs
+          node --check couple-web/evening-private-queue.mjs
+          node --test couple-web/evening-private-queue.test.mjs
           node --check couple-web/premium-surprise.mjs
           node --check couple-web/premium-advent.mjs
           node --check couple-web/dice3d.js
