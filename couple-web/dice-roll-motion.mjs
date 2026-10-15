@@ -17,21 +17,37 @@ export function rollProgress(elapsedMs){
  const slowdownTravel=SLOW_ROLL_MS*(u-u*u*u+0.5*u*u*u*u);
  return Math.min(1,(FAST_ROLL_MS+slowdownTravel)/FULL_TRAVEL_MS);
 }
-// Angles are intentionally NOT normalized modulo 2pi mid-flight: wrapping
-// would visibly reverse or snap the die at the end. All three Euler axes
-// increase monotonically to an orientation with the exact official face up.
+// A fresh cryptographic seed changes turn counts, axis rhythms and phase.
+// The server chooses the RESULT; only the motion is random. Every component
+// has strictly positive angular velocity until the shared natural slowdown.
 export function makeForwardRoll(targetEuler,random=[.2,.4,.6]){
- const end=targetEuler.map((r,i)=>Number(r)||0);
- const start=random.map(n=>(Math.max(0,Math.min(.999999,Number(n)||0)))*TWO_PI);
- const turns=[8,11,7];
- const finalAngles=end.map((target,i)=>{
-  let finish=target+TWO_PI*turns[i];
-  while(finish<=start[i])finish+=TWO_PI;
-  return finish;
+ const end=targetEuler.map(r=>Number(r)||0);
+ const r=i=>Math.max(0,Math.min(.999999,Number(random[i]??(
+  ((Number(random[i%3])||0)*(.731+i*.413)+i*.193)%1))||0));
+ const start=[0,1,2].map(i=>r(i)*TWO_PI);
+ const turns=[0,1,2].map(i=>7+Math.floor(r(i+3)*7)); // 7–13 full revolutions
+ const finish=end.map((target,i)=>{
+  let angle=target+TWO_PI*turns[i];
+  while(angle<=start[i])angle+=TWO_PI;
+  return angle;
  });
- return {start,finish:finalAngles};
+ const axes=[0,1,2].map(i=>({
+  wave:2+Math.floor(r(i+6)*4), // distinct 2–5 flutter waves per axis
+  phase:r((i+1)%3)*TWO_PI,
+  amplitude:.09+.20*r(i+3)
+ }));
+ return {start,finish,axes,
+  // Only subtle, deterministic movement that settles exactly to the origin.
+  bouncePhase:r(2)*TWO_PI,slidePhase:r(1)*TWO_PI};
 }
 export function rollAngles(trajectory,elapsedMs){
  const p=rollProgress(elapsedMs);
- return trajectory.start.map((initial,i)=>initial+(trajectory.finish[i]-initial)*p);
+ return trajectory.start.map((initial,i)=>{
+  const axis=trajectory.axes?.[i]||{wave:3,phase:0,amplitude:0};
+  // Integral of angular velocity 1 + a*sin(2pi*n*p+phase), normalized
+  // at both endpoints. Since a < 1, NO axis can ever reverse direction.
+  const variation=axis.amplitude/(TWO_PI*axis.wave)*
+   (Math.cos(axis.phase)-Math.cos(TWO_PI*axis.wave*p+axis.phase));
+  return initial+(trajectory.finish[i]-initial)*(p+variation);
+ });
 }
