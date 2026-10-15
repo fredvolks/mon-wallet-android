@@ -36,6 +36,9 @@ const {chromium}=require('playwright');
       buttonTop:el.closest('.evening-user-die')?.querySelector('.evening-small-roll,.evening-wait')?.getBoundingClientRect().top
     })),
     menu:document.querySelectorAll('.nav button').length,
+    eventCount:panel.querySelectorAll('.surprise-event-card').length,
+    eventVisible:([...panel.querySelectorAll('.surprise-event-card')].every(el=>{const r=el.getBoundingClientRect();return r.width>70&&r.height>34&&r.bottom<=nav.top+2})),
+    eventColumns:panel.querySelector('.surprise-special-grid')?getComputedStyle(panel.querySelector('.surprise-special-grid')).gridTemplateColumns.split(' ').length:0,
     sections:panel.querySelectorAll('section').length
    };
    return obj;
@@ -46,7 +49,7 @@ const {chromium}=require('playwright');
      (pageName.startsWith('evening')&&result.dice.length!==3)||
      (pageName==='evening-idle'&&(result.neutralDice.length!==2||
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
-     (pageName==='surprise'&&result.dice.length!==2))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
+     (pageName==='surprise'&&(result.dice.length!==2||result.eventCount!==6||!result.eventVisible||result.eventColumns!==2)))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-vrai-couple.png'});
   await page.close();
  }
