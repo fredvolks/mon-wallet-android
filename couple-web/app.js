@@ -1214,13 +1214,13 @@ async function decryptJson(ciphertext,key=state.unlockKey){
 function ratingChoice(idName){return '<div class="chipline">'+[1,2,3,4,5].map(v=>
  '<label class="pill"><input type="radio" name="'+idName+'" value="'+v+'" style="width:auto;display:inline;min-height:0;margin:0" '+
  ''+'> '+v+'★</label>').join('')+'</div>';}
-async function frenchCalendarMonth(yyyyMm){
+function frenchCalendarMonth(yyyyMm){
  const date=new Date(yyyyMm+'-01T12:00:00Z');
  return new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'}).format(date);
 }
 const weekdayHeaders=()=>['lun','mar','mer','jeu','ven','sam','dim']
  .map(x=>'<span class="calendar-weekday">'+x+'</span>').join('');
-function renderPersonalJournal(){
+async function renderPersonalJournal(){
  const items=state.personalJournal||[],mo=state.personalCalendarMonth||month(),day=state.personalSelectedDate||today();
  const [y,m]=mo.split('-').map(Number),length=new Date(y,m,0).getDate();
  const offset=(new Date(y,m-1,1).getDay()+6)%7;
