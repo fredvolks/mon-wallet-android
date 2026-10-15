@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-surprise53';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-surprise53';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-surprise53';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-couple54';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-couple54';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-couple54';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-surprise53';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-couple54';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -24,10 +24,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink} from './premium-dialogs.mjs?v=20261014-surprise53';
+import {premiumConfirm,premiumCopyLink} from './premium-dialogs.mjs?v=20261014-couple54';
 
 
-const WEB_RELEASE='2026-10-14.53';
+const WEB_RELEASE='2026-10-14.54';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -173,7 +173,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-surprise53').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-couple54').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -377,7 +377,8 @@ function render(){
     button('switch-account-invite','Utiliser un autre compte','class="subtle"')+'</section></div>';
    bindActions();return;
   }
-  if(state.tab==='settings')renderSettings();
+  if(state.tab==='invitation'&&state.coupleId)renderPartnerInvitation();
+  else if(state.tab==='settings')renderSettings();
   else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
   else if(state.tab==='library'&&isLoveAdmin())renderCardLibrary();
   else if(state.tab==='monthly-library'&&isLoveAdmin())renderMonthlyLibrary();
@@ -385,11 +386,7 @@ function render(){
   else if(state.tab==='special-editor'&&isLoveAdmin())renderSpecialEventsEditor();
   else if(!state.coupleId){
    state.tab='home';
-   frame(matchHtml(state.profile.display_name,false)+
-    '<section class="card demo-preview-invite"><div class="eyebrow">♡ DÉMONSTRATION</div>'+
-    '<h3>Explorer l’espace avec une partenaire fictive</h3>'+
-    '<p>Aucun compte supplémentaire et aucun changement à vos défis.</p>'+
-    button('demo-enter','♡ Prévisualiser les pages du couple')+'</section>',
+   frame(matchHtml(state.profile.display_name,false),
     '♡ NOTRE MATCH','Préparer vos cartes avant de jouer à deux');
   }else{
    state.tab='home';renderWaitingPartner();
@@ -593,6 +590,14 @@ function renderInvitePanel(){
  }
  return html+'</section>';
 }
+function renderPartnerInvitation(){
+ if(!state.coupleId){state.tab='settings';renderSettings();return;}
+ frame('<section class="card invitation-intro"><div class="eyebrow">♡ NOTRE INVITATION</div>'+
+  '<p>Invitez votre conjoint ou votre conjointe avec un lien privé via Messenger ou courriel.</p></section>'+
+  renderInvitePanel()+
+  '<section class="card">'+button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>',
+  'INVITER MON PARTENAIRE','Votre invitation privée LoveRoll');
+}
 function renderCoupleOverview(){
  const started=state.occasionSettings?.relationship_started_on;
  const cs=coupleStats(state.sessions||[],state.challengesHistory||[]);
@@ -622,7 +627,7 @@ function renderWaitingPartner(){
   '<p>Il ne reste qu’à inviter votre partenaire pour commencer vos premiers jeux à deux.</p>'+
   '<div class="waiting-avatars"><span>♥ '+name+'</span><span class="waiting-connection">·····</span><span>♡ Partenaire</span></div>'+
   '<div class="waiting-status">● '+(invited?'Invitation à compléter':'En attente de votre partenaire')+'</div>'+
-  button('tab:settings','♡ Inviter mon partenaire')+'</div>'+
+  button('tab:invitation','♡ Inviter mon partenaire')+'</div>'+
   '<section class="card"><div class="eyebrow">LES 3 ÉTAPES</div>'+
   '<div class="waiting-steps"><p><strong>✓ 1.</strong> Votre espace personnel est créé</p>'+
   '<p><strong>2.</strong> Partager l’invitation par Messenger, SMS ou courriel</p>'+
@@ -634,10 +639,6 @@ function renderWaitingPartner(){
   button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
   button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
   '<p class="tiny-note">Importez ou exportez chaque bibliothèque en JSON pour renouveler vos idées.</p></section>'+
-  '<section class="card demo-preview-invite"><div class="eyebrow">♡ MODE DÉMONSTRATION</div>'+
-  '<h3>Voir LoveRoll à deux avant le jumelage</h3>'+
-  '<p>Explorez tous les onglets avec une conjointe fictive, sans invitation.</p>'+
-  button('demo-enter','♡ Explorer avec une conjointe fictive')+'</section>'+
   renderInvitePanel(),'MON ESPACE','Votre aventure à deux commence ici');
 }
 function renderHome(){
@@ -1410,12 +1411,12 @@ function renderSettings(){
  }else if(linked){
   partner=renderInvitePanel()+
    '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
-   button('demo-enter','♡ Explorer les pages en mode démo','class="subtle"')+
    button('end-couple','Annuler mon espace à deux','class="subtle danger-action"');
- }else partner='<p>Créez votre espace privé avant d’inviter votre partenaire.</p>'+
-  button('prepare-cards','Créer mes défis avant l’invitation')+
-  button('start-couple','Préparer mon couple','class="subtle"')+
-  button('demo-enter','♡ Prévisualiser avec une partenaire fictive','class="subtle"');
+ }else partner='<div class="settings-couple-invite">'+
+  '<p>Votre espace privé est prêt à être créé. Invitez votre partenaire pour commencer à deux.</p>'+
+  button('start-couple','♡ Inviter un conjoint ou une conjointe','class="settings-primary settings-couple-cta"')+
+  button('prepare-cards','Créer mes défis avant l’invitation','class="subtle settings-secondary settings-couple-prep"')+
+  '</div>';
  const celebrants=isLoveAdmin()&&hasPartner?
   '<div class="settings-item"><div><strong>Surprises des fêtes</strong>'+
   '<p>Choisissez le partenaire concerné pour chaque occasion.</p></div></div>'+
@@ -1865,7 +1866,10 @@ async function handle(action,element){
   await reload();notify(original?'Carte officielle rétablie.':'Emplacement vidé, historique conservé.');return;
  }
  if(verb==='start-couple'){
-  state.tab=state.coupleId?'settings':'home';render();return;
+  if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
+  if(!state.coupleId)await rpc('create_love_match',{p_anniversary_md:null});
+  state.tab='invitation';
+  await reload();return;
  }
  if(verb==='end-couple'){
   if(!state.coupleId)return;
@@ -2152,7 +2156,7 @@ async function handle(action,element){
   const allowed=ready?
    ['home','session','special','occasions','advent','settings','library',
     'personal-journal','journal','ideas','feedback','monthly-library','advent-editor','special-editor']:
-   ['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor'];
+   ['home','settings','invitation','library','personal-journal','monthly-library','advent-editor','special-editor'];
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
   if(['library','monthly-library','advent-editor','special-editor'].includes(parts[0])&&!isLoveAdmin())
    throw Error('Modification réservée à l’administrateur du couple.');
@@ -2535,6 +2539,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-surprise53',
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-couple54',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
