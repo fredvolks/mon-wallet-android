@@ -10,7 +10,7 @@ async function main(){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  const styles=['styles.css','discover.css','invitation-poster.css',
   'invite-account.css','responsive-fullscreen.css','responsive-tablet-desktop.css',
-  'mobile-one-screen-v74.css','mobile-entry-v76.css'];
+  'mobile-one-screen-v74.css','mobile-entry-v76.css','mobile-entry-v77.css'];
  const css=styles.map(s=>'<link rel="stylesheet" href="'+BASE+s+'">').join('');
  let checked=0;
  try{

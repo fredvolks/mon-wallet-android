@@ -23,8 +23,8 @@ test('Login, signup and recovery preserve in-app forms and actions',()=>{
  }
  assert.match(authHtml(true,'signin','', '',true),/data-action="auth-resend-confirmation"/);
 });
-test('v76 invitation/auth layout has fixed viewport and focus handling',()=>{
- const css=read('mobile-entry-v76.css');
+test('v77 invitation/auth layout has fixed viewport and focus handling',()=>{
+ const css=read('mobile-entry-v76.css')+'\n'+read('mobile-entry-v77.css');
  assert.match(css,/main#app:has\(\.discover-v59\)/);
  assert.match(css,/main#app:has\(\.invite-account-screen:not\(\.invite-profile-screen\)\)/);
  assert.match(css,/height:100dvh!important/);
@@ -35,9 +35,11 @@ test('v76 invitation/auth layout has fixed viewport and focus handling',()=>{
  assert.match(css,/max-height:420px/);
  assert.match(css,/:has\(input:focus\)/);
  const html=read('index.html');
- assert.match(html,/mobile-entry-v76\.css\?v=20261015-invite76/);
+ assert.match(html,/mobile-entry-v76\.css\?v=20261015-invite77/);
  assert.ok(html.lastIndexOf('mobile-entry-v76.css')>html.lastIndexOf('mobile-one-screen-v74.css'));
  const sw=read('service-worker.js');
- assert.match(sw,/loveroll-static-v76/);
+ assert.match(sw,/loveroll-static-v77/);
  assert.match(sw,/\.\/mobile-entry-v76\.css/);
+ assert.match(sw,/\.\/mobile-entry-v77\.css/);
+ assert.match(html,/loveroll-entry-viewport-safety/);
 });
