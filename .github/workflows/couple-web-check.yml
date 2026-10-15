@@ -5,6 +5,9 @@ on:
   pull_request:
     branches: [des-a-deux-apk-20261013]
   workflow_dispatch:
+concurrency:
+  group: loveroll-web-checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   web-tests:
     runs-on: ubuntu-latest
