@@ -1,8 +1,9 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite62';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite62';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite62';
+import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite63';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite63';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite63';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +11,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite62';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite63';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -24,10 +25,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite62';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite63';
 
 
-const WEB_RELEASE='2026-10-15.62';
+const WEB_RELEASE='2026-10-15.63';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -245,7 +246,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite62').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite63').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -1750,7 +1751,7 @@ async function animateRoll(fn,kind='general'){
    throw new Error('Le serveur n’a pas confirmé le résultat officiel du dé.');
   state.rollAnimationFace=confirmedFace;
   state.diceStatus='rolling';render();
-  await new Promise(resolve=>setTimeout(resolve,3250));
+  await new Promise(resolve=>setTimeout(resolve,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?180:ROLL_TOTAL_MS+140));
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
   await refreshAndShow();return result;
  }catch(e){
@@ -2613,7 +2614,7 @@ async function handle(action,element){
     const result=await rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:'weekly'});
     state.rollAnimationFace=result.face;
     state.diceStatus='rolling';render();
-    await new Promise(resolve=>setTimeout(resolve,3250));
+    await new Promise(resolve=>setTimeout(resolve,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?180:ROLL_TOTAL_MS+140));
     state.diceStatus=null;state.rollAnimationFace=null;
     state.weekly=result;
     await refreshAndShow();
@@ -2991,6 +2992,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite62',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite63',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
