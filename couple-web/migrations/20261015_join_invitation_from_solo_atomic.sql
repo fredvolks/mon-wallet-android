@@ -32,7 +32,7 @@ begin
   raise exception 'Cette invitation est destinée à un autre courriel. Connectez-vous au bon compte.';
  end if;
 
- select count(*),min(m.couple_id) into v_member_count,v_old
+ select count(*),(array_agg(m.couple_id))[1] into v_member_count,v_old
  from public.couple_members m where m.user_id=v_user;
  if v_member_count=0 then
   return public.accept_love_match_by_id(p_invitation);
