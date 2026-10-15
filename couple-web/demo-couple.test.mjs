@@ -29,7 +29,7 @@ test('Demo lives solely in memory and cannot write to Supabase',()=>{
  assert.match(app,/if\(verb==='demo-exit'\)/);
  assert.match(app,/if\(verb==='demo-tab'\)/);
  assert.match(app,/if\(verb==='demo-day'\)/);
- assert.match(app,/button\('demo-enter'/);
+ assert.doesNotMatch(app,/button\('demo-enter'/);
  const assets=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(assets,/demo-couple\.mjs/);
  assert.match(assets,/demo-couple\.css/);
