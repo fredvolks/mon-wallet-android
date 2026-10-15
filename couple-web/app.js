@@ -1178,7 +1178,7 @@ async function renderJournal(){
    ['Complicité','Tendresse','Communication','Plaisir','Nouveauté'].map(x=>'<option>'+safe(x)+'</option>').join('')+
    '</select></label><label>À améliorer<select id="event-weak">'+
    ['Rien','Plus de temps','Plus de douceur','Plus de communication'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label><label>Commentaire privé<textarea id="event-note" maxlength="1200" placeholder="Facultatif"></textarea></label>'+
+   '</select></label><label>Commentaire partagé avec votre partenaire<textarea id="event-note" maxlength="1200" placeholder="Facultatif"></textarea></label>'+
    button('save-event','Enregistrer dans notre calendrier')+'</section>';
   const selected=state.selectedDate||now;
   const matched=state.journal.filter(e=>e.happened_on===selected);
@@ -1413,7 +1413,8 @@ function renderSettings(){
    '<span class="settings-confirmation">✓ Invitation acceptée</span></div>'+
    '<div class="settings-date-outer">'+renderCoupleDateSetting()+'</div></div>'+
    '<div class="settings-actions">'+
-   (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
+   (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+'</div>'+
+   '<div class="settings-danger-zone"><p>Gestion du couple · action sensible</p>'+
    button('end-couple','Dissocier mon partenaire','class="subtle danger-action settings-secondary"')+'</div>'+
    '<p class="tiny-note settings-footer-hint">La dissociation conserve les comptes et les défis.</p>';
  }else if(linked){
@@ -1502,8 +1503,8 @@ function renderSettings(){
      !requestedSettingsSection||requestedSettingsSection==='couple')+
    settingGroup('Notifications','♧','Rappels et préférences',notifications,requestedSettingsSection==='notifications')+
    settingGroup('Jeu et personnalisation','🎲','Cartes, activités et surprises',game,requestedSettingsSection==='jeu')+
-   settingGroup('Administration','♛','Gestion des tirages',adminWeekly||'<p class="settings-limited">Réservé au créateur du couple. Aucun accès aux commandes administrateur.</p>',
-     requestedSettingsSection==='admin')+
+   (isLoveAdmin()?settingGroup('Administration','♛','Gestion des tirages',adminWeekly,
+     requestedSettingsSection==='admin'):'')+
    settingGroup('Application','▣','Version et mises à jour',appSettings,requestedSettingsSection==='application')+
    settingGroup('Confidentialité','♙','Journal, données et ressenti',privacy,requestedSettingsSection==='confidentialite')+
    settingGroup('Aide','?','Informations et fonctionnement',support,requestedSettingsSection==='aide')+'</div>',
