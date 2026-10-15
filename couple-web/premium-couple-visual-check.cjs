@@ -39,6 +39,15 @@ const {chromium}=require('playwright');
     eventCount:panel.querySelectorAll('.surprise-event-card').length,
     eventVisible:([...panel.querySelectorAll('.surprise-event-card')].every(el=>{const r=el.getBoundingClientRect();return r.width>70&&r.height>34&&r.bottom<=nav.top+2})),
     eventColumns:panel.querySelector('.surprise-special-grid')?getComputedStyle(panel.querySelector('.surprise-special-grid')).gridTemplateColumns.split(' ').length:0,
+    surpriseDice:[...panel.querySelectorAll('.surprise-d20-scene,.surprise-host-die')].map(zone=>{
+      const c=zone.querySelector('.dice-canvas'),r=zone.getBoundingClientRect(),d=c?.getBoundingClientRect();
+      const btn=zone.closest('section')?.querySelector('.surprise-primary'),b=btn?.getBoundingClientRect();
+      return {zone:zone.className,
+       inside:!!d&&d.width>0&&d.height>0&&d.left>=r.left-2&&d.top>=r.top-2&&
+        d.right<=r.right+2&&d.bottom<=r.bottom+2,
+       noButtonOverlap:!b||!!d&&d.bottom<=b.top+2,
+       position:c&&getComputedStyle(c).position,canvasHeight:d?.height,containerHeight:r.height};
+    }),
     sections:panel.querySelectorAll('section').length
    };
    return obj;
@@ -49,7 +58,8 @@ const {chromium}=require('playwright');
      (pageName.startsWith('evening')&&result.dice.length!==3)||
      (pageName==='evening-idle'&&(result.neutralDice.length!==2||
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
-     (pageName==='surprise'&&(result.dice.length!==2||result.eventCount!==6||!result.eventVisible||result.eventColumns!==2)))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
+     (pageName==='surprise'&&(result.dice.length!==2||result.eventCount!==6||!result.eventVisible||result.eventColumns!==2||result.surpriseDice.length!==2||
+      result.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap||d.position!=='absolute'))))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-vrai-couple.png'});
   await page.close();
  }
@@ -76,11 +86,19 @@ const {chromium}=require('playwright');
    return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
     targetHeight:Math.round(rect.height),targetTop:Math.round(rect.top),
     targetBottom:Math.round(rect.bottom),navTop:Math.round(document.querySelector('.nav').getBoundingClientRect().top),
-    navCount:document.querySelectorAll('.nav button').length};
+    navCount:document.querySelectorAll('.nav button').length,
+    surpriseDice:[...document.querySelectorAll('.surprise-d20-scene,.surprise-host-die')].map(zone=>{
+      const canvas=zone.querySelector('canvas'),r=zone.getBoundingClientRect(),d=canvas?.getBoundingClientRect();
+      const b=zone.closest('section')?.querySelector('.surprise-primary')?.getBoundingClientRect();
+      return {inside:!!d&&d.left>=r.left-2&&d.top>=r.top-2&&d.right<=r.right+2&&d.bottom<=r.bottom+2,
+       noButtonOverlap:!b||d.bottom<=b.top+2};
+    })};
   });
   console.log('Responsive '+device.name+' '+pageName,JSON.stringify({metrics,errors}));
   if(errors.length||metrics.scrollWidth>metrics.width+2||metrics.navCount!==5||
-     metrics.targetHeight<44||metrics.targetBottom>metrics.navTop+2){
+     metrics.targetHeight<44||metrics.targetBottom>metrics.navTop+2||
+     (pageName==='surprise'&&(metrics.surpriseDice.length!==2||
+        metrics.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap)))){
     throw Error('Commande inaccessible sur petit écran : '+device.name+' '+pageName);
   }
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-responsive.png',fullPage:true});
