@@ -300,3 +300,19 @@ main#app.loveroll-surprise-page .surprise-event-card:active{
 .surprise-d20-scene{
  box-shadow:inset 0 -12px 25px #ff2e7c11;
 }
+
+/* Show both genuine 3D personal D6s before rolling.
+   Neutral heart sides are decorative; no false pip value is displayed. */
+.evening-premium-view .evening-user-die .love3d,
+.evening-premium-view .evening-user-die .love3d-stage{
+ width:100%;height:100%;min-width:0;min-height:0;
+}
+.evening-premium-view .love3d-stage.is-unrolled .dice-canvas{
+ visibility:visible!important;
+}
+.evening-premium-view .love3d-stage.is-unrolled.webgl-ready .dice-fallback{
+ visibility:hidden!important;
+}
+.evening-premium-view .love3d-stage.is-unrolled:not(.webgl-ready) .dice-fallback{
+ visibility:visible!important;
+}
