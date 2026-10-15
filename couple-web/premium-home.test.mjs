@@ -7,7 +7,7 @@ import {
 } from './premium-home.mjs';
 
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
-const sql=readFileSync(new URL('./migrations/20261014_weekly_admin_reset.sql',import.meta.url),'utf8');
+const sql=readFileSync(new URL('./migrations/20261015_reset_all_current_dice_admin.sql',import.meta.url),'utf8');
 const css=readFileSync(new URL('./premium-home.css',import.meta.url),'utf8');
 const die=readFileSync(new URL('./dice3d.js',import.meta.url),'utf8');
 test('Weekly faces 1-6 use true standard dice spot geometry and 100% total',()=>{
@@ -69,7 +69,7 @@ test('Production home uses actual saved weekly result, disabled state and live c
  assert.doesNotMatch(rolling,/2 soirées de défi/);
  assert.doesNotMatch(rolling,/Dé déjà brassé cette semaine/);
  assert.match(rolling,/Brassage 3D en cours/);
- assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true"><\/strong>/);
+ assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true">♡<\/strong>/);
 });
 test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and 3s fast roll + smooth slowdown',()=>{
  assert.match(die,/\[1,\[0,0,1\]\],\[6,\[0,0,-1\]\]/);
@@ -86,14 +86,14 @@ test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and 3s fast roll + smo
 });
 test('Admin reset requires privileged server action and never touches custom challenges',()=>{
  assert.match(app,/isLoveAdmin\(\)&&hasPartner/);
- assert.match(app,/if\(verb==='admin-reset-weekly'\)/);
- assert.match(app,/premiumConfirm\(message,\{kind:'reset'/);
- assert.match(app,/rpc\('reset_love_weekly_roll_admin'/);
+ assert.match(app,/if\(verb==='admin-reset-all-dice'\)/);
+ assert.match(app,/kind:'reset',title:'Réinitialiser tous les dés \?'/);
+ assert.match(app,/rpc\('reset_love_all_dice_admin'/);
  assert.match(sql,/c\.owner_user_id=auth\.uid\(\)/);
  assert.match(sql,/for update/);
- assert.match(sql,/from public\.couple_sessions/);
- assert.match(sql,/delete from public\.couple_rolls where id=old\.id/);
- assert.match(sql,/love_weekly_reset_audit/);
+ assert.match(sql,/update public\.couple_sessions/);
+ assert.match(sql,/delete from public\.couple_rolls/);
+ assert.match(sql,/love_all_dice_reset_audit/);
  assert.doesNotMatch(sql,/delete from public\.couple_challenges/);
  assert.doesNotMatch(sql,/delete from auth\.users/);
  assert.match(css,/100dvh/);
