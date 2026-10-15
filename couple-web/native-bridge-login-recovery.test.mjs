@@ -13,7 +13,7 @@ test('Old Android 0.13.4 Java exception never prevents login, settings or reload
  assert.equal(safeNativePushToken(),'');
  assert.equal(safeNativePushConfigured(),true);
  const settings=notificationSettingsMarkup({enabled:false});
- assert.match(settings,/Notifications/);
+ assert.match(settings,/Autorisation ou inscription nécessaire/);
  assert.doesNotMatch(settings,/Error invoking nativePushToken/);
 });
 test('Broken Android nativePushConfigured also fails closed',()=>{
