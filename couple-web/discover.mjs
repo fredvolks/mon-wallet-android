@@ -34,28 +34,36 @@ const feature=(icon,title,description,klass)=>`<article class="discover-feature 
  <div class="discover-feature-copy"><h2>${title}</h2><p>${description}</p></div>
  </article>`;
 
+
+const editorialIcons = {
+ soiree: `<svg viewBox="0 0 76 76" aria-hidden="true" focusable="false"><defs><linearGradient id="lr-wine" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#fff6fc"/><stop offset="1" stop-color="#fa559e"/></linearGradient><linearGradient id="lr-rose" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e72e81"/><stop offset=".65" stop-color="#970f48"/><stop offset="1" stop-color="#410720"/></linearGradient></defs><g fill="none" stroke="url(#lr-wine)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M12 13h22c-.5 14-2 24-11 26-9-2-10.5-12-11-26Z"/><path d="M23 39v15M15 55h16M43 13h22c-.5 14-2 24-11 26-9-2-10.5-12-11-26Z"/><path d="M54 39v15M46 55h16"/></g><path d="M14 25h18c-1.5 8-4 12-9 12s-7.5-4-9-12ZM45 25h18c-1.5 8-4 12-9 12s-7.5-4-9-12Z" fill="url(#lr-rose)" opacity=".95"/><path d="m34 12 4-6 4 6 7 1-6 5" fill="none" stroke="#ff8cbb" stroke-width="1.8"/><path d="M35 19c4 1 6 0 8-2" stroke="#ffb7d8" stroke-width="1.5" fill="none"/></svg>`,
+ surprise: `<svg viewBox="0 0 76 76" aria-hidden="true" focusable="false"><defs><linearGradient id="lr-box" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff90c7"/><stop offset=".49" stop-color="#be1f67"/><stop offset="1" stop-color="#56092b"/></linearGradient></defs><path d="M16 33h44v30H16Z" fill="url(#lr-box)" stroke="#ffb1d5" stroke-width="2"/><path d="M12 27h52v12H12Z" fill="#ea3485" stroke="#ffc6df" stroke-width="2"/><path d="M33 27h10v36H33Z" fill="#ffb8db"/><path d="M37 8c-15-10-21 4-12 11 6 5 13 8 13 8s-3-11-1-19Zm2 0c15-10 21 4 12 11-6 5-13 8-13 8s3-11 1-19Z" fill="#bc145c" stroke="#ffbddb" stroke-width="2"/><path d="m37 27 1-14" stroke="#fff1f8" stroke-width="2"/></svg>`,
+ avent: `<svg viewBox="0 0 76 76" aria-hidden="true" focusable="false"><defs><linearGradient id="lr-day" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f14394"/><stop offset="1" stop-color="#47051e"/></linearGradient></defs><rect x="13" y="14" width="51" height="53" rx="5" fill="#2a071b" stroke="#ff6bab" stroke-width="2.4" transform="rotate(-8 38 40)"/><rect x="21" y="9" width="42" height="49" rx="4" fill="url(#lr-day)" stroke="#ffbddb" stroke-width="2" transform="rotate(6 42 34)"/><text x="41" y="43" text-anchor="middle" fill="#fff3fa" font-size="26" font-family="Georgia,serif" font-weight="bold" transform="rotate(6 41 34)">25</text><path d="m11 11 4-5 4 5M64 58l3-5 3 5" fill="none" stroke="#ff8bbe" stroke-width="2"/></svg>`,
+ couple: `<svg viewBox="0 0 76 76" aria-hidden="true" focusable="false"><defs><filter id="lr-heart-halo" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3"/></filter></defs><path d="M24 17C10 5-1 24 9 36l24 25 18-19C64 28 45 8 32 21l-8-4Z" fill="none" stroke="#ff2e97" stroke-width="5" filter="url(#lr-heart-halo)" opacity=".95"/><path d="M24 17C10 5-1 24 9 36l24 25 18-19C64 28 45 8 32 21l-8-4Z" fill="none" stroke="#ff8bc3" stroke-width="2.6"/><path d="M44 30C34 20 24 33 29 42l17 20 19-19c9-12-7-24-16-11l-5-2Z" fill="none" stroke="#ff8ac3" stroke-width="2.6"/><path d="M44 30C34 20 24 33 29 42l17 20 19-19c9-12-7-24-16-11l-5-2Z" fill="none" stroke="#ff2e97" stroke-width="4" filter="url(#lr-heart-halo)" opacity=".6"/></svg>`
+};
+
 export function discoverHtml(hasInvitation=false,externalBrowserHelp=''){
  const features=[
-  ['🥂','Soirée','Défis à tour de rôle','soiree'],
-  ['🎁','Surprise','Votre activité du mois','surprise'],
-  ['▦','Avent','25 cases à ouvrir ensemble','avent'],
-  ['♡','Couple','Un espace commun, discret et synchronisé','couple']
+  ['soiree','Soirée','Défis à tour de rôle','soiree'],
+  ['surprise','Surprise','Votre activité du mois','surprise'],
+  ['avent','Avent','25 cases à ouvrir ensemble','avent'],
+  ['couple','Couple','Un espace commun, discret et synchronisé','couple']
  ];
  return '<div class="love-discover discover-v58 '+(hasInvitation?'discover-invite':'discover-public')+'" aria-label="'+
  (hasInvitation?'Invitation LoveRoll':'Présentation LoveRoll')+'">'+
  '<header class="discover-header"><div class="discover-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
  '<span class="discover-kicker">'+(hasInvitation?'UNE INVITATION POUR VOTRE COUPLE':'LA COMPLICITÉ SE JOUE À DEUX')+'</span>'+
- '<h1 class="discover-editorial-title"><span>Ce soir,</span><em>on joue<br>ensemble.</em></h1>'+
+ '<h1 class="discover-editorial-title"><span>Ce soir,</span><span><b>on</b> <em>joue</em></span><em>ensemble.</em></h1>'+
  '<p class="discover-editorial-intro">LoveRoll transforme vos envies en défis, surprises et rituels complices.</p></header>'+
  '<section class="discover-editorial-stage" aria-label="Les quatre expériences LoveRoll">'+
  '<div class="discover-editorial-die" aria-hidden="true"><div class="discover-editorial-satin"></div>'+
- '<img src="./assets/loveroll-die-approved.webp" alt="" decoding="async" loading="eager" fetchpriority="high">'+
+ '<img src="./assets/loveroll-invitation-hero-hd.webp" alt="" decoding="async" loading="eager" fetchpriority="high">'+
  '<span class="discover-editorial-sparkle discover-sparkle-one">♡</span>'+
  '<span class="discover-editorial-sparkle discover-sparkle-two">✧</span></div>'+
  '<div class="discover-editorial-list" aria-label="Découvrir les fonctions">'+
  features.map(([icon,title,description,kind])=>
   '<article class="discover-editorial-item discover-editorial-'+kind+'">'+
-   '<span class="discover-editorial-icon" aria-hidden="true">'+icon+'</span>'+
+   '<span class="discover-editorial-icon" aria-hidden="true">'+editorialIcons[icon]+'</span>'+
    '<div><h2>'+title+'</h2><p>'+description+'</p></div></article>').join('')+
  '</div></section>'+
  '<section class="discover-editorial-bottom"><h2>Prêts à lancer le dé ?</h2>'+
