@@ -259,57 +259,12 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           EOF
           node verify-wellbeing.cjs
-      - name: Capturer la vraie page d'invitation premium
+      - name: Capture actual premium invitation and account pages on S25 / iPhone
         run: |
-          cat > couple-web/__premium-invite-test.html <<'EOF'
-          <!doctype html><html lang="fr-CA"><head><meta charset="utf-8">
-          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-          <link rel="stylesheet" href="./styles.css">
-          <link rel="stylesheet" href="./premium-theme.css">
-          <link rel="stylesheet" href="./discover.css">
-          <link rel="stylesheet" href="./approved-artwork.css">
-          </head><body><main id="app"></main><script type="module">
-          import {discoverHtml} from './discover.mjs';
-          document.querySelector('#app').innerHTML=discoverHtml(true);
-          document.querySelector('[data-action="invite-start"]').addEventListener('click',()=>{
-            document.querySelector('#app').setAttribute('data-invitation-accepted','yes');
-          });
-          </script></body></html>
-          EOF
-          python3 -m http.server 8766 -d couple-web >/tmp/love-real-invite.log 2>&1 &
-          cat > verify-premium-invitation.cjs <<'EOF'
-          const {chromium}=require('playwright');
-          (async()=>{
-            const browser=await chromium.launch();
-            for(const d of [{name:'S25-Ultra',width:412,height:824},
-                            {name:'iPhone',width:393,height:780}]){
-              const page=await browser.newPage({viewport:{width:d.width,height:d.height},isMobile:true,hasTouch:true,deviceScaleFactor:2});
-              await page.goto('http://127.0.0.1:8766/__premium-invite-test.html',{waitUntil:'networkidle'});
-              await page.locator('.discover-approved-die').waitFor();
-              const s=await page.evaluate(()=>{
-                const img=document.querySelector('.discover-approved-die');
-                const cta=document.querySelector('.discover-accept');
-                const rect=cta.getBoundingClientRect();
-                return {loaded:img.complete&&img.naturalWidth>0,visible:rect.width>0&&rect.height>=48,
-                  bottom:Math.round(rect.bottom),screen:innerHeight,
-                  overflow:document.documentElement.scrollWidth>innerWidth+2,
-                  features:document.querySelectorAll('.discover-feature').length,
-                  login:document.querySelectorAll('[data-action="google"],[data-action="apple"]').length};
-              });
-              console.log(d.name,JSON.stringify(s));
-              if(!s.loaded||!s.visible||s.overflow||s.features!==4||s.login!==0)
-                throw Error('Invitation premium incorrecte: '+JSON.stringify(s));
-              await page.screenshot({path:'landing-captures/'+d.name+'-invitation-premium-premier-ecran.png'});
-              await page.screenshot({path:'landing-captures/'+d.name+'-invitation-premium-complete.png',fullPage:true});
-              await page.locator('.discover-accept').click();
-              if(await page.locator('#app').getAttribute('data-invitation-accepted')!=='yes')
-                throw Error('Le bouton Accepter ne reçoit pas le clic.');
-              await page.close();
-            }
-            await browser.close();
-          })().catch(e=>{console.error(e);process.exit(1)});
-          EOF
-          node verify-premium-invitation.cjs
+          python3 -m http.server 8765 -d couple-web >/tmp/love-invite58-http.log 2>&1 &
+          sleep 1
+          node couple-web/premium-invite-auth-visual-check.cjs
+
       - name: Verify and capture true premium couple home with WebGL
         run: |
           set -euo pipefail
