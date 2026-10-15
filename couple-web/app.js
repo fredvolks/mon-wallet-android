@@ -40,7 +40,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -1762,6 +1762,12 @@ async function ensureInviteDraft(forceNew=false){
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
 }
+function keepAuthModeInUrl(mode){
+ const url=new URL(location.href);
+ if(['signup','signin','request-reset'].includes(mode))url.searchParams.set('auth',mode);
+ else url.searchParams.delete('auth');
+ history.replaceState(null,'',url.pathname+url.search+url.hash);
+}
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
  if(verb==='home-notices'){
@@ -1868,7 +1874,7 @@ async function handle(action,element){
  }
  if(verb==='discover-loveroll'){state.showDiscover=true;render();return;}
  if(verb==='discover-back'||verb==='invite-return'){
-  state.showDiscover=false;
+  keepAuthModeInUrl(null);state.showDiscover=false;
   if(pendingInviteReference(sessionStorage)){
    state.inviteAccepted=false;state.showAuth=false;
    sessionStorage.removeItem('loverollInviteAccepted');
@@ -2188,11 +2194,12 @@ async function handle(action,element){
    throw Error('Acceptez d’abord l’invitation.');
   // Both landing buttons must enter their actual requested authentication flow.
   state.authMode=parts[0]==='signin'?'signin':'signup';
+  keepAuthModeInUrl(state.authMode);
   state.authNeedsEmailConfirmation=false;
   state.authNotice=null;state.passwordRecovery=false;
   state.showDiscover=false;state.showAuth=true;render();return;
  }
- if(verb==='show-landing'){state.showDiscover=false;state.showAuth=false;render();return;}
+ if(verb==='show-landing'){keepAuthModeInUrl(null);state.showDiscover=false;state.showAuth=false;render();return;}
  if(verb==='google'&&window.LoveRollNativeAuth?.googleSignIn){
   try{
    state.authNotice='Connexion Google en cours… Sélectionnez votre compte dans la fenêtre Android.';
@@ -2221,6 +2228,7 @@ async function handle(action,element){
  if(verb==='auth-mode'){
   state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
   state.authMode=parts[0]==='signin'?'signin':'signup';
+  keepAuthModeInUrl(state.authMode);
   state.authNeedsEmailConfirmation=false;
   state.authNotice=null;state.passwordRecovery=false;render();return;
  }
@@ -2327,7 +2335,7 @@ async function handle(action,element){
  }
  if(verb==='auth-reset-request'){
   state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
-  state.authMode='request-reset';state.authNeedsEmailConfirmation=false;
+  state.authMode='request-reset';keepAuthModeInUrl('request-reset');state.authNeedsEmailConfirmation=false;
   state.authNotice=null;state.showAuth=true;render();return;
  }
  if(verb==='auth-send-reset'){
@@ -2371,6 +2379,7 @@ async function handle(action,element){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
   state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;state.passwordRecovery=false;
+  keepAuthModeInUrl(null);
   state.installAfterSignup=false;state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;
   render();return;
  }
