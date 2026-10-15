@@ -40,10 +40,12 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  assert.match(first,/data-dice-unrolled="true"/);
  assert.match(css,/\.love3d-stage\.is-unrolled \.dice-canvas\{visibility:hidden/);
  assert.match(app,/canvas\.dataset\.diceUnrolled!=='true'/);
+ // Server RLS hides the first player's result from the other account
+ // until BOTH have rolled; only the owner can view their early face.
  const secondView=premiumEveningHtml({session,members:people,me:'second',
-  rolls:[{user_id:'first',face:4}],status:{both_ready:false,my_rolled:false,partner_rolled:true},
+  rolls:[],status:{both_ready:false,my_rolled:false,partner_rolled:true},
   turn:{ready:false}});
- assert.match(secondView,/data-dice-sides="6" data-face="4"/);
+ assert.doesNotMatch(secondView,/aria-label="Total actuel 4 défis/);
  assert.match(secondView,/data-action="my-d6"/);
  const both=premiumEveningHtml({session,members:people,me:'first',
   rolls:[{user_id:'first',face:4},{user_id:'second',face:2}],
@@ -61,7 +63,9 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  const migration=read('migrations/20261014_d6_immediate_official_result.sql');
  assert.match(migration,/RETURN r;/);
  assert.doesNotMatch(migration,/r\.face\s*:=\s*null/i);
- assert.match(migration,/couple_private\.is_member/);
+ assert.match(migration,/couple_private\\.is_member/);
+ assert.match(migration,/user_id=auth\\.uid\\(\\)/);
+ assert.match(migration,/couple_private\\.both_rolls_ready\\(session_id\\)/);
  assert.match(migration,/love_require_verified_identity/);
  assert.doesNotMatch(app,/Number\(result\?\.face\)\|\|1/);
  assert.match(app,/Le serveur n’a pas confirmé le résultat officiel/);
