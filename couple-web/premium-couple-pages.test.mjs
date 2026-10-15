@@ -112,7 +112,7 @@ test('D35 always visible and rolling face not displayed as text before settling'
  assert.match(css,/\.love3d-stage\.is-rolling \.dice-fallback/);
  assert.match(die, /canvas\.dataset\.diceMarkers==='pips'/);
  assert.match(die,/canvas\.dataset\.diceZoom/);
- assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,3250\)\)/);
+ assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,window\.matchMedia\?/);
 });
 test('D35 always shows the official saved result below the die after rolling',()=>{
  const live=premiumEveningHtml({session,members:people,me:'first',
