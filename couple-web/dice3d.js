@@ -3,10 +3,16 @@ import {RoundedBoxGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geom
 import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/ConvexGeometry.js';
 /** Safari/Chrome WebGL die. Values come from the shared server, never from animation. */
 const pool=new Set();
-function digits(value,heart=false,pips=false){const c=document.createElement('canvas');c.width=c.height=384;
+function digits(value,heart=false,pips=false,neutral=false){const c=document.createElement('canvas');c.width=c.height=384;
  const x=c.getContext('2d');x.font='bold '+(heart?({1:184,2:143,3:120,4:102,5:94,6:84}[value]||84):180)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#ff1e91';x.shadowBlur=24;
  x.fillStyle='#ff9ccf';x.strokeStyle='#ffe3f3';x.lineWidth=1.5;
- if(!heart)x.fillText(String(value),192,200);
+ // Before an official D6 roll, all six faces use the SAME heart symbol.
+ // Never show fake pips or a made-up result while waiting for a server roll.
+ if(neutral){
+  x.font='bold 214px Georgia,serif';
+  x.fillText('♥',192,198);
+  x.strokeText('♥',192,198);
+ }else if(!heart)x.fillText(String(value),192,200);
  else{
   const spots=[[192,192],[102,102],[282,282],[282,102],[102,282],[102,192],[282,192]];
   const indices={1:[0],2:[1,2],3:[1,0,2],4:[1,2,3,4],
@@ -187,7 +193,7 @@ function twentyPolygons(geo){
  return faces;
 }
 
-function geometry(sides,pips=false){
+function geometry(sides,pips=false,neutral=false){
  const group=new THREE.Group(),normals=new Map();
  const custom=sides===35?d35Geometry():null;
  const original20=sides===20?new THREE.IcosahedronGeometry(1.16,0):null;
@@ -216,7 +222,7 @@ function geometry(sides,pips=false){
   normals.set(value,normal);
   const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===35?.27:sides===20?.36:1.64,
    sides===35?.27:sides===20?.36:1.64),
-    new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips,neutral),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
   if(polygon){
    const center=polygon.corners.reduce((a,p)=>a.add(p),new THREE.Vector3())
     .divideScalar(polygon.corners.length);
@@ -241,7 +247,8 @@ export function dieOn(canvas,sides,value,rolling){
  const key=new THREE.PointLight(0xff3e99,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
  const rim=new THREE.PointLight(0xff9fcb,22,9);rim.position.set(3,-1,1.9);scene.add(rim);
  const white=new THREE.DirectionalLight(0xfff0fa,2.3);white.position.set(1.3,3,4);scene.add(white);
- const built=geometry(sides,canvas.dataset.diceMarkers==='pips');scene.add(built.group);
+ const neutral=canvas.dataset.diceUnrolled==='true'&&sides===6;
+ const built=geometry(sides,canvas.dataset.diceMarkers==='pips',neutral);scene.add(built.group);
  const target=new THREE.Quaternion().setFromUnitVectors(built.normals.get(Number(value)||1),
   new THREE.Vector3(0,0,1));
  // Face officielle presque directement vers la caméra, léger volume visible.
