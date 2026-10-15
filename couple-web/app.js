@@ -7,7 +7,7 @@ import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQualit
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
 import {sharedEveningTurns,lastOfficialChallengeFace} from './evening-turns.mjs';
-import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
+import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-couple54';
@@ -920,6 +920,7 @@ function renderSession(){
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
+   playable:isLoveAdmin()?playableEveningCount(state.customCards):null,
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening,
    lastD35Face:lastOfficialChallengeFace(
@@ -1356,8 +1357,9 @@ function renderCardLibrary(){
    '<span class="custom-tile-name">'+safe(title)+'</span></button>';
  }).join('');
  let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>Nos 70 défis</h2>'+
-  '<p>25 cartes de base + 10 emplacements libres par catégorie. Chaque carte est modifiable, y compris les 50 déjà fournies.</p>'+
+  '<h2>'+playableEveningCount(state.customCards).total+' cartes jouables</h2>'+
+  '<p>'+playableEveningCount(state.customCards).sensual+' Sensuel · '+
+   playableEveningCount(state.customCards).sexual+' Sexuel. Les 20 emplacements facultatifs vides ne sont jamais tirés.</p>'+
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
     '<button class="pill '+(category===c?'selected':'')+
     '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
@@ -1385,7 +1387,7 @@ function renderCardLibrary(){
   chooser('custom-drawer',slot.drawerRole)+
   '<strong>Qui peut recevoir ce défi ?</strong>'+
   chooser('custom-recipient',slot.recipientRole)+
-  '<p class="tiny-note">Celui qui pige OFFRE le défi à l’autre, qui le REÇOIT. Ces restrictions sont vérifiées dans la base de données avant chaque tirage.</p>'+
+  '<p class="tiny-note">En Soirée actuelle, la personne désignée pige et réalise son propre défi. Les cadeaux transfèrent un défi disponible à l’autre partenaire. Qui peut piger et qui peut recevoir sont vérifiés par le serveur.</p>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="custom-timer-enabled"'+
    (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
   '<label>Durée (minutes)<input id="custom-minutes" type="number" min="1" max="60" value="'+
@@ -1910,7 +1912,8 @@ async function handle(action,element){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
   const face=Number(parts[0]);
   if(!Number.isInteger(face)||face<1||face>20)throw Error('Activité invalide.');
-  state.monthlySlot=face;render();return;
+  state.monthlySlot=face;render();
+  id('monthly-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;
  }
  if(verb==='save-monthly-activity'){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
@@ -1949,7 +1952,8 @@ async function handle(action,element){
  if(verb==='custom-slot'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<1||slot>35)throw Error('Emplacement invalide.');
-  state.customSlot=slot;render();return;
+  state.customSlot=slot;render();
+  id('custom-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;
  }
  if(verb==='save-custom-card'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
