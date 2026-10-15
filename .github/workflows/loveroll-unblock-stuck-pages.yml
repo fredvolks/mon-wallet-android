@@ -11,10 +11,10 @@ jobs:
   cancel-stuck:
     runs-on: ubuntu-latest
     steps:
-      - name: Stop specific superseded Pages deployment run
+      - name: Force stop superseded Pages run already sent normal cancellation
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           echo "Cancelling superseded LoveRoll Pages run 38770059197 only."
-          gh api -X POST "repos/${{ github.repository }}/actions/runs/38770059197/cancel"
+          gh api -X POST "repos/${{ github.repository }}/actions/runs/38770059197/force-cancel"
