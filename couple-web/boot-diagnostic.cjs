@@ -3,6 +3,7 @@
 // The report contains no user data.
 const {chromium}=require('playwright');
 const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=require('node:child_process');
+let runningBrowser=null;
 (async()=>{
  const url='https://fredvolks.github.io/mon-wallet-android/';
  const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),25000);
@@ -11,7 +12,7 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
   const index=await fetch(url+'?diagnostic='+Date.now(),
    {signal:controller.signal,cache:'no-store'});
   const html=await index.text();
-  version=html.match(/app\\.js\\?v=([^"']+)/)?.[1]||'missing';
+  version=html.match(/app\.js\?v=([^"']+)/)?.[1]||'missing';
   const res=await fetch(url+'app.js?v='+encodeURIComponent(version)+'&diagnostic='+Date.now(),
    {signal:controller.signal,cache:'no-store'});
   status=res.status;remote=await res.text();
@@ -25,6 +26,7 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
  console.log('PRODUCTION_BYTES',JSON.stringify({status,version,bytes:remote.length,remoteSha256:hash(remote),
   localSha256:hash(local),identical:hash(remote)===hash(local),syntax}));
  const browser=await chromium.launch({headless:true,args:['--disable-cache']});
+ runningBrowser=browser;
  const page=await browser.newPage({viewport:{width:412,height:824},serviceWorkers:'block'});
  const cdp=await page.context().newCDPSession(page);
  await cdp.send('Debugger.enable');
@@ -48,6 +50,8 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
  console.log('PRODUCTION_RENDER',JSON.stringify(state));
  console.log('PRODUCTION_LOGS',JSON.stringify(logs.slice(0,25)));
  console.log('CDP_PARSE',JSON.stringify(parseFailures.slice(0,25)));
+ await browser.close(); // Never leave Chromium alive when the strict check fails.
+ runningBrowser=null;
  if(process.env.LOVEROLL_REQUIRE_HEALTHY==='1'){
   const expected=JSON.parse(fs.readFileSync('couple-web/web-version.json','utf8')).build;
   const expectedTag=expected==='2026-10-15.57'?'20261015-boot57':null;
@@ -56,5 +60,8 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
    throw Error('LIVE_SITE_STARTUP_FAILED: '+JSON.stringify({expected,version,ready:state.ready,logs:logs.slice(0,6)}));
  }
 
- await browser.close();
-})().catch(e=>{console.error('DIAG_FATAL',e);process.exitCode=1});
+})().catch(async e=>{
+ console.error('DIAG_FATAL',e);
+ try{await runningBrowser?.close();}catch{}
+ process.exitCode=1;
+});
