@@ -1,9 +1,10 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite63';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite63';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite63';
+import {createCoupleLiveSync} from './couple-live-sync.mjs';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite64';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite64';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite64';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -11,7 +12,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite63';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite64';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -25,10 +26,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite63';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite64';
 
 
-const WEB_RELEASE='2026-10-15.63';
+const WEB_RELEASE='2026-10-15.64';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -246,7 +247,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite63').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite64').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -621,6 +622,11 @@ async function refreshShared(){
   }catch(error){console.warn('Statut des avis indisponible',error.code||'');}
  }
 }
+const liveSync=createCoupleLiveSync({
+ state,query,rpc,refresh:refreshShared,render,ready:isSharedCoupleReady,
+ week,month,formDirty:hasUnsavedForm
+});
+let realtimeReconnectTimer=null;
 function subscribe(){
  if(!state.coupleId)return;
  if(state.channel)client.removeChannel(state.channel);
@@ -629,18 +635,32 @@ function subscribe(){
   filter:'couple_id=eq.'+state.coupleId},async()=>{
    try{await reload();if(state.coupleId&&state.members.length===2)notify('♡ Votre partenaire a accepté le match !');}catch(e){fail(e);}
  });
- if(state.members.length<2){state.channel=channel.subscribe();return;}
+ if(state.members.length<2){
+  state.channel=channel.subscribe(status=>{if(status==='SUBSCRIBED')liveSync.request(200);});
+  return;
+ }
  for(const table of ['couple_occasion_rolls','couple_occasion_settings','couple_rolls','couple_sessions','couple_challenges','couple_challenge_gifts',
   'couple_advent','couple_feedback','couple_intimacy','couple_events'])
   channel=channel.on('postgres_changes',{event:'*',schema:'public',table,
    filter:'couple_id=eq.'+state.coupleId},async payload=>{
     if(payload.new?.actor_id&&payload.new.actor_id!==state.user.id)
      notify(person(payload.new.actor_id)+' a effectué une action dans votre jeu');
-    try{await refreshShared();render();}catch(e){fail(e);}
+    liveSync.request(200);
    });
  channel=channel.on('postgres_changes',{event:'INSERT',schema:'public',
   table:'couple_personal_rolls'},async()=>{try{await refreshShared();render();}catch(e){fail(e);}});
- state.channel=channel.subscribe();
+ state.channel=channel.subscribe(status=>{
+   if(state.channel!==channel)return;
+   if(status==='SUBSCRIBED'){
+    if(realtimeReconnectTimer){clearTimeout(realtimeReconnectTimer);realtimeReconnectTimer=null;}
+    liveSync.request(100);
+   }else if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)&&!realtimeReconnectTimer){
+    realtimeReconnectTimer=setTimeout(()=>{
+     realtimeReconnectTimer=null;
+     if(state.channel===channel&&state.user&&!document.hidden)subscribe();
+    },4500);
+   }
+  });
 }
 function heroDice(face,sides,label){
  return '<div class="dice-row premium-dice-row"><div class="die premium-die premium-die-'+sides+'"><strong class="dice-fallback">'+safe(face||'?')+'</strong><canvas class="dice-canvas" width="190" height="190"'+
@@ -2581,7 +2601,10 @@ async function handle(action,element){
   if(state.tab!=='session'){state.showEveningChallenge=false;state.eveningMore=false;}
   if(state.tab!=='special')state.showSurpriseActivity=false;
   if(state.tab!=='advent'){state.adventSelected=null;state.adventHistory=false;state.adventOpening=null;}
-  render();return;
+  render();
+  if(isSharedCoupleReady(state.coupleId,state.members))
+   liveSync.probe(true).catch(console.warn);
+  return;
  }
  if(['save-occasion-date','occasion-roll','roll','new-session','my-d6',
     'new-challenge','answer','finish-session','cancel-session','confirm-cancel',
@@ -2962,9 +2985,19 @@ setInterval(async()=>{
   }
  }catch(error){console.warn('Horloge Avent indisponible',error);}
 },60_000);
+// Fallback when Realtime WebSocket events are missed in Chrome, Safari,
+ // Messenger, iPadOS, or after background suspension. No manual refresh.
+setInterval(()=>{liveSync.probe().catch(console.warn);},1500);
+window.addEventListener('online',()=>{
+ liveSync.probe(true).catch(console.warn);
+ liveSync.request(350);
+});
+window.addEventListener('focus',()=>{
+ if(state.user)liveSync.probe(true).catch(console.warn);
+});
 document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&state.user){
-  reload().catch(fail);
+  reload().then(()=>liveSync.probe(true)).catch(fail);
   reloadWebAssets().catch(console.warn);
  }
 });
@@ -2992,6 +3025,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite63',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite64',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
