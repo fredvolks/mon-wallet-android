@@ -34,7 +34,7 @@ const feature=(icon,title,description,klass)=>`<article class="discover-feature 
  <div class="discover-feature-copy"><h2>${title}</h2><p>${description}</p></div>
  </article>`;
 
-export function discoverHtml(hasInvitation=false){
+export function discoverHtml(hasInvitation=false,externalBrowserHelp=''){
  return `<div class="love-discover ${hasInvitation?'discover-invite':'discover-public'}" aria-label="${hasInvitation?'Invitation LoveRoll':'Présentation LoveRoll'}">
  <header class="discover-header">
   <div class="discover-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>
@@ -64,6 +64,7 @@ export function discoverHtml(hasInvitation=false){
  <div class="discover-action-area">
   ${hasInvitation?'<button class="discover-accept" type="button" data-action="invite-start">♡ ACCEPTER L’INVITATION <span aria-hidden="true">›</span></button>':
   '<button class="discover-accept" type="button" data-action="show-auth">♡ COMMENCER NOTRE AVENTURE <span aria-hidden="true">›</span></button><button class="discover-login" type="button" data-action="show-auth">J’ai déjà un compte · Me connecter</button>'}
+  ${hasInvitation?externalBrowserHelp:''}
   <p class="discover-privacy">♡ Votre rythme · Votre intimité · Réservé aux adultes de 18 ans et plus.</p>
  </div>
  </div>`;
