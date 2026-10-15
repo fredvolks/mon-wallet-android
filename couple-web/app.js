@@ -667,7 +667,10 @@ function renderInvitePanel(){
   state.invitations?.[0];
  const ready=state.members?.length===2;
  const status=invitationStatus(latest,ready);
- const draft=state.inviteDraft&&state.inviteDraft.id===latest?.id?state.inviteDraft:null;
+ const active=latest&&!ready&&!latest.cancelled_at&&!latest.accepted_at&&
+  new Date(latest.expires_at)>new Date();
+ const draft=active?{id:latest.id,email:latest.invited_email,
+  link:inviteLinkForId(CONFIG.siteUrl,latest.id)}:null;
  let html='<section class="card"><div class="eyebrow">VOTRE INVITATION</div><h3>♡ Statut de la demande</h3>'+
   '<div class="invite-status"><strong>'+safe(status.title)+'</strong><p>'+safe(status.hint)+'</p></div>';
  if(latest)html+='<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+
@@ -675,21 +678,25 @@ function renderInvitePanel(){
  if(!ready){
   html+='<label>Adresse courriel du compte de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   (latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date()?
+   (active?
     '<p class="tiny-note">Votre lien d’invitation demeure valable et peut être renvoyé sans être remplacé.</p>'+
     button('invite','Remplacer le lien actuel','class="subtle"'):
     button('invite','Créer mon invitation'));
-  html+='<div class="invite-actions">'+
+  if(active||!latest){
+   html+='<div class="invite-actions">'+
     button('send-messenger','♡ Messenger')+
     button('send-sms','💬 Texto SMS','class="subtle"')+
     button('send-email','✉ Courriel','class="subtle"')+
-    (draft?button('copy-invite','Copier le lien','class="subtle"'):'')+'</div>';
+    (active?button('copy-invite','Copier le lien','class="subtle"'):'')+'</div>';
+  }
+  if(latest&&!active)html+='<p class="tiny-note">Cette invitation est expirée, annulée ou déjà acceptée. Créez un nouveau lien seulement si le couple n’est pas encore associé.</p>';
+  if(state.inviteCopyFallback&&draft)html+='<label class="invite-copy-manual">Lien à sélectionner et copier<input id="invite-manual-link" readonly aria-label="Lien d’invitation à copier" value="'+safe(draft.link)+'"></label>';
   if(draft)html+='<details class="invite-preview"><summary>♡ Aperçu de votre invitation</summary>'+
     invitationPreviewMarkup()+'</details>'+
     button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
     '<p class="tiny-note">Choisissez Messenger, SMS ou courriel dans votre application, puis confirmez l’envoi ici.</p>';
   else html+='<p class="tiny-note">Le partage utilise le lien valide existant, s’il y en a un. Seul « Remplacer le lien actuel » invalide le précédent. Aucun message n’est envoyé sans votre confirmation.</p>';
-  if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
+  if(active)
    html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
  }
  return html+'</section>';
@@ -2403,13 +2410,25 @@ async function handle(action,element){
  if(verb==='invite'){
   if(state.invitations?.some(x=>!x.cancelled_at&&!x.accepted_at&&new Date(x.expires_at)>new Date())&&
      !(await premiumConfirm('L’ancien lien d’invitation cessera de fonctionner. Votre partenaire devra utiliser le nouveau lien.',{kind:'library',title:'Remplacer le lien sécurisé ?'})))return;
-  await ensureInviteDraft(true);render();
+  await ensureInviteDraft(true);state.inviteCopyFallback=false;render();
   notify('Nouveau lien prêt. L’ancien lien a été remplacé.');return;
  }
  if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
   // Reuse the unexpired invitation ID after reload. The server verifies email at acceptance.
   const d=await ensureInviteDraft(false);
-  if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
+  if(verb==='copy-invite'){
+   try{
+    if(!navigator.clipboard?.writeText)throw Error('Presse-papiers indisponible');
+    await navigator.clipboard.writeText(d.link);
+    state.inviteCopyFallback=false;notify('Lien copié, sans modifier votre invitation.');
+   }catch(error){
+    state.inviteCopyFallback=true;render();
+    const field=id('invite-manual-link');
+    field?.focus();field?.select();
+    notify('Copie automatique indisponible : sélectionnez le lien affiché pour le copier.');
+   }
+   return;
+  }
   const text=verb==='send-messenger'?invitationMessengerText(d.link):invitationEmailText(d.link);
   state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';
   if(verb==='send-messenger'){
@@ -2418,8 +2437,11 @@ async function handle(action,element){
     try{await navigator.share({url:d.link});}
     catch(error){if(error.name!=='AbortError')throw error;}
    }else{
-    await navigator.clipboard.writeText(d.link);
-    notify('Lien copié : collez-le dans une conversation Messenger.');return;
+    try{await navigator.clipboard.writeText(d.link);
+     notify('Lien copié : collez-le dans une conversation Messenger.');}
+    catch{state.inviteCopyFallback=true;render();id('invite-manual-link')?.select();
+     notify('Sélectionnez le lien affiché pour le partager sur Messenger.');}
+    return;
    }
   }else if(verb==='send-sms'){
    if(window.LoveRollNativeAuth?.openSms)window.LoveRollNativeAuth.openSms(text);
@@ -2436,8 +2458,8 @@ async function handle(action,element){
   return;
  }
  if(verb==='confirm-invite-sent'){
-  if(!state.inviteDraft)throw Error('Aucun lien prêt à envoyer.');
-  await rpc('mark_pair_invite_sent',{p_invitation:state.inviteDraft.id,p_method:state.lastShareMethod||'partage'});
+  const invitation=await ensureInviteDraft(false);
+  await rpc('mark_pair_invite_sent',{p_invitation:invitation.id,p_method:state.lastShareMethod||'partage'});
   state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
   render();notify('Envoi confirmé manuellement.');return;
  }
