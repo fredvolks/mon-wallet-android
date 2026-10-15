@@ -648,7 +648,7 @@ function subscribe(){
     liveSync.request(200);
    });
  channel=channel.on('postgres_changes',{event:'INSERT',schema:'public',
-  table:'couple_personal_rolls'},async()=>{try{await refreshShared();render();}catch(e){fail(e);}});
+  table:'couple_personal_rolls'},()=>liveSync.request(120));
  state.channel=channel.subscribe(status=>{
    if(state.channel!==channel)return;
    if(status==='SUBSCRIBED'){
