@@ -17,7 +17,7 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false){
  const target=valid?face:1;
  return '<div class="love3d love3d-'+sides+'" role="group" aria-label="'+esc(caption)+'">'+
   '<div class="love3d-stage '+(spinning?'is-rolling':'')+'">'+
-   '<strong class="dice-fallback"'+(spinning?' aria-hidden="true"':'')+'>'+(spinning?'':valid?esc(face):'♡')+'</strong>'+
+   '<strong class="dice-fallback"'+(spinning?' aria-hidden="true"':'')+'>'+'♡'+'</strong>'+
    '<canvas class="dice-canvas" width="250" height="250" data-dice-sides="'+sides+
    '" data-face="'+target+'" data-dice-zoom="'+(sides===20?'1.30':sides===35?'1.07':'1')+'" data-dice-markers="'+(sides===6?'pips':'numbers')+'" data-spinning="'+(spinning?'true':'false')+
    '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:'Dé en attente')+'"></canvas>'+
