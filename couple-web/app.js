@@ -1249,10 +1249,23 @@ async function renderPersonalJournal(){
   for(const item of items.filter(x=>x.happened_on===day)){
    let clear=null;
    try{clear=await decryptJson(item.ciphertext,await createCipherKey(state.personalPass,item.journal_salt));}catch{}
+   const editing=clear&&state.personalEditId===item.id;
+   const options=(values,current)=>values.map(v=>'<option'+(current===v?' selected':'')+'>'+safe(v)+'</option>').join('');
    body+='<div class="muted-line"><strong>'+safe(item.happened_on)+'</strong>'+
     (clear?'<p>Orgasme : '+safe(clear.orgasm)+' · Point fort : '+safe(clear.good)+
     ' · À améliorer : '+safe(clear.weak)+'</p>'+
-    (clear.note?'<p>'+safe(clear.note)+'</p>':''):'<p>Impossible de déchiffrer cette entrée avec cette phrase secrète.</p>')+'</div>';
+    (clear.note?'<p>'+safe(clear.note)+'</p>':''):'<p>Impossible de déchiffrer cette entrée avec cette phrase secrète.</p>')+
+    (clear&&!editing?button('personal-edit:'+item.id,'Modifier ma note privée','class="subtle"')+
+      button('personal-delete:'+item.id,'Supprimer ma note privée','class="subtle"'):'')+
+    (editing?'<div class="personal-note-editor"><h4>Modifier uniquement ma copie personnelle</h4>'+
+      '<p>Cette modification ne sera pas transmise à votre partenaire.</p>'+
+      '<label>Date<input type="date" id="personal-edit-date" value="'+safe(item.happened_on)+'"></label>'+
+      '<label>Orgasme<select id="personal-edit-orgasm">'+options(['Non précisé','Les deux','Moi','Mon partenaire','Aucun'],clear.orgasm)+'</select></label>'+
+      '<label>Point fort<select id="personal-edit-good">'+options(['Complicité','Tendresse','Communication','Plaisir','Nouveauté'],clear.good)+'</select></label>'+
+      '<label>À améliorer<select id="personal-edit-weak">'+options(['Rien','Plus de temps','Plus de douceur','Plus de communication'],clear.weak)+'</select></label>'+
+      '<label>Ma note personnelle<textarea maxlength="1200" id="personal-edit-note">'+safe(clear.note||'')+'</textarea></label>'+
+      button('personal-save:'+item.id,'Enregistrer ma note privée')+
+      button('personal-cancel-edit','Annuler','class="subtle"')+'</div>':'')+'</div>';
   }
   body+='</section>';
  }
@@ -2105,7 +2118,39 @@ async function handle(action,element){
   }
   state.personalPass=pass;render();return;
  }
- if(verb==='lock-personal'){state.personalPass=null;render();return;}
+ if(verb==='personal-edit'){
+  const entry=state.personalJournal?.find(x=>x.id===parts[0]);
+  if(!entry||!state.personalPass)throw Error('Vous devez déverrouiller votre note personnelle.');
+  const key=await createCipherKey(state.personalPass,entry.journal_salt);
+  await decryptJson(entry.ciphertext,key);
+  state.personalEditId=entry.id;state.personalSelectedDate=entry.happened_on;render();return;
+ }
+ if(verb==='personal-cancel-edit'){state.personalEditId=null;render();return;}
+ if(verb==='personal-save'){
+  const entry=state.personalJournal?.find(x=>x.id===parts[0]&&x.id===state.personalEditId);
+  if(!entry||!state.personalPass)throw Error('Modification non autorisée.');
+  const date=id('personal-edit-date')?.value||entry.happened_on;
+  if(date>today())throw Error('La date ne peut pas être dans le futur.');
+  const key=await createCipherKey(state.personalPass,entry.journal_salt);
+  const payload=await decryptJson(entry.ciphertext,key);
+  Object.assign(payload,{orgasm:id('personal-edit-orgasm')?.value,
+   good:id('personal-edit-good')?.value,weak:id('personal-edit-weak')?.value,
+   note:(id('personal-edit-note')?.value||'').slice(0,1200)});
+  const ciphertext=await encryptJson(payload,key);
+  await rpc('update_my_personal_love_event',{p_archive:entry.id,
+   p_happened_on:date,p_ciphertext:ciphertext});
+  state.personalEditId=null;state.personalSelectedDate=date;
+  await reload();notify('Votre note privée a été modifiée sans changer le journal partagé.');return;
+ }
+ if(verb==='personal-delete'){
+  const entry=state.personalJournal?.find(x=>x.id===parts[0]);
+  if(!entry||!state.personalPass)throw Error('Accès refusé.');
+  if(!(await premiumConfirm('Supprimer seulement votre archive personnelle ? Le journal partagé ne sera pas modifié.',
+   {kind:'delete',title:'Supprimer ma note privée ?'})))return;
+  await rpc('delete_my_personal_love_event',{p_archive:entry.id});
+  state.personalEditId=null;await reload();notify('Note personnelle supprimée.');return;
+ }
+ if(verb==='lock-personal'){state.personalPass=null;state.personalEditId=null;render();return;}
  if(verb==='personal-date'){state.personalSelectedDate=parts[0];render();return;}
  if(verb==='personal-month-prev'||verb==='personal-month-next'){
   const d=new Date((state.personalCalendarMonth||month())+'-01T12:00:00Z');
