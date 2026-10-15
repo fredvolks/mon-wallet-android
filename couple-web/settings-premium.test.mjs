@@ -53,7 +53,7 @@ test('Opening a settings section closes the previous one and saves state',()=>{
 
 test('All existing settings actions are still wired',()=>{
  for(const name of ['profile','signout','save-couple-date','end-couple',
-  'admin-reset-weekly','native-update','reload-web','save-wellbeing']){
+  'admin-reset-all-dice','native-update','reload-web','save-wellbeing']){
   assert.ok(app.includes("if(verb==='"+name+"')"),name);
  }
  for(const name of ['tab:library','tab:monthly-library','tab:advent-editor',
