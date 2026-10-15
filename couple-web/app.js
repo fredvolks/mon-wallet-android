@@ -2805,7 +2805,7 @@ async function handle(action,element){
   if(!state.session?.paired_turns||!state.session?.self_draws||!state.rollStatus?.both_ready)
    throw Error('Attendez vos deux tirages personnels pour donner un défi.');
   const me=state.user.id,otherPerson=other();
-  const turn=sharedEveningTurns(state.session,state.members,state.personal,state.challenges,state.gifts);
+  const turn=state.eveningBoard||sharedEveningTurns(state.session,state.members,state.personal,state.challenges,state.gifts);
   if(!turn.ready||turn.remaining[me]<=0)
    throw Error('Aucun défi non commencé à donner.');
   const monthCount=state.gifts.filter(g=>g.donor_user_id===me&&g.month_key?.slice(0,7)===month()).length;
