@@ -12,7 +12,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: couple-web-pages-v61-responsive-s25
+  group: couple-web-pages-v62-tablet-desktop
   cancel-in-progress: false
 jobs:
   deploy:
