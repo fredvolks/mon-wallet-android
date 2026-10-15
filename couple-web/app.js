@@ -2288,14 +2288,14 @@ async function handle(action,element){
    state.user=null;
   }
   state.emailVerificationPending=false;state.showDiscover=false;state.showAuth=true;
-  state.authMode='signin';
+  state.authMode='signin';keepAuthModeInUrl('signin');
   state.authNotice='Si vous avez déjà créé un compte avec Google, utilisez « Continuer avec Google ».';
   render();return;
  }
  if(verb==='email-confirm-recheck'){
   if(!state.user){
    state.emailVerificationPending=false;state.showDiscover=false;state.showAuth=true;
-   state.authMode='signin';
+   state.authMode='signin';keepAuthModeInUrl('signin');
    state.authNotice='Connectez-vous pour que LoveRoll vérifie votre compte confirmé auprès de Supabase.';
    render();return;
   }
