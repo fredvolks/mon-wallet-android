@@ -16,7 +16,7 @@ const {chromium}=require('playwright');
  const slice=source.slice(start,end);
  const accordion=source.slice(accStart,accEnd);
  global.window={LoveRollNativeAuth:{weeklyReminderEnabled:()=>true,appVersion:()=>'0.13.3'}};
- const [{notificationSettingsMarkup},{wellbeingFields},{OCCASIONS,TARGETED_OCCASIONS}]=await Promise.all([
+ const [{notificationSettingsMarkup},{wellbeingFields,monthDayInputs},{OCCASIONS,TARGETED_OCCASIONS}]=await Promise.all([
   import(pathToFileURL(path.join(dir,'push-notifications.mjs')).href),
   import(pathToFileURL(path.join(dir,'onboarding.mjs')).href),
   import(pathToFileURL(path.join(dir,'special-occasions.mjs')).href)
@@ -32,14 +32,14 @@ const {chromium}=require('playwright');
  };
  let content='';
  const ctx={window:global.window,sessionStorage:{getItem:()=>null,setItem(){},removeItem(){}},
-  settingsOpenSection:'',requestedSettingsSection:'',WEB_RELEASE:'2026-10-14.36',
+  settingsOpenSection:'',requestedSettingsSection:'',WEB_RELEASE:'2026-10-14.55',
   state,root:{querySelectorAll:()=>[]},console,Date,
   safe:escape,button:(action,title,attrs='')=>'<button data-action="'+escape(action)+'" '+attrs+'>'+escape(title)+'</button>',
   isLoveAdmin:()=>true,other:()=>({name:'Partenaire B'}),person:user=>user==='a'?'Partenaire A':'Partenaire B',
   today:()=>'2026-10-14',nextMonday:()=>'19 octobre',
   formatCoupleDate:date=>date,
   TARGETED_OCCASIONS,OCCASIONS,
-  notificationSettingsMarkup,wellbeingFields,
+  notificationSettingsMarkup,wellbeingFields,monthDayInputs,
   frame:(html,title,sub)=>{content='<header class="header"><div><h1>♡ '+escape(title)+'</h1><p>'+escape(sub)+'</p></div></header>'+html;}
  };
  vm.createContext(ctx);vm.runInContext(slice,ctx,{timeout:2000});

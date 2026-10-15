@@ -118,7 +118,7 @@ test('D35 always shows the official saved result below the die after rolling',()
  const live=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
  assert.match(live,/class="evening-d35-result" role="status" aria-live="polite">21<\/div>/);
- assert.match(live,/Le dé révèle un défi parmi 70 cartes, à tour de rôle/);
+ assert.match(live,/Le dé révèle un défi parmi les cartes jouables, à tour de rôle/);
  assert.doesNotMatch(live,/Résultat D35|Le D35 révèle/);
  assert.match(live,/data-dice-sides="35" data-face="21"/);
  assert.match(live,/class="evening-d35-result" role="status" aria-live="polite"/);
@@ -179,7 +179,7 @@ test('Monthly D20 unlocks the separate D6 button without covering partner cards'
   activity:{title:'Une escapade',description:'Une sortie pour deux'}});
  assert.match(html,/data-action="surprise-activity"/);
  assert.doesNotMatch(html,/data-action="roll:monthly_activity"/);
- assert.match(html,/data-action="roll:monthly_host">🎲 Brasser le dé 6 faces<\/button>/);
+ assert.match(html,/data-action="roll:monthly_host">Brasser le dé<\/button>/);
  assert.match(html,/class="surprise-host-grid"[^>]*>[\s\S]*class="surprise-host-die"[\s\S]*class="surprise-host-partner"/);
  assert.match(css,/\.surprise-host-grid\{[\s\S]*flex:0 0 83px/);
  assert.match(css,/\.surprise-host>\.surprise-primary\{[\s\S]*margin:1px auto 0!important/);
@@ -233,4 +233,40 @@ test('Mobile full-height layout with safe area and fixed existing tabs',()=>{
  assert.match(css,/surprise-special-grid/);
  assert.match(css,/repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(app,/if\(verb==='occasion-back'\)/);
+});
+
+test('Selected category is visually distinct and reported to assistive technology',()=>{
+ const html=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:4},{user_id:'second',face:6}],
+  status:{both_ready:true,my_rolled:true},turn:{...turns,targets:{first:4,second:6}},category:'SENSUEL'});
+ assert.match(html,/data-action="category:SENSUEL" aria-pressed="true"/);
+ assert.match(html,/data-action="category:SEXUEL" aria-pressed="false"/);
+ assert.match(html,/✓ Sensuel/);
+ assert.match(css,/\.evening-choice-btn\.selected/);
+ assert.match(css,/min-height:46px!important/);
+});
+test('After finishing the evening the official feedback pathway remains available',()=>{
+ const html=premiumEveningHtml({members:people,me:'first',
+  lastEvening:{id:'past',completed:10,responses:1,myResponse:true,partnerResponse:false}});
+ assert.match(html,/choose-feedback:past/);
+ assert.match(html,/Votre partenaire/);
+ assert.match(html,/1 \/ 2 avis déposés/);
+ assert.match(html,/Consulter nos avis précédents/);
+});
+test('Occasion within its seven days-after window is available this year',()=>{
+ const settings={anniversary_md:'10-14',birthday_by_user:{}};
+ const entries=sixSpecialEvents(new Date('2026-10-15T16:00:00Z'),settings,people);
+ assert.equal(entries[0].year,2026);
+ assert.match(entries[0].availability,/Disponible encore 6 jours/);
+ const later=sixSpecialEvents(new Date('2026-10-22T16:00:00Z'),settings,people);
+ assert.equal(later[0].year,2027);
+});
+
+test('Seventh day after the occasion is the last available day, then next year',()=>{
+ const settings={anniversary_md:'10-14',birthday_by_user:{}};
+ const lastDay=sixSpecialEvents(new Date('2026-10-21T16:00:00Z'),settings,people);
+ assert.equal(lastDay[0].year,2026);
+ assert.match(lastDay[0].availability,/dernier jour/);
+ const after=sixSpecialEvents(new Date('2026-10-22T16:00:00Z'),settings,people);
+ assert.equal(after[0].year,2027);
 });

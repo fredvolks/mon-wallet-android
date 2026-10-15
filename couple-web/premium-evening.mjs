@@ -1,6 +1,8 @@
 // LoveRoll connected couple — production UI, not a demo. All results are provided by Supabase.
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
-const bt=(action,text,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(action)+'"'+(disabled?' disabled':'')+'>'+text+'</button>';
+const bt=(action,text,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(action)+'"'+
+ (action.startsWith('category:')?' aria-pressed="'+(cls.includes('selected')?'true':'false')+'"':'')+
+ (disabled?' disabled':'')+'>'+text+'</button>';
 export function premiumPolyDie(sides,face=null,caption='',spinning=false){
  const valid=Number.isInteger(face)&&face>=1&&face<=sides;
  // A missing D6 value is NOT 1. Until the official result is known,
@@ -44,7 +46,7 @@ export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
- lastEvening=null,lastD35Face=null
+ lastEvening=null,lastD35Face=null,playable=null
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
  partner=members.find(m=>m.user_id!==me)||members[1]||{},
@@ -57,7 +59,8 @@ export function premiumEveningHtml({
  const canDraw=ready&&turn.ready&&!turn.pending&&!turn.finished&&turn.next===me;
  const canGive=ready&&turn.ready&&giftCount<3&&Number(turn.remaining?.[me])>0;
  const challengeText=pending?'♡ Voir notre défi en cours':turn.finished?'Tous les défis terminés':!ready?'En attente des deux D6':canDraw?'À toi de jouer':'En attente de '+esc(partner.name?.split(' ')[0]||'ton partenaire');
- const help='35 défis Sensuel et 35 défis Sexuel · résultats synchronisés';
+ const help=playable?playable.sensual+' Sensuel + '+playable.sexual+
+  ' Sexuel · '+playable.total+' cartes jouables':'Cartes de base et personnalisées · résultats synchronisés';
  const stateText=ready?'✓ Étape 2 débloquée':(status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':'Chaque partenaire brasse son propre dé.');
  const currentStatus=turn.finished?'♡ Tous nos défis sont terminés':pending?'♡ Défi en cours · réponse attendue':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
@@ -71,8 +74,8 @@ export function premiumEveningHtml({
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view">'+
  '<header class="evening-topline"><span class="heartline">♡</span><div><h1>NOTRE SOIRÉE</h1><p>Un jeu synchronisé sur nos deux comptes</p></div>'+
- bt('evening-more','♡','evening-more-button')+'</header>'+
- '<div class="evening-intro"><span>♥ NOTRE SOIRÉE PARTAGÉE</span><h2>Nos 70 défis</h2><p>'+help+'</p></div>'+
+ bt('evening-more','⋯ Options','evening-more-button')+'</header>'+
+ '<div class="evening-intro"><span>♥ NOTRE SOIRÉE PARTAGÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
  (session?
   '<section class="evening-step one"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
@@ -82,16 +85,17 @@ export function premiumEveningHtml({
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
   '<small>'+(first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
-  '<div class="evening-progress"><span>'+esc(mine.name?.split(' ')[0]||'Moi')+'<b>'+count(me)+'</b></span>'+
-  '<span>'+esc(partner.name?.split(' ')[0]||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div></div>'+
+  '</div>'+
+  '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
+  '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
     '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-d35-result" role="status" aria-live="polite">'+esc(d35Result)+'</div>'+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
-    '<div class="evening-play-controls"><p>Le dé révèle un défi parmi 70 cartes, à tour de rôle.</p>'+
+    '<div class="evening-play-controls"><p>Le dé révèle un défi parmi les cartes jouables, à tour de rôle.</p>'+
     '<div class="evening-choice">'+
-       bt('category:SENSUEL','♡ Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
-       bt('category:SEXUEL','♨ Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+'</div>'+
+       bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
+       bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+'</div>'+
     '<small>88 % catégorie choisie · 12 % autre<br>Défi cadeau : 100 % de ton choix</small>'+
     (pending?bt('evening-challenge','♡ Voir notre défi','evening-primary'):
      turn.finished?bt('finish-session','✓ Terminer la soirée','evening-primary'):
@@ -102,8 +106,15 @@ export function premiumEveningHtml({
    bt('give-challenge','♡ Donner 1 défi à '+esc(partner.name?.split(' ')[0]||'mon partenaire'),
     'evening-gift-btn',!canGive||rolling)+'</section>'
   :
-  '<section class="evening-empty"><p>Un tirage choisit qui commence, puis les défis alternent.</p>'+
-   (lastEvening?'<p>Dernière soirée : '+esc(lastEvening.completed)+' défis réalisés.</p>':'')+
+  '<section class="evening-empty">'+
+  (lastEvening?'<div class="evening-aftercare"><h2>♡ Notre soirée est terminée</h2>'+
+    '<p>'+esc(lastEvening.completed)+' défis réalisés ensemble. Prenez le temps de donner votre avis.</p>'+
+    '<p>Vos réponses : <strong>'+(lastEvening.myResponse?'✓ Enregistrées':'En attente')+'</strong> · Votre partenaire : <strong>'+
+    (lastEvening.partnerResponse===null?'Statut indisponible':lastEvening.partnerResponse?'✓ Enregistrées':'En attente')+'</strong></p>'+
+    '<p>'+(lastEvening.responses===null?'—':esc(lastEvening.responses))+' / 2 avis déposés · visibles ensemble après les deux réponses.</p>'+
+    bt('choose-feedback:'+lastEvening.id,lastEvening.myResponse?'Voir le suivi de nos avis':'♡ Donner mon avis','evening-primary')+
+    bt('tab:journal','Consulter nos avis précédents','subtle')+'</div>':
+    '<p>Un tirage choisit qui commence, puis les défis alternent.</p>')+
    bt('new-session','♡ COMMENCER NOTRE SOIRÉE','evening-primary')+'</section>')+
  (showMore?'<aside class="evening-more-menu"><strong>♡ Options de notre soirée</strong>'+
   bt('tab:journal','Calendrier partagé','subtle')+

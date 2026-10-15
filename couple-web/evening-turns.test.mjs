@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
-import {sharedEveningTurns,evenLabels} from './evening-turns.mjs';
+import {sharedEveningTurns,evenLabels,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 
 const a='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const b='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -88,4 +88,39 @@ test('A gifted challenge is RECEIVED by the partner, who rolls their own turn',(
  assert.match(migration,/if s.self_draws then target:=auth.uid\(\)/);
  assert.match(migration,/recipient=auth.uid\(\) and status='completed'/);
  assert.match(migration,/self_draws boolean not null default false/);
+});
+
+test('4/6 personal rolls immediately assign 10 challenges before any card is drawn',()=>{
+ const turn=sharedEveningTurns(session,members,rolls(4,6),[],[]);
+ assert.equal(turn.ready,true);assert.deepEqual(turn.targets,{[a]:4,[b]:6});
+ assert.deepEqual(turn.completed,{[a]:0,[b]:0});
+ assert.deepEqual(turn.remaining,{[a]:4,[b]:6});
+ const afterPass=sharedEveningTurns(session,members,rolls(4,6),[
+  {status:'passed',recipient:a,offered_by:b}],[]);
+ assert.deepEqual(afterPass.targets,turn.targets);
+ assert.deepEqual(afterPass.completed,turn.completed);
+ const gifts=[{session_id:id,donor_user_id:a,receiver_user_id:b}];
+ const swapped=sharedEveningTurns(session,members,rolls(4,6),[],gifts);
+ assert.equal(swapped.targets[a],3);assert.equal(swapped.targets[b],7);
+});
+test('Last D35 face is the latest official historical result, never the oldest',()=>{
+ const history=[
+  {session_id:id,face:8,created_at:'2026-10-14T20:00:00Z',status:'completed'},
+  {session_id:id,face:27,created_at:'2026-10-14T21:00:00Z',status:'completed'}
+ ];
+ assert.equal(lastOfficialChallengeFace(history,id),27);
+ assert.equal(lastOfficialChallengeFace([...history].reverse(),id),27);
+ assert.equal(lastOfficialChallengeFace(history,'other'),null);
+ assert.equal(lastOfficialChallengeFace([{face:'—'},...history],id),27);
+});
+
+test('Aftercare selects newest counted evening even when backend returns oldest first',()=>{
+ const history=[
+  {id:'one',finished_at:'2026-10-10T21:00:00Z',counted:true},
+  {id:'two',finished_at:'2026-10-13T21:00:00Z',counted:true},
+  {id:'three',finished_at:'2026-10-14T21:00:00Z',counted:false}
+ ];
+ assert.equal(latestCountedSession(history)?.id,'two');
+ assert.equal(latestCountedSession(history.slice().reverse())?.id,'two');
+ assert.equal(latestCountedSession([{id:'open',finished_at:null,counted:true}]),null);
 });

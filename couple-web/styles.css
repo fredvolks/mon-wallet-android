@@ -685,3 +685,21 @@ button:focus-visible,.nav button:focus-visible,summary:focus-visible{
 .gift-card .gift-cta{min-height:54px;width:100%;font-weight:850}
 .status-line{font-size:.82rem;color:#ffbfda;text-align:center;padding:10px}
 @media(min-width:768px){.gift-card,.love-turn-card{max-width:760px;margin-inline:auto}}
+
+/* Calendar clarity, accessible on 360px phones and with larger text. */
+.calendar .calendar-weekday{display:grid;place-items:center;min-height:28px;
+ color:#f7b5d7;font-weight:800;font-size:.76rem;text-transform:uppercase}
+.calendar button.today{outline:2px solid #ffd3e9;outline-offset:-3px}
+.calendar button.selected{background:linear-gradient(135deg,#f84e99,#8e135b)!important;
+ border:2px solid #ffd8eb!important;color:#fff!important;font-weight:800}
+.calendar button.today.selected{box-shadow:0 0 13px #ff529a99}
+.settings-birthday-edit{margin:10px 0;padding:10px;border:1px solid #a75d83;
+ border-radius:13px;background:#271224}
+.settings-birthday-edit summary{cursor:pointer;min-height:42px;display:flex;align-items:center;
+ color:#ffe7f3;font-weight:700}
+.settings-danger-zone{margin-top:17px;padding:13px 10px;border:1px solid #b76580;
+ border-radius:12px;background:#2a1123}
+.settings-danger-zone>p{font-size:.76rem;color:#ffd3e3;margin:0 0 9px}
+.settings-danger-zone button{width:100%}
+.advent-box.missed{opacity:.58;filter:saturate(.5)}
+.advent-state-label{font-size:clamp(.5rem,1.5vw,.72rem);color:#ffc9e0;line-height:1.15}

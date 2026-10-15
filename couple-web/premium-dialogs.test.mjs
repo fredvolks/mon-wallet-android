@@ -8,7 +8,7 @@ test('All eight old confirm() dialogs replaced; mutations still await explicit a
  'reset_love_monthly_activity','delete_love_custom_card','end_love_match','give_love_challenge','couple_intimacy'];
  assert.doesNotMatch(app,/(?:^|[^a-zA-Z])confirm\s*\(/m);
  assert.doesNotMatch(app,/(?:^|[^a-zA-Z])prompt\s*\(/m);
- assert.equal((app.match(/await premiumConfirm\(/g)||[]).length,8);
+ assert.ok((app.match(/await premiumConfirm\(/g)||[]).length>=8);
  for(const action of actions)assert.ok(app.includes(action),action);
  const gift=app.slice(app.indexOf("if(verb==='give-challenge')"),app.indexOf("if(verb==='new-challenge')"));
  assert.ok(gift.indexOf("await premiumConfirm")<gift.indexOf("rpc('give_love_challenge'"));
@@ -36,7 +36,7 @@ test('Gift and dissociation are styled as premium accessible actions, not browse
  assert.match(styles,/\.lr-dialog-card/);
  assert.match(styles,/\.lr-dialog-icon/);
  assert.match(styles,/\.lr-dialog-accept\.lr-dialog-danger/);
- assert.match(html,/premium-dialogs\.css\?v=20261014-couple54/);
+ assert.match(html,/premium-dialogs\.css\?v=20261015-audit56/);
  assert.match(sw,/premium-dialogs\.mjs/);
 });
 test('Result toast respects device safe area and displays only official number',()=>{

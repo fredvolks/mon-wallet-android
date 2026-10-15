@@ -13,7 +13,7 @@ test('Eight settings groups remain present and collapsed unless remembered',()=>
  for(const label of ['Compte','Couple','Notifications','Jeu et personnalisation',
   'Administration','Application','Confidentialité','Aide'])
   assert.ok(app.includes("settingGroup('"+label+"'"),label);
- assert.match(app,/adminWeekly\|\|'<p class="settings-limited">/);
+ assert.match(app,/isLoveAdmin\(\)\?settingGroup\('Administration'/);
  assert.match(app,/sessionStorage\.getItem\('loveroll-settings-section'\)/);
 });
 
@@ -63,8 +63,8 @@ test('All existing settings actions are still wired',()=>{
 });
 
 test('Settings theme is scoped and loaded last with cache revision',()=>{
- assert.match(index,/settings-premium\.css\?v=20261014-couple54/);
- assert.match(index,/app\.js\?v=20261014-couple54/);
+ assert.match(index,/settings-premium\.css\?v=20261015-audit56/);
+ assert.match(index,/app\.js\?v=20261015-audit56/);
  assert.match(css,/main#app\.loveroll-settings-page/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\)!important/);
  assert.match(css,/\.settings-group-icon/);

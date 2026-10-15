@@ -85,8 +85,8 @@ export function authHtml(invitation=false,mode='signup',notice='',emailValue='')
   signingIn?'Retrouvez votre espace privé et vos surprises.':
   'Utilisez votre courriel et un mot de passe, ou connectez-vous avec Google.';
  const icon=kind=>kind==='mail'?'✉':kind==='lock'?'♙':'♡';
- const progress=invitation?'<div class="invite-account-progress" aria-label="Invitation acceptée · étape 2 sur 2">'+
-  '<div class="invite-progress-item is-done"><b>✓</b><span>Invitation<br>acceptée</span></div>'+
+ const progress=invitation?'<div class="invite-account-progress" aria-label="Invitation reçue · connexion requise">'+
+  '<div class="invite-progress-item is-done"><b>♡</b><span>Invitation<br>reçue</span></div>'+
   '<div class="invite-progress-line"><i></i></div>'+
   '<div class="invite-progress-item is-current"><b>2</b><span>Votre compte</span></div></div>':'';
  const segment=recovering?'':'<div class="invite-auth-segments" role="group" aria-label="Choisir un mode">'+

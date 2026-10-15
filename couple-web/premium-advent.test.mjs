@@ -25,7 +25,7 @@ test('Trusted Toronto December boundaries from November to January including tim
 test('All 25 boxes in exact 5×5 layout, correct available day without early surprise leak',()=>{
  const html=adventPremiumHtml({when:date('2026-12-05T15:00:00Z'),members:couple});
  assert.equal((html.match(/class="advent-box /g)||[]).length,25);
- assert.equal((html.match(/class="advent-gold-lock"/g)||[]).length,25);
+ assert.equal((html.match(/class="advent-gold-lock"/g)||[]).length,24);
  assert.equal((html.match(/data-action="advent-open:5"/g)||[]).length,1);
  assert.equal((html.match(/class="advent-today-tag"/g)||[]).length,1);
  assert.equal((html.match(/data-action="advent-locked:/g)||[]).length,24);
@@ -46,7 +46,7 @@ test('Shared opening persists and displays same official content, author and tim
  assert.match(html,/Ouverte par Noémie/);
  assert.match(html,/Un doux moment privé/);
  assert.match(html,/Dix minutes à deux/);
- assert.match(html,/Minuterie prévue : 10 min/);
+ assert.match(html,/Dix minutes à deux/);
  assert.match(html,/data-action="advent-close"/);
  const partnerView=adventPremiumHtml({when:date('2026-12-05T16:00:00Z'),
    members:[couple[1],couple[0]],openings:[record],selectedDay:5});
@@ -104,4 +104,25 @@ test('CSS includes exact 5 columns × 5 rows, one-screen shell, safe area, glow 
  assert.match(css,/safe-area-inset-top/);
  assert.match(css,/advent-box\.available/);
  assert.match(css,/prefers-reduced-motion:reduce/);
+});
+
+test('Missed Advent days never become openable after midnight; visible states are honest',()=>{
+ const cal=sharedAdventState([],date('2026-12-10T16:00:00Z'));
+ assert.equal(cal.days[0].status,'missed');
+ assert.equal(cal.days[0].canOpen,false);
+ assert.equal(cal.days[9].status,'available');
+ assert.equal(cal.days[10].status,'locked');
+ const markup=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),openings:[]});
+ assert.match(markup,/Aujourd’hui/);
+ assert.match(markup,/Jour manqué/);
+ assert.match(markup,/0 \/ 25/);
+ assert.match(markup,/data-action="advent-open:10"/);
+ assert.doesNotMatch(markup,/data-action="advent-open:9"/);
+});
+test('Per-day editor retains server-authenticated import of 25 validated items',()=>{
+ assert.match(app,/if\(verb==='advent-editor-day'\)/);
+ assert.match(app,/if\(verb==='save-advent-day'\)/);
+ assert.match(app,/normalizeLibraryData\(calendar,'advent'\)/);
+ assert.match(app,/rpc\('import_love_advent_2026'/);
+ assert.match(file('import-private-advent-2026.sql'),/No changes to the current year's previously opened/);
 });

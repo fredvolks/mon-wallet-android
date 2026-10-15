@@ -33,13 +33,19 @@ export function nextMonthly(now=new Date()){
    label:new Intl.DateTimeFormat('fr-CA',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(first)
  };
 }
-export function assignedTonight(challenges,members){
- const present=Array.isArray(challenges)?challenges.filter(c=>c&&c.recipient&&
-   !['cancelled','deleted'].includes(c.status)):[];
+// Drawn cards are NOT assigned challenges. Use the official dice/gift turn budget;
+// never reveal individual rolls on Home before both official dice are available.
+export function assignedTonight(turn={},members=[]){
+ const ready=turn?.ready===true;
  const [first,second]=members||[];
- const forFirst=present.filter(c=>c.recipient===first?.user_id).length;
- const forSecond=present.filter(c=>c.recipient===second?.user_id).length;
- return {total:forFirst+forSecond,forFirst,forSecond};
+ const value=(field,person)=>ready?Math.max(0,Number(turn[field]?.[person?.user_id])||0):null;
+ const forFirst=value('targets',first),forSecond=value('targets',second);
+ const completedFirst=value('completed',first),completedSecond=value('completed',second);
+ const remainingFirst=value('remaining',first),remainingSecond=value('remaining',second);
+ return {ready,total:ready?forFirst+forSecond:null,forFirst,forSecond,
+  completed:ready?completedFirst+completedSecond:null,
+  remaining:ready?remainingFirst+remainingSecond:null,
+  completedFirst,completedSecond,remainingFirst,remainingSecond};
 }
 
 
@@ -92,16 +98,18 @@ const iconSvg=(kind)=>{
 };
 
 export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,members=[],
-  challenges=[],history=[],sessions=[],events=[],rollFace=1,now=new Date()}={}){
+  turn=null,monthly={},history=[],sessions=[],events=[],rollFace=1,now=new Date()}={}){
  const weights=WEEKLY_ODDS.map((pct,i)=>
-  '<span class="home-weight" title="'+(i+1)+' soirée(s) : '+pct+' %">'+pipFace(i+1)+
+  '<span class="home-weight" title="'+(i+1)+' soirée'+(i===0?'':'s')+' : '+pct+' %">'+pipFace(i+1)+
   '<b>'+(i+1)+'x</b><span>'+pct+'%</span></span>').join('');
- const stats=assignedTonight(challenges,members),m=nextMonthly(now);
+ const stats=assignedTonight(turn,members),m=nextMonthly(now);
+ const activity=monthly?.monthly_activity||null;
+ const shown=value=>value===null?'—':String(value);
  const ready=!rolling&&weekly&&Number.isInteger(weekly.face),next=nextMonday(now);
  const coupleStats=coupleHomeStats(history,sessions,members,now);
  const memberA=escape(members[0]?.name||'Partenaire 1');
  const memberB=escape(members[1]?.name||'Partenaire 2');
- const weeklyTitle=ready?weekly.face+' soirée(s) de défi':'Prêts pour votre prochain rituel ?';
+ const weeklyTitle=ready?weekly.face+' soirée'+(weekly.face===1?'':'s')+' de défi':'Prêts pour votre prochain rituel ?';
  const weeklySubtitle=ready?'cette semaine':'Brassez votre dé hebdomadaire';
  const statistic=(value,label,subtitle,cls='')=>
   '<div class="home-stat-card '+cls+'"><strong>'+escape(value)+'</strong>'+
@@ -133,16 +141,17 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    'Prochain tirage : lundi '+escape(next.slice(8,10)+'/'+next.slice(5,7))+' à 00 h (Québec)</p>'+
    '</div>'+
    '<div class="home-challenge-stats">'+
-   '<div><span>🎲</span><strong>'+stats.total+'</strong><small>Défis ce soir<br>pour vous deux</small></div>'+
-   '<div><span>♡</span><strong>'+stats.forFirst+'</strong><small>Défis pour '+memberA+'<br>ce soir</small></div>'+
-   '<div><span>♡</span><strong>'+stats.forSecond+'</strong><small>Défis pour '+memberB+'<br>ce soir</small></div></div>'+
+   '<div><span>🎲</span><strong>'+shown(stats.total)+'</strong><small>Défis attribués<br>ce soir</small></div>'+
+   '<div><span>♡</span><strong>'+shown(stats.forFirst)+'</strong><small>Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst)+'</small></div>'+
+   '<div><span>♡</span><strong>'+shown(stats.forSecond)+'</strong><small>Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond)+'</small></div></div>'+
    '<button class="home-next-month" data-action="tab:special" type="button">'+
    '<span class="home-calendar-icon" aria-hidden="true">'+iconSvg('dates')+'</span>'+ 
-   '<span><small>Prochain défi mensuel</small><strong>'+m.days+' jours</strong>'+
-   '<em>'+escape(m.label)+'</em></span>'+
+   '<span><small>'+(activity?'Surprise du mois tirée':'Surprise du mois disponible')+'</small>'+
+   '<strong>'+(activity?'Voir notre résultat':'Brasser notre surprise')+'</strong>'+
+   '<em>'+(activity?'Prochaine surprise : '+escape(m.label):'Un tirage commun ce mois-ci')+'</em></span>'+
    '<span class="home-gift-icon" aria-hidden="true">'+iconSvg('surprises')+'</span></button>'+ 
    '<div class="home-stats-grid" aria-label="Statistiques réelles du couple">'+
-   statistic(String(coupleStats.completed),'Complétés','Ce mois','completed')+
+   statistic(String(coupleStats.completed),'Défis réalisés ce mois','Défis complétés par le couple','completed')+
    statistic(coupleStats.byPartner.join(' / '),'Répartition',nameA+' / '+nameB,'partners')+
    statistic(percent,'Sensuel / Sexuel','Ce mois','categories')+
    statistic(String(coupleStats.streak),'Semaines actives','Série actuelle','streak')+

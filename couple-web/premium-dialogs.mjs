@@ -79,3 +79,40 @@ export async function premiumCopyLink(url){
   return false;
  }
 }
+
+/* Use for existing activity, challenge and Advent overlays as well as premium confirms.
+   Only the overlay may receive focus/clicks while it is visible. */
+let previousInlineTrigger=null,inlineWasOpen=false;
+export function focusInlineLoveDialog(root,openingAction=null){
+ const overlay=root?.querySelector('.surprise-modal,.advent-dialog-shade,.evening-confirm');
+ if(!overlay){
+  if(inlineWasOpen&&previousInlineTrigger){
+   const trigger=[...root.querySelectorAll('[data-action]')].find(
+    el=>el.dataset.action===previousInlineTrigger);
+   trigger?.focus?.({preventScroll:true});
+  }
+  previousInlineTrigger=null;inlineWasOpen=false;return false;
+ }
+ if(openingAction)previousInlineTrigger=openingAction;
+ inlineWasOpen=true;
+ overlay.setAttribute('role','dialog');
+ overlay.setAttribute('aria-modal','true');
+ overlay.tabIndex=-1;
+ let current=overlay;
+ while(current&&current!==root){
+  const parent=current.parentElement;
+  if(!parent)break;
+  for(const sibling of parent.children)if(sibling!==current)sibling.inert=true;
+  current=parent;
+ }
+ const focusable=[...overlay.querySelectorAll('button:not([disabled]),a[href],input:not([disabled])')];
+ const cancel=focusable.find(el=>/fermer|annuler|retour|continuer/i.test(el.textContent||''));
+ (cancel||focusable[0]||overlay).focus({preventScroll:true});
+ overlay.addEventListener('keydown',event=>{
+  if(event.key!=='Tab'||focusable.length===0)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+ });
+ return true;
+}

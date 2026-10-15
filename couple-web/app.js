@@ -1,16 +1,16 @@
-import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-couple54';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-couple54';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-couple54';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-audit56';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-audit56';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-audit56';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
-import {sharedEveningTurns} from './evening-turns.mjs';
-import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
+import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
+import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-couple54';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-audit56';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -24,10 +24,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink} from './premium-dialogs.mjs?v=20261014-couple54';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-audit56';
 
 
-const WEB_RELEASE='2026-10-14.54';
+const WEB_RELEASE='2026-10-15.56';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -128,7 +128,77 @@ async function query(table,options={}){
  if(options.order)q=q.order(options.order,{ascending:options.asc??false});
  const {data,error}=await q;if(error)throw error;return data;
 }
+
+// Unsaved form text lives ONLY in process memory: no LocalStorage, logs or cloud.
+// It is restored after partner realtime refreshes and activity resume.
+let lastFormTab=null;
+let allowBackExit=false;
+function snapshotDraft(){
+ const inputs=[...root.querySelectorAll('input[id],select[id],textarea[id]')].filter(el=>
+  !el.disabled&&!el.readOnly&&!['password','file','hidden'].includes(el.type));
+ return inputs.filter(el=>{
+  if(el.type==='checkbox'||el.type==='radio')return el.checked!==el.defaultChecked;
+  if(el.tagName==='SELECT'){
+   const options=[...el.options],initial=options.findIndex(o=>o.defaultSelected);
+   return el.selectedIndex!==(initial<0?0:initial);
+  }
+  return el.value!==el.defaultValue;
+ }).map(el=>({
+    id:el.id,value:el.value,checked:el.checked,type:el.type
+ }));
+}
+function hasUnsavedForm(){return snapshotDraft().length>0;}
+function restoreDraft(draft){
+ for(const field of draft||[]){
+  const el=document.getElementById(field.id);
+  if(!el||!root.contains(el)||['password','file','hidden'].includes(el.type))continue;
+  if(field.type==='checkbox'||field.type==='radio')el.checked=field.checked;
+  else el.value=field.value;
+ }
+}
+function backFromLoveRoll(){
+ if(document.querySelector('.lr-dialog-overlay')){
+  document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  return true;
+ }
+ if(allowBackExit){allowBackExit=false;return false;}
+ if(state.showEveningChallenge){state.showEveningChallenge=false;render();return true;}
+ if(state.showSurpriseActivity){state.showSurpriseActivity=false;render();return true;}
+ if(state.adventSelected!==null){state.adventSelected=null;render();return true;}
+ if(state.adventHistory){state.adventHistory=false;render();return true;}
+ if(state.eveningMore){state.eveningMore=false;render();return true;}
+ if(state.homeNotices){state.homeNotices=false;render();return true;}
+ if(state.confirmCancel){state.confirmCancel=false;render();return true;}
+ if(state.specialFocus){state.specialFocus=null;state.tab='special';render();return true;}
+ const parent={
+  library:'settings','monthly-library':'settings','advent-editor':'settings',
+  'special-editor':'settings','personal-journal':'settings',journal:'session',
+  feedback:'session',occasions:'special',ideas:'home',invitation:'settings'
+ }[state.tab];
+ const destination=parent||(state.tab!=='home'?'home':null);
+ if(destination){
+  handle('tab:'+destination).catch(fail);
+  return true;
+ }
+ if(hasUnsavedForm()){
+  premiumConfirm('Vous avez une saisie non enregistrée. La quitter sans enregistrer ?',{
+   kind:'library',title:'Quitter le formulaire ?',accept:'Quitter',cancel:'Continuer'
+  }).then(ok=>{if(ok){allowBackExit=true;notify('Appuyez de nouveau sur Retour pour quitter.');}});
+  return true;
+ }
+ return false;
+}
+window.loveRollHandleBack=backFromLoveRoll;
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&!document.querySelector('.lr-dialog-overlay')){
+  if(backFromLoveRoll())event.preventDefault();
+ }
+});
+
 function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
+ const openerAction=document.activeElement?.dataset?.action||null;
+ const draft=lastFormTab===state.tab?snapshotDraft():[];
+ lastFormTab=state.tab;
  const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
  const isCouple=connected&&isSharedCoupleReady(state.coupleId,state.members);
  const realHome=isCouple&&state.tab==='home';
@@ -168,12 +238,14 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   '<p>Aucune notification pour le moment.</p>')+
   '<button data-action="home-notices" class="subtle">Fermer</button></div>':'';
  root.innerHTML=(realHome?homeHeader:usualHeader)+body+notifications+(connected?nav():'')+installation;
+ restoreDraft(draft);
  bindActions();
+ focusInlineLoveDialog(root,openerAction);
  // Render idle evening D6 in WebGL too: each side is a neutral heart,
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-couple54').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-audit56').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -198,6 +270,20 @@ function nav(){
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
+ const librarySearch=root.querySelector('#custom-card-search');
+ const libraryFilter=root.querySelector('#custom-card-filter');
+ const updateLibraryFilter=()=>{
+  const term=(librarySearch?.value||'').trim().toLocaleLowerCase('fr-CA');
+  const choice=libraryFilter?.value||'all';
+  root.querySelectorAll('.custom-card-tiles button[data-card-id]').forEach(card=>{
+   const matchesText=(card.textContent||'').toLocaleLowerCase('fr-CA').includes(term);
+   const matchesKind=choice==='all'||choice==='edited'&&card.dataset.saved==='true'||
+    choice==='empty'&&card.dataset.empty==='true';
+   card.hidden=!(matchesText&&matchesKind);
+  });
+ };
+ librarySearch?.addEventListener('input',updateLibraryFilter);
+ libraryFilter?.addEventListener('change',updateLibraryFilter);
  document.querySelectorAll('[data-action]').forEach(el=>{
   el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
  });
@@ -510,6 +596,20 @@ async function refreshShared(){
   state.personal=personal;state.challenges=challenges;state.rollStatus=status?.[0]||null;
  }else{state.personal=[];state.challenges=[];state.rollStatus=null;}
  state.feedback=await query('couple_feedback',{eq:{couple_id:c}});
+ // Only counts are revealed to the invited partner; titles remain owner-private.
+ try{
+  const totals=await rpc('my_love_evening_card_totals',{p_couple:c});
+  state.playableCounts=Array.isArray(totals)?totals[0]||null:null;
+ }catch(error){state.playableCounts=null;}
+ const lastCompleted=[...sessions].filter(x=>x.finished_at&&x.counted)
+  .sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+ state.feedbackStatus=null;
+ if(lastCompleted){
+  try{
+   const items=await rpc('my_love_feedback_status',{p_session:lastCompleted.id});
+   state.feedbackStatus={sessionId:lastCompleted.id,items:Array.isArray(items)?items:[]};
+  }catch(error){console.warn('Statut des avis indisponible',error.code||'');}
+ }
 }
 function subscribe(){
  if(!state.coupleId)return;
@@ -537,8 +637,8 @@ function heroDice(face,sides,label){
   ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
   ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
  '<div class="premium-die-caption"><div class="eyebrow">'+safe(label)+'</div>'+
- '<p>'+(!face?'En attente du tirage officiel.':'Face gagnante : '+face)+
- '. Faites glisser le dé pour le tourner.</p></div></div>';
+ '<p>'+(!face?'En attente du tirage officiel.':'Résultat officiel : '+face)+
+ '.</p></div></div>';
 }
 function statsRow(){return '<div class="stat-grid">'+[
  [state.weekly?.face||'—','Soirées semaine'],
@@ -563,7 +663,8 @@ function renderIdeas(){
   'NOS IDÉES DE SOIRÉE','Complicité et intimité selon votre rythme');
 }
 function renderInvitePanel(){
- const latest=state.invitations?.find(x=>!x.cancelled_at)||state.invitations?.[0];
+ const latest=state.invitations?.find(x=>!x.cancelled_at&&!x.accepted_at&&new Date(x.expires_at)>new Date())||
+  state.invitations?.[0];
  const ready=state.members?.length===2;
  const status=invitationStatus(latest,ready);
  const draft=state.inviteDraft&&state.inviteDraft.id===latest?.id?state.inviteDraft:null;
@@ -572,9 +673,12 @@ function renderInvitePanel(){
  if(latest)html+='<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+
   ' · Préparée le '+safe(new Date(latest.created_at).toLocaleDateString('fr-CA'))+'</p>';
  if(!ready){
-  html+='<label>Courriel Google de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
+  html+='<label>Adresse courriel du compte de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   button('invite',latest?'↻ Renouveler mon lien sécurisé':'Créer mon invitation');
+   (latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date()?
+    '<p class="tiny-note">Votre lien d’invitation demeure valable et peut être renvoyé sans être remplacé.</p>'+
+    button('invite','Remplacer le lien actuel','class="subtle"'):
+    button('invite','Créer mon invitation'));
   html+='<div class="invite-actions">'+
     button('send-messenger','♡ Messenger')+
     button('send-sms','💬 Texto SMS','class="subtle"')+
@@ -584,7 +688,7 @@ function renderInvitePanel(){
     invitationPreviewMarkup()+'</details>'+
     button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
     '<p class="tiny-note">Choisissez Messenger, SMS ou courriel dans votre application, puis confirmez l’envoi ici.</p>';
-  else html+='<p class="tiny-note">Choisir un moyen de partage prépare un nouveau lien personnel. Cela invalide l’ancien lien d’invitation. Aucun message n’est envoyé sans votre confirmation.</p>';
+  else html+='<p class="tiny-note">Le partage utilise le lien valide existant, s’il y en a un. Seul « Remplacer le lien actuel » invalide le précédent. Aucun message n’est envoyé sans votre confirmation.</p>';
   if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
    html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
  }
@@ -643,12 +747,14 @@ function renderWaitingPartner(){
 }
 function renderHome(){
  const members=state.members||[];
+ const turn=state.session&&state.session.self_draws?
+  sharedEveningTurns(state.session,members,state.personal,state.challenges,state.gifts):null;
  frame(premiumHomeHtml({
   weekly:state.weekly,
   rolling:state.diceStatus==='rolling',
   disabled:!!state.diceStatus,
   members,
-  challenges:state.session?state.challenges:[],
+  turn,monthly:state.monthly,
   history:state.challengesHistory||[],
   sessions:state.sessions||[],
   rollFace:state.rollAnimationFace||1,
@@ -730,7 +836,7 @@ function renderLegacySession(){
  heroDice(null,35,'Nos 70 défis')+
  '<p class="tiny-note">Pour commencer, chacun lance son dé personnel pour découvrir combien de défis il recevra. Vos résultats sont révélés ensemble.</p>';
  if(!s){
-  const latest=(state.sessions||[]).find(x=>x.finished_at&&x.counted);
+  const latest=latestCountedSession(state.sessions);
   if(latest){
    const total=state.challengesHistory.filter(c=>c.session_id===latest.id);
    const done=total.filter(c=>c.status==='completed').length;
@@ -818,11 +924,23 @@ function renderLegacySession(){
 }
 function renderSession(){
  const session=state.session,partner=other(),uid=state.user.id;
+ if(session&&!state.category){
+  try{
+   const saved=sessionStorage.getItem('loveroll-category-'+session.id);
+   if(EVENING_CATEGORIES.includes(saved))state.category=saved;
+  }catch{}
+ }
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts):{};
- const last=(state.sessions||[]).find(s=>s.finished_at&&s.counted);
- const lastEvening=last?{completed:state.challengesHistory.filter(
-    c=>c.session_id===last.id&&c.status==='completed').length}:null;
+ const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+ const official=state.feedbackStatus?.sessionId===last?.id?state.feedbackStatus.items:null;
+ const ownSubmitted=official?.find(x=>x.user_id===uid)?.submitted;
+ const otherSubmitted=official?.find(x=>x.user_id!==uid)?.submitted;
+ const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
+    c=>c.session_id===last.id&&c.status==='completed').length,
+   responses:official?official.filter(x=>x.submitted).length:null,
+   myResponse:ownSubmitted??state.feedback.some(f=>f.session_id===last.id&&f.author_id===uid),
+   partnerResponse:otherSubmitted??null}:null;
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
@@ -845,10 +963,11 @@ function renderSession(){
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
+   playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening,
-   lastD35Face:[...(state.challenges||[])].reverse().find(c=>
-    c.face!=null&&Number.isInteger(Number(c.face))&&Number(c.face)>=1&&Number(c.face)<=35)?.face??null
+   lastD35Face:lastOfficialChallengeFace(
+    state.session?state.challenges:state.challengesHistory,state.session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
 function optionalRolledTimer(roll){
@@ -861,11 +980,14 @@ function renderSpecial(){
  const original=state.monthly||{},active=original.monthly_activity;
  const rollingKind=state.diceStatus?state.rollAnimationKind:null;
  const monthly={...original};
+ const activity=active?monthlyActivityForRoll(active):null;
  if(rollingKind==='monthly_activity')monthly.monthly_activity=null;
  if(rollingKind==='monthly_host')monthly.monthly_host=null;
  frame(premiumSurpriseHtml({
    monthly,members:state.members,settings:state.occasionSettings,
-   activity:active?monthlyActivityForRoll(active):null,
+   activity,
+   timerHtml:state.showSurpriseActivity&&activity?.timer_minutes?
+    timerWidget({id:'monthly-'+month()},activity.timer_minutes):'',
    rolling:!!state.diceStatus,rollingKind,rollFace:state.rollAnimationFace,
    showActivity:state.showSurpriseActivity
  }), 'RENDEZ-VOUS SURPRISE','Un mois, un tirage, une expérience à deux');
@@ -884,7 +1006,9 @@ function renderOccasions(){
     year:due?.year||next?.year||year,daysLeft:due?.daysLeft??null});
   }
  }
- let body='<section class="premium-intro"><div class="premium-eyebrow">♥ NOS DATES IMPORTANTES</div><h2>Des occasions à célébrer</h2><p>Saint-Valentin, anniversaires et fêtes : chaque date réserve sa propre surprise.</p></section>'+ 
+ let body=(state.specialFocus?
+  '<section class="occasion-back-top">'+button('occasion-back','← Retour à Surprise','class="subtle"')+'</section>':
+  '<section class="premium-intro"><div class="premium-eyebrow">♥ NOS DATES IMPORTANTES</div><h2>Des occasions à célébrer</h2><p>Saint-Valentin, anniversaires et fêtes : chaque date réserve sa propre surprise.</p></section>')+ 
  '<section class="card"><h2>Les dés de nos événements</h2>'+
   '<p>Pour les fêtes classiques, découvrez une surprise parmi 20 idées. Pour vos occasions personnalisées, un lancer choisit l’activité et un second ajoute une touche de surprise.</p>'+
   '<p>Chaque idée est facultative : vous pouvez en discuter, la modifier ou la refuser.</p></section>';
@@ -898,10 +1022,14 @@ function renderOccasions(){
   const modifier=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='modifier');
   const displayName=ev.actorId?person(ev.actorId):'';
   const role=occasionRoles(ev,settings,state.members);
-  body+='<section class="card"><div class="eyebrow">'+safe(ev.emoji)+' '+safe(ev.title)+
+  body+='<section class="card occasion-premium-card"><div class="eyebrow">♡ '+safe(ev.title)+
     (displayName?' · '+safe(displayName):'')+'</div>';
-  body+='<p>'+safe(ev.date||'Date non définie')+
-    (ev.daysLeft!==null?' · '+(ev.daysLeft===0?"Aujourd’hui":ev.daysLeft>0?"Dans "+ev.daysLeft+" jours":"Il y a "+(-ev.daysLeft)+" jours"):'')+'</p>';
+  const eventDate=ev.date?new Intl.DateTimeFormat('fr-CA',{
+   day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
+  }).format(new Date(ev.date+'T12:00:00Z')):'Date non définie';
+  body+='<p class="occasion-date">'+safe(eventDate)+
+   (ev.daysLeft!==null?' · '+(ev.daysLeft<0?(ev.daysLeft<=-7?'Dernier jour de disponibilité':'Disponible encore '+(7+ev.daysLeft)+' jours'):
+    ev.daysLeft===0?'Disponible aujourd’hui':'Dans '+ev.daysLeft+' jours'):'')+'</p>';
   if(!role.shared&&!role.receiver){
    body+='<p class="tag">Personne célébrée non renseignée. L’administrateur la désigne dans Réglages.</p>';
   }else if(role.shared){
@@ -916,7 +1044,8 @@ function renderOccasions(){
   else if(custom){
    if(!activity){
     if(role.shared||role.receiver)
-     body+=heroDice(null,6,'Activité surprise')+
+     body+='<div class="occasion-step-label">ÉTAPE 1 · NOTRE ACTIVITÉ</div>'+
+       heroDice(null,6,'Activité surprise')+
        button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':activity','🎲 DÉCOUVRIR L’ACTIVITÉ');
    }else{
     body+=heroDice(activity.face,6,'Activité surprise')+
@@ -924,7 +1053,8 @@ function renderOccasions(){
       '<p>'+safe(activity.special_description||'')+'</p>'+
       '<p class="tiny-note">Une proposition à accepter, modifier ou passer ensemble.</p>'+optionalRolledTimer(activity)+'</div>';
     if(!modifier){
-     body+=heroDice(null,6,'Touche surprise')+
+     body+='<div class="occasion-step-label">ÉTAPE 2 · TOUCHE SURPRISE</div>'+
+       heroDice(null,6,'Touche surprise')+
        button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','🎲 RÉVÉLER LA TOUCHE SURPRISE');
     }else{
      body+=heroDice(modifier.face,6,'Touche surprise')+
@@ -933,7 +1063,8 @@ function renderOccasions(){
     }
    }
   }
-  else if(!prize){if(role.shared||role.receiver)body+=heroDice(null,20,'Dé de fête')+
+  else if(!prize){if(role.shared||role.receiver)body+='<div class="occasion-step-label">NOTRE SURPRISE</div>'+
+    heroDice(null,20,'Dé de fête')+
     button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 RÉVÉLER LA SURPRISE');}
   else{
    const idea=prize.special_title?
@@ -1022,11 +1153,15 @@ function renderAdvent(){
  // The database's Toronto clock determines the UI's active day; only the
  // authenticated RPC can open a case, after checking server time again.
  const serverDate=state.adventServerDate||today();
+ const selected=state.advent.find(r=>r.day===state.adventSelected&&
+  r.year===(state.adventYear||Number(serverDate.slice(0,4))));
  frame(adventPremiumHtml({
   openings:state.advent,members:state.members,
   when:new Date(serverDate+'T16:00:00Z'),year:state.adventYear,
   selectedDay:state.adventSelected,
-  openingDay:state.adventOpening,showHistory:state.adventHistory
+  openingDay:state.adventOpening,showHistory:state.adventHistory,
+  timerHtml:selected?.advent_timer_minutes?
+   timerWidget({id:'advent-'+selected.year+'-'+selected.day},selected.advent_timer_minutes):''
  }), 'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
 }
 
@@ -1046,6 +1181,17 @@ function renderAdventEditor(){
    button('import-advent-2026','♡ Prévisualiser avant remplacement')+
   '</section>'+jsonToolsPanel('advent','25 cases de l’Avent',state.jsonPending);
  if(calendar){
+  const editing=calendar.days.find(x=>x.day===state.adventEditorDay);
+  if(editing)body+='<section class="card advent-day-edit" id="advent-day-editor">'+
+   '<h3>Modifier le '+editing.day+' décembre</h3>'+
+   '<p>Cette modification concerne uniquement le contenu à découvrir. Les cases déjà ouvertes conservent leur surprise officielle.</p>'+
+   '<label>Catégorie<input id="advent-day-type" maxlength="90" value="'+safe(editing.type)+'"></label>'+
+   '<label>Titre<input id="advent-day-title" maxlength="200" value="'+safe(editing.title)+'"></label>'+
+   '<label>Description<textarea id="advent-day-description" maxlength="1500" rows="5">'+safe(editing.description)+'</textarea></label>'+
+   '<label>Minuterie facultative (minutes, de 1 à 60)<input id="advent-day-minutes" type="number" min="1" max="60" placeholder="Aucune minuterie" value="'+
+    (editing.timer_minutes??'')+'"></label>'+
+   button('save-advent-day','♡ Enregistrer uniquement cette journée')+
+   button('close-advent-day','Annuler','class="subtle")+'</section>';
   body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
    '<p class="tiny-note">Ce récapitulatif est privé. Votre partenaire ne voit les consignes qu’en ouvrant les cases autorisées.</p>'+
    '<div class="custom-card-tiles">'+calendar.days.map(entry=>
@@ -1068,10 +1214,10 @@ async function createCipherKey(passphrase,salt=state.couple?.journal_salt){
 }
 function encode64(buffer){return btoa(String.fromCharCode(...new Uint8Array(buffer)));}
 function decode64(value){return Uint8Array.from(atob(value),x=>x.charCodeAt(0));}
-async function encryptJson(object){
- if(!state.unlockKey)throw Error('Déverrouillez d’abord votre journal.');
+async function encryptJson(object,key=state.unlockKey){
+ if(!key)throw Error('Déverrouillez d’abord votre journal.');
  const iv=crypto.getRandomValues(new Uint8Array(12));
- const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},state.unlockKey,
+ const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,
   enc.encode(JSON.stringify(object)));
  return JSON.stringify({v:1,iv:encode64(iv),payload:encode64(encrypted)});
 }
@@ -1085,21 +1231,29 @@ async function decryptJson(ciphertext,key=state.unlockKey){
 function ratingChoice(idName){return '<div class="chipline">'+[1,2,3,4,5].map(v=>
  '<label class="pill"><input type="radio" name="'+idName+'" value="'+v+'" style="width:auto;display:inline;min-height:0;margin:0" '+
  ''+'> '+v+'★</label>').join('')+'</div>';}
+function frenchCalendarMonth(yyyyMm){
+ const date=new Date(yyyyMm+'-01T12:00:00Z');
+ return new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'}).format(date);
+}
+const weekdayHeaders=()=>['lun','mar','mer','jeu','ven','sam','dim']
+ .map(x=>'<span class="calendar-weekday">'+x+'</span>').join('');
 async function renderPersonalJournal(){
  const items=state.personalJournal||[],mo=state.personalCalendarMonth||month(),day=state.personalSelectedDate||today();
  const [y,m]=mo.split('-').map(Number),length=new Date(y,m,0).getDate();
  const offset=(new Date(y,m-1,1).getDay()+6)%7;
- let calendar='<div class="calendar">'+Array.from({length:offset},()=>'<span></span>').join('');
+ let calendar='<div class="calendar">'+weekdayHeaders()+
+  Array.from({length:offset},()=>'<span></span>').join('');
  for(let n=1;n<=length;n++){
   const d=mo+'-'+String(n).padStart(2,'0'),count=items.filter(x=>x.happened_on===d).length;
-  calendar+='<button class="'+(count?'marked':'')+'" data-action="personal-date:'+d+'">'+
+  calendar+='<button class="'+(count?'marked ':'')+(d===today()?'today ':'')+
+   (d===day?'selected':'')+'" data-action="personal-date:'+d+'">'+
    (count?'♥ ':'')+n+'</button>';
  }
  calendar+='</div>';
  let body='<section class="card"><h2>♥ Mon calendrier privé</h2>'+
  '<p>'+items.length+' moment(s) enregistré(s) dans votre historique personnel. Le changement de partenaire n’efface aucune entrée.</p>'+
  '<div class="actions">'+button('personal-month-prev','←','class="subtle"')+
- '<button class="subtle" disabled>'+safe(mo)+'</button>'+
+ '<button class="subtle" disabled>'+safe(frenchCalendarMonth(mo))+'</button>'+
  button('personal-month-next','→','class="subtle"')+'</div>'+calendar+'</section>';
  if(!state.personalPass){
   body+='<section class="card"><h3>🔒 Déverrouiller mes notes</h3>'+
@@ -1112,10 +1266,23 @@ async function renderPersonalJournal(){
   for(const item of items.filter(x=>x.happened_on===day)){
    let clear=null;
    try{clear=await decryptJson(item.ciphertext,await createCipherKey(state.personalPass,item.journal_salt));}catch{}
+   const editing=clear&&state.personalEditId===item.id;
+   const options=(values,current)=>values.map(v=>'<option'+(current===v?' selected':'')+'>'+safe(v)+'</option>').join('');
    body+='<div class="muted-line"><strong>'+safe(item.happened_on)+'</strong>'+
     (clear?'<p>Orgasme : '+safe(clear.orgasm)+' · Point fort : '+safe(clear.good)+
     ' · À améliorer : '+safe(clear.weak)+'</p>'+
-    (clear.note?'<p>'+safe(clear.note)+'</p>':''):'<p>Impossible de déchiffrer cette entrée avec cette phrase secrète.</p>')+'</div>';
+    (clear.note?'<p>'+safe(clear.note)+'</p>':''):'<p>Impossible de déchiffrer cette entrée avec cette phrase secrète.</p>')+
+    (clear&&!editing?button('personal-edit:'+item.id,'Modifier ma note privée','class="subtle"')+
+      button('personal-delete:'+item.id,'Supprimer ma note privée','class="subtle"'):'')+
+    (editing?'<div class="personal-note-editor"><h4>Modifier uniquement ma copie personnelle</h4>'+
+      '<p>Cette modification ne sera pas transmise à votre partenaire.</p>'+
+      '<label>Date<input type="date" id="personal-edit-date" value="'+safe(item.happened_on)+'"></label>'+
+      '<label>Orgasme<select id="personal-edit-orgasm">'+options(['Non précisé','Les deux','Moi','Mon partenaire','Aucun'],clear.orgasm)+'</select></label>'+
+      '<label>Point fort<select id="personal-edit-good">'+options(['Complicité','Tendresse','Communication','Plaisir','Nouveauté'],clear.good)+'</select></label>'+
+      '<label>À améliorer<select id="personal-edit-weak">'+options(['Rien','Plus de temps','Plus de douceur','Plus de communication'],clear.weak)+'</select></label>'+
+      '<label>Ma note personnelle<textarea maxlength="1200" id="personal-edit-note">'+safe(clear.note||'')+'</textarea></label>'+
+      button('personal-save:'+item.id,'Enregistrer ma note privée')+
+      button('personal-cancel-edit','Annuler','class="subtle"')+'</div>':'')+'</div>';
   }
   body+='</section>';
  }
@@ -1139,11 +1306,13 @@ async function renderJournal(){
  const average=grades.length?(grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(1):'—';
  const [y,m]=mo.split('-').map(Number),length=new Date(y,m,0).getDate();
  const offset=(new Date(y,m-1,1).getDay()+6)%7;
- let cal='<div class="calendar">'+Array.from({length:offset},()=>'<span></span>').join('');
+ let cal='<div class="calendar">'+weekdayHeaders()+
+  Array.from({length:offset},()=>'<span></span>').join('');
  for(let day=1;day<=length;day++){
   const date=mo+'-'+String(day).padStart(2,'0');
   const count=dates.filter(d=>d===date).length;
-  cal+='<button class="'+(count?'marked':'')+'" data-action="date:'+date+'">'+
+  cal+='<button class="'+(count?'marked ':'')+(date===now?'today ':'')+
+   (date===(state.selectedDate||now)?'selected':'')+'" data-action="date:'+date+'">'+
    (count?'♥ ':'')+day+'</button>';
  }
  cal+='</div>';
@@ -1154,24 +1323,34 @@ async function renderJournal(){
  '<p class="result">'+average+' / 5 ★</p><p>Note moyenne des questionnaires enregistrés.</p></section>'+
  '<section class="card"><h2>♡ Calendrier des relations</h2>'+
  '<div class="actions">'+button('month-prev','←', 'class="subtle"')+
- '<button disabled class="subtle">'+safe(mo)+'</button>'+
+ '<button disabled class="subtle">'+safe(frenchCalendarMonth(mo))+'</button>'+
  button('month-next','→','class="subtle"')+'</div>'+cal+'</section>';
- if(!state.unlockKey)body+='<section class="card"><h2>🔒 Journal chiffré</h2>'+
-  '<p>Entrez votre phrase secrète commune pour lire ou remplir vos entrées et vos avis. Elle n’est pas envoyée au serveur.</p>'+
-  '<input id="journal-pass" type="password" minlength="12" autocomplete="off" placeholder="Phrase secrète à partager hors de l’application">'+
-  button('unlock','Déverrouiller')+
-  '<p>Sans cette phrase, les anciens messages chiffrés ne pourront pas être récupérés.</p></section>';
+ if(!state.unlockKey){
+  const exists=!!state.couple?.journal_verifier||state.journal.length>0||state.feedback.length>0;
+  body+='<section class="card"><h2>🔒 '+(exists?'Déverrouiller notre journal':'Créer la phrase secrète de notre journal')+'</h2>'+
+   '<p>'+(exists?'Saisissez votre phrase secrète commune pour accéder aux anciennes données.':
+    'Choisissez une phrase secrète de 12 caractères ou plus et partagez-la en personne avec votre partenaire. Ni la phrase ni vos notes en clair ne sont envoyées au serveur.')+'</p>'+
+   '<input id="journal-pass" type="password" minlength="12" autocomplete="off" placeholder="Phrase secrète commune">'+
+   (exists?'':'<label>Confirmer la phrase secrète<input id="journal-pass-confirm" type="password" minlength="12" autocomplete="off" placeholder="Confirmez la même phrase"></label>')+
+   button('unlock',exists?'Déverrouiller':'Créer et ouvrir notre journal')+
+   '<p>Conservez cette phrase : une erreur de déchiffrement ne signifie jamais que votre journal est vide.</p></section>';
+ }
  else{
-  body+='<section class="card"><h3>♥ Enregistrer un moment</h3>'+
-   '<label>Date<input id="event-date" type="date" value="'+safe(state.selectedDate||now)+'"></label>'+
+  const edited=state.editEventId?state.journal.find(e=>e.id===state.editEventId&&e.author_id===state.user.id):null;
+  const initial=edited?await decryptJson(edited.ciphertext):null;
+  const selOpt=(choice,field)=>'<option'+(initial?.[field]===choice?' selected':'')+'>'+safe(choice)+'</option>';
+  body+='<section class="card"><h3>'+(edited?'✎ Modifier mon entrée partagée':'♥ Enregistrer un moment')+'</h3>'+
+   (edited?'<p>Cette correction sera visible de votre partenaire. Votre archive privée est préservée.</p>':'')+
+   '<label>Date<input id="event-date" type="date" value="'+safe(edited?.happened_on||state.selectedDate||now)+'"></label>'+
    '<label>Qui a eu un orgasme ?<select id="event-orgasm">'+
-   ['Non précisé','Les deux','Moi','Mon partenaire','Aucun'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   ['Non précisé','Les deux','Moi','Mon partenaire','Aucun'].map(x=>selOpt(x,'orgasm')).join('')+
    '</select></label><label>Point fort<select id="event-good">'+
-   ['Complicité','Tendresse','Communication','Plaisir','Nouveauté'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   ['Complicité','Tendresse','Communication','Plaisir','Nouveauté'].map(x=>selOpt(x,'good')).join('')+
    '</select></label><label>À améliorer<select id="event-weak">'+
-   ['Rien','Plus de temps','Plus de douceur','Plus de communication'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label><label>Commentaire privé<textarea id="event-note" maxlength="1200" placeholder="Facultatif"></textarea></label>'+
-   button('save-event','Enregistrer dans notre calendrier')+'</section>';
+   ['Rien','Plus de temps','Plus de douceur','Plus de communication'].map(x=>selOpt(x,'weak')).join('')+
+   '</select></label><label>Commentaire partagé avec votre partenaire<textarea id="event-note" maxlength="1200" placeholder="Facultatif">'+safe(initial?.note||'')+'</textarea></label>'+
+   button('save-event',edited?'Enregistrer mes modifications':'Enregistrer dans notre calendrier')+
+   (edited?button('cancel-edit-event','Annuler','class="subtle"'):'')+'</section>';
   const selected=state.selectedDate||now;
   const matched=state.journal.filter(e=>e.happened_on===selected);
   body+='<section class="card"><h3>'+safe(selected)+' · '+matched.length+' entrée(s)</h3>';
@@ -1182,7 +1361,8 @@ async function renderJournal(){
     (decrypted?'<p>Orgasme : '+safe(decrypted.orgasm)+'<br>Point fort : '+safe(decrypted.good)+
     '<br>À améliorer : '+safe(decrypted.weak)+'</p>'+
     (decrypted.note?'<p>'+safe(decrypted.note)+'</p>':''):'<p>Cette entrée n’a pas pu être déchiffrée.</p>')+
-    (item.author_id===state.user.id?button('delete-event:'+item.id,'Supprimer','class="subtle"'):'')+'</div>';
+    (item.author_id===state.user.id?button('edit-event:'+item.id,'Modifier','class="subtle"')+
+    button('delete-event:'+item.id,'Supprimer du journal partagé','class="subtle"'):'')+'</div>';
   }
   body+='</section>';
  }
@@ -1193,7 +1373,7 @@ async function renderJournal(){
 async function renderFeedback(){
  const sessions=state.sessions||[];
  const session=sessions.find(x=>x.id===state.chosenSession&&x.finished_at&&x.counted)||
-  sessions.find(x=>x.finished_at&&x.counted);
+  latestCountedSession(sessions);
  if(!session){
   frame('<section class="card"><p>Terminez d’abord une soirée pour répondre à vos questions.</p>'+
    button('tab:session','Retour à notre soirée')+'</section>','NOS AVIS','Après une soirée terminée');return;
@@ -1202,10 +1382,12 @@ async function renderFeedback(){
  const entries=state.feedback.filter(f=>f.session_id===session.id);
  const yours=entries.find(x=>x.author_id===state.user.id);
  const complete=state.members.every(m=>entries.some(x=>x.author_id===m.user_id));
+ const statuses=state.feedbackStatus?.sessionId===session.id?state.feedbackStatus.items:null;
+ const submitted=statuses?statuses.filter(x=>x.submitted).length:entries.length;
  let body='<section class="card"><div class="eyebrow">♥ APRÈS LA SOIRÉE</div>'+
  '<h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
  '<p>Trois questions pour chacun. Votre partenaire ne pourra lire vos réponses qu’une fois que vous aurez répondu tous les deux.</p>'+
- '<div class="stat-grid"><div class="stat"><strong>'+entries.length+'/2</strong><small>Avis déposés</small></div></div>';
+ '<div class="stat-grid"><div class="stat"><strong>'+submitted+'/2</strong><small>Avis déposés</small></div></div>';
  if(!state.unlockKey){
   body+='<p>Déverrouillez votre journal chiffré pour répondre ou voir les résultats.</p>'+
    '<input type="password" id="journal-pass" placeholder="Phrase secrète commune">'+button('unlock','Déverrouiller');
@@ -1254,17 +1436,22 @@ function renderCardLibrary(){
    (card.saved?'custom-filled ':'')+
    (slot.cardId===card.cardId?'custom-active':'')+
    '" data-action="custom-slot:'+card.cardId+
-   '" aria-label="Modifier carte '+card.cardId+' : '+safe(title)+'">'+
+   '" data-card-id="'+card.cardId+'" data-saved="'+card.saved+
+   '" data-empty="'+(!card.filled)+'" aria-label="Modifier carte '+card.cardId+' : '+safe(title)+'">'+
    '<span class="custom-tile-number">'+String(card.cardId).padStart(2,'0')+'</span>'+
    '<span class="custom-tile-name">'+safe(title)+'</span></button>';
  }).join('');
  let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>Nos 70 défis</h2>'+
-  '<p>25 cartes de base + 10 emplacements libres par catégorie. Chaque carte est modifiable, y compris les 50 déjà fournies.</p>'+
+  '<h2>'+playableEveningCount(state.customCards).total+' cartes jouables</h2>'+
+  '<p>'+playableEveningCount(state.customCards).sensual+' Sensuel · '+
+   playableEveningCount(state.customCards).sexual+' Sexuel. Les 20 emplacements facultatifs vides ne sont jamais tirés.</p>'+
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
     '<button class="pill '+(category===c?'selected':'')+
     '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
-  '</section>'+jsonToolsPanel('evening',names[category],state.jsonPending)+
+  '</section>'+
+  '<details class="card library-technical"'+(state.jsonPending?.kind==='evening'?' open':'')+
+  '><summary>Importer / exporter les défis</summary>'+
+  jsonToolsPanel('evening',names[category],state.jsonPending)+'</details>'+
   '<section class="card"><div class="eyebrow">RÈGLE DE PIGE</div>'+
   '<h3>Éviter les répétitions</h3>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="no-repeat-cards"'+
@@ -1274,6 +1461,8 @@ function renderCardLibrary(){
   button('save-draw-rule','Enregistrer cette règle','class="subtle"')+
   '</section>'+
   '<section class="card"><div class="eyebrow">CHOISIR UNE CARTE À MODIFIER</div>'+
+  '<label>Rechercher une carte<input id="custom-card-search" type="search" placeholder="Titre, mot-clé ou numéro"></label>'+
+  '<label>Afficher<select id="custom-card-filter"><option value="all">Toutes les cartes</option><option value="edited">Cartes personnalisées</option><option value="empty">Emplacements libres</option></select></label>'+
   '<h3>25 cartes prêtes</h3><div class="custom-card-tiles">'+table(slots.slice(0,25))+
   '</div><h3>10 emplacements facultatifs</h3><div class="custom-card-tiles">'+
   table(slots.slice(25))+'</div>'+
@@ -1288,7 +1477,7 @@ function renderCardLibrary(){
   chooser('custom-drawer',slot.drawerRole)+
   '<strong>Qui peut recevoir ce défi ?</strong>'+
   chooser('custom-recipient',slot.recipientRole)+
-  '<p class="tiny-note">Celui qui pige OFFRE le défi à l’autre, qui le REÇOIT. Ces restrictions sont vérifiées dans la base de données avant chaque tirage.</p>'+
+  '<p class="tiny-note">En Soirée actuelle, la personne désignée pige et réalise son propre défi. Les cadeaux transfèrent un défi disponible à l’autre partenaire. Qui peut piger et qui peut recevoir sont vérifiés par le serveur.</p>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="custom-timer-enabled"'+
    (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
   '<label>Durée (minutes)<input id="custom-minutes" type="number" min="1" max="60" value="'+
@@ -1317,7 +1506,10 @@ function renderMonthlyLibrary(){
   '<p>Changez les 20 idées de sortie, même avant d’inviter votre partenaire. Vous pouvez remplacer complètement une idée de sortie et sa description.</p>'+
   '<div class="custom-card-tiles">'+tiles+'</div>'+
   '<p class="tiny-note">Les changements seront utilisés aux prochains tirages. Le résultat déjà obtenu ce mois-ci reste inchangé pour les deux partenaires.</p>'+
-  '</section>'+jsonToolsPanel('monthly','20 activités du mois',state.jsonPending)+
+  '</section>'+
+  '<details class="card library-technical"'+(state.jsonPending?.kind==='monthly'?' open':'')+
+  '><summary>Importer / exporter les activités</summary>'+
+  jsonToolsPanel('monthly','20 activités du mois',state.jsonPending)+'</details>'+
   '<section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
   '<h3>'+safe(entry.title)+'</h3>'+
   '<label>Nom de l’activité<input id="monthly-title" maxlength="120" value="'+
@@ -1362,13 +1554,19 @@ function settingRow(title,detail,action,label='Ouvrir'){
   '<span class="settings-link-copy"><strong>'+safe(title)+'</strong><small>'+safe(detail)+'</small></span>'+
   '<span class="settings-link-affordance">'+safe(label)+' <b aria-hidden="true">›</b></span></button>';
 }
+function frenchMonthDay(md){
+ if(!/^\d{2}-\d{2}$/.test(md||''))return 'Non renseigné';
+ const date=new Date('2000-'+md+'T12:00:00Z');
+ return Number.isNaN(date.valueOf())?'Non renseigné':
+  new Intl.DateTimeFormat('fr-CA',{day:'numeric',month:'long',timeZone:'UTC'}).format(date);
+}
 function renderCoupleDateSetting(){
  const started=state.occasionSettings?.relationship_started_on||'';
  return (isLoveAdmin()?
   '<label class="settings-date-field"><span>Date de début</span><input id="couple-started-on" type="date" max="'+safe(today())+
   '" value="'+safe(started)+'"></label>':
   '<div class="settings-date-field"><strong>Date de début</strong><p>'+safe(formatCoupleDate(started))+'</p></div>')+
-  '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>';
+  '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(frenchMonthDay(state.occasionSettings?.anniversary_md))+'</p>';
 }
 function initSettingsAccordion(){
  const groups=[...root.querySelectorAll('details.settings-group[data-settings-section]')];
@@ -1395,9 +1593,12 @@ function renderSettings(){
   '<label class="settings-inline-name"><span>Prénom affiché</span>'+
   '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label></div>'+
   '<div class="settings-actions">'+
-  button('profile','Enregistrer mon prénom','class="settings-primary"')+
+  button('profile','Enregistrer mon profil','class="settings-primary"')+
   button('signout','Déconnexion','class="subtle settings-secondary"')+'</div>'+
-  '<p class="tiny-note settings-footer-hint">Anniversaire du profil : '+safe(state.profile.birthday_md||'Non renseigné')+'</p>';
+  '<details class="settings-birthday-edit"><summary>Modifier ma date d’anniversaire · '+
+   safe(frenchMonthDay(state.profile.birthday_md))+'</summary>'+
+  '<p>Cette date sera aussi corrigée dans les occasions du couple.</p>'+
+  monthDayInputs('settings-birthday',state.profile.birthday_md)+'</details>';
  let partner='';
  if(hasPartner){
   partner='<div class="settings-split settings-couple-top"><div class="settings-couple-status">'+
@@ -1405,7 +1606,8 @@ function renderSettings(){
    '<span class="settings-confirmation">✓ Invitation acceptée</span></div>'+
    '<div class="settings-date-outer">'+renderCoupleDateSetting()+'</div></div>'+
    '<div class="settings-actions">'+
-   (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
+   (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+'</div>'+
+   '<div class="settings-danger-zone"><p>Gestion du couple · action sensible</p>'+
    button('end-couple','Dissocier mon partenaire','class="subtle danger-action settings-secondary"')+'</div>'+
    '<p class="tiny-note settings-footer-hint">La dissociation conserve les comptes et les défis.</p>';
  }else if(linked){
@@ -1494,8 +1696,8 @@ function renderSettings(){
      !requestedSettingsSection||requestedSettingsSection==='couple')+
    settingGroup('Notifications','♧','Rappels et préférences',notifications,requestedSettingsSection==='notifications')+
    settingGroup('Jeu et personnalisation','🎲','Cartes, activités et surprises',game,requestedSettingsSection==='jeu')+
-   settingGroup('Administration','♛','Gestion des tirages',adminWeekly||'<p class="settings-limited">Réservé au créateur du couple. Aucun accès aux commandes administrateur.</p>',
-     requestedSettingsSection==='admin')+
+   (isLoveAdmin()?settingGroup('Administration','♛','Gestion des tirages',adminWeekly,
+     requestedSettingsSection==='admin'):'')+
    settingGroup('Application','▣','Version et mises à jour',appSettings,requestedSettingsSection==='application')+
    settingGroup('Confidentialité','♙','Journal, données et ressenti',privacy,requestedSettingsSection==='confidentialite')+
    settingGroup('Aide','?','Informations et fonctionnement',support,requestedSettingsSection==='aide')+'</div>',
@@ -1532,14 +1734,23 @@ function randomInviteToken(){
  return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 async function ensureInviteDraft(forceNew=false){
- if(!forceNew&&state.inviteDraft)return state.inviteDraft;
  if(!state.coupleId||state.members.length===2)throw Error('Le couple est déjà connecté.');
  const email=normalizeInviteEmail(id('invite-email')?.value);
  if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
+ const existing=state.invitations?.find(x=>!x.cancelled_at&&!x.accepted_at&&
+  new Date(x.expires_at)>new Date()&&x.invited_email?.toLowerCase()===email);
+ // ID links are recoverable from server-visible invitation metadata; the
+ // secret token hash is never exposed. Re-sending does not consume/invalidate it.
+ if(!forceNew&&existing){
+  state.inviteDraft={id:existing.id,email,link:inviteLinkForId(CONFIG.siteUrl,existing.id)};
+  return state.inviteDraft;
+ }
+ if(!forceNew&&state.inviteDraft&&state.inviteDraft.email===email)return state.inviteDraft;
+ if(!forceNew&&state.invitations?.some(x=>!x.cancelled_at&&!x.accepted_at&&
+   new Date(x.expires_at)>new Date()))
+  throw Error('Une invitation active existe pour un autre courriel. Utilisez « Remplacer le lien actuel ».');
  const token=randomInviteToken(),digest=await hashToken(token);
  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
- // Use a non-secret, browser-safe reference in the URL; acceptance is bound
- // to the verified recipient email on the server.
  state.inviteDraft={id:invitationId,email,link:inviteLinkForId(CONFIG.siteUrl,invitationId)};
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
@@ -1785,16 +1996,43 @@ async function handle(action,element){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   const day=Number(parts[0]);
   if(!Number.isInteger(day)||day<1||day>25)throw Error('Journée invalide.');
-  const contents=id('advent-2026-json');
-  if(contents)contents.focus();
-  notify('Jour '+day+' : modifiez sa section dans le JSON, puis enregistrez les 25 cases.');
+  if(hasUnsavedForm()&&!(await premiumConfirm('Un brouillon non enregistré pourrait être perdu en changeant de journée.',{
+    kind:'library',title:'Changer de journée ?',accept:'Continuer',cancel:'Rester'})))return;
+  state.adventEditorDay=day;render();
+  id('advent-day-title')?.scrollIntoView({behavior:'smooth',block:'center'});
   return;
+ }
+ if(verb==='close-advent-day'){
+  if(hasUnsavedForm()&&!(await premiumConfirm('Fermer sans enregistrer les modifications de cette journée ?',{
+    kind:'library',title:'Fermer le brouillon ?',accept:'Fermer',cancel:'Rester'})))return;
+  state.adventEditorDay=null;render();return;
+ }
+ if(verb==='save-advent-day'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const calendar=calendarFromSaved(state.advent2026Config,state.advent2026Days);
+  const day=state.adventEditorDay;
+  if(!calendar||!Number.isInteger(day)||day<1||day>25)
+   throw Error('Aucune journée du calendrier à modifier.');
+  const durationText=id('advent-day-minutes')?.value.trim()||'';
+  const minutes=durationText===''?null:Number(durationText);
+  const entry=calendar.days.find(x=>x.day===day);
+  Object.assign(entry,{type:id('advent-day-type')?.value.trim(),
+   title:id('advent-day-title')?.value.trim(),
+   description:id('advent-day-description')?.value.trim(),timer_minutes:minutes});
+  normalizeLibraryData(calendar,'advent'); // Validate all 25 days before mutation.
+  if(!(await premiumConfirm('Enregistrer la modification du '+day+
+    ' décembre ? Les autres journées et les résultats déjà ouverts restent identiques.',{
+    kind:'library',title:'Enregistrer cette journée ?'})))return;
+  await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:calendar});
+  state.adventEditorDay=null;state.jsonPending=null;
+  await reload();notify('Journée '+day+' enregistrée. Le calendrier partagé reste intact.');return;
  }
  if(verb==='monthly-slot'){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
   const face=Number(parts[0]);
   if(!Number.isInteger(face)||face<1||face>20)throw Error('Activité invalide.');
-  state.monthlySlot=face;render();return;
+  state.monthlySlot=face;render();
+  id('monthly-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;
  }
  if(verb==='save-monthly-activity'){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
@@ -1833,7 +2071,8 @@ async function handle(action,element){
  if(verb==='custom-slot'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<1||slot>35)throw Error('Emplacement invalide.');
-  state.customSlot=slot;render();return;
+  state.customSlot=slot;render();
+  id('custom-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;
  }
  if(verb==='save-custom-card'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
@@ -1898,7 +2137,39 @@ async function handle(action,element){
   }
   state.personalPass=pass;render();return;
  }
- if(verb==='lock-personal'){state.personalPass=null;render();return;}
+ if(verb==='personal-edit'){
+  const entry=state.personalJournal?.find(x=>x.id===parts[0]);
+  if(!entry||!state.personalPass)throw Error('Vous devez déverrouiller votre note personnelle.');
+  const key=await createCipherKey(state.personalPass,entry.journal_salt);
+  await decryptJson(entry.ciphertext,key);
+  state.personalEditId=entry.id;state.personalSelectedDate=entry.happened_on;render();return;
+ }
+ if(verb==='personal-cancel-edit'){state.personalEditId=null;render();return;}
+ if(verb==='personal-save'){
+  const entry=state.personalJournal?.find(x=>x.id===parts[0]&&x.id===state.personalEditId);
+  if(!entry||!state.personalPass)throw Error('Modification non autorisée.');
+  const date=id('personal-edit-date')?.value||entry.happened_on;
+  if(date>today())throw Error('La date ne peut pas être dans le futur.');
+  const key=await createCipherKey(state.personalPass,entry.journal_salt);
+  const payload=await decryptJson(entry.ciphertext,key);
+  Object.assign(payload,{orgasm:id('personal-edit-orgasm')?.value,
+   good:id('personal-edit-good')?.value,weak:id('personal-edit-weak')?.value,
+   note:(id('personal-edit-note')?.value||'').slice(0,1200)});
+  const ciphertext=await encryptJson(payload,key);
+  await rpc('update_my_personal_love_event',{p_archive:entry.id,
+   p_happened_on:date,p_ciphertext:ciphertext});
+  state.personalEditId=null;state.personalSelectedDate=date;
+  await reload();notify('Votre note privée a été modifiée sans changer le journal partagé.');return;
+ }
+ if(verb==='personal-delete'){
+  const entry=state.personalJournal?.find(x=>x.id===parts[0]);
+  if(!entry||!state.personalPass)throw Error('Accès refusé.');
+  if(!(await premiumConfirm('Supprimer seulement votre archive personnelle ? Le journal partagé ne sera pas modifié.',
+   {kind:'delete',title:'Supprimer ma note privée ?'})))return;
+  await rpc('delete_my_personal_love_event',{p_archive:entry.id});
+  state.personalEditId=null;await reload();notify('Note personnelle supprimée.');return;
+ }
+ if(verb==='lock-personal'){state.personalPass=null;state.personalEditId=null;render();return;}
  if(verb==='personal-date'){state.personalSelectedDate=parts[0];render();return;}
  if(verb==='personal-month-prev'||verb==='personal-month-next'){
   const d=new Date((state.personalCalendarMonth||month())+'-01T12:00:00Z');
@@ -2077,8 +2348,9 @@ async function handle(action,element){
  if(verb==='profile'){
   const name=id('profile-name')?.value.trim();
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
-  await rpc('complete_love_registration',{p_name:name,p_birthday_md:state.profile.birthday_md});
-  await reload();return;
+  const birthday=parseMonthDay('settings-birthday');
+  await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
+  await reload();notify('Votre profil et votre date sont enregistrés.');return;
  }
  if(verb==='prepare-cards'){
   if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
@@ -2094,12 +2366,13 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='invite'){
+  if(state.invitations?.some(x=>!x.cancelled_at&&!x.accepted_at&&new Date(x.expires_at)>new Date())&&
+     !(await premiumConfirm('L’ancien lien d’invitation cessera de fonctionner. Votre partenaire devra utiliser le nouveau lien.',{kind:'library',title:'Remplacer le lien sécurisé ?'})))return;
   await ensureInviteDraft(true);render();
-  notify('Nouveau lien personnel prêt. Choisissez une méthode de partage.');return;
+  notify('Nouveau lien prêt. L’ancien lien a été remplacé.');return;
  }
  if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
-  // A token cannot be recovered from its hash after closing the application.
-  // Generate a fresh, single-use link when the user chooses a sharing method.
+  // Reuse the unexpired invitation ID after reload. The server verifies email at acceptance.
   const d=await ensureInviteDraft(false);
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
   const text=verb==='send-messenger'?invitationMessengerText(d.link):invitationEmailText(d.link);
@@ -2140,7 +2413,15 @@ async function handle(action,element){
   render();notify('Invitation annulée.');return;
  }
  if(verb==='choose-feedback'){
-  state.chosenSession=parts[0];state.tab='feedback';render();return;
+  const sessionId=parts[0];
+  if(!state.sessions.some(x=>x.id===sessionId&&x.finished_at&&x.counted))
+   throw Error('Cette soirée terminée est introuvable.');
+  state.chosenSession=sessionId;
+  try{
+   const items=await rpc('my_love_feedback_status',{p_session:sessionId});
+   state.feedbackStatus={sessionId,items:Array.isArray(items)?items:[]};
+  }catch(error){state.feedbackStatus=null;}
+  state.tab='feedback';render();return;
  }
  if(verb==='save-couple-date'){
   const value=id('couple-started-on')?.value||null;
@@ -2160,7 +2441,15 @@ async function handle(action,element){
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
   if(['library','monthly-library','advent-editor','special-editor'].includes(parts[0])&&!isLoveAdmin())
    throw Error('Modification réservée à l’administrateur du couple.');
-  state.tab=parts[0];state.confirmCancel=false;
+  if(parts[0]!==state.tab&&hasUnsavedForm()&&
+    !(await premiumConfirm('Vos modifications non enregistrées seront perdues. Voulez-vous quitter cette page ?',{
+      kind:'library',title:'Quitter sans enregistrer ?',accept:'Quitter',cancel:'Rester'
+    })))return;
+  if(parts[0]==='settings'&&state.tab==='occasions'){
+   settingsOpenSection='couple';
+   try{sessionStorage.setItem('loveroll-settings-section','couple');}catch{}
+  }
+  allowBackExit=false;state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.eveningMore=false;}
   if(state.tab!=='special')state.showSurpriseActivity=false;
@@ -2220,7 +2509,12 @@ async function handle(action,element){
   if(!state.rollStatus?.both_ready)notify('Dé lancé! Les deux résultats apparaîtront ensemble après le dernier tirage.');
   else notify('♡ Les deux résultats sont maintenant révélés!');return;
  }
- if(verb==='category'){if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');state.category=parts[0];state.randomMode=false;render();return;}
+ if(verb==='category'){
+  if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');
+  state.category=parts[0];state.randomMode=false;
+  if(state.session)try{sessionStorage.setItem('loveroll-category-'+state.session.id,parts[0]);}catch{}
+  render();return;
+ }
   if(verb==='timer-mode'){
    if(parts[0]!=='vibrate'&&parts[0]!=='sound')throw Error('Signal inconnu');
    challengeTimer.mode=parts[0];localStorage.setItem('loveroll-timer-mode',parts[0]);
@@ -2275,6 +2569,7 @@ async function handle(action,element){
    throw Error('Choisissez Sensuel ou Sexuel avant chaque nouveau défi.');
   await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
    p_preference:state.category,p_random:false}),'new-challenge');
+  try{sessionStorage.removeItem('loveroll-category-'+state.session.id);}catch{}
   state.category=null; // Require a fresh category choice for the next challenge.
   render();
   return;
@@ -2283,8 +2578,9 @@ async function handle(action,element){
   state.showEveningChallenge=false;await refreshAndShow();return;}
  if(verb==='finish-session'){
   if(!state.session)return;
-  await rpc('finish_couple_session',{p_session:state.session.id,p_count:true});
-  state.chosenSession=state.session.id;state.tab='session';await refreshAndShow();return;
+  const finishedId=state.session.id;
+  await rpc('finish_couple_session',{p_session:finishedId,p_count:true});
+  state.chosenSession=finishedId;state.tab='session';await refreshAndShow();return;
  }
  if(verb==='cancel-session'){state.confirmCancel=true;render();return;}
  if(verb==='dismiss-cancel'){state.confirmCancel=false;render();return;}
@@ -2331,14 +2627,29 @@ async function handle(action,element){
  }
  if(verb==='unlock'){
   const pass=id('journal-pass')?.value||'';
+  const savedProbe=state.couple?.journal_verifier||null;
+  const hasLegacy=state.journal.length>0||state.feedback.length>0;
+  const creating=!savedProbe&&!hasLegacy;
+  if(creating&&pass!==id('journal-pass-confirm')?.value)
+   throw Error('Les deux phrases secrètes doivent être identiques.');
   const key=await createCipherKey(pass);
+  if(creating){
+   // Only a ciphertext proving the key can be opened is stored remotely.
+   const envelope=await encryptJson({purpose:'loveroll-journal-check',version:1},key);
+   await rpc('initialize_love_journal',{p_couple:state.coupleId,p_verifier:envelope});
+   state.couple.journal_verifier=envelope;
+  }else{
+   try{
+    const probe=savedProbe||state.journal[0]?.ciphertext||state.feedback[0]?.ciphertext;
+    if(!probe)throw Error('Aucune preuve de clé disponible.');
+    const clear=await decryptJson(probe,key);
+    if(savedProbe&&clear?.purpose!=='loveroll-journal-check')
+     throw Error('Vérification du journal invalide.');
+   }catch{state.unlockKey=null;throw Error('Phrase secrète incorrecte pour les données existantes.');}
+  }
   state.unlockKey=key;
-  // Test existing envelope if one exists, to catch wrong passphrase.
-  try{
-   const probe=state.journal[0]?.ciphertext||state.feedback[0]?.ciphertext;
-   if(probe)await decryptJson(probe);
-  }catch{state.unlockKey=null;throw Error('Phrase secrète incorrecte pour les données existantes.');}
-  notify('Journal déverrouillé sur cet appareil.');render();return;
+  notify(creating?'Phrase secrète du journal créée. Partagez-la en personne avec votre partenaire.':
+   'Journal déverrouillé sur cet appareil.');render();return;
  }
  if(verb==='lock'){state.unlockKey=null;render();return;}
  if(verb==='date'){state.selectedDate=parts[0];render();return;}
@@ -2348,6 +2659,12 @@ async function handle(action,element){
   d.setUTCMonth(d.getUTCMonth()+offset);
   state.calendarMonth=d.toISOString().slice(0,7);render();return;
  }
+ if(verb==='edit-event'){
+  const entry=state.journal.find(x=>x.id===parts[0]&&x.author_id===state.user.id);
+  if(!entry||!state.unlockKey)throw Error('Vous ne pouvez modifier que votre entrée déverrouillée.');
+  state.editEventId=entry.id;state.selectedDate=entry.happened_on;render();return;
+ }
+ if(verb==='cancel-edit-event'){state.editEventId=null;render();return;}
  if(verb==='save-event'){
   if(!state.unlockKey)throw Error('Journal verrouillé');
   const date=id('event-date')?.value||today();
@@ -2355,11 +2672,14 @@ async function handle(action,element){
   const payload={orgasm:id('event-orgasm').value,good:id('event-good').value,
     weak:id('event-weak').value,note:id('event-note').value.slice(0,1200)};
   const ciphertext=await encryptJson(payload);
-  await rpc('add_my_love_event',{p_couple:state.coupleId,p_happened_on:date,p_ciphertext:ciphertext});
-  state.selectedDate=date;await reload();notify('Moment ajouté au calendrier partagé et à votre calendrier privé');return;
+  const wasEdit=!!state.editEventId;
+  if(wasEdit)await rpc('update_my_love_event',{p_event:state.editEventId,p_happened_on:date,p_ciphertext:ciphertext});
+  else await rpc('add_my_love_event',{p_couple:state.coupleId,p_happened_on:date,p_ciphertext:ciphertext});
+  state.editEventId=null;state.selectedDate=date;
+  await reload();notify(wasEdit?'Entrée partagée modifiée.':'Moment ajouté au calendrier partagé et à votre calendrier privé');return;
  }
  if(verb==='delete-event'){
-  if(!(await premiumConfirm('Cette entrée personnelle sera définitivement supprimée.',{kind:'delete',title:'Supprimer ce souvenir ?'})))return;
+  if(!(await premiumConfirm('Cette entrée sera supprimée du journal partagé. Une copie personnelle peut demeurer dans votre calendrier privé.',{kind:'delete',title:'Supprimer du journal partagé ?'})))return;
   const {error}=await client.from('couple_intimacy').delete().eq('id',parts[0]).eq('author_id',state.user.id);
   if(error)throw error;await refreshAndShow();return;
  }
@@ -2539,6 +2859,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-couple54',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-audit56',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }

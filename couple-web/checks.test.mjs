@@ -254,7 +254,7 @@ test('New couple match uses two individual sign-ups',()=>{
 });
 test('Anniversary and dates are not re-entered in Settings',()=>{
  const fragment=app.slice(app.indexOf('function renderSettings()'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
- assert.match(fragment,/Anniversaire du profil/);
+ assert.match(fragment,/Modifier ma date d’anniversaire/);
  assert.doesNotMatch(fragment,/loveroll-birthday|save-occasion-date:birthday/);
 });
 test('Database onboarding enforces profile birthday and revokes old bypasses',()=>{
@@ -305,7 +305,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v54/);
+ assert.match(sw,/loveroll-static-v56/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -435,7 +435,7 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("save_love_card_with_roles"));
  assert.ok(app.includes("button('tab:library','♡ Nos 70 défis')"));
  assert.ok(app.includes("renderInvitePanel()"));
- assert.ok(app.includes("button('invite',latest?'↻ Renouveler mon lien sécurisé'"));
+ assert.ok(app.includes("button('invite','Remplacer le lien actuel'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
  assert.ok(app.includes("button('tab:personal-journal','Ouvrir mon calendrier personnel')"));
  assert.ok(!app.includes("if(verb==='skip-couple')"));
@@ -743,7 +743,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
  assert.ok(app.includes("settingRow('Activités du mois'"));
  assert.ok(app.includes("premiumHomeHtml({")); // monthly activity now displayed via live monthly countdown
- assert.ok(app.includes("activity:active?monthlyActivityForRoll(active):null"));
+ assert.ok(app.includes("const activity=active?monthlyActivityForRoll(active):null"));
  assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/activity\?\.is_restaurant/);
  assert.ok(serviceWorker.includes("'./monthly-activities.mjs'"));
  assert.ok(!app.includes("safe(outings[a.face-1])"));

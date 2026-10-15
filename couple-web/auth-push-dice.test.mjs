@@ -61,7 +61,7 @@ test('Disabled native Firebase never fakes push availability',()=>{
  globalThis.window={LoveRollNativeAuth:{weeklyReminderEnabled:()=>true,nativePushConfigured:()=>false,nativePushToken:()=>''}};
  Object.defineProperty(globalThis,'navigator',{configurable:true,value:{userAgent:'Android',platform:'Android',maxTouchPoints:1,standalone:false}});
  const html=notificationSettingsMarkup({enabled:false});
- assert.match(html,/FCM nécessite la configuration Firebase native/);
+ assert.match(html,/Les notifications à distance nécessitent une mise à jour/);
  assert.doesNotMatch(html,/data-action="push-enable"/);
  assert.match(html,/data-action="native-notify-disable"/);
  assert.match(html,/data-push-option="weekly"[^>]*disabled/);
