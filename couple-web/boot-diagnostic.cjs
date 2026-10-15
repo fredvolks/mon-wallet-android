@@ -1,0 +1,37 @@
+// Probe deployed bytes, file parity and actual Chromium module startup.
+// Run inside CI with playwright installed, no credentials required.
+// The report contains no user data.
+const {chromium}=require('playwright');
+const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=require('node:child_process');
+(async()=>{
+ const url='https://fredvolks.github.io/mon-wallet-android/';
+ const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),25000);
+ let remote, status;
+ try{
+  const res=await fetch(url+'app.js?v=20261015-audit56&diagnostic='+Date.now(),
+   {signal:controller.signal,headers:{'cache-control':'no-cache'}});
+  status=res.status;remote=await res.text();
+ }finally{clearTimeout(timer)}
+ fs.writeFileSync('/tmp/loveroll-production-app.js',remote);
+ let syntax='ok';
+ try{execFileSync('node',['--check','/tmp/loveroll-production-app.js'],{stdio:'pipe'})}
+ catch(e){syntax=(e.stderr||'').toString().slice(0,2000)}
+ const local=fs.readFileSync('couple-web/app.js');
+ const hash=data=>crypto.createHash('sha256').update(data).digest('hex');
+ console.log('PRODUCTION_BYTES',JSON.stringify({status,bytes:remote.length,remoteSha256:hash(remote),
+  localSha256:hash(local),identical:hash(remote)===hash(local),syntax}));
+ const browser=await chromium.launch({headless:true,args:['--disable-cache']});
+ const page=await browser.newPage({viewport:{width:412,height:824},serviceWorkers:'block'});
+ const logs=[];
+ page.on('pageerror',err=>logs.push('PAGE_ERROR '+err.message+' '+err.stack?.slice(0,750)));
+ page.on('console',msg=>{if(msg.type()==='error')logs.push('CONSOLE '+msg.text().slice(0,750))});
+ page.on('requestfailed',r=>logs.push('REQUEST_FAILED '+r.url().slice(0,200)+' '+r.failure()?.errorText));
+ await page.goto(url+'?bootstrap-diagnostic='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
+ try{await page.waitForFunction(()=>!document.querySelector('#app')?.textContent?.includes('Ouverture de votre espace privé'),
+  null,{timeout:15000});}catch(e){logs.push('BOOT_TIMEOUT '+e.message.slice(0,200))}
+ const state=await page.evaluate(()=>({text:document.querySelector('#app')?.textContent?.slice(0,380),
+  scripts:[...document.scripts].map(s=>s.src),url:location.href}));
+ console.log('PRODUCTION_RENDER',JSON.stringify(state));
+ console.log('PRODUCTION_LOGS',JSON.stringify(logs.slice(0,25)));
+ await browser.close();
+})().catch(e=>{console.error('DIAG_FATAL',e);process.exitCode=1});
