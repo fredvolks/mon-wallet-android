@@ -86,6 +86,18 @@ export function createClient(){
     throw Error('Google OAuth selector missing '+JSON.stringify(args));
   }
   if(name==='existing-paired'){
+   // The WebGL canvas is centered horizontally, but its visible cube sits
+   // lower within it. Verify that the platform is optically lifted on phone.
+   const center=await page.evaluate(()=>{
+    const t=document.querySelector('.home-die-theater')?.getBoundingClientRect();
+    const p=document.querySelector('.home-die-platform')?.getBoundingClientRect();
+    return t&&p?{x:(p.left+p.right)/2-(t.left+t.right)/2,
+      platformY:(p.top+p.bottom)/2, theaterY:(t.top+t.bottom)/2,
+      translate:getComputedStyle(document.querySelector('.home-die-platform')).transform}:null;
+   });
+   if(!center||Math.abs(center.x)>3||center.platformY>=center.theaterY-8||
+      center.translate==='none')throw Error('HOME_DIE_NOT_CENTERED '+JSON.stringify(center));
+   console.log('HOME_DIE_CENTERED_OK',JSON.stringify(center));
    // Regression: tap Soirée after weekly reset. This used to throw
    // Cannot read properties of null (reading 'items') on Samsung.
    await page.locator('.nav [data-action="tab:session"]').click();

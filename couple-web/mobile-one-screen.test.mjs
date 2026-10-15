@@ -16,6 +16,12 @@ test('Mobile main screens have fixed dynamic viewport; bottom navigation remains
  assert.match(css,/max-height:660px/);
  assert.doesNotMatch(css,/scroll-padding-bottom|grid-auto-rows:max-content/);
 });
+test('Home 3D die is optically centered in the satin theater on phones',()=>{
+ assert.match(css,/home-die-platform\\{[\\s\\S]*?transform:translate3d\\(0,-18%,0\\)!important/);
+ assert.match(css,/@media \\(max-width:767px\\) and \\(max-height:740px\\)\\{/);
+ assert.match(css,/transform:translate3d\\(0,-13%,0\\)!important/);
+ assert.doesNotMatch(css,/home-die-platform\\{transform:none!important\\}/);
+});
 test('Step 2 and all private-queue controls fit into the same mobile grid',()=>{
  assert.match(css,/grid-template-rows:minmax\(36px,\.48fr\)/);
  assert.match(css,/\.evening-play-controls \.evening-primary\{/);
@@ -49,10 +55,10 @@ test('Advent 25 squares keep their screen space',()=>{
 });
 test('v74 loaded LAST in HTML and cached with updated worker; server version updated',()=>{
  const index=read('index.html'),sw=read('service-worker.js'),v=JSON.parse(read('web-version.json'));
- assert.equal(v.build,'2026-10-15.81');
- assert.match(index,/mobile-one-screen-v74\.css\?v=20261015-evening81/);
+ assert.equal(v.build,'2026-10-15.82');
+ assert.match(index,/mobile-one-screen-v74\.css\?v=20261015-center82/);
  assert.ok(index.lastIndexOf('mobile-one-screen-v74.css')>index.lastIndexOf('surprise-dice-layout-v73.css'));
- assert.match(sw,/loveroll-static-v81/);
+ assert.match(sw,/loveroll-static-v82/);
  assert.match(sw,/\.\/mobile-one-screen-v74\.css/);
 });
 
