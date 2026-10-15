@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-boot57';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-boot57';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-boot57';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite58';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite58';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite58';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-boot57';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite58';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -24,10 +24,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-boot57';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite58';
 
 
-const WEB_RELEASE='2026-10-15.57';
+const WEB_RELEASE='2026-10-15.58';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -40,7 +40,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -245,7 +245,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-boot57').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite58').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -405,7 +405,7 @@ function render(){
   if(!state.user&&!state.showAuth){root.innerHTML=discoverHtml(false);bindActions();}
   else{
    root.innerHTML=authHtml(!!pendingInvite,state.passwordRecovery?'recover':state.authMode,
-    state.authNotice||'',state.authDraftEmail)+inviteBrowserHelp();
+    state.authNotice||'',state.authDraftEmail,state.authNeedsEmailConfirmation)+inviteBrowserHelp();
    bindActions();
   }
   return;
@@ -667,7 +667,10 @@ function renderInvitePanel(){
   state.invitations?.[0];
  const ready=state.members?.length===2;
  const status=invitationStatus(latest,ready);
- const draft=state.inviteDraft&&state.inviteDraft.id===latest?.id?state.inviteDraft:null;
+ const active=latest&&!ready&&!latest.cancelled_at&&!latest.accepted_at&&
+  new Date(latest.expires_at)>new Date();
+ const draft=active?{id:latest.id,email:latest.invited_email,
+  link:inviteLinkForId(CONFIG.siteUrl,latest.id)}:null;
  let html='<section class="card"><div class="eyebrow">VOTRE INVITATION</div><h3>♡ Statut de la demande</h3>'+
   '<div class="invite-status"><strong>'+safe(status.title)+'</strong><p>'+safe(status.hint)+'</p></div>';
  if(latest)html+='<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+
@@ -675,21 +678,25 @@ function renderInvitePanel(){
  if(!ready){
   html+='<label>Adresse courriel du compte de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   (latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date()?
+   (active?
     '<p class="tiny-note">Votre lien d’invitation demeure valable et peut être renvoyé sans être remplacé.</p>'+
     button('invite','Remplacer le lien actuel','class="subtle"'):
     button('invite','Créer mon invitation'));
-  html+='<div class="invite-actions">'+
+  if(active||!latest){
+   html+='<div class="invite-actions">'+
     button('send-messenger','♡ Messenger')+
     button('send-sms','💬 Texto SMS','class="subtle"')+
     button('send-email','✉ Courriel','class="subtle"')+
-    (draft?button('copy-invite','Copier le lien','class="subtle"'):'')+'</div>';
+    (active?button('copy-invite','Copier le lien','class="subtle"'):'')+'</div>';
+  }
+  if(latest&&!active)html+='<p class="tiny-note">Cette invitation est expirée, annulée ou déjà acceptée. Créez un nouveau lien seulement si le couple n’est pas encore associé.</p>';
+  if(state.inviteCopyFallback&&draft)html+='<label class="invite-copy-manual">Lien à sélectionner et copier<input id="invite-manual-link" readonly aria-label="Lien d’invitation à copier" value="'+safe(draft.link)+'"></label>';
   if(draft)html+='<details class="invite-preview"><summary>♡ Aperçu de votre invitation</summary>'+
     invitationPreviewMarkup()+'</details>'+
     button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
     '<p class="tiny-note">Choisissez Messenger, SMS ou courriel dans votre application, puis confirmez l’envoi ici.</p>';
   else html+='<p class="tiny-note">Le partage utilise le lien valide existant, s’il y en a un. Seul « Remplacer le lien actuel » invalide le précédent. Aucun message n’est envoyé sans votre confirmation.</p>';
-  if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
+  if(active)
    html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
  }
  return html+'</section>';
@@ -1755,6 +1762,12 @@ async function ensureInviteDraft(forceNew=false){
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
 }
+function keepAuthModeInUrl(mode){
+ const url=new URL(location.href);
+ if(['signup','signin','request-reset'].includes(mode))url.searchParams.set('auth',mode);
+ else url.searchParams.delete('auth');
+ history.replaceState(null,'',url.pathname+url.search+url.hash);
+}
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
  if(verb==='home-notices'){
@@ -1861,7 +1874,7 @@ async function handle(action,element){
  }
  if(verb==='discover-loveroll'){state.showDiscover=true;render();return;}
  if(verb==='discover-back'||verb==='invite-return'){
-  state.showDiscover=false;
+  keepAuthModeInUrl(null);state.showDiscover=false;
   if(pendingInviteReference(sessionStorage)){
    state.inviteAccepted=false;state.showAuth=false;
    sessionStorage.removeItem('loverollInviteAccepted');
@@ -2179,9 +2192,14 @@ async function handle(action,element){
  if(verb==='show-auth'){
   if(pendingInviteReference(sessionStorage)&&!state.inviteAccepted)
    throw Error('Acceptez d’abord l’invitation.');
+  // Both landing buttons must enter their actual requested authentication flow.
+  state.authMode=parts[0]==='signin'?'signin':'signup';
+  keepAuthModeInUrl(state.authMode);
+  state.authNeedsEmailConfirmation=false;
+  state.authNotice=null;state.passwordRecovery=false;
   state.showDiscover=false;state.showAuth=true;render();return;
  }
- if(verb==='show-landing'){state.showDiscover=false;state.showAuth=false;render();return;}
+ if(verb==='show-landing'){keepAuthModeInUrl(null);state.showDiscover=false;state.showAuth=false;render();return;}
  if(verb==='google'&&window.LoveRollNativeAuth?.googleSignIn){
   try{
    state.authNotice='Connexion Google en cours… Sélectionnez votre compte dans la fenêtre Android.';
@@ -2210,6 +2228,8 @@ async function handle(action,element){
  if(verb==='auth-mode'){
   state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
   state.authMode=parts[0]==='signin'?'signin':'signup';
+  keepAuthModeInUrl(state.authMode);
+  state.authNeedsEmailConfirmation=false;
   state.authNotice=null;state.passwordRecovery=false;render();return;
  }
  if(verb==='auth-eye'){
@@ -2242,8 +2262,18 @@ async function handle(action,element){
     state.authNotice=null;render();
    }else{
     const {data,error}=await client.auth.signInWithPassword({email,password});
-    if(error){authMessage(passwordAuthMessage(error));return;}
+    if(error){
+     state.authDraftEmail=email;
+     state.authNeedsEmailConfirmation=error.code==='email_not_confirmed'||
+      /email not confirmed|courriel non confirm/i.test(error.message||'');
+     if(state.authNeedsEmailConfirmation){
+      state.authNotice='Votre adresse courriel doit être confirmée avant de vous connecter. Vous pouvez demander un nouveau courriel ci-dessous.';
+      render();
+     }else authMessage(passwordAuthMessage(error));
+     return;
+    }
     if(!data?.user)throw Error('Aucune session ouverte.');
+    state.authNeedsEmailConfirmation=false;
     state.user=data.user;state.authNotice=null;state.showAuth=false;
     await reload();
    }
@@ -2258,14 +2288,14 @@ async function handle(action,element){
    state.user=null;
   }
   state.emailVerificationPending=false;state.showDiscover=false;state.showAuth=true;
-  state.authMode='signin';
+  state.authMode='signin';keepAuthModeInUrl('signin');
   state.authNotice='Si vous avez déjà créé un compte avec Google, utilisez « Continuer avec Google ».';
   render();return;
  }
  if(verb==='email-confirm-recheck'){
   if(!state.user){
    state.emailVerificationPending=false;state.showDiscover=false;state.showAuth=true;
-   state.authMode='signin';
+   state.authMode='signin';keepAuthModeInUrl('signin');
    state.authNotice='Connectez-vous pour que LoveRoll vérifie votre compte confirmé auprès de Supabase.';
    render();return;
   }
@@ -2277,17 +2307,25 @@ async function handle(action,element){
    'Votre adresse n’est pas encore confirmée dans Supabase. Ouvrez le lien reçu.';
   return;
  }
- if(verb==='email-confirm-resend'){
-  const email=state.authDraftEmail||state.user?.email;
-  if(!email)throw Error('Indiquez votre adresse courriel.');
+ if(verb==='email-confirm-resend'||verb==='auth-resend-confirmation'){
+  const btn=element;if(btn?.disabled)return;
+  let email;
+  try{email=loginEmail(id('signin-email')?.value||state.authDraftEmail||state.user?.email);}
+  catch(error){authMessage(error.message);return;}
   const until=Number(sessionStorage.getItem('loverollConfirmResendAfter')||0);
-  if(Date.now()<until)throw Error('Attendez une minute avant de renvoyer le courriel.');
-  const {error}=await client.auth.resend({type:'signup',email,
-   options:{emailRedirectTo:pendingInviteUrl()}});
-  if(error){authMessage(passwordAuthMessage(error));return;}
-  sessionStorage.setItem('loverollConfirmResendAfter',String(Date.now()+60000));
-  const status=id('email-confirm-status');
-  if(status)status.textContent='Supabase a accepté la demande. Si cette adresse appartient déjà à un compte Google confirmé, aucun nouveau courriel ne sera envoyé. Essayez « Continuer avec Google ».';
+  if(Date.now()<until){authMessage('Veuillez patienter avant de demander un autre courriel.');return;}
+  if(btn)btn.disabled=true;
+  try{
+   const {error}=await client.auth.resend({type:'signup',email,
+    options:{emailRedirectTo:pendingInviteUrl()}});
+   if(error){authMessage(passwordAuthMessage(error));return;}
+   state.authDraftEmail=email;
+   sessionStorage.setItem('loverollConfirmResendAfter',String(Date.now()+60000));
+   const status=id('auth-resend-status')||id('email-confirm-status');
+   const msg='Demande reçue par le serveur. Cela ne garantit pas la réception du courriel. Vérifiez votre boîte et les indésirables. Si ce compte est déjà confirmé avec Google, utilisez « Continuer avec Google ».';
+   if(status)status.textContent=msg;else authMessage(msg);
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
   return;
  }
  if(verb==='email-confirm-edit'){
@@ -2296,13 +2334,22 @@ async function handle(action,element){
   state.authMode='signup';state.showAuth=true;render();return;
  }
  if(verb==='auth-reset-request'){
+  state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
+  state.authMode='request-reset';keepAuthModeInUrl('request-reset');state.authNeedsEmailConfirmation=false;
+  state.authNotice=null;state.showAuth=true;render();return;
+ }
+ if(verb==='auth-send-reset'){
   let email;
   try{email=loginEmail(id('signin-email')?.value);}catch(error){authMessage(error.message);return;}
+  const until=Number(sessionStorage.getItem('loverollResetAfter')||0);
+  if(Date.now()<until){authMessage('Veuillez patienter avant une nouvelle demande.');return;}
   const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
   try{
    const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pendingInviteUrl(true)});
    if(error){authMessage(passwordAuthMessage(error));return;}
-   authMessage('Si cette adresse possède un compte, un lien de réinitialisation a été envoyé. Vérifiez votre courriel.');
+   state.authDraftEmail=email;
+   sessionStorage.setItem('loverollResetAfter',String(Date.now()+60000));
+   authMessage('Demande de récupération acceptée. Si ce compte existe, le fournisseur pourra envoyer un lien. Vérifiez vos courriels; sa réception n’est pas encore confirmée.');
   }catch(error){authMessage(passwordAuthMessage(error));}
   finally{if(btn)btn.disabled=false;}
   return;
@@ -2332,6 +2379,7 @@ async function handle(action,element){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
   state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;state.passwordRecovery=false;
+  keepAuthModeInUrl(null);
   state.installAfterSignup=false;state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;
   render();return;
  }
@@ -2371,13 +2419,25 @@ async function handle(action,element){
  if(verb==='invite'){
   if(state.invitations?.some(x=>!x.cancelled_at&&!x.accepted_at&&new Date(x.expires_at)>new Date())&&
      !(await premiumConfirm('L’ancien lien d’invitation cessera de fonctionner. Votre partenaire devra utiliser le nouveau lien.',{kind:'library',title:'Remplacer le lien sécurisé ?'})))return;
-  await ensureInviteDraft(true);render();
+  await ensureInviteDraft(true);state.inviteCopyFallback=false;render();
   notify('Nouveau lien prêt. L’ancien lien a été remplacé.');return;
  }
  if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
   // Reuse the unexpired invitation ID after reload. The server verifies email at acceptance.
   const d=await ensureInviteDraft(false);
-  if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
+  if(verb==='copy-invite'){
+   try{
+    if(!navigator.clipboard?.writeText)throw Error('Presse-papiers indisponible');
+    await navigator.clipboard.writeText(d.link);
+    state.inviteCopyFallback=false;notify('Lien copié, sans modifier votre invitation.');
+   }catch(error){
+    state.inviteCopyFallback=true;render();
+    const field=id('invite-manual-link');
+    field?.focus();field?.select();
+    notify('Copie automatique indisponible : sélectionnez le lien affiché pour le copier.');
+   }
+   return;
+  }
   const text=verb==='send-messenger'?invitationMessengerText(d.link):invitationEmailText(d.link);
   state.lastShareMethod=verb==='send-sms'?'sms':verb==='send-email'?'courriel':'messenger';
   if(verb==='send-messenger'){
@@ -2386,8 +2446,11 @@ async function handle(action,element){
     try{await navigator.share({url:d.link});}
     catch(error){if(error.name!=='AbortError')throw error;}
    }else{
-    await navigator.clipboard.writeText(d.link);
-    notify('Lien copié : collez-le dans une conversation Messenger.');return;
+    try{await navigator.clipboard.writeText(d.link);
+     notify('Lien copié : collez-le dans une conversation Messenger.');}
+    catch{state.inviteCopyFallback=true;render();id('invite-manual-link')?.select();
+     notify('Sélectionnez le lien affiché pour le partager sur Messenger.');}
+    return;
    }
   }else if(verb==='send-sms'){
    if(window.LoveRollNativeAuth?.openSms)window.LoveRollNativeAuth.openSms(text);
@@ -2404,8 +2467,8 @@ async function handle(action,element){
   return;
  }
  if(verb==='confirm-invite-sent'){
-  if(!state.inviteDraft)throw Error('Aucun lien prêt à envoyer.');
-  await rpc('mark_pair_invite_sent',{p_invitation:state.inviteDraft.id,p_method:state.lastShareMethod||'partage'});
+  const invitation=await ensureInviteDraft(false);
+  await rpc('mark_pair_invite_sent',{p_invitation:invitation.id,p_method:state.lastShareMethod||'partage'});
   state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
   render();notify('Envoi confirmé manuellement.');return;
  }
@@ -2705,6 +2768,12 @@ async function start(){
  const errorCode=currentUrl.searchParams.get('error_code')||frag.get('error_code');
  const authError=currentUrl.searchParams.get('error')||frag.get('error');
  if(errorCode||authError){
+  // An expired/used recovery link MUST return to sign-in, not a password form
+  // that cannot submit without a valid Supabase recovery session.
+  if(state.passwordRecovery){
+   state.passwordRecovery=false;state.authMode='signin';
+   currentUrl.searchParams.set('auth','signin');
+  }
   state.authNotice=/expired|invalid|not_found/i.test(String(errorCode||''))?
    'Le lien est expiré ou a déjà été utilisé. Si ton courriel est confirmé, tu peux te connecter avec Google ou demander un nouveau lien lorsque la limite d’envoi sera levée.':
    'La confirmation n’a pas ouvert de session. Tu peux te connecter avec Google ou utiliser un nouveau lien de connexion plus tard.';
@@ -2862,6 +2931,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-boot57',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite58',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }

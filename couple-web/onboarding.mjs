@@ -78,18 +78,19 @@ export function marketingHtml(){
  '</footer>'+
  '</div>';
 }
-export function authHtml(invitation=false,mode='signup',notice='',emailValue=''){
- const recovering=mode==='recover',signingIn=mode==='signin';
- const title=recovering?'Nouveau mot de passe':signingIn?'Bienvenue dans LoveRoll':'Créez votre compte';
+export function authHtml(invitation=false,mode='signup',notice='',emailValue='',confirmNeeded=false){
+ const recovering=mode==='recover',requestingReset=mode==='request-reset',signingIn=mode==='signin';
+ const title=recovering?'Nouveau mot de passe':requestingReset?'Retrouver mon compte':signingIn?'Connectez-vous':'Créez votre compte';
  const helper=recovering?'Choisissez un nouveau mot de passe pour retrouver votre compte.':
+  requestingReset?'Indiquez votre courriel. Nous demanderons un lien de récupération sécurisé.':
   signingIn?'Retrouvez votre espace privé et vos surprises.':
   'Utilisez votre courriel et un mot de passe, ou connectez-vous avec Google.';
  const icon=kind=>kind==='mail'?'✉':kind==='lock'?'♙':'♡';
  const progress=invitation?'<div class="invite-account-progress" aria-label="Invitation reçue · connexion requise">'+
-  '<div class="invite-progress-item is-done"><b>♡</b><span>Invitation<br>reçue</span></div>'+
+  '<div class="invite-progress-item is-done"><b>✓</b><span>Invitation<br>reçue</span></div>'+
   '<div class="invite-progress-line"><i></i></div>'+
   '<div class="invite-progress-item is-current"><b>2</b><span>Votre compte</span></div></div>':'';
- const segment=recovering?'':'<div class="invite-auth-segments" role="group" aria-label="Choisir un mode">'+
+ const segment=recovering||requestingReset?'':'<div class="invite-auth-segments" role="group" aria-label="Choisir un mode">'+
   '<button type="button" data-action="auth-mode:signup" class="'+(!signingIn?'is-active':'')+'" aria-pressed="'+(!signingIn)+'">Créer un compte</button>'+
   '<button type="button" data-action="auth-mode:signin" class="'+(signingIn?'is-active':'')+'" aria-pressed="'+signingIn+'">Se connecter</button></div>';
  const email='<label class="invite-auth-field"><span class="invite-field-icon" aria-hidden="true">✉</span>'+
@@ -99,14 +100,15 @@ export function authHtml(invitation=false,mode='signup',notice='',emailValue='')
   '<input id="signin-password" name="password" type="password" autocomplete="'+(signingIn?'current-password':'new-password')+'" placeholder="••••••••" minlength="8" required></span>'+
   '<button type="button" class="invite-password-eye" data-action="auth-eye" aria-label="Afficher le mot de passe" aria-pressed="false">'+
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></label>';
- const meter=!signingIn?'<div class="invite-password-meter" aria-label="Robustesse du mot de passe">'+
+ const meter=!signingIn&&!requestingReset?'<div class="invite-password-meter" aria-label="Robustesse du mot de passe">'+
   '<div class="invite-meter-bars"><i></i><i></i><i></i><i></i></div>'+
   '<p id="auth-password-hint">'+(recovering?'Créez un nouveau mot de passe robuste.':'Au moins 8 caractères, avec une majuscule, une minuscule et un chiffre.')+'</p></div>':'';
  const actions=recovering?button('auth-update-password','Enregistrer mon nouveau mot de passe ♡','invite-auth-submit'):
+  requestingReset?button('auth-send-reset','Envoyer le lien de récupération','invite-auth-submit'):
   button(signingIn?'auth-signin-password':'auth-signup-password',
    signingIn?'Se connecter ♡':'Créer mon compte <small>et rejoindre notre univers ♡</small><span aria-hidden="true">›</span>',
    'invite-auth-submit');
- const misc=recovering?button('auth-mode:signin','← Retour à la connexion','invite-auth-link'):
+ const misc=recovering||requestingReset?button('auth-mode:signin','← Retour à la connexion','invite-auth-link'):
   (signingIn?button('auth-reset-request','Mot de passe oublié ?','invite-auth-link'):'')+
   '<div class="invite-or"><span>ou</span></div>'+
   '<button type="button" data-action="google" class="invite-google"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true">'+
@@ -119,12 +121,16 @@ export function authHtml(invitation=false,mode='signup',notice='',emailValue='')
   '<div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
   '<p>LA COMPLICITÉ SE JOUE À DEUX</p>'+progress+'</header>'+
   '<section class="invite-auth-card"><div class="invite-auth-title">'+
-  '<span class="invite-account-icon" aria-hidden="true">♙</span><div><h1>'+title+'</h1>'+
+  '<div><h1>'+title+'</h1>'+
   '<h2>'+(invitation?'et rejoignez votre partenaire ♡':'Votre espace privé ♡')+'</h2></div></div>'+
   '<p class="invite-auth-lead">'+helper+'</p>'+segment+
-  '<form id="invite-auth-form" autocomplete="on"><div class="invite-auth-fields">'+(recovering?'':email)+pass+'</div>'+
+  '<form id="invite-auth-form" autocomplete="on"><div class="invite-auth-fields">'+(recovering?'':email)+(requestingReset?'':pass)+'</div>'+
   meter+'<div class="invite-auth-feedback" id="auth-form-feedback" role="status" aria-live="polite">'+esc(notice)+'</div>'+
-  actions+'</form>'+misc+
+  actions+'</form>'+
+  (confirmNeeded&&signingIn?'<section class="invite-confirm-resend" role="region" aria-label="Confirmation du courriel"><strong>Adresse non confirmée</strong><p>Vérifiez le courriel lié à votre compte. Vous pouvez demander un nouveau lien sans perdre votre invitation.</p>'+
+   button('auth-resend-confirmation','Renvoyer le courriel de confirmation','invite-auth-resend')+
+   '<p id="auth-resend-status" role="status" aria-live="polite"></p></section>':'')+
+  misc+
   '<div class="invite-auth-trust"><span aria-hidden="true">♢</span><p>Vos données restent privées. Chaque personne utilise son propre compte.</p></div>'+
   (invitation?button('invite-return','← Revenir à l’invitation','invite-auth-back'):
    button('show-landing','← Retour à l’accueil','invite-auth-back'))+

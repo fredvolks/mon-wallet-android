@@ -11,8 +11,8 @@ const app=read('app.js'),sql=read('migrations/20261014_invite_auto_match_idempot
 const inviteId='72aa640b-2644-4d0d-bcf7-575587d27f31';
 test('First invitation screen preserves visual, only one consent action',()=>{
  const html=discoverHtml(true);
- assert.match(html,/LA COMPLICITÉ SE JOUE À DEUX/);
- for(const label of ['Jeux','Défis','Rendez-vous','Surprises','ACCEPTER L’INVITATION'])assert.ok(html.includes(label),label);
+ assert.match(html,/UNE INVITATION POUR VOTRE COUPLE/);
+ for(const label of ['Soirée','Surprise','Avent','Couple','ACCEPTER L’INVITATION'])assert.ok(html.includes(label),label);
  assert.match(html,/data-action="invite-start"/);
  assert.doesNotMatch(html,/CONFIRMER NOTRE MATCH/);
 });
