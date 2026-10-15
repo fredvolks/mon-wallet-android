@@ -21,7 +21,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
 import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken} from './push-notifications.mjs';
-import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus} from './home-install.mjs';
+import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
+import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
@@ -73,13 +74,12 @@ const me=()=>state.members.find(m=>m.user_id===state.user?.id);
 const person=u=>state.members.find(m=>m.user_id===u)?.name||'Partenaire';
 const button=(action,label,extra='')=>'<button '+extra+' data-action="'+safe(action)+'">'+label+'</button>';
 function inviteBrowserHelp(){
- const inApp=/FBAN|FBAV|Messenger|Instagram/i.test(navigator.userAgent||'');
- if(!inApp||!pendingInviteReference(sessionStorage))return '';
- const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'')||
-  (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
- return '<details class="premium-help"><summary>Ouvert depuis Messenger ? <span>Besoin d’aide</span></summary>'+
-  '<p>Si la connexion ne s’ouvre pas, copiez l’invitation et collez-la dans '+(apple?'Safari':'Chrome')+'.</p>'+
-  button('copy-invite-for-browser','Copier le lien sécurisé','class="subtle"')+'</details>';
+ const invite=pendingInviteReference(sessionStorage);
+ if(!isEmbeddedBrowser()||!invite)return '';
+ const base=CONFIG.siteUrl||location.origin+location.pathname;
+ const href=invite.kind==='id'?inviteLinkForId(base,invite.value):
+  base+'?v='+INVITATION_REVISION+'#invite='+encodeURIComponent(invite.value);
+ return messengerExternalBrowserHtml(href,{ios:isIos()});
 }
 function invitationLandingHeader(showAction=true){
  return '<section class="premium-invite-hero" aria-label="Votre invitation LoveRoll">'+
@@ -278,7 +278,7 @@ function render(){
  // The approved premium discovery IS the first invitation screen.
  // Consent is mandatory before the connection controls appear.
  if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted))){
-  root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
+  root.innerHTML=discoverHtml(!!pendingInvite,inviteBrowserHelp());bindActions();return;
  }
  if(!state.passwordRecovery&&((state.emailVerificationPending&&!state.user)||
   (state.user&&!verifiedLoveEmail(state.user)))){
@@ -1631,8 +1631,13 @@ async function handle(action,element){
   if(!invite)throw Error('Lien d’invitation introuvable.');
   const url=invite.kind==='id'?inviteLinkForId(CONFIG.siteUrl,invite.value):
    CONFIG.siteUrl+'?v='+INVITATION_REVISION+'#invite='+invite.value;
-  await navigator.clipboard.writeText(url);
-  notify('Lien complet copié. Collez-le dans Chrome ou Safari.');return;
+  try{await navigator.clipboard.writeText(url);}
+  catch(error){
+   // Some Messenger versions refuse Clipboard API: keep an actual selectable fallback.
+   const fallback=prompt('Copiez votre lien complet pour l’ouvrir dans Chrome ou Safari :',url);
+   if(fallback===null)return;
+  }
+  notify('Lien personnel prêt. Collez-le dans Chrome ou Safari.');return;
  }
  if(verb==='use-existing-account'){
   // The profile step can also be reached with an old or wrong authenticated
