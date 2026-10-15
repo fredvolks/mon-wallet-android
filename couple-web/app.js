@@ -97,9 +97,21 @@ function notify(message){
  const isResult=/résultat officiel|résultat.*(?:dé|D6|D35)|tirage de|révélés/i.test(msg);
  toastEl.replaceChildren();
  toastEl.className='lr-premium-toast '+(isError?'lr-toast-error':isResult?'lr-toast-result':'lr-toast-info');
+ const official=msg.match(/^Résultat(?: officiel)?\s*:?\s*(\d+)\s*[·-]\s*(.*)$/i);
+ const isGift=/défi transféré|défi offert|cadeau/i.test(msg);
  const glyph=document.createElement('span');glyph.className='lr-toast-glyph';
- glyph.textContent=isError?'!':isResult?'🎲':'♡';glyph.setAttribute('aria-hidden','true');
- const content=document.createElement('span');content.className='lr-toast-message';content.textContent=msg;
+ glyph.textContent=isError?'!':isGift?'🎁':isResult?'🎲':'♡';
+ glyph.setAttribute('aria-hidden','true');
+ const content=document.createElement('span');content.className='lr-toast-message';
+ if(official){
+  const title=document.createElement('span');title.className='lr-toast-kicker';
+  title.textContent='RÉSULTAT OFFICIEL';
+  const line=document.createElement('span');line.className='lr-toast-result-line';
+  const value=document.createElement('strong');value.className='lr-toast-result-number';
+  value.textContent=official[1];
+  const detail=document.createElement('span');detail.textContent=official[2];
+  line.append(value,detail);content.append(title,line);
+ }else content.textContent=msg;
  const close=document.createElement('button');close.type='button';close.className='lr-toast-close';
  close.textContent='×';close.setAttribute('aria-label','Fermer la notification');
  close.addEventListener('click',()=>{clearTimeout(notify.timeout);toastEl.classList.remove('visible');});
