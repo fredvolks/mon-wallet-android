@@ -18,7 +18,7 @@ test('Home D6 stays centered inside the satin theater, clear of the roll button'
 test('Before any evening D6 roll the TWO dice are shown above their buttons',()=>{
  const people=[{user_id:'a',name:'Camille'},{user_id:'b',name:'Noémie'}];
  const html=premiumEveningHtml({session:{id:'session'},members:people,me:'a',rolls:[],status:{},turn:{}});
- const start=html.indexOf('class="evening-d6-grid"'),end=html.indexOf('class="evening-ready"',start);
+ const start=html.indexOf('class="evening-d6-grid"'),end=html.indexOf('class="evening-ready ',start);
  assert.ok(start>=0&&end>start);
  const step=html.slice(start,end);
  assert.equal((step.match(/data-dice-unrolled="true"/g)||[]).length,2);
