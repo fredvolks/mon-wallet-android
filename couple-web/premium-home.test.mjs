@@ -71,18 +71,18 @@ test('Production home uses actual saved weekly result, disabled state and live c
  assert.match(rolling,/Brassage 3D en cours/);
  assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true"><\/strong>/);
 });
-test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and real 3.1s tumble',()=>{
+test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and 3s fast roll + smooth slowdown',()=>{
  assert.match(die,/\[1,\[0,0,1\]\],\[6,\[0,0,-1\]\]/);
  assert.match(die,/\[2,\[0,1,0\]\]/);
  assert.match(die,/\[5,\[0,-1,0\]\]/);
  assert.match(die,/\[3,\[1,0,0\]\]/);
  assert.match(die,/\[4,\[-1,0,0\]\]/);
- assert.match(die,/duration=rolling&&!reduceMotion\?3100:0/);
+ assert.match(die,/duration=rolling&&!reduceMotion\?ROLL_TOTAL_MS:0/);
  assert.match(die,/new THREE\.WebGLRenderer/);
  assert.match(die,/built\.group\.quaternion\.copy\(target\)/);
  assert.match(app,/state\.weekly=result/);
  assert.match(app,/state\.diceStatus='rolling'/);
- assert.match(app,/setTimeout\(resolve,3250\)/);
+ assert.match(app,/setTimeout\(resolve,window\.matchMedia\?/);
 });
 test('Admin reset requires privileged server action and never touches custom challenges',()=>{
  assert.match(app,/isLoveAdmin\(\)&&hasPartner/);
