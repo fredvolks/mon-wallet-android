@@ -59,7 +59,7 @@ public final class ConnectedLoveRollActivity extends Activity {
  private static final String GOOGLE_WEB_CLIENT_ID =
   "158439565502-3cj6kjdntrec6enjpllbi2tknie278hb.apps.googleusercontent.com";
  private WebView web;
- private View nativeSplash;
+ private LoveRollHeartSplashView nativeSplash;
  private ValueCallback<Uri[]> jsonChooser;
  private static final int JSON_PICKER_REQUEST=8625;
  private volatile boolean pageReady = false;
@@ -237,58 +237,17 @@ public final class ConnectedLoveRollActivity extends Activity {
   }
  }
  
- /** Native heart shown only until the shared WebView splash can paint. */
- private static final class BeatingHeartSplash extends View {
-  private final android.graphics.Paint p=new android.graphics.Paint(3);
-  BeatingHeartSplash(Activity context){super(context);setContentDescription("Chargement LoveRoll");}
-  @Override protected void onDraw(android.graphics.Canvas canvas){
-   super.onDraw(canvas);
-   float w=getWidth(),h=getHeight(),cx=w/2,cy=h/2,u=Math.min(w,h);
-   float t=(android.os.SystemClock.uptimeMillis()%1250L)/1250f;
-   float beat=(float)(1+.11*Math.exp(-Math.pow((t-.10)/.045,2))
-      +.17*Math.exp(-Math.pow((t-.29)/.052,2)));
-   p.reset();p.setAntiAlias(true);
-   p.setShader(new android.graphics.RadialGradient(cx,cy,Math.max(w,h)*.75f,
-      new int[]{0xff440b2e,0xff220719,0xff0b020e},null,
-      android.graphics.Shader.TileMode.CLAMP));
-   canvas.drawRect(0,0,w,h,p);p.setShader(null);
-   for(int i=0;i<4;i++){
-    float phase=(t+i*.25f)%1f;
-    p.setColor(Color.argb((int)(100*(1-phase)),255,73,151));
-    p.setStyle(android.graphics.Paint.Style.STROKE);
-    p.setStrokeWidth(Math.max(1f,u*.003f));
-    canvas.drawCircle(cx,cy,u*(.16f+phase*.38f),p);
-   }
-   float s=u*.185f*beat;
-   android.graphics.Path heart=new android.graphics.Path();
-   heart.moveTo(cx,cy+s*.82f);
-   heart.cubicTo(cx-s*.4f,cy+s*.48f,cx-s*.95f,cy, cx-s*.86f,cy-s*.52f);
-   heart.cubicTo(cx-s*.73f,cy-s*1.01f,cx-s*.22f,cy-s*1.0f,cx,cy-s*.61f);
-   heart.cubicTo(cx+s*.22f,cy-s*1.0f,cx+s*.73f,cy-s*1.01f,cx+s*.86f,cy-s*.52f);
-   heart.cubicTo(cx+s*.95f,cy,cx+s*.4f,cy+s*.48f,cx,cy+s*.82f);heart.close();
-   p.setStyle(android.graphics.Paint.Style.FILL);
-   p.setShader(new android.graphics.LinearGradient(cx-s,cy-s,cx+s,cy+s,
-      new int[]{0xffffd4ed,0xffff6ab2,0xffea207c,0xffb00054},null,
-      android.graphics.Shader.TileMode.CLAMP));
-   canvas.drawPath(heart,p);p.setShader(null);
-   p.setStyle(android.graphics.Paint.Style.STROKE);
-   p.setStrokeWidth(Math.max(1.4f,u*.003f));p.setColor(0xffffc1e1);
-   canvas.drawPath(heart,p);
-   if(getVisibility()==View.VISIBLE)postInvalidateDelayed(40);
-  }
- }
-
  @Override public void onCreate(Bundle savedInstanceState) {
   super.onCreate(savedInstanceState);
   initializeLoveRollFirebase();
-  getWindow().setStatusBarColor(Color.rgb(19,8,22));
-  getWindow().setNavigationBarColor(Color.rgb(19,8,22));
+  getWindow().setStatusBarColor(Color.rgb(16,3,14));
+  getWindow().setNavigationBarColor(Color.rgb(9,1,11));
   LinearLayout layout = new LinearLayout(this);
   layout.setOrientation(LinearLayout.VERTICAL);
-  layout.setBackgroundColor(Color.rgb(16,7,20));
+  layout.setBackgroundColor(Color.rgb(16,3,14));
   // Shared LoveRoll web app is the only visible UI; no duplicate native header or tabs.
   web = new WebView(this);
-  web.setBackgroundColor(Color.rgb(17,8,21));
+  web.setBackgroundColor(Color.rgb(16,3,14));
   web.setOverScrollMode(View.OVER_SCROLL_NEVER);
   WebSettings settings = web.getSettings();
   settings.setJavaScriptEnabled(true);
@@ -349,13 +308,29 @@ public final class ConnectedLoveRollActivity extends Activity {
    }
    @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon) {
     pageReady=false;
-    if(nativeSplash!=null){nativeSplash.setVisibility(View.VISIBLE);nativeSplash.invalidate();}
+    if(nativeSplash!=null){
+     nativeSplash.animate().cancel();
+     nativeSplash.resumeHeart();
+    }
    }
    @Override public void onPageFinished(WebView view,String url) {
     pageReady=isTrusted(Uri.parse(url));
-    if(nativeSplash!=null)nativeSplash.postDelayed(() -> {
-     if(pageReady)nativeSplash.setVisibility(View.GONE);
-    },180);
+    // onPageFinished does not guarantee a painted WebView frame.
+    // Keep the matching native heart until the first web frame is ready.
+    if(pageReady&&nativeSplash!=null) {
+     view.postVisualStateCallback(android.os.SystemClock.uptimeMillis(),
+      new WebView.VisualStateCallback() {
+       @Override public void onComplete(long requestId) {
+        if(nativeSplash==null||!pageReady||!isTrusted(Uri.parse(view.getUrl())))return;
+        nativeSplash.animate().cancel();
+        nativeSplash.animate().alpha(0f).setDuration(200).withEndAction(() -> {
+         if(nativeSplash==null)return;
+         if(pageReady){nativeSplash.pauseHeart();nativeSplash.setVisibility(View.GONE);}
+         nativeSplash.setAlpha(1f);
+        }).start();
+       }
+      });
+    }
     if(pageReady&&pendingGoogleResult!=null) {
      String result=pendingGoogleResult;pendingGoogleResult=null;
      sendGoogleResult(result);
@@ -364,7 +339,7 @@ public final class ConnectedLoveRollActivity extends Activity {
   });
   android.widget.FrameLayout bridge=new android.widget.FrameLayout(this);
   bridge.addView(web,new android.widget.FrameLayout.LayoutParams(-1,-1));
-  nativeSplash=new BeatingHeartSplash(this);
+  nativeSplash=new LoveRollHeartSplashView(this);
   bridge.addView(nativeSplash,new android.widget.FrameLayout.LayoutParams(-1,-1));
   layout.addView(bridge,new LinearLayout.LayoutParams(-1,0,1));
   setContentView(layout);

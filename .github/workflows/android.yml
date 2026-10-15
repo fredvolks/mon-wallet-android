@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.13.7
+      TAG: des-a-deux-v0.13.8
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -138,6 +138,8 @@ jobs:
           assert 'new AlertDialog.Builder(this).setTitle("♥ Émilie reçoit ' not in src
           print('Navigation 5 onglets, défi spécial mensuel, bibliothèque dans Réglages, popups sombres: OK')
           PY
+      - name: Vérifier le cœur natif identique au web avant compilation
+        run: node --test couple-web/native-splash-parity.test.mjs
       - name: Assemble release APK
         run: gradle :app:testDebugUnitTest :app:assembleRelease --no-daemon --stacktrace
       - name: Sign and verify APK
@@ -158,15 +160,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/LoveRoll-v0.13.7.apk "$RUNNER_TEMP/aligned.apk"
-          cp dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.13.7.apk
-          sha256sum dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk
+            --out dist/LoveRoll-v0.13.8.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.13.8.apk dist/Des-a-Deux-v0.13.8.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.13.8.apk
+          sha256sum dist/LoveRoll-v0.13.8.apk dist/Des-a-Deux-v0.13.8.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: LoveRoll-v0.13.7
+          name: LoveRoll-v0.13.8
           path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
@@ -175,12 +177,12 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-             gh release edit "$TAG" --title "LoveRoll v0.13.7" --notes "Cœur rose animé au démarrage natif et web; APK 0.13.7. Comptes et données conservés."
-            gh release upload "$TAG" dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk --clobber
-            gh release delete-asset "$TAG" LoveRoll-v0.13.6.apk -y || true
-            gh release delete-asset "$TAG" Des-a-Deux-v0.13.6.apk -y || true
+             gh release edit "$TAG" --title "LoveRoll v0.13.8" --notes "Cœur rose brillant unifié dès le premier écran Android et sur le web; APK 0.13.8. Comptes conservés."
+            gh release upload "$TAG" dist/LoveRoll-v0.13.8.apk dist/Des-a-Deux-v0.13.8.apk --clobber
+            gh release delete-asset "$TAG" LoveRoll-v0.13.7.apk -y || true
+            gh release delete-asset "$TAG" Des-a-Deux-v0.13.7.apk -y || true
           else
-            gh release create "$TAG" dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk \
-              --target "$GITHUB_SHA" --title "LoveRoll v0.13.7" \
-              --notes "LoveRoll v0.13.7 : cœur rose animé lors du chargement natif puis web, ouverture fluide, comptes et données du couple préservés."
+            gh release create "$TAG" dist/LoveRoll-v0.13.8.apk dist/Des-a-Deux-v0.13.8.apk \
+              --target "$GITHUB_SHA" --title "LoveRoll v0.13.8" \
+              --notes "LoveRoll v0.13.8 : cœur rose lumineux identique au cœur web dès le premier écran Android; transition sans flash, comptes et données conservés."
           fi

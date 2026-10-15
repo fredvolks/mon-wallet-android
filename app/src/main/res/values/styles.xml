@@ -5,8 +5,9 @@
   <item name="android:colorAccent">#FF58A0</item>
   <item name="android:colorControlActivated">#FF58A0</item>
   <item name="android:windowLightStatusBar">false</item>
-  <item name="android:statusBarColor">#130816</item>
-  <item name="android:navigationBarColor">#130816</item>
+  <item name="android:statusBarColor">#10030E</item>
+  <item name="android:navigationBarColor">#10030E</item>
   <item name="android:windowActionModeOverlay">true</item>
+   <item name="android:windowBackground">#10030E</item>
  </style>
 </resources>

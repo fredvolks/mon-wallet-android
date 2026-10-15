@@ -19,6 +19,6 @@ test('Google native sign in reports Credential Manager problems and remains retr
  assert.match(native,/error\.getType\(\)/);
  assert.match(native,/Google Play Services/);
  assert.match(native,/signInWithGoogleOption|GetSignInWithGoogleOption/);
- assert.match(gradle,/versionCode 13000[7-9]/);
- assert.match(gradle,/versionName '0[.]13[.][7-9]'/);
+ assert.match(gradle,/versionCode 130008/);
+ assert.match(gradle,/versionName '0[.]13[.]8'/);
 });
