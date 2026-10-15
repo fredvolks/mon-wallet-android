@@ -43,7 +43,7 @@ function openGift(){
 }
 const button=(action,label,classes='',disabled=false)=>
  '<button type="button" class="'+classes+'" data-action="'+escape(action)+'"'+(disabled?' disabled':'')+'>'+label+'</button>';
-export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=null,selectedDay=null,openingDay=null,showHistory=false}={}){
+export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=null,selectedDay=null,openingDay=null,showHistory=false,timerHtml=''}={}){
  const cal=sharedAdventState(openings,when,year),opened=cal.days.find(x=>x.day===selectedDay)?.entry;
  const who=id=>members.find(m=>m.user_id===id)?.name?.split(' ')[0]||'Votre partenaire';
  const grid=cal.days.map(d=>{
@@ -95,7 +95,7 @@ export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=n
    '<h2>'+escape(opened.advent_title||'Notre surprise du jour')+'</h2>'+
    (opened.advent_type?'<div class="advent-reveal-type">'+escape(opened.advent_type)+'</div>':'')+
    '<p class="advent-description">'+escape(opened.advent_description||'Un moment à partager ensemble, à votre rythme.')+'</p>'+
-   (opened.advent_timer_minutes?'<p class="advent-reveal-timer">⏱ Minuterie prévue : '+opened.advent_timer_minutes+' min</p>':'')+
+   (opened.advent_timer_minutes?timerHtml:'')+
    button('advent-close','Fermer','advent-dialog-action')+
    '</article></div>':'')+
  '</div>';
