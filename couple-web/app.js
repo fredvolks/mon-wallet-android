@@ -5,9 +5,9 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {feedbackItemsFor} from './feedback-status.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite79';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite79';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite79';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-heart80';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-heart80';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-heart80';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -15,7 +15,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite79';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-heart80';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -29,10 +29,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite79';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-heart80';
 
 
-const WEB_RELEASE='2026-10-15.79';
+const WEB_RELEASE='2026-10-15.80';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -266,7 +266,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite79').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-heart80').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -526,6 +526,12 @@ function render(){
 }
 async function reload(){
  if(!state.user)return;
+ // Only show after 150ms for slow data refreshes. Never interrupt a live
+ // dice animation, timer, unsaved form or the initial static boot splash.
+ const useLoad=!root.querySelector('[data-lr-boot]')&&!state.diceStatus&&
+  !challengeTimer.running&&!hasUnsavedForm()&&!document.hidden;
+ const loaderTicket=useLoad?window.LoveRollLoader?.begin(150):null;
+ try{
  if(!(await refreshVerifiedIdentity())){
   state.profile=null;state.coupleId=null;state.members=[];state.wellbeing=null;
   state.personalJournal=[];state.pushPrefs=null;
@@ -591,6 +597,7 @@ async function reload(){
  state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
  if(members.length===2)await refreshShared();
  subscribe();render();
+ }finally{if(loaderTicket!=null)window.LoveRollLoader?.end(loaderTicket);}
 }
 async function refreshShared(){
  const c=state.coupleId;
@@ -3165,6 +3172,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite79',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-heart80',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }

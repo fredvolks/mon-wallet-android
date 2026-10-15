@@ -54,7 +54,7 @@ export function createClient(){
   await page.goto(site+query,{waitUntil:'domcontentloaded'});
   await page.locator(expected).waitFor({timeout:20000});
   const text=await page.locator('#app').innerText();
-  if(text.includes('Ouverture de votre espace privé')||errors.length)
+  if(await page.locator('[data-lr-boot]').count()||await page.locator('.lr-splash--overlay').count()||errors.length)
    throw Error(name+' failed: '+JSON.stringify({text:text.slice(0,250),errors}));
   if(name==='anonymous'){
    await page.locator('.discover-login').click();

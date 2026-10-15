@@ -27,9 +27,11 @@ jobs:
         run: |
           set -euo pipefail
           node --check couple-web/app.js
+          node --check couple-web/loveroll-splash.js
+          node --check couple-web/boot-recovery.js
           node --check couple-web/entry-viewport-v78.js
           node --check couple-web/mobile-entry-visual-check.cjs
-          node --test couple-web/mobile-entry-screen.test.mjs couple-web/pwa-update.test.mjs
+          node --test couple-web/mobile-entry-screen.test.mjs couple-web/loveroll-splash.test.mjs couple-web/pwa-update.test.mjs
       - name: Vérifier TOUS les scripts JavaScript livrés
         run: node couple-web/check-shipped-js.cjs
       - name: Tester le vrai démarrage dans Chromium avant publication
@@ -46,6 +48,7 @@ jobs:
             sleep 1
           done
           node couple-web/boot-smoke.cjs
+          node couple-web/loveroll-splash-browser-check.cjs
           # Always publish a healthy application: a *layout diagnostic* must not
           # strand browsers on the previous release. Report any visual regression.
           if ! node couple-web/mobile-entry-visual-check.cjs; then

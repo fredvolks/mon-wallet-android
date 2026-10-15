@@ -19,6 +19,9 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check couple-web/app.js
+          node --check couple-web/loveroll-splash.js
+          node --check couple-web/boot-recovery.js
+          node --test couple-web/loveroll-splash.test.mjs
           node --check couple-web/premium-home.mjs
           node --check couple-web/premium-evening.mjs
           node --check couple-web/evening-private-queue.mjs

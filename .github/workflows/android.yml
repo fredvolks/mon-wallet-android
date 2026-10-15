@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.13.6
+      TAG: des-a-deux-v0.13.7
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}

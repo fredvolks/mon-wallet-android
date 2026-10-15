@@ -3,10 +3,9 @@
 (function(){
  'use strict';
  var started=Date.now(),reported=false;
- var prior=String(document.querySelector('#app')?.textContent||'').trim();
+ var bootMarker='[data-lr-boot]';
  function stillLoading(){
-  var node=document.querySelector('#app');
-  return node&&String(node.textContent||'').trim()===prior&&prior.indexOf('Ouverture de votre espace privé')>=0;
+  return !!document.querySelector('#app > '+bootMarker);
  }
  function show(){
   if(reported||!stillLoading())return;

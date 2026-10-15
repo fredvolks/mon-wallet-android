@@ -43,9 +43,9 @@ let runningBrowser=null;
  page.on('console',msg=>{if(msg.type()==='error')logs.push('CONSOLE '+msg.text().slice(0,750))});
  page.on('requestfailed',r=>logs.push('REQUEST_FAILED '+r.url().slice(0,200)+' '+r.failure()?.errorText));
  await page.goto(url+'?bootstrap-diagnostic='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
- try{await page.waitForFunction(()=>!document.querySelector('#app')?.textContent?.includes('Ouverture de votre espace privé'),
+ try{await page.waitForFunction(()=>!document.querySelector('#app > [data-lr-boot]')&&!document.querySelector('.love-boot-error'),
   null,{timeout:15000});}catch(e){logs.push('BOOT_TIMEOUT '+e.message.slice(0,200))}
- const state=await page.evaluate(()=>({ready:!document.querySelector('#app')?.textContent?.includes('Ouverture de votre espace privé'),text:document.querySelector('#app')?.textContent?.slice(0,380),
+ const state=await page.evaluate(()=>({ready:!document.querySelector('#app > [data-lr-boot]')&&!document.querySelector('.love-boot-error'),text:document.querySelector('#app')?.textContent?.slice(0,380),
   scripts:[...document.scripts].map(s=>s.src),url:location.href}));
  console.log('PRODUCTION_RENDER',JSON.stringify(state));
  console.log('PRODUCTION_LOGS',JSON.stringify(logs.slice(0,25)));

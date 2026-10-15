@@ -1,0 +1,105 @@
+/* LoveRoll v80 – beating-heart splash shared by web, PWA and Android WebView.
+   Uses no text, network JS dependency or scrolling; old v79 layouts untouched. */
+.lr-splash, .lr-splash *{box-sizing:border-box}
+.lr-splash{
+ position:fixed;inset:0;z-index:11000;
+ width:100vw;width:100dvw;height:100vh;height:100dvh;
+ overflow:hidden;overscroll-behavior:none;
+ isolation:isolate;display:grid;place-items:center;
+ background:
+ radial-gradient(ellipse 50% 40% at 54% 38%,rgba(103,6,47,.34),transparent 83%),
+ radial-gradient(ellipse 70% 70% at 48% 76%,rgba(95,5,42,.36),transparent 77%),
+ linear-gradient(150deg,#10030e 1%,#220619 33%,#15030f 63%,#090009 100%);
+}
+.lr-splash::before{
+ content:"";position:absolute;inset:-18%;pointer-events:none;
+ background:radial-gradient(ellipse 30% 31% at 49% 51%,rgba(244,29,110,.17),transparent 97%);
+}
+.lr-splash__back-heart{
+ position:absolute;width:min(75vw,650px);height:auto;
+ pointer-events:none;fill:none;stroke:#c31862;stroke-width:2.2;opacity:.19;
+ filter:drop-shadow(0 0 14px #f51d7899);
+}
+.lr-splash__back-heart--top{
+ top:-10vh;right:-21vw;transform:rotate(-13deg) scale(1.22);
+}
+.lr-splash__back-heart--bottom{
+ bottom:-22vh;left:-24vw;transform:rotate(13deg) scale(1.6);
+ opacity:.14;
+}
+.lr-splash__scene{
+ position:relative;width:min(82vmin,520px);height:min(82vmin,520px);
+ min-width:215px;min-height:215px;
+ display:grid;place-items:center;
+ filter:drop-shadow(0 0 19px #cc0c5b33);
+}
+.lr-splash__scene::before{
+ content:"";position:absolute;width:74%;height:74%;border-radius:50%;
+ background:radial-gradient(circle,rgba(255,21,106,.19),rgba(192,11,79,.07) 43%,transparent 73%);
+}
+.lr-splash__ring{
+ position:absolute;width:42%;height:42%;border:1.5px solid rgba(253,65,142,.52);
+ border-radius:50%;box-shadow:0 0 16px #fb2b7880,inset 0 0 10px #e71a7744;
+ opacity:0;animation:lr-splash-wave 2.6s linear infinite;
+}
+.lr-splash__ring:nth-child(2){animation-delay:.65s}
+.lr-splash__ring:nth-child(3){animation-delay:1.3s}
+.lr-splash__ring:nth-child(4){animation-delay:1.95s}
+.lr-splash__glow{
+ position:absolute;width:37%;height:37%;border-radius:50%;
+ background:radial-gradient(circle,rgba(255,84,162,.43),rgba(253,13,104,.20) 43%,transparent 77%);
+ filter:blur(18px);animation:lr-splash-light 1.25s ease-in-out infinite;
+}
+.lr-splash__heart{
+ width:35%;height:auto;overflow:visible;
+ position:relative;z-index:2;display:block;
+ transform-origin:50% 52%;
+ animation:lr-splash-beat 1.25s cubic-bezier(.26,.07,.43,1) infinite;
+ filter:drop-shadow(0 0 8px #ff91c7) drop-shadow(0 0 23px #fd287f) drop-shadow(0 0 35px #d7146c8c);
+}
+.lr-splash__particle{
+ position:absolute;display:block;width:3px;height:3px;border-radius:50%;pointer-events:none;
+ background:#ff80b9;box-shadow:0 0 10px 3px #f12c7f99;
+ opacity:.7;animation:lr-splash-dust 3.2s ease-in-out infinite;
+}
+.lr-splash__particle--a{top:28%;left:20%;animation-delay:.3s}
+.lr-splash__particle--b{top:37%;right:13%;animation-delay:1.4s}
+.lr-splash__particle--c{bottom:22%;left:29%;animation-delay:2.2s}
+.lr-splash__particle--d{bottom:28%;right:24%;animation-delay:.8s}
+.lr-splash__particle--e{top:13%;left:54%;animation-delay:1.8s}
+.lr-splash__particle--f{bottom:10%;right:48%;animation-delay:2.7s}
+@keyframes lr-splash-beat{
+ 0%,52%,100%{transform:scale(1)}
+ 9%{transform:scale(1.11)}
+ 18%{transform:scale(.985)}
+ 29%{transform:scale(1.17)}
+ 44%{transform:scale(1)}
+}
+@keyframes lr-splash-light{
+ 0%,52%,100%{opacity:.68;transform:scale(.93)}
+ 9%,29%{opacity:1;transform:scale(1.16)}
+}
+@keyframes lr-splash-wave{
+ 0%{transform:scale(.82);opacity:0}
+ 8%{opacity:.58}
+ 65%,100%{transform:scale(2.7);opacity:0}
+}
+@keyframes lr-splash-dust{
+ 0%,100%{opacity:.22;transform:translateY(5px) scale(.8)}
+ 50%{opacity:.85;transform:translateY(-6px) scale(1.2)}
+}
+.lr-splash--overlay{pointer-events:all;opacity:1;transition:opacity .24s ease}
+.lr-splash--overlay.lr-splash--leaving{opacity:0;pointer-events:none}
+@media (max-width:767px){
+ .lr-splash__scene{width:min(94vw,430px);height:min(94vw,430px);min-width:235px;min-height:235px}
+ .lr-splash__back-heart--top{top:1vh;right:-35vw}
+ .lr-splash__back-heart--bottom{bottom:-15vh;left:-29vw}
+}
+@media (min-width:768px) and (orientation:landscape){
+ .lr-splash__scene{width:min(75vh,560px);height:min(75vh,560px);min-width:225px;min-height:225px}
+}
+@media (prefers-reduced-motion:reduce){
+ .lr-splash__heart,.lr-splash__glow,.lr-splash__ring,.lr-splash__particle{animation:none!important}
+ .lr-splash__ring{opacity:.18!important}
+ .lr-splash--overlay{transition:none}
+}
