@@ -37,29 +37,27 @@ test('Next first-of-month countdown updates, not hardcoded',()=>{
  assert.equal(nextMonthly(new Date('2026-10-31T16:00:00Z')).days,1);
  assert.equal(nextMonthly(new Date('2026-11-01T16:00:00Z')).date,'2026-12-01');
 });
-test('Home counts only existing real assigned challenges per recipient',()=>{
+test('Home uses server-authoritative assigned targets, not already drawn cards',()=>{
  const members=[{user_id:'a',name:'Fred'},{user_id:'b',name:'Camille'}];
- const items=[
-  {recipient:'a',status:'pending',category:'SENSUEL'},
-  {recipient:'a',status:'accepted',category:'SEXUEL'},
-  {recipient:'b',status:'pending',category:'SEXUEL'},
-  {recipient:'b',status:'cancelled'}
- ];
- assert.deepEqual(assignedTonight(items,members),{total:3,forFirst:2,forSecond:1});
- assert.deepEqual(assignedTonight([],members),{total:0,forFirst:0,forSecond:0});
+ const assigned=assignedTonight({ready:true,targets:{a:4,b:6},
+  remaining:{a:3,b:5},completed:{a:1,b:1}},members);
+ assert.equal(assigned.total,10);assert.equal(assigned.forFirst,4);
+ assert.equal(assigned.forSecond,6);assert.equal(assigned.remaining,8);
+ assert.equal(assigned.completed,2);
+ assert.equal(assignedTonight({ready:false},members).total,null);
 });
 test('Production home uses actual saved weekly result, disabled state and live cards',()=>{
  const args={weekly:{face:2,actor:'a'},members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Camille'}],
- challenges:[{recipient:'a',status:'pending'},{recipient:'b',status:'accepted'}],now:new Date('2026-10-14T16:00:00Z')};
+ turn:{ready:true,targets:{a:4,b:6},remaining:{a:4,b:6},completed:{a:0,b:0}},now:new Date('2026-10-14T16:00:00Z')};
  const h=premiumHomeHtml(args);
- assert.match(h,/2 soirée\(s\) de défi/);
+ assert.match(h,/2 soirées de défi/);
  assert.match(h,/Dé déjà brassé cette semaine/);
  assert.match(h,/data-dice-sides="6"/);
  assert.match(h,/data-face="2"/);
  assert.equal((h.match(/class="home-weight"/g)||[]).length,6);
  assert.equal((h.match(/class="home-stat-card /g)||[]).length,4);
  assert.match(h,/Fred/);assert.match(h,/Camille/);
- assert.match(h,/18 jours/);
+ assert.match(h,/Surprise du mois disponible/);
  assert.match(h,/tab:special/);
  assert.doesNotMatch(h,/data-action="roll:weekly"/);
  const waiting=premiumHomeHtml({...args,weekly:null});
@@ -68,7 +66,7 @@ test('Production home uses actual saved weekly result, disabled state and live c
  const rolling=premiumHomeHtml({...args,weekly:args.weekly,rolling:true,rollFace:5});
  assert.match(rolling,/data-spinning="true"/);
  assert.match(rolling,/data-face="5"/);
- assert.doesNotMatch(rolling,/2 soirée\(s\) de défi/);
+ assert.doesNotMatch(rolling,/2 soirées de défi/);
  assert.doesNotMatch(rolling,/Dé déjà brassé cette semaine/);
  assert.match(rolling,/Brassage 3D en cours/);
  assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true"><\/strong>/);
