@@ -33,8 +33,8 @@ test('Verified account never remains stuck behind local pending state',()=>{
 });
 test('Supabase resend HTTP success is not incorrectly reported as email delivery',()=>{
  assert.match(app,/client\.auth\.resend\(\{type:'signup',email/);
- assert.match(app,/Un renvoi accepté ne garantit pas la livraison/);
- assert.match(app,/Si cette adresse appartient déjà à un compte Google confirmé/);
+ assert.match(app,/Demande reçue par le serveur. Cela ne garantit pas la réception/);
+ assert.match(app,/Si ce compte est déjà confirmé avec Google/);
  assert.doesNotMatch(source,/Nous venons de vous envoyer un lien/);
 });
 test('Invitation reference and private user data are preserved',()=>{
