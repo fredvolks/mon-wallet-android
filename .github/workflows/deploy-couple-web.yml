@@ -12,7 +12,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: couple-web-pages
+  group: couple-web-pages-v57-verification
   cancel-in-progress: false
 jobs:
   deploy:
@@ -73,9 +73,10 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       - name: Vérifier le site réellement publié et la console de Chromium
+        timeout-minutes: 6
         run: |
           set -euo pipefail
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in 1 2 3 4; do
             echo "Validation production - tentative $attempt"
             if LOVEROLL_REQUIRE_HEALTHY=1 node couple-web/boot-diagnostic.cjs; then
               echo "LoveRoll Pages démarre réellement sur le domaine public."
