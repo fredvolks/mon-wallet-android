@@ -229,3 +229,83 @@
   display:none!important;
  }
 }
+
+/* v75: Once both D6 are confirmed, show the counts instead of wasting
+   the entire viewport on two already-used dice. All draw buttons stay visible. */
+@media(max-width:767px){
+ main#app.loveroll-evening-page .evening-premium-view.is-ready{
+  grid-template-rows:minmax(32px,.47fr) minmax(25px,.37fr)
+    minmax(45px,.65fr) minmax(0,5.2fr) minmax(43px,.65fr)!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-waiting{
+  grid-template-rows:minmax(32px,.6fr) minmax(27px,.48fr)
+    minmax(138px,3fr) minmax(36px,.7fr) minmax(43px,.8fr)!important;
+ }
+ main#app.loveroll-evening-page .evening-step.one.is-complete{
+  justify-content:center!important;overflow:hidden!important;
+ }
+ main#app.loveroll-evening-page .evening-step.one.is-complete .evening-d6-grid,
+ main#app.loveroll-evening-page .evening-step.one.is-complete .evening-ready,
+ main#app.loveroll-evening-page .evening-step.one.is-complete .evening-step-label small{
+  display:none!important;
+ }
+ main#app.loveroll-evening-page .evening-step1-summary{
+  display:flex!important;justify-content:space-around;gap:4px;
+  align-items:center;width:100%;min-height:17px;
+  font-size:clamp(.64rem,2.4vw,.8rem);color:#ffe2f1;
+ }
+ main#app.loveroll-evening-page .evening-step1-summary span{
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+ }
+ main#app.loveroll-evening-page .evening-step1-summary b{color:#ff8bbf}
+ main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.two{
+  justify-content:center!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.two .evening-play,
+ main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.two .evening-progress{
+  display:none!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-play-controls>p{
+  display:none!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-play-controls{
+  justify-content:space-around!important;gap:2px!important;
+  min-height:0!important;overflow:hidden!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-play-controls .evening-choice-btn{
+  min-height:35px!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-play-controls .evening-primary,
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-play-controls .evening-queue-open-btn{
+  min-height:39px!important;padding:3px!important;
+  flex:none!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-step.two .evening-play{
+  min-height:0!important;height:auto!important;flex:1 1 0!important;
+ }
+}
+@media(max-width:767px) and (max-height:660px){
+ main#app.loveroll-evening-page .evening-intro>span,
+ main#app.loveroll-evening-page .evening-intro p{display:none!important}
+ main#app.loveroll-evening-page .evening-premium-view.is-ready{
+  grid-template-rows:minmax(30px,.4fr) minmax(21px,.27fr)
+    minmax(42px,.6fr) minmax(0,5.35fr) minmax(40px,.65fr)!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-waiting{
+  grid-template-rows:minmax(30px,.46fr) minmax(21px,.28fr)
+    minmax(120px,3fr) minmax(33px,.68fr) minmax(40px,.8fr)!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-play-controls>small{
+  font-size:.53rem!important;line-height:1.03!important;
+ }
+}
+@media(max-width:767px) and (max-height:525px){
+ main#app.loveroll-evening-page .evening-intro{display:none!important}
+ main#app.loveroll-evening-page .evening-premium-view.is-ready{
+  grid-template-rows:minmax(28px,.45fr) 0 minmax(39px,.6fr)
+    minmax(0,5.5fr) minmax(39px,.7fr)!important;
+ }
+ main#app.loveroll-evening-page .evening-premium-view.is-ready .evening-play-controls>small{
+  display:none!important;
+ }
+}

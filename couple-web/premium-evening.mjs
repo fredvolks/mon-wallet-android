@@ -73,19 +73,20 @@ export function premiumEveningHtml({
  // The official result is already visible on the actual 3D face.
  // Never render a duplicate text number underneath or behind the die.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
- return '<div class="evening-premium-view">'+
+ return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):'is-inactive')+'">'+
  '<header class="evening-topline"><span class="heartline">♡</span><div><h1>NOTRE SOIRÉE</h1><p>Un jeu synchronisé sur nos deux comptes</p></div>'+
  bt('evening-more','⋯ Options','evening-more-button')+'</header>'+
  '<div class="evening-intro"><span>♥ NOTRE SOIRÉE PARTAGÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
  (session?
-  '<section class="evening-step one"><div class="evening-step-label"><span class="step-number">1</span><div>'+
+  '<section class="evening-step one '+(ready?'is-complete':'is-incomplete')+'"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
   '<div class="evening-d6-grid">'+d6(mine,myRoll,true,canMyRoll,ready,rollingKind==='my-d6'&&rolling,rollFace,turn?.ready?turn.targets?.[mine.user_id]:null)+
   d6(partner,theirRoll,false,false,ready,false,null,turn?.ready?turn.targets?.[partner.user_id]:null)+'</div>'+
+  (ready?'<div class="evening-step1-summary"><span>'+esc(mine.name?.split(' ')[0]||'Moi')+' : <b>'+esc(totals[me]??myRoll?.face??'—')+'</b></span><span>'+esc(partner.name?.split(' ')[0]||'Partenaire')+' : <b>'+esc(totals[partner.user_id]??theirRoll?.face??'—')+'</b></span></div>':'')+
   '<div class="evening-ready '+(ready?'yes':'')+'">'+stateText+'</div></section>'+
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
-  '<small>'+(first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
+  '<small>'+(!ready?'Attendez les deux dés':first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
   '</div>'+
   '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+

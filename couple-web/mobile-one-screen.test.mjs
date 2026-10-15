@@ -49,9 +49,23 @@ test('Advent 25 squares keep their screen space',()=>{
 });
 test('v74 loaded LAST in HTML and cached with updated worker; server version updated',()=>{
  const index=read('index.html'),sw=read('service-worker.js'),v=JSON.parse(read('web-version.json'));
- assert.equal(v.build,'2026-10-15.74');
- assert.match(index,/mobile-one-screen-v74\.css\?v=20261015-invite74/);
+ assert.equal(v.build,'2026-10-15.75');
+ assert.match(index,/mobile-one-screen-v74\.css\?v=20261015-invite75/);
  assert.ok(index.lastIndexOf('mobile-one-screen-v74.css')>index.lastIndexOf('surprise-dice-layout-v73.css'));
- assert.match(sw,/loveroll-static-v74/);
+ assert.match(sw,/loveroll-static-v75/);
  assert.match(sw,/\.\/mobile-one-screen-v74\.css/);
+});
+
+test('Completed D6 stage collapses to private scoreboard to fit Step 2 without scrolling',()=>{
+ const html=premiumEveningHtml({session:{id:'s1'},members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Partner'}],me:'a',
+  rolls:[{user_id:'a',face:2},{user_id:'b',face:3}],
+  status:{both_ready:true,my_rolled:true,partner_rolled:true},
+  turn:{ready:true,first:'a',next:'a',remaining:{a:2,b:3},targets:{a:2,b:3},completed:{a:0,b:0}},
+  category:'SENSUEL'});
+ assert.match(html,/evening-premium-view is-ready/);
+ assert.match(html,/evening-step one is-complete/);
+ assert.match(html,/evening-step1-summary/);
+ assert.match(html,/data-action="evening-list"/);
+ assert.match(css,/\.evening-step\.one\.is-complete \.evening-d6-grid/);
+ assert.match(css,/\.evening-premium-view\.is-waiting \.evening-step\.two \.evening-play/);
 });
