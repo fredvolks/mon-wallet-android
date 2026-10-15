@@ -667,7 +667,7 @@ function heroDice(face,sides,label){
   ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
   ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
  '<div class="premium-die-caption"><div class="eyebrow">'+safe(label)+'</div>'+
- '<p>'+(!face?'En attente du tirage officiel.':'Résultat officiel : '+face)+
+ '<p>'+(!face?'En attente du tirage officiel.':'Le dé affiche votre résultat officiel')+
  '.</p></div></div>';
 }
 function statsRow(){return '<div class="stat-grid">'+[
@@ -2630,7 +2630,7 @@ async function handle(action,element){
   const [kind,owner,rollType]=parts;
   const x=await animateRoll(()=>rpc('roll_love_occasion_once',{p_couple:state.coupleId,
    p_kind:kind,p_owner:owner==='-'?null:owner,p_roll:rollType}),'occasion');
-  notify('Résultat '+x.face+' · '+person(x.actor));return;
+  notify('♡ Tirage enregistré pour le couple.');return;
  }
  if(verb==='roll'){
   const kind=parts[0];
@@ -2650,12 +2650,12 @@ async function handle(action,element){
     state.diceStatus=null;state.rollAnimationFace=null;
     state.weekly=result;
     await refreshAndShow();
-    notify('Résultat officiel : '+result.face+' · tirage de '+person(result.actor));
+    notify('♡ Le dé s’est arrêté sur le résultat officiel.');
     }catch(error){state.diceStatus=null;state.rollAnimationFace=null;await refreshAndShow();throw error;}
    return;
   }
   const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}),kind);
-  notify('Résultat officiel : '+result.face+' · tirage de '+person(result.actor));return;
+  notify('♡ Le dé s’est arrêté sur le résultat officiel.');return;
  }
  if(verb==='new-session'){
   if(!state.weekly)throw Error('Brassez d’abord le dé de la semaine.');
