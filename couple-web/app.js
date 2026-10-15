@@ -2,9 +2,9 @@ import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtm
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite64';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite64';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite64';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite65';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite65';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite65';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -12,7 +12,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite64';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite65';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -26,10 +26,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite64';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite65';
 
 
-const WEB_RELEASE='2026-10-15.64';
+const WEB_RELEASE='2026-10-15.65';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -247,7 +247,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite64').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite65').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -1690,17 +1690,19 @@ function renderSettings(){
   settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
   celebrants:
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
+ const resettableDice=!!(state.weekly||state.session||
+  Object.keys(state.monthly||{}).length||state.occasionRolls?.length);
  const adminWeekly=isLoveAdmin()&&hasPartner?
-  '<div class="settings-item"><div><strong>🎲 Administration — tirage hebdomadaire</strong>'+
-  '<p>Réinitialiser le D6 de cette semaine, même si une soirée a commencé. Les défis, séances et comptes sont conservés.</p></div></div>'+
+  '<div class="settings-item"><div><strong>🎲 Administration — tous les dés</strong>'+
+  '<p>Recommencer tous les tirages du cycle actuel pour les deux partenaires : dé hebdomadaire, Soirée, Surprise et événements spéciaux.</p></div></div>'+
   '<div class="weekly-admin-status">'+
-  '<p>Résultat : <strong>'+(state.weekly?state.weekly.face+' soirée(s)':'Non brassé')+'</strong></p>'+
-  '<p>Brassé par : '+(state.weekly?safe(person(state.weekly.actor)):'—')+'</p>'+
-  '<p>Date du brassage : '+(state.weekly?safe(new Date(state.weekly.created_at).toLocaleString('fr-CA',{timeZone:'America/Toronto'})):'—')+'</p>'+
-  '<p>Prochain lundi : '+safe(nextMonday())+' à 00 h (Québec)</p></div>'+
-  '<p class="tiny-note">Reset admin forcé : fonctionne même si une soirée est commencée. Les séances, défis, attributions et historiques sont conservés. Le nouveau tirage remplace seulement le D6 de cette semaine.</p>'+
-  button('admin-reset-weekly','↺ Reset hebdomadaire','class="subtle danger-action" '+(!state.weekly?'disabled':'')):'';
- const notifications=notificationSettingsMarkup(state.pushPrefs||{});
+  '<p>Dé hebdomadaire : <strong>'+(state.weekly?state.weekly.face+' soirée(s)':'Non brassé')+'</strong></p>'+
+  '<p>Surprise du mois : <strong>'+Object.keys(state.monthly||{}).length+' tirage(s)</strong></p>'+
+  '<p>Événements spéciaux : <strong>'+(state.occasionRolls?.length||0)+' tirage(s)</strong></p>'+
+  '<p>Soirée en cours : <strong>'+(state.session?'Oui':'Non')+'</strong></p></div>'+
+  '<p class="tiny-note">La soirée en cours sera clôturée sans être comptée. Les anciens défis, cartes, calendriers et soirées terminées restent conservés. Seuls les tirages actifs seront remis à zéro.</p>'+
+  button('admin-reset-all-dice','↺ Réinitialiser tous les dés',
+   'class="subtle danger-action" '+(!resettableDice?'disabled':'')):'';\n const notifications=notificationSettingsMarkup(state.pushPrefs||{});
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
   window.LoveRollNativeAuth.appVersion():'';
@@ -1839,18 +1841,25 @@ async function handle(action,element){
  if(verb==='reload-web'){
   await reloadWebAssets(true);return;
  }
- if(verb==='admin-reset-weekly'){
+ if(verb==='admin-reset-all-dice'){
   if(!isLoveAdmin()||!isSharedCoupleReady(state.coupleId,state.members))
    throw Error('Réinitialisation réservée à l’administrateur du couple.');
-  if(!state.weekly)throw Error('Aucun tirage hebdomadaire à réinitialiser.');
-  const message='Réinitialiser le résultat hebdomadaire pour les DEUX partenaires ? '+
-    'Cette action est enregistrée. Les défis et soirées restent intacts. '+
-    'Même si une soirée a déjà commencé, elle et ses défis resteront enregistrés. ' +
-    'Seul le résultat hebdomadaire sera effacé et vous pourrez relancer le D6.';
-  if(!(await premiumConfirm(message,{kind:'reset',title:'Relancer le dé hebdomadaire ?'})))return;
-  const changed=await rpc('reset_love_weekly_roll_admin',{p_couple:state.coupleId});
+  const message='Réinitialiser TOUS les dés actifs pour les deux partenaires ? '+
+   'Le D6 hebdomadaire, les D6 personnels de la soirée, les défis D35 encore actifs, '+
+   'les tirages de Surprise du mois et les dés des événements spéciaux seront à refaire. '+
+   'Si une soirée est en cours, elle sera clôturée sans être comptée. '+
+   'Les défis déjà enregistrés restent dans l’historique, ainsi que les soirées terminées, '+
+   'vos cartes, journaux et le calendrier de l’Avent. Cette action ne peut pas être annulée.';
+  if(!(await premiumConfirm(message,{
+   kind:'reset',title:'Réinitialiser tous les dés ?',accept:'Oui, tout réinitialiser',
+   cancel:'Conserver nos tirages'
+  })))return;
+  const result=await rpc('reset_love_all_dice_admin',{p_couple:state.coupleId});
+  state.tab='home';state.specialFocus=null;state.showEveningChallenge=false;
+  state.rollAnimationFace=null;state.rollAnimationKind=null;state.diceStatus=null;
   await refreshAndShow();
-  notify(changed?'Résultat hebdomadaire réinitialisé pour le couple.':'Aucun tirage hebdomadaire à réinitialiser.');
+  notify(result?.changed?'♡ Tous les dés du cycle actuel sont prêts à être rebrassés sur les deux comptes.':
+   'Aucun tirage actif à réinitialiser.');
   return;
  }
  // All demo actions are local, never database writes or new memberships.
@@ -3025,6 +3034,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite64',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite65',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
