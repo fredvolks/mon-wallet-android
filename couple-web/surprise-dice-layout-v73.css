@@ -37,8 +37,8 @@ main#app.loveroll-surprise-page .surprise-host>.surprise-primary{
 }
 @media(max-width:767px){
  main#app.loveroll-surprise-page .surprise-premium-view{
-  grid-template-rows:minmax(49px,auto) minmax(216px,auto)
-   minmax(177px,auto) minmax(235px,auto)!important;
+  grid-template-rows:minmax(49px,auto) minmax(230px,auto)
+   minmax(194px,auto) minmax(235px,auto)!important;
   align-content:start!important;
   overflow-x:hidden!important;overflow-y:auto!important;
   scrollbar-width:none;
