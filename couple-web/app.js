@@ -1023,7 +1023,7 @@ function renderSession(){
  const turn=session?(state.eveningBoard||sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts)):{};
  const mineCards=session?ownEveningChallenges(state.challenges,uid,session.id):[];
  const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
- const official=last&&state.feedbackStatus?.sessionId===last.id&&Array.isArray(state.feedbackStatus.items)?state.feedbackStatus.items:null;
+ const official=last&&state.feedbackStatus?.sessionId===last.id&&Array.isArray(state.feedbackStatus?.items)?state.feedbackStatus.items:null;
  const ownSubmitted=official?.find(x=>x.user_id===uid)?.submitted;
  const otherSubmitted=official?.find(x=>x.user_id!==uid)?.submitted;
  const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
@@ -1501,7 +1501,7 @@ async function renderFeedback(){
  const entries=state.feedback.filter(f=>f.session_id===session.id);
  const yours=entries.find(x=>x.author_id===state.user.id);
  const complete=state.members.every(m=>entries.some(x=>x.author_id===m.user_id));
- const statuses=state.feedbackStatus?.sessionId===session.id?state.feedbackStatus.items:null;
+ const statuses=state.feedbackStatus?.sessionId===session.id&&Array.isArray(state.feedbackStatus?.items)?state.feedbackStatus.items:null;
  const submitted=statuses?statuses.filter(x=>x.submitted).length:entries.length;
  let body='<section class="card"><div class="eyebrow">♥ APRÈS LA SOIRÉE</div>'+
  '<h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
