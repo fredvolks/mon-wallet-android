@@ -57,7 +57,7 @@ test('App-wide theme brings premium visual language to all signed-in sections',(
  }
  assert.match(html,/premium-theme\.css/);
  assert.match(worker,/premium-theme\.css/);
- assert.match(worker,/loveroll-static-v56/);
+ assert.match(worker,/loveroll-static-v57/);
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
