@@ -157,13 +157,17 @@ function restoreDraft(draft){
  }
 }
 function backFromLoveRoll(){
- if(document.querySelector('.lr-dialog-overlay'))return true;
+ if(document.querySelector('.lr-dialog-overlay')){
+  document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  return true;
+ }
  if(allowBackExit){allowBackExit=false;return false;}
  if(state.showEveningChallenge){state.showEveningChallenge=false;render();return true;}
  if(state.showSurpriseActivity){state.showSurpriseActivity=false;render();return true;}
  if(state.adventSelected!==null){state.adventSelected=null;render();return true;}
  if(state.adventHistory){state.adventHistory=false;render();return true;}
  if(state.eveningMore){state.eveningMore=false;render();return true;}
+ if(state.homeNotices){state.homeNotices=false;render();return true;}
  if(state.confirmCancel){state.confirmCancel=false;render();return true;}
  if(state.specialFocus){state.specialFocus=null;state.tab='special';render();return true;}
  const parent={
