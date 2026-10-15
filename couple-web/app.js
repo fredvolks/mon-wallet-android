@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-dice50';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-dice50';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-dice50';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-messenger51';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-messenger51';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-messenger51';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-dice50';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261014-messenger51';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -21,11 +21,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
 import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken} from './push-notifications.mjs';
-import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus} from './home-install.mjs';
+import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
+import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
-const WEB_RELEASE='2026-10-14.50';
+const WEB_RELEASE='2026-10-14.51';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -73,13 +74,12 @@ const me=()=>state.members.find(m=>m.user_id===state.user?.id);
 const person=u=>state.members.find(m=>m.user_id===u)?.name||'Partenaire';
 const button=(action,label,extra='')=>'<button '+extra+' data-action="'+safe(action)+'">'+label+'</button>';
 function inviteBrowserHelp(){
- const inApp=/FBAN|FBAV|Messenger|Instagram/i.test(navigator.userAgent||'');
- if(!inApp||!pendingInviteReference(sessionStorage))return '';
- const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'')||
-  (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
- return '<details class="premium-help"><summary>Ouvert depuis Messenger ? <span>Besoin d’aide</span></summary>'+
-  '<p>Si la connexion ne s’ouvre pas, copiez l’invitation et collez-la dans '+(apple?'Safari':'Chrome')+'.</p>'+
-  button('copy-invite-for-browser','Copier le lien sécurisé','class="subtle"')+'</details>';
+ const invite=pendingInviteReference(sessionStorage);
+ if(!isEmbeddedBrowser()||!invite)return '';
+ const base=CONFIG.siteUrl||location.origin+location.pathname;
+ const href=invite.kind==='id'?inviteLinkForId(base,invite.value):
+  base+'?v='+INVITATION_REVISION+'#invite='+encodeURIComponent(invite.value);
+ return messengerExternalBrowserHtml(href,{ios:isIos()});
 }
 function invitationLandingHeader(showAction=true){
  return '<section class="premium-invite-hero" aria-label="Votre invitation LoveRoll">'+
@@ -145,7 +145,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261014-dice50').then(({dieOn})=>{
+  import('./dice3d.js?v=20261014-messenger51').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -280,7 +280,7 @@ function render(){
  // The approved premium discovery IS the first invitation screen.
  // Consent is mandatory before the connection controls appear.
  if(!state.passwordRecovery&&(state.showDiscover||(pendingInvite&&!state.inviteAccepted))){
-  root.innerHTML=discoverHtml(!!pendingInvite);bindActions();return;
+  root.innerHTML=discoverHtml(!!pendingInvite,inviteBrowserHelp());bindActions();return;
  }
  if(!state.passwordRecovery&&((state.emailVerificationPending&&!state.user)||
   (state.user&&!verifiedLoveEmail(state.user)))){
@@ -1633,8 +1633,12 @@ async function handle(action,element){
   if(!invite)throw Error('Lien d’invitation introuvable.');
   const url=invite.kind==='id'?inviteLinkForId(CONFIG.siteUrl,invite.value):
    CONFIG.siteUrl+'?v='+INVITATION_REVISION+'#invite='+invite.value;
-  await navigator.clipboard.writeText(url);
-  notify('Lien complet copié. Collez-le dans Chrome ou Safari.');return;
+  try{await navigator.clipboard.writeText(url);}
+  catch(error){
+   const fallback=prompt('Copiez votre lien complet pour l’ouvrir dans Chrome ou Safari :',url);
+   if(fallback===null)return;
+  }
+  notify('Lien personnel prêt. Collez-le dans Chrome ou Safari.');return;
  }
  if(verb==='use-existing-account'){
   // The profile step can also be reached with an old or wrong authenticated
@@ -2501,6 +2505,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261014-dice50',
+    navigator.serviceWorker.register('./service-worker.js?v=20261014-messenger51',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
