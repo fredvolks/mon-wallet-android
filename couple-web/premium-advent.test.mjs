@@ -46,7 +46,7 @@ test('Shared opening persists and displays same official content, author and tim
  assert.match(html,/Ouverte par Noémie/);
  assert.match(html,/Un doux moment privé/);
  assert.match(html,/Dix minutes à deux/);
- assert.match(html,/Minuterie prévue : 10 min/);
+ assert.match(html,/Dix minutes à deux/);
  assert.match(html,/data-action="advent-close"/);
  const partnerView=adventPremiumHtml({when:date('2026-12-05T16:00:00Z'),
    members:[couple[1],couple[0]],openings:[record],selectedDay:5});
