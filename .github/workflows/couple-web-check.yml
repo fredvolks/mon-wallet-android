@@ -25,6 +25,8 @@ jobs:
           node --check couple-web/premium-advent.mjs
           node --check couple-web/dice3d.js
           node --check couple-web/dice-roll-motion.mjs
+          node --check couple-web/couple-live-sync.mjs
+          node --test couple-web/couple-live-sync.test.mjs
           node --check couple-web/premium-dialogs.mjs
           node --check couple-web/premium-dialogs-visual-check.cjs
           node --check couple-web/onboarding.mjs
