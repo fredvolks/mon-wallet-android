@@ -4,10 +4,14 @@
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOKEN=/^[0-9a-f]{64}$/i;
 export const INVITATION_REVISION='20261014-messenger-v5';
+// Share revision seen with working image cards in Messenger; kept separate from auth flow.
+export const MESSENGER_SHARE_PREVIEW_REVISION='20261014-messenger-v4';
 export function inviteLinkForId(siteUrl,invitationId){
  if(!UUID.test(invitationId||''))throw Error('Référence d’invitation invalide.');
  const url=new URL(siteUrl);
  url.searchParams.set('invite_id',invitationId);
+ // Messenger caches individual URLs. Keep the successful, previously shared preview variant.
+ url.searchParams.set('v',MESSENGER_SHARE_PREVIEW_REVISION);
  url.hash='';
  return url.toString();
 }
