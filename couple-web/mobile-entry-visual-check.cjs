@@ -44,8 +44,8 @@ async function main(){
     assert.ok(measure.interactive,name+' '+width+'x'+height+' missing active CTA');
     assert.ok(measure.primary.top>=-3&&measure.primary.bottom<=measure.screen+2,
      name+' '+width+'x'+height+' CTA clipped '+JSON.stringify(measure));
-    const lastControl=name.includes('invitation')&&name==='invitation'?
-     '[data-action="invite-start"]':'.invite-auth-back';
+    const lastControl=name==='invitation'?'[data-action="invite-start"]':
+     name==='public'?'[data-action="show-auth:signin"]':'.invite-auth-back';
     const last=await page.locator(lastControl).first().boundingBox();
     assert.ok(last&&last.y>=-2&&last.y+last.height<=measure.screen+2,
      name+' '+width+'x'+height+' last control clipped '+JSON.stringify({last,screen:measure.screen}));
