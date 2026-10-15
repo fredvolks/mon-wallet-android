@@ -238,12 +238,31 @@ function geometry(sides,pips=false,neutral=false){
 export function dieOn(canvas,sides,value,rolling){
  let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';canvas.closest('.home-die-platform, .love3d-stage')?.classList.add('webgl-ready');}catch{return ()=>{};}
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
- renderer.setSize(canvas.clientWidth||124,canvas.clientHeight||124,false);
+ const layoutSize=()=>{
+  const bounds=canvas.getBoundingClientRect();
+  return {width:Math.max(1,Math.round(bounds.width||canvas.clientWidth||124)),
+   height:Math.max(1,Math.round(bounds.height||canvas.clientHeight||124))};
+ };
+ const initialSize=layoutSize();
+ renderer.setSize(initialSize.width,initialSize.height,false);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.6;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=(sides===6?5.25:4.15)/Math.min(1.4,Math.max(.8,Number(canvas.dataset.diceZoom)||1));
- camera.aspect=(canvas.clientWidth||124)/(canvas.clientHeight||124);camera.updateProjectionMatrix();
+ camera.aspect=initialSize.width/initialSize.height;camera.updateProjectionMatrix();
+ let previousWidth=initialSize.width,previousHeight=initialSize.height;
+ const resizeDie=()=>{
+  const {width,height}=layoutSize();
+  if(width===previousWidth&&height===previousHeight)return;
+  previousWidth=width;previousHeight=height;
+  renderer.setSize(width,height,false);
+  camera.aspect=width/height;camera.updateProjectionMatrix();
+  if(typeof request==='function')request();
+ };
+ const resizeObserver=typeof ResizeObserver==='function'?
+  new ResizeObserver(resizeDie):null;
+ resizeObserver?.observe(canvas);
+ window.addEventListener('resize',resizeDie);
  scene.add(new THREE.AmbientLight(0xffb7df,1.25));
  const key=new THREE.PointLight(0xff3e99,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
  const rim=new THREE.PointLight(0xff9fcb,22,9);rim.position.set(3,-1,1.9);scene.add(rim);
@@ -342,6 +361,7 @@ export function dieOn(canvas,sides,value,rolling){
  const onVisible=()=>{if(!document.hidden){lastFrame=0;request();}};
  document.addEventListener('visibilitychange',onVisible);request();
  const clean=()=>{if(frame)cancelAnimationFrame(frame);obs.disconnect();
+  resizeObserver?.disconnect();window.removeEventListener('resize',resizeDie);
   document.removeEventListener('visibilitychange',onVisible);
   canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);
   canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);
