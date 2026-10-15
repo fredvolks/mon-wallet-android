@@ -6,7 +6,7 @@ import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-audit55';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
-import {sharedEveningTurns,lastOfficialChallengeFace} from './evening-turns.mjs';
+import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
@@ -831,7 +831,7 @@ function renderLegacySession(){
  heroDice(null,35,'Nos 70 défis')+
  '<p class="tiny-note">Pour commencer, chacun lance son dé personnel pour découvrir combien de défis il recevra. Vos résultats sont révélés ensemble.</p>';
  if(!s){
-  const latest=[...(state.sessions||[])].filter(x=>x.finished_at&&x.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+  const latest=latestCountedSession(state.sessions);
   if(latest){
    const total=state.challengesHistory.filter(c=>c.session_id===latest.id);
    const done=total.filter(c=>c.status==='completed').length;
@@ -1368,7 +1368,7 @@ async function renderJournal(){
 async function renderFeedback(){
  const sessions=state.sessions||[];
  const session=sessions.find(x=>x.id===state.chosenSession&&x.finished_at&&x.counted)||
-  [...sessions].filter(x=>x.finished_at&&x.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+  latestCountedSession(sessions);
  if(!session){
   frame('<section class="card"><p>Terminez d’abord une soirée pour répondre à vos questions.</p>'+
    button('tab:session','Retour à notre soirée')+'</section>','NOS AVIS','Après une soirée terminée');return;
