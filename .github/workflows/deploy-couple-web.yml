@@ -12,14 +12,14 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: couple-web-pages-v71-s25-dice-containment
+  group: couple-web-pages-v72-auto-update-session-recovery
   cancel-in-progress: true
 jobs:
   deploy:
     if: github.ref == 'refs/heads/des-a-deux-apk-20261013'
     runs-on: ubuntu-latest
     environment:
-      name: loveroll-web-v71-dice
+      name: loveroll-web-v72-session-recovery
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
