@@ -1197,10 +1197,10 @@ async function createCipherKey(passphrase,salt=state.couple?.journal_salt){
 }
 function encode64(buffer){return btoa(String.fromCharCode(...new Uint8Array(buffer)));}
 function decode64(value){return Uint8Array.from(atob(value),x=>x.charCodeAt(0));}
-async function encryptJson(object){
- if(!state.unlockKey)throw Error('Déverrouillez d’abord votre journal.');
+async function encryptJson(object,key=state.unlockKey){
+ if(!key)throw Error('Déverrouillez d’abord votre journal.');
  const iv=crypto.getRandomValues(new Uint8Array(12));
- const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},state.unlockKey,
+ const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,
   enc.encode(JSON.stringify(object)));
  return JSON.stringify({v:1,iv:encode64(iv),payload:encode64(encrypted)});
 }
@@ -1306,16 +1306,21 @@ async function renderJournal(){
    '<p>Conservez cette phrase : une erreur de déchiffrement ne signifie jamais que votre journal est vide.</p></section>';
  }
  else{
-  body+='<section class="card"><h3>♥ Enregistrer un moment</h3>'+
-   '<label>Date<input id="event-date" type="date" value="'+safe(state.selectedDate||now)+'"></label>'+
+  const edited=state.editEventId?state.journal.find(e=>e.id===state.editEventId&&e.author_id===state.user.id):null;
+  const initial=edited?await decryptJson(edited.ciphertext):null;
+  const selOpt=(choice,field)=>'<option'+(initial?.[field]===choice?' selected':'')+'>'+safe(choice)+'</option>';
+  body+='<section class="card"><h3>'+(edited?'✎ Modifier mon entrée partagée':'♥ Enregistrer un moment')+'</h3>'+
+   (edited?'<p>Cette correction sera visible de votre partenaire. Votre archive privée est préservée.</p>':'')+
+   '<label>Date<input id="event-date" type="date" value="'+safe(edited?.happened_on||state.selectedDate||now)+'"></label>'+
    '<label>Qui a eu un orgasme ?<select id="event-orgasm">'+
-   ['Non précisé','Les deux','Moi','Mon partenaire','Aucun'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   ['Non précisé','Les deux','Moi','Mon partenaire','Aucun'].map(x=>selOpt(x,'orgasm')).join('')+
    '</select></label><label>Point fort<select id="event-good">'+
-   ['Complicité','Tendresse','Communication','Plaisir','Nouveauté'].map(x=>'<option>'+safe(x)+'</option>').join('')+
+   ['Complicité','Tendresse','Communication','Plaisir','Nouveauté'].map(x=>selOpt(x,'good')).join('')+
    '</select></label><label>À améliorer<select id="event-weak">'+
-   ['Rien','Plus de temps','Plus de douceur','Plus de communication'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label><label>Commentaire partagé avec votre partenaire<textarea id="event-note" maxlength="1200" placeholder="Facultatif"></textarea></label>'+
-   button('save-event','Enregistrer dans notre calendrier')+'</section>';
+   ['Rien','Plus de temps','Plus de douceur','Plus de communication'].map(x=>selOpt(x,'weak')).join('')+
+   '</select></label><label>Commentaire partagé avec votre partenaire<textarea id="event-note" maxlength="1200" placeholder="Facultatif">'+safe(initial?.note||'')+'</textarea></label>'+
+   button('save-event',edited?'Enregistrer mes modifications':'Enregistrer dans notre calendrier')+
+   (edited?button('cancel-edit-event','Annuler','class="subtle"'):'')+'</section>';
   const selected=state.selectedDate||now;
   const matched=state.journal.filter(e=>e.happened_on===selected);
   body+='<section class="card"><h3>'+safe(selected)+' · '+matched.length+' entrée(s)</h3>';
@@ -1326,7 +1331,8 @@ async function renderJournal(){
     (decrypted?'<p>Orgasme : '+safe(decrypted.orgasm)+'<br>Point fort : '+safe(decrypted.good)+
     '<br>À améliorer : '+safe(decrypted.weak)+'</p>'+
     (decrypted.note?'<p>'+safe(decrypted.note)+'</p>':''):'<p>Cette entrée n’a pas pu être déchiffrée.</p>')+
-    (item.author_id===state.user.id?button('delete-event:'+item.id,'Supprimer','class="subtle"'):'')+'</div>';
+    (item.author_id===state.user.id?button('edit-event:'+item.id,'Modifier','class="subtle"')+
+    button('delete-event:'+item.id,'Supprimer du journal partagé','class="subtle"'):'')+'</div>';
   }
   body+='</section>';
  }
@@ -2569,6 +2575,12 @@ async function handle(action,element){
   d.setUTCMonth(d.getUTCMonth()+offset);
   state.calendarMonth=d.toISOString().slice(0,7);render();return;
  }
+ if(verb==='edit-event'){
+  const entry=state.journal.find(x=>x.id===parts[0]&&x.author_id===state.user.id);
+  if(!entry||!state.unlockKey)throw Error('Vous ne pouvez modifier que votre entrée déverrouillée.');
+  state.editEventId=entry.id;state.selectedDate=entry.happened_on;render();return;
+ }
+ if(verb==='cancel-edit-event'){state.editEventId=null;render();return;}
  if(verb==='save-event'){
   if(!state.unlockKey)throw Error('Journal verrouillé');
   const date=id('event-date')?.value||today();
@@ -2576,11 +2588,14 @@ async function handle(action,element){
   const payload={orgasm:id('event-orgasm').value,good:id('event-good').value,
     weak:id('event-weak').value,note:id('event-note').value.slice(0,1200)};
   const ciphertext=await encryptJson(payload);
-  await rpc('add_my_love_event',{p_couple:state.coupleId,p_happened_on:date,p_ciphertext:ciphertext});
-  state.selectedDate=date;await reload();notify('Moment ajouté au calendrier partagé et à votre calendrier privé');return;
+  const wasEdit=!!state.editEventId;
+  if(wasEdit)await rpc('update_my_love_event',{p_event:state.editEventId,p_happened_on:date,p_ciphertext:ciphertext});
+  else await rpc('add_my_love_event',{p_couple:state.coupleId,p_happened_on:date,p_ciphertext:ciphertext});
+  state.editEventId=null;state.selectedDate=date;
+  await reload();notify(wasEdit?'Entrée partagée modifiée.':'Moment ajouté au calendrier partagé et à votre calendrier privé');return;
  }
  if(verb==='delete-event'){
-  if(!(await premiumConfirm('Cette entrée personnelle sera définitivement supprimée.',{kind:'delete',title:'Supprimer ce souvenir ?'})))return;
+  if(!(await premiumConfirm('Cette entrée sera supprimée du journal partagé. Une copie personnelle peut demeurer dans votre calendrier privé.',{kind:'delete',title:'Supprimer du journal partagé ?'})))return;
   const {error}=await client.from('couple_intimacy').delete().eq('id',parts[0]).eq('author_id',state.user.id);
   if(error)throw error;await refreshAndShow();return;
  }
