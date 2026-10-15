@@ -47,11 +47,13 @@ test('gift with TWO challenges moves one remaining turn to the other, no six min
  assert.equal(turn.next,b);
 });
 
-test('pending challenge blocks next roll and cannot itself be gifted',()=>{
+test('queued challenge counts as drawn while the other partner may keep drawing',()=>{
  const pending={id:'open',recipient:a,offered_by:b,status:'proposed'};
  const state=sharedEveningTurns(session,members,rolls(1,2),[pending]);
  assert.equal(state.pending?.id,'open');
  assert.equal(state.remaining[a],0);
+ assert.equal(state.next,b);
+ assert.equal(state.drawn[a],1);
 });
 
 test('monthly 3 gift quota enforced in protected RPC and not tied to number 6',()=>{
@@ -67,7 +69,7 @@ test('monthly 3 gift quota enforced in protected RPC and not tied to number 6',(
  assert.match(app,/rpc\('give_love_challenge'/);
  assert.match(app,/turn\.remaining\[me\]<=0/);
  assert.match(app,/Nos 70 défis/);
- assert.match(app,/turn\.pending/);
+ assert.match(app,/state\.eveningBoard/);
 });
 
 test('baseline weekly result remains unique to the couple for one week',()=>{
