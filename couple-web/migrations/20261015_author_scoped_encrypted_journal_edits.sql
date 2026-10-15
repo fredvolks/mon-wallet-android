@@ -59,3 +59,21 @@ grant execute on function public.delete_my_personal_love_event(uuid) to authenti
 
 -- An internal trigger requires no direct unauthenticated RPC access.
 revoke all on function public.love_push_on_invite_accept() from public,anon;
+
+-- Reveal only whether a finished-session feedback was submitted, not its text.
+-- This is required because RLS correctly hides the partner's encrypted response
+-- until BOTH have submitted; counting client-visible rows is misleading.
+create or replace function public.my_love_feedback_status(p_session uuid)
+returns table(user_id uuid,submitted boolean)
+language sql stable security definer set search_path='' as $$
+ select m.user_id,
+  exists(select 1 from public.couple_feedback f
+   where f.session_id=p_session and f.author_id=m.user_id) as submitted
+ from public.couple_members m
+ join public.couple_sessions sess on sess.couple_id=m.couple_id
+ where sess.id=p_session and sess.finished_at is not null and sess.counted
+  and couple_private.is_member(m.couple_id)
+  and public.love_verified_identity();
+$$;
+revoke all on function public.my_love_feedback_status(uuid) from public,anon;
+grant execute on function public.my_love_feedback_status(uuid) to authenticated;
