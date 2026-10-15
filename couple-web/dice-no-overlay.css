@@ -1,0 +1,17 @@
+/* LoveRoll v65. Numeric results are drawn exclusively on the actual 3D face.
+   Backup DOM is a neutral heart, never a result. Hide it when WebGL draws. */
+.home-die-platform.webgl-ready .dice-fallback,
+.love3d-stage.webgl-ready .dice-fallback,
+.premium-die.ready .dice-fallback,
+.home-die-platform:has(canvas[data-spinning="true"]) .dice-fallback,
+.love3d-stage:has(canvas[data-spinning="true"]) .dice-fallback,
+.premium-die:has(canvas[data-spinning="true"]) .dice-fallback{
+ display:none!important;visibility:hidden!important;opacity:0!important;
+}
+.home-die-platform:has(canvas[data-spinning="true"]),
+.love3d-stage:has(canvas[data-spinning="true"]){
+ isolation:isolate;
+}
+.home-die-platform .dice-canvas,.love3d-stage .dice-canvas{
+ position:relative;z-index:2;
+}
