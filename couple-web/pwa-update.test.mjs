@@ -34,3 +34,15 @@ test('LoveRoll can force reload from Settings without touching user or challenge
  assert.match(app,/state\.session/);
  assert.doesNotMatch(app,/localStorage\.clear\(\)|sessionStorage\.clear\(\)/);
 });
+
+test('Orphaned active evening NEVER blocks a corrected Web release from loading',()=>{
+ const begin=app.indexOf('async function reloadWebAssets(force=false)');
+ const end=app.indexOf("window.addEventListener('load'",begin);
+ assert.ok(begin>=0&&end>begin,'Version checker must be present');
+ const checker=app.slice(begin,end);
+ assert.doesNotMatch(checker,/state\.session\s*\|\|/);
+ assert.match(checker,/challengeTimer\.running/);
+ assert.match(checker,/hasUnsavedForm\(\)/);
+ assert.match(checker,/location\.replace\(latest\.toString\(\)\)/);
+ assert.match(app,/setInterval\(\(\)=>\{if\(state\.user&&!document\.hidden\)/);
+});
