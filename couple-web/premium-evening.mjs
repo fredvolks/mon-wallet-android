@@ -46,7 +46,7 @@ export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
- lastEvening=null,lastD35Face=null,playable=null
+ lastEvening=null,lastD35Face=null,playable=null,ownChallengeCount=0
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
  partner=members.find(m=>m.user_id!==me)||members[1]||{},
@@ -56,13 +56,14 @@ export function premiumEveningHtml({
  canMyRoll=!!session&&!status?.my_rolled&&!rolling;
  const first=turn?.first?members.find(m=>m.user_id===turn.first)?.name?.split(' ')[0]:'';
  const totals=turn.targets||{},done=turn.completed||{};
- const canDraw=ready&&turn.ready&&!turn.pending&&!turn.finished&&turn.next===me;
+ const canDraw=ready&&turn.ready&&!turn.drawsFinished&&
+  Number(turn.remaining?.[me]||0)>0&&turn.next===me;
  const canGive=ready&&turn.ready&&giftCount<3&&Number(turn.remaining?.[me])>0;
  const challengeText=pending?'♡ Voir notre défi en cours':turn.finished?'Tous les défis terminés':!ready?'En attente des deux D6':canDraw?'À toi de jouer':'En attente de '+esc(partner.name?.split(' ')[0]||'ton partenaire');
  const help=playable?playable.sensual+' Sensuel + '+playable.sexual+
   ' Sexuel · '+playable.total+' cartes jouables':'Cartes de base et personnalisées · résultats synchronisés';
  const stateText=ready?'✓ Étape 2 débloquée':(status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':'Chaque partenaire brasse son propre dé.');
- const currentStatus=turn.finished?'♡ Tous nos défis sont terminés':pending?'♡ Défi en cours · réponse attendue':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
+ const currentStatus=turn.finished?'♡ Tous les défis sont réalisés':turn.drawsFinished?'♡ Tous les défis sont pigés':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
  // animation face or guess a result while a D35 is being rolled.
  const d35Candidate=pending?.face??turn?.pending?.face??lastD35Face;
@@ -97,9 +98,10 @@ export function premiumEveningHtml({
        bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
        bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+'</div>'+
     '<small>88 % catégorie choisie · 12 % autre<br>Défi cadeau : 100 % de ton choix</small>'+
-    (pending?bt('evening-challenge','♡ Voir notre défi','evening-primary'):
-     turn.finished?bt('finish-session','✓ Terminer la soirée','evening-primary'):
+    (turn.finished?bt('finish-session','✓ Terminer la soirée','evening-primary'):
+     turn.drawsFinished?'<p class="evening-draw-done">✓ Tous les tirages sont prêts !</p>':
      bt('new-challenge','🎲 Lancer le dé','evening-primary',!canDraw||!category||rolling))+
+    bt('evening-list','♡ Voir mes défis ('+ownChallengeCount+')','evening-queue-open-btn')+
     '</div></div></section>'+
   '<section class="evening-gift"><div><strong>🎁 UN PETIT CADEAU</strong>'+
    '<p>Transfère un défi non commencé · '+giftCount+'/3 dons ce mois</p></div>'+
