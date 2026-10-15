@@ -20,7 +20,7 @@ test('Invitation immediately renders the approved premium visual, not authentica
  assert.match(h,/discover-editorial-die/);
  assert.match(css,/\.discover-editorial-die/);
  assert.match(css,/\.discover-accept/);
- assert.match(h,/loveroll-die-approved\.webp/);
+ assert.match(h,/loveroll-invitation-hero-hd\.webp/);
  assert.match(h,/fetchpriority="high"/);
  assert.match(css,/\.discover-editorial-list/);
  assert.equal((h.match(/class="discover-editorial-item /g)||[]).length,4);
