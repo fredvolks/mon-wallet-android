@@ -114,34 +114,21 @@ test('D35 always visible and rolling face not displayed as text before settling'
  assert.match(die,/canvas\.dataset\.diceZoom/);
  assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,window\.matchMedia\?/);
 });
-test('D35 always shows the official saved result below the die after rolling',()=>{
+test('D35 renders the only official result ON the 3D die, never in a duplicate number badge',()=>{
  const live=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
- assert.match(live,/class="evening-d35-result" role="status" aria-live="polite">21<\/div>/);
- assert.match(live,/Le dé révèle un défi parmi les cartes jouables, à tour de rôle/);
- assert.doesNotMatch(live,/Résultat D35|Le D35 révèle/);
  assert.match(live,/data-dice-sides="35" data-face="21"/);
- assert.match(live,/class="evening-d35-result" role="status" aria-live="polite"/);
- // After closing a challenge, the last officially stored face remains visible.
+ assert.doesNotMatch(live,/evening-d35-result/);
+ assert.doesNotMatch(live,/>21<\/div>/);
  const last=premiumEveningHtml({session,members:people,me:'first',
   turn:turns,status:{both_ready:true},lastD35Face:17});
- assert.match(last,/class="evening-d35-result" role="status" aria-live="polite">17<\/div>/);
  assert.match(last,/data-dice-sides="35" data-face="17"/);
- // Never reveal a number until the server draw has settled.
+ assert.doesNotMatch(last,/evening-d35-result/);
  const spinning=premiumEveningHtml({session,members:people,me:'first',
-  turn:{...turns,pending:{face:21}},status:{both_ready:true},lastD35Face:17,
+  turn:{...turns,pending:{face:21}},status:{both_ready:true},
   rolling:true,rollingKind:'new-challenge',rollFace:11});
- assert.match(spinning,/class="evening-d35-result" role="status" aria-live="polite">…<\/div>/);
- assert.doesNotMatch(spinning,/class="evening-d35-result"[^>]*>21<\/div>/);
- const waiting=premiumEveningHtml({session,members:people,me:'first',
-  turn:turns,status:{both_ready:true}});
- assert.match(waiting,/class="evening-d35-result" role="status" aria-live="polite">—<\/div>/);
- assert.doesNotMatch(waiting,/Résultat D35|Le D35 révèle/);
- const locked=premiumEveningHtml({session,members:people,me:'first',
-  turn:{ready:false},status:{both_ready:false},lastD35Face:12});
- assert.doesNotMatch(locked,/class="evening-d35-result"[^>]*>[0-9]+<\/div>/);
- assert.match(css,/\.evening-d35-result\{/);
- assert.match(app,/lastD35Face:/);
+ assert.match(spinning,/data-dice-sides="35" data-face="11"[^>]*data-spinning="true"/);
+ assert.doesNotMatch(spinning,/evening-d35-result/);
 });
 test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:turns,
