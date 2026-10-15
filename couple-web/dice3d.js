@@ -249,6 +249,11 @@ export function dieOn(canvas,sides,value,rolling){
  const white=new THREE.DirectionalLight(0xfff0fa,2.3);white.position.set(1.3,3,4);scene.add(white);
  const neutral=canvas.dataset.diceUnrolled==='true'&&sides===6;
  const built=geometry(sides,canvas.dataset.diceMarkers==='pips',neutral);scene.add(built.group);
+ // A soft contact shadow stays on the stage while the die rises and settles.
+ const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.08,40),
+  new THREE.MeshBasicMaterial({color:0x08030b,transparent:true,opacity:.28,depthWrite:false}));
+ shadow.position.set(0,-1.16,-.68);shadow.scale.set(1,.25,1);
+ scene.add(shadow);
  const target=new THREE.Quaternion().setFromUnitVectors(built.normals.get(Number(value)||1),
   new THREE.Vector3(0,0,1));
  // Face officielle presque directement vers la caméra, léger volume visible.
@@ -257,6 +262,7 @@ export function dieOn(canvas,sides,value,rolling){
  target.premultiply(tilt);
  built.group.quaternion.copy(target);
  let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true,lastFrame=0;
+ let returnStart=null,returnTime=0;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
  const duration=rolling&&!reduceMotion?3100:0,start=performance.now();
  let orientationAtSettle=null,settleStart=.56;
@@ -289,24 +295,46 @@ export function dieOn(canvas,sides,value,rolling){
     const eased=1-Math.pow(1-p,3);
     built.group.quaternion.slerpQuaternions(orientationAtSettle,target,eased);
    }
-   built.group.position.y=.16*Math.pow(Math.sin(Math.PI*t),2);
+   // Forward flight, then two progressively smaller contact rebounds.
+   const flight=t<.56?Math.sin(Math.PI*t/.56)*.24:0;
+   const landing=t>=.56?Math.max(0,1-(t-.56)/.44):0;
+   const bounce=t>=.56?.12*landing*landing*
+     Math.abs(Math.sin(4*Math.PI*(t-.56)/.44)):0;
+   built.group.position.y=Math.max(0,flight+bounce);
+   built.group.position.x=.16*Math.sin(Math.PI*t)*Math.sin(3*Math.PI*t);
   }else if(duration){
-   built.group.quaternion.copy(target);built.group.position.y=0;
+   built.group.quaternion.copy(target);built.group.position.set(0,0,0);
+  }else if(!drag&&returnStart){
+   const tReturn=reduceMotion?1:Math.min(1,(now-returnTime)/480);
+   built.group.quaternion.slerpQuaternions(returnStart,target,1-Math.pow(1-tReturn,3));
+   if(tReturn>=1){built.group.quaternion.copy(target);returnStart=null;}
   }else if(!drag){
    built.group.rotateY(vx);built.group.rotateX(vy);
    const dragFactor=Math.exp(-5*dt);vx*=dragFactor;vy*=dragFactor;
   }
+  const elevation=built.group.position.y;
+  shadow.material.opacity=.30/(1+elevation*3);
+  shadow.scale.x=1+elevation*.6;
+  shadow.position.x=built.group.position.x;
   renderer.render(scene,camera);
-  if(t<1||drag||Math.abs(vx)+Math.abs(vy)>.003)request();
+  if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003)request();
  }
  const request=()=>{if(!frame)frame=requestAnimationFrame(step);};
  const down=e=>{
   if(duration&&performance.now()-start<duration)return;
-  drag=true;x=e.clientX;y=e.clientY;vx=vy=0;canvas.setPointerCapture(e.pointerId);request();
+  drag=true;returnStart=null;x=e.clientX;y=e.clientY;vx=vy=0;
+  canvas.setPointerCapture(e.pointerId);request();
  };
  const move=e=>{if(!drag)return;const dx=e.clientX-x,dy=e.clientY-y;x=e.clientX;y=e.clientY;
   vx=dx*.013;vy=dy*.013;built.group.rotateY(vx);built.group.rotateX(vy);request();};
- const up=()=>{drag=false;request();};
+ const up=()=>{
+  if(!drag)return;
+  drag=false;vx=vy=0;
+  // Manual inspection never changes the server's official value: return the
+  // displayed face to its known resting orientation.
+  returnStart=built.group.quaternion.clone();returnTime=performance.now();
+  request();
+ };
  canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);
  canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
  const obs=new IntersectionObserver(entries=>{const old=shown;
