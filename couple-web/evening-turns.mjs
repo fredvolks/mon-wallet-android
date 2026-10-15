@@ -37,3 +37,17 @@ export const evenLabels=Object.freeze({
  challenge:'Notre défi surprise',
  monthly:'Notre rendez-vous surprise'
 });
+
+// Stable official display result: first query may be newest-first, a reloaded
+// history may be unordered. Never reverse the official series or use preview faces.
+export function lastOfficialChallengeFace(challenges=[],sessionId=null){
+ const valid=(challenges||[]).filter(c=>
+  (sessionId===null||c.session_id===sessionId)&&
+  c.face!=null&&Number.isInteger(Number(c.face))&&
+  Number(c.face)>=1&&Number(c.face)<=35);
+ valid.sort((a,b)=>{
+  const da=Date.parse(a.created_at||''),db=Date.parse(b.created_at||'');
+  return Number.isFinite(da)&&Number.isFinite(db)?db-da:0;
+ });
+ return valid.length?Number(valid[0].face):null;
+}
