@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite60';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite60';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite60';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite61';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite61';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite61';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite60';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite61';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -24,10 +24,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite60';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite61';
 
 
-const WEB_RELEASE='2026-10-15.60';
+const WEB_RELEASE='2026-10-15.61';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -245,7 +245,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite60').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite61').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -939,6 +939,23 @@ function renderLegacySession(){
  frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
 function renderSession(){
+ // The weekly roll unlocks Soirée. The monthly roll belongs to Surprise.
+ // Never enter the evening/game UI without the server-confirmed weekly roll.
+ if(!state.weekly){
+  const locked='<section class="evening-locked-view" aria-label="Soirée en attente du dé hebdomadaire">'+
+   '<div class="evening-locked-brand">♡ Love<em>Roll</em> ♡</div>'+
+   '<div class="evening-locked-eyebrow">♡ SOIRÉE DE DÉFIS</div>'+
+   '<div class="evening-locked-notice" role="status">♡ &nbsp; Brassez d’abord le dé hebdomadaire pour accéder à votre soirée.</div>'+
+   '<div class="evening-locked-hero"><div class="evening-locked-dice" aria-hidden="true">🎲 ♡ 🎲</div>'+
+   '<h2>Votre soirée vous attend</h2><p>Le tirage hebdomadaire détermine le nombre de défis à réaliser à deux.</p>'+
+   button('tab:home','♡ Brasser le dé hebdomadaire','class="evening-locked-cta"')+'</div>'+
+   '<div class="evening-locked-previews">'+
+   '<div>♡ <strong>Défis</strong><small>À découvrir</small></div>'+
+   '<div>♡ <strong>Catégories</strong><small>Sensuel / Sexuel</small></div>'+
+   '<div>♡ <strong>Progression</strong><small>Ensemble</small></div></div></section>';
+  frame(locked,'NOTRE SOIRÉE','Le dé hebdomadaire déverrouille vos défis.');
+  return;
+ }
  const session=state.session,partner=other(),uid=state.user.id;
  if(session&&!state.category){
   try{
@@ -949,7 +966,7 @@ function renderSession(){
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts):{};
  const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
- const official=state.feedbackStatus?.sessionId===last?.id?state.feedbackStatus.items:null;
+ const official=last&&state.feedbackStatus?.sessionId===last.id&&Array.isArray(state.feedbackStatus.items)?state.feedbackStatus.items:null;
  const ownSubmitted=official?.find(x=>x.user_id===uid)?.submitted;
  const otherSubmitted=official?.find(x=>x.user_id!==uid)?.submitted;
  const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
@@ -2542,6 +2559,12 @@ async function handle(action,element){
     'personal-journal','journal','ideas','feedback','monthly-library','advent-editor','special-editor']:
    ['home','settings','invitation','library','personal-journal','monthly-library','advent-editor','special-editor'];
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
+  if(parts[0]==='session'&&!state.weekly){
+   state.tab='session';state.showEveningChallenge=false;state.eveningMore=false;
+   render();
+   notify('♡ Brassez le dé hebdomadaire à l’accueil pour débloquer votre soirée.');
+   return;
+  }
   if(['library','monthly-library','advent-editor','special-editor'].includes(parts[0])&&!isLoveAdmin())
    throw Error('Modification réservée à l’administrateur du couple.');
   if(parts[0]!==state.tab&&hasUnsavedForm()&&
@@ -2968,6 +2991,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite60',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite61',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
