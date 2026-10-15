@@ -12,14 +12,14 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: couple-web-pages-v65-random-dice-reset
-  cancel-in-progress: false
+  group: couple-web-pages-v66-ghost-dice-fix
+  cancel-in-progress: true
 jobs:
   deploy:
     if: github.ref == 'refs/heads/des-a-deux-apk-20261013'
     runs-on: ubuntu-latest
     environment:
-      name: loveroll-web
+      name: loveroll-web-v66
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
           set -euo pipefail
           node --check couple-web/app.js
           node --check couple-web/config.js
-          node --test couple-web/all-dice-reset.test.mjs couple-web/couple-live-sync.test.mjs couple-web/dice-roll-motion.test.mjs couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs
+          node --test couple-web/reset-ghost-session.test.mjs couple-web/all-dice-reset.test.mjs couple-web/couple-live-sync.test.mjs couple-web/dice-roll-motion.test.mjs couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs
       - name: Vérifier TOUS les scripts JavaScript livrés
         run: node couple-web/check-shipped-js.cjs
       - name: Tester le vrai démarrage dans Chromium avant publication
