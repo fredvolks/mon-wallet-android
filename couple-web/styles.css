@@ -703,3 +703,17 @@ button:focus-visible,.nav button:focus-visible,summary:focus-visible{
 .settings-danger-zone button{width:100%}
 .advent-box.missed{opacity:.58;filter:saturate(.5)}
 .advent-state-label{font-size:clamp(.5rem,1.5vw,.72rem);color:#ffc9e0;line-height:1.15}
+
+/* If the JavaScript module cannot parse, the classic startup recovery script
+   still presents a readable, keyboard-accessible error and Retry. */
+.love-boot-error{box-sizing:border-box;width:min(94vw,480px);margin:max(36px,13dvh) auto;
+ padding:24px 22px;text-align:center;color:#ffe5f2;
+ background:linear-gradient(145deg,#43142e,#160b19);border:1px solid #f06aa8;
+ border-radius:24px;box-shadow:0 20px 55px #090510a8}
+.love-boot-error h1{font-size:clamp(1.4rem,5vw,1.8rem);margin:0 0 14px}
+.love-boot-error p{line-height:1.55;margin:0 0 22px;color:#f9c8e2}
+.love-boot-error .boot-retry-button{min-height:50px;min-width:168px;
+ padding:12px 24px;border-radius:14px;border:2px solid #ffd6ea;color:#fff;
+ background:linear-gradient(125deg,#ff5db2,#bd146e);font-weight:800;
+ font-size:1rem;cursor:pointer}
+.love-boot-error .boot-retry-button:focus-visible{outline:3px solid white;outline-offset:3px}

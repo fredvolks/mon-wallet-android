@@ -29,6 +29,21 @@ jobs:
           node --check couple-web/app.js
           node --check couple-web/config.js
           node --test couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs
+      - name: Vérifier TOUS les scripts JavaScript livrés
+        run: node couple-web/check-shipped-js.cjs
+      - name: Tester le vrai démarrage dans Chromium avant publication
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright@1.56.0
+          npx playwright install chromium
+          python3 -m http.server 8765 -d couple-web >/tmp/loveroll-boot-http.log 2>&1 &
+          webserver=$!
+          trap 'kill "$webserver" || true' EXIT
+          for retry in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node couple-web/boot-smoke.cjs
       - name: Activer Pages et préparer le site
         uses: actions/configure-pages@v5
         with:
@@ -57,3 +72,16 @@ jobs:
       - name: Déployer sur Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Vérifier le site réellement publié et la console de Chromium
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            echo "Validation production - tentative $attempt"
+            if LOVEROLL_REQUIRE_HEALTHY=1 node couple-web/boot-diagnostic.cjs; then
+              echo "LoveRoll Pages démarre réellement sur le domaine public."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Le site public ne démarre pas avec la version publiée."
+          exit 1
