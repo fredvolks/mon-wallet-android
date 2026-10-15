@@ -37,6 +37,10 @@ function setup(){
    throw Error('Unexpected table '+table);
   };
   const rpc=async(name)=>{
+   if(name==='my_love_evening_board')
+    return {ready:db.faces.size===2,first:'alice',next:db.faces.size===2?'alice':null,
+      targets:db.faces.size===2?{alice:4,bob:6}:{},drawn:{alice:0,bob:0},completed:{alice:0,bob:0},
+      remaining:db.faces.size===2?{alice:4,bob:6}:{},drawsFinished:false,finished:false};
    if(name!=='my_love_roll_status')throw Error('Unexpected RPC '+name);
    return [rollStatus()];
   };
