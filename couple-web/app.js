@@ -563,7 +563,8 @@ function renderIdeas(){
   'NOS IDÉES DE SOIRÉE','Complicité et intimité selon votre rythme');
 }
 function renderInvitePanel(){
- const latest=state.invitations?.find(x=>!x.cancelled_at)||state.invitations?.[0];
+ const latest=state.invitations?.find(x=>!x.cancelled_at&&!x.accepted_at&&new Date(x.expires_at)>new Date())||
+  state.invitations?.[0];
  const ready=state.members?.length===2;
  const status=invitationStatus(latest,ready);
  const draft=state.inviteDraft&&state.inviteDraft.id===latest?.id?state.inviteDraft:null;
@@ -572,9 +573,12 @@ function renderInvitePanel(){
  if(latest)html+='<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+
   ' · Préparée le '+safe(new Date(latest.created_at).toLocaleDateString('fr-CA'))+'</p>';
  if(!ready){
-  html+='<label>Courriel Google de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
+  html+='<label>Adresse courriel du compte de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
    '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   button('invite',latest?'↻ Renouveler mon lien sécurisé':'Créer mon invitation');
+   (latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date()?
+    '<p class="tiny-note">Votre lien d’invitation demeure valable et peut être renvoyé sans être remplacé.</p>'+
+    button('invite','Remplacer le lien actuel','class="subtle"'):
+    button('invite','Créer mon invitation'));
   html+='<div class="invite-actions">'+
     button('send-messenger','♡ Messenger')+
     button('send-sms','💬 Texto SMS','class="subtle"')+
@@ -584,7 +588,7 @@ function renderInvitePanel(){
     invitationPreviewMarkup()+'</details>'+
     button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
     '<p class="tiny-note">Choisissez Messenger, SMS ou courriel dans votre application, puis confirmez l’envoi ici.</p>';
-  else html+='<p class="tiny-note">Choisir un moyen de partage prépare un nouveau lien personnel. Cela invalide l’ancien lien d’invitation. Aucun message n’est envoyé sans votre confirmation.</p>';
+  else html+='<p class="tiny-note">Le partage utilise le lien valide existant, s’il y en a un. Seul « Remplacer le lien actuel » invalide le précédent. Aucun message n’est envoyé sans votre confirmation.</p>';
   if(latest&&!latest.cancelled_at&&!latest.accepted_at&&new Date(latest.expires_at)>new Date())
    html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
  }
@@ -1541,14 +1545,23 @@ function randomInviteToken(){
  return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 async function ensureInviteDraft(forceNew=false){
- if(!forceNew&&state.inviteDraft)return state.inviteDraft;
  if(!state.coupleId||state.members.length===2)throw Error('Le couple est déjà connecté.');
  const email=normalizeInviteEmail(id('invite-email')?.value);
  if(!CONFIG.siteUrl)throw Error('Adresse publique LoveRoll manquante.');
+ const existing=state.invitations?.find(x=>!x.cancelled_at&&!x.accepted_at&&
+  new Date(x.expires_at)>new Date()&&x.invited_email?.toLowerCase()===email);
+ // ID links are recoverable from server-visible invitation metadata; the
+ // secret token hash is never exposed. Re-sending does not consume/invalidate it.
+ if(!forceNew&&existing){
+  state.inviteDraft={id:existing.id,email,link:inviteLinkForId(CONFIG.siteUrl,existing.id)};
+  return state.inviteDraft;
+ }
+ if(!forceNew&&state.inviteDraft&&state.inviteDraft.email===email)return state.inviteDraft;
+ if(!forceNew&&state.invitations?.some(x=>!x.cancelled_at&&!x.accepted_at&&
+   new Date(x.expires_at)>new Date()))
+  throw Error('Une invitation active existe pour un autre courriel. Utilisez « Remplacer le lien actuel ».');
  const token=randomInviteToken(),digest=await hashToken(token);
  const invitationId=await rpc('create_pair_invite',{p_couple:state.coupleId,p_email:email,p_token_hash:digest});
- // Use a non-secret, browser-safe reference in the URL; acceptance is bound
- // to the verified recipient email on the server.
  state.inviteDraft={id:invitationId,email,link:inviteLinkForId(CONFIG.siteUrl,invitationId)};
  state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
  return state.inviteDraft;
@@ -2103,12 +2116,13 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='invite'){
+  if(state.invitations?.some(x=>!x.cancelled_at&&!x.accepted_at&&new Date(x.expires_at)>new Date())&&
+     !(await premiumConfirm('L’ancien lien d’invitation cessera de fonctionner. Votre partenaire devra utiliser le nouveau lien.',{kind:'library',title:'Remplacer le lien sécurisé ?'})))return;
   await ensureInviteDraft(true);render();
-  notify('Nouveau lien personnel prêt. Choisissez une méthode de partage.');return;
+  notify('Nouveau lien prêt. L’ancien lien a été remplacé.');return;
  }
  if(verb==='send-sms'||verb==='send-email'||verb==='send-messenger'||verb==='copy-invite'){
-  // A token cannot be recovered from its hash after closing the application.
-  // Generate a fresh, single-use link when the user chooses a sharing method.
+  // Reuse the unexpired invitation ID after reload. The server verifies email at acceptance.
   const d=await ensureInviteDraft(false);
   if(verb==='copy-invite'){await navigator.clipboard.writeText(d.link);notify('Lien copié');return;}
   const text=verb==='send-messenger'?invitationMessengerText(d.link):invitationEmailText(d.link);
