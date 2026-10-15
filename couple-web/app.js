@@ -5,9 +5,9 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {feedbackItemsFor} from './feedback-status.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite71';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite71';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite71';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite72';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite72';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite72';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -15,7 +15,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite71';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite72';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -29,10 +29,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite71';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite72';
 
 
-const WEB_RELEASE='2026-10-15.71';
+const WEB_RELEASE='2026-10-15.72';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -250,7 +250,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite71').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite72').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -3066,8 +3066,11 @@ async function reloadWebAssets(force=false){
   if(!/^\d{4}-\d{2}-\d{2}\.\d+$/.test(newest))return;
   if(!force&&newest===WEB_RELEASE)return;
   if(!force&&sessionStorage.getItem('loveroll-auto-loaded-'+newest))return;
-  // Do not interrupt a live throw, evening or unsaved form.
-  if(!force&&(state.session||
+  // An open or orphaned evening is server-stored and is NOT a reason to
+  // remain forever on a broken older app version. Only protect an actual
+  // spinning die, a running challenge timer and a dirty form/modal.
+  if(!force&&(challengeTimer.running||
+      hasUnsavedForm()||
       document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))){
    notify('Une mise à jour LoveRoll est disponible dans Réglages → Application.');
    return;
@@ -3083,6 +3086,10 @@ async function reloadWebAssets(force=false){
  }finally{versionProbeRunning=false;}
 }
 window.addEventListener('load',()=>{reloadWebAssets().catch(console.warn);});
+// Catch a deployment even on a tablet/PC/phone that stays foregrounded;
+// every minute, without interrupting throws, timers or form editing.
+setInterval(()=>{if(state.user&&!document.hidden)
+ reloadWebAssets().catch(console.warn);},60_000);
 window.addEventListener('appinstalled',()=>{
  dismissInstall(state.user?.id);
  state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;
@@ -3142,6 +3149,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite71',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite72',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
