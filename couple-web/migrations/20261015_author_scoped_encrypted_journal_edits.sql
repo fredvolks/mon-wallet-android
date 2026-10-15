@@ -77,3 +77,31 @@ language sql stable security definer set search_path='' as $$
 $$;
 revoke all on function public.my_love_feedback_status(uuid) from public,anon;
 grant execute on function public.my_love_feedback_status(uuid) to authenticated;
+
+-- A client-encrypted known-value probe distinguishes a never-initialized
+-- journal from an existing empty journal, without storing the passphrase.
+alter table public.couples add column if not exists journal_verifier text;
+
+create or replace function public.initialize_love_journal(p_couple uuid,p_verifier text)
+returns void language plpgsql security definer set search_path='' as $$
+declare v_existing text;
+begin
+ perform public.love_require_verified_identity();
+ if auth.uid() is null then raise exception 'Connexion requise';end if;
+ if p_verifier is null or length(p_verifier) not between 50 and 30000 then
+  raise exception 'Vérification chiffrée invalide';end if;
+ select journal_verifier into v_existing
+ from public.couples where id=p_couple for update;
+ if not found or not couple_private.is_member(p_couple) then
+  raise exception 'Accès réservé aux membres du couple';end if;
+ if v_existing is not null then
+  raise exception 'Le journal a déjà été configuré. Déverrouillez-le avec votre phrase.';
+ end if;
+ if exists(select 1 from public.couple_intimacy where couple_id=p_couple)
+  or exists(select 1 from public.couple_feedback where couple_id=p_couple) then
+  raise exception 'Le journal contient déjà des données anciennes; déverrouillez-les avant toute reconfiguration.';
+ end if;
+ update public.couples set journal_verifier=p_verifier where id=p_couple;
+end;$$;
+revoke all on function public.initialize_love_journal(uuid,text) from public,anon;
+grant execute on function public.initialize_love_journal(uuid,text) to authenticated;
