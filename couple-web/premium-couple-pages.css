@@ -416,3 +416,31 @@ main#app.loveroll-evening-page .evening-empty{overflow-y:auto;justify-content:fl
   padding:3px;gap:1px;
  }
 }
+
+/* Events share the premium hierarchy used by Rendez-vous Surprise. */
+main#app .occasion-back-top{margin:0 auto 10px;max-width:680px}
+main#app .occasion-back-top button{min-height:44px}
+main#app .occasion-premium-card{
+ width:min(100%,680px);margin:10px auto;
+ background:linear-gradient(146deg,#481430,#281023 75%,#1a0b19)!important;
+ border:1px solid #dd5994;border-radius:22px;
+ box-shadow:0 9px 26px #09030e6b,inset 0 1px 0 #ffbee35c;
+ padding:clamp(13px,3vw,23px);
+}
+main#app .occasion-premium-card>.eyebrow{
+ font:800 clamp(1.08rem,4vw,1.55rem) Georgia,serif;
+ color:#ffcee5;letter-spacing:.03em
+}
+main#app .occasion-premium-card .occasion-date{
+ color:#eebed5;font-size:.92rem;line-height:1.35
+}
+main#app .occasion-premium-card .occasion-step-label{
+ font-weight:800;font-size:.76rem;letter-spacing:.1em;color:#ff91c6;
+ padding:10px 0 4px;border-top:1px solid #a5447d55;margin-top:12px
+}
+main#app .occasion-premium-card button{min-height:44px;max-width:100%;white-space:normal}
+main#app .surprise-modal[aria-modal="true"] .surprise-modal-content,
+main#app .advent-dialog-shade[aria-modal="true"] .advent-dialog{
+ overflow-y:auto;max-height:calc(100dvh - 72px - env(safe-area-inset-bottom,0px));
+ overscroll-behavior:contain;
+}
