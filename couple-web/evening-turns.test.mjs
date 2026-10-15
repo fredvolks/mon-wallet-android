@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
-import {sharedEveningTurns,evenLabels,lastOfficialChallengeFace} from './evening-turns.mjs';
+import {sharedEveningTurns,evenLabels,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 
 const a='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const b='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -112,4 +112,15 @@ test('Last D35 face is the latest official historical result, never the oldest',
  assert.equal(lastOfficialChallengeFace([...history].reverse(),id),27);
  assert.equal(lastOfficialChallengeFace(history,'other'),null);
  assert.equal(lastOfficialChallengeFace([{face:'—'},...history],id),27);
+});
+
+test('Aftercare selects newest counted evening even when backend returns oldest first',()=>{
+ const history=[
+  {id:'one',finished_at:'2026-10-10T21:00:00Z',counted:true},
+  {id:'two',finished_at:'2026-10-13T21:00:00Z',counted:true},
+  {id:'three',finished_at:'2026-10-14T21:00:00Z',counted:false}
+ ];
+ assert.equal(latestCountedSession(history)?.id,'two');
+ assert.equal(latestCountedSession(history.slice().reverse())?.id,'two');
+ assert.equal(latestCountedSession([{id:'open',finished_at:null,counted:true}]),null);
 });
