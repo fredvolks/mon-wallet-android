@@ -38,8 +38,12 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  assert.equal((first.match(/data-dice-sides="6"/g)||[]).length,2,'Keep two consistent D6 components');
  assert.match(first,/class="love3d-stage is-unrolled"/);
  assert.match(first,/data-dice-unrolled="true"/);
- assert.match(css,/\.love3d-stage\.is-unrolled \.dice-canvas\{visibility:hidden/);
- assert.match(app,/canvas\.dataset\.diceUnrolled!=='true'/);
+ // The idle 3D die is visible now, with six equivalent heart faces.
+ assert.match(first,/data-dice-unrolled="true" data-dice-markers="hearts"/);
+ assert.match(css,/\.love3d-stage\.is-unrolled \.dice-canvas\{[\s\S]*?visibility:visible!important/);
+ assert.doesNotMatch(app,/canvas\.dataset\.diceUnrolled!=='true'/);
+ assert.match(die,/const neutral=canvas\.dataset\.diceUnrolled==='true'&&sides===6/);
+ assert.match(die,/if\(neutral\)\{/);
  // Server RLS hides the first player's result from the other account
  // until BOTH have rolled; only the owner can view their early face.
  const secondView=premiumEveningHtml({session,members:people,me:'second',
