@@ -395,6 +395,12 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           EOF
           node verify-real-home.cjs
+      - name: Fail on syntax errors in any shipped JS file
+        run: node couple-web/check-shipped-js.cjs
+
+      - name: Real app boot in Chromium (anonymous, Google callback, existing session)
+        run: node couple-web/boot-smoke.cjs
+
       - name: Verify REAL public discover and invitation on Android / iPhone responsive widths
         run: node couple-web/actual-discover-visual-check.cjs
 
