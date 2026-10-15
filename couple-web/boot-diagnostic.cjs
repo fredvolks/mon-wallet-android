@@ -22,6 +22,16 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
   localSha256:hash(local),identical:hash(remote)===hash(local),syntax}));
  const browser=await chromium.launch({headless:true,args:['--disable-cache']});
  const page=await browser.newPage({viewport:{width:412,height:824},serviceWorkers:'block'});
+ const cdp=await page.context().newCDPSession(page);
+ await cdp.send('Debugger.enable');
+ await cdp.send('Runtime.enable');
+ const parseFailures=[];
+ cdp.on('Debugger.scriptFailedToParse',d=>parseFailures.push({
+  url:d.url,lineNumber:d.startLine,column:d.startColumn,
+  endLine:d.endLine,endColumn:d.endColumn,sourceSnippet:remote.split('\\n').slice(Math.max(0,d.startLine-2),d.startLine+3)}));
+ cdp.on('Runtime.exceptionThrown',d=>parseFailures.push({exception:d.exceptionDetails.text,
+  url:d.exceptionDetails.url,line:d.exceptionDetails.lineNumber,column:d.exceptionDetails.columnNumber,
+  description:d.exceptionDetails.exception?.description?.slice(0,1900)}));
  const logs=[];
  page.on('pageerror',err=>logs.push('PAGE_ERROR '+err.message+' '+err.stack?.slice(0,750)));
  page.on('console',msg=>{if(msg.type()==='error')logs.push('CONSOLE '+msg.text().slice(0,750))});
@@ -33,5 +43,6 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
   scripts:[...document.scripts].map(s=>s.src),url:location.href}));
  console.log('PRODUCTION_RENDER',JSON.stringify(state));
  console.log('PRODUCTION_LOGS',JSON.stringify(logs.slice(0,25)));
+ console.log('CDP_PARSE',JSON.stringify(parseFailures.slice(0,25)));
  await browser.close();
 })().catch(e=>{console.error('DIAG_FATAL',e);process.exitCode=1});
