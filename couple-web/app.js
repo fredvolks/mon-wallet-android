@@ -6,7 +6,7 @@ import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261014-couple54';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
-import {sharedEveningTurns} from './evening-turns.mjs';
+import {sharedEveningTurns,lastOfficialChallengeFace} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
@@ -922,11 +922,8 @@ function renderSession(){
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening,
-   // Challenges are already fetched newest-first by created_at.
-   lastD35Face:(state.challenges||[]).find(c=>
-    c.face!=null&&Number.isInteger(Number(c.face))&&Number(c.face)>=1&&Number(c.face)<=35)?.face??
-    (state.challengesHistory||[]).find(c=>c.session_id===last?.id&&
-     c.face!=null&&Number(c.face)>=1&&Number(c.face)<=35)?.face??null
+   lastD35Face:lastOfficialChallengeFace(
+    state.session?state.challenges:state.challengesHistory,state.session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
 function optionalRolledTimer(roll){
