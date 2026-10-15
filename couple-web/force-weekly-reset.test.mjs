@@ -26,7 +26,7 @@ test('only the authenticated couple owner may force reset',()=>{
  assert.match(sql,/revoke all on function public\.reset_love_weekly_roll_admin\(uuid\)/);
  assert.match(sql,/grant execute on function public\.reset_love_weekly_roll_admin\(uuid\)/);
  assert.match(app,/if\(!isLoveAdmin\(\)\|\|!isSharedCoupleReady/);
- assert.match(app,/if\(!confirm\(message\)\)return/);
+ assert.match(app,/if\(!\(await premiumConfirm\(message,\{kind:'reset'/);
 });
 test('reset only affects current Toronto week and permits a fresh roll',()=>{
  assert.match(sql,/time zone 'America\/Toronto'/);
