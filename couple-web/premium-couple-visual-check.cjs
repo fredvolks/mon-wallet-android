@@ -19,7 +19,7 @@ const {chromium}=require('playwright');
    const main=document.querySelector('main'),nav=document.querySelector('.nav').getBoundingClientRect();
    const panel=main.querySelector('.evening-premium-view,.surprise-premium-view');
    const last=panel.querySelector('.evening-gift,.surprise-special').getBoundingClientRect();
-   const top=panel.querySelector('.evening-topline,.surprise-header').getBoundingClientRect();
+   const top=panel.querySelector('.evening-intro,.surprise-header').getBoundingClientRect();
    const canvases=[...panel.querySelectorAll('canvas[data-dice-sides]')];
    const obj={width:innerWidth,height:innerHeight,scrollHeight:document.documentElement.scrollHeight,
     mainHeight:main.scrollHeight,topY:top.top,navTop:nav.top,lastBottom:last.bottom,
@@ -48,6 +48,8 @@ const {chromium}=require('playwright');
        noButtonOverlap:!b||!!d&&d.bottom<=b.top+2,
        position:c&&getComputedStyle(c).position,canvasHeight:d?.height,containerHeight:r.height};
     }),
+    partnerCard:panel.querySelector('.evening-partner-card')?.getBoundingClientRect().width||0,
+    managePresent:!!panel.querySelector('.evening-manage[data-action="evening-more"]'),
     sections:panel.querySelectorAll('section').length
    };
    return obj;
@@ -55,8 +57,8 @@ const {chromium}=require('playwright');
   console.log(pageName+' '+device.name,JSON.stringify({result,errors}));
   if(errors.length||result.clipped||result.horizontal||!result.noScroll||
      result.menu!==5||result.dice.some(d=>!d.webgl||d.height<45)||
-     (pageName.startsWith('evening')&&result.dice.length!==3)||
-     (pageName==='evening-idle'&&(result.neutralDice.length!==2||
+     (pageName.startsWith('evening')&&(result.dice.length!==2||result.partnerCard<85||!result.managePresent))||
+     (pageName==='evening-idle'&&(result.neutralDice.length!==1||
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
      (pageName==='surprise'&&(result.dice.length!==2||result.eventCount!==6||!result.eventVisible||result.eventColumns!==2||result.surpriseDice.length!==2||
       result.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap||d.position!=='absolute'))))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
