@@ -12,9 +12,30 @@
 .love3d-stage:has(canvas[data-spinning="true"]){
  isolation:isolate;
 }
-.home-die-platform .dice-canvas,.love3d-stage .dice-canvas{
- position:relative;z-index:2;
+/* Home's satin hero uses its own positioning. Smaller 3D stages
+   require an ABSOLUTE canvas, otherwise WebGL enlarges the grid row and
+   visually escapes over the controls (notably on Samsung/Messenger). */
+.home-die-platform .dice-canvas{position:relative;z-index:2}
+.love3d-stage{position:relative;min-width:0;min-height:0;overflow:hidden;isolation:isolate}
+.love3d-stage .dice-canvas{
+ position:absolute!important;inset:0!important;z-index:2;
+ display:block!important;width:100%!important;height:100%!important;
+ max-width:100%!important;max-height:100%!important;
+ object-fit:contain;
 }
+.surprise-d20-scene,.surprise-host-die{
+ position:relative;min-width:0;min-height:0;overflow:hidden;isolation:isolate;
+}
+.surprise-d20-scene .love3d,.surprise-d20-scene .love3d-stage,
+.surprise-host-die .love3d,.surprise-host-die .love3d-stage{
+ box-sizing:border-box;position:relative;width:100%!important;height:100%!important;
+ min-width:0;min-height:0;max-width:100%;max-height:none!important;overflow:hidden;
+}
+.surprise-d20-scene .dice-canvas,.surprise-host-die .dice-canvas{
+ position:absolute!important;inset:0!important;
+ display:block;width:100%!important;height:100%!important;
+}
+
 
 /* Before either personal D6 is rolled, show the decorative heart rather
    than an empty square: WebGL neutral face is intentionally not displayed. */
