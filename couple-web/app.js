@@ -537,8 +537,8 @@ function heroDice(face,sides,label){
   ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
   ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
  '<div class="premium-die-caption"><div class="eyebrow">'+safe(label)+'</div>'+
- '<p>'+(!face?'En attente du tirage officiel.':'Face gagnante : '+face)+
- '. Faites glisser le dé pour le tourner.</p></div></div>';
+ '<p>'+(!face?'En attente du tirage officiel.':'Résultat officiel : '+face)+
+ '.</p></div></div>';
 }
 function statsRow(){return '<div class="stat-grid">'+[
  [state.weekly?.face||'—','Soirées semaine'],
@@ -643,12 +643,14 @@ function renderWaitingPartner(){
 }
 function renderHome(){
  const members=state.members||[];
+ const turn=state.session&&state.session.self_draws?
+  sharedEveningTurns(state.session,members,state.personal,state.challenges,state.gifts):null;
  frame(premiumHomeHtml({
   weekly:state.weekly,
   rolling:state.diceStatus==='rolling',
   disabled:!!state.diceStatus,
   members,
-  challenges:state.session?state.challenges:[],
+  turn,monthly:state.monthly,
   history:state.challengesHistory||[],
   sessions:state.sessions||[],
   rollFace:state.rollAnimationFace||1,
@@ -821,8 +823,11 @@ function renderSession(){
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts):{};
  const last=(state.sessions||[]).find(s=>s.finished_at&&s.counted);
- const lastEvening=last?{completed:state.challengesHistory.filter(
-    c=>c.session_id===last.id&&c.status==='completed').length}:null;
+ const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
+    c=>c.session_id===last.id&&c.status==='completed').length,
+   responses:state.feedback.filter(f=>f.session_id===last.id).length,
+   myResponse:state.feedback.some(f=>f.session_id===last.id&&f.author_id===uid),
+   partnerResponse:state.feedback.some(f=>f.session_id===last.id&&f.author_id!==uid)}:null;
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
@@ -847,8 +852,11 @@ function renderSession(){
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening,
-   lastD35Face:[...(state.challenges||[])].reverse().find(c=>
-    c.face!=null&&Number.isInteger(Number(c.face))&&Number(c.face)>=1&&Number(c.face)<=35)?.face??null
+   // Challenges are already fetched newest-first by created_at.
+   lastD35Face:(state.challenges||[]).find(c=>
+    c.face!=null&&Number.isInteger(Number(c.face))&&Number(c.face)>=1&&Number(c.face)<=35)?.face??
+    (state.challengesHistory||[]).find(c=>c.session_id===last?.id&&
+     c.face!=null&&Number(c.face)>=1&&Number(c.face)<=35)?.face??null
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
 function optionalRolledTimer(roll){
@@ -2283,8 +2291,9 @@ async function handle(action,element){
   state.showEveningChallenge=false;await refreshAndShow();return;}
  if(verb==='finish-session'){
   if(!state.session)return;
-  await rpc('finish_couple_session',{p_session:state.session.id,p_count:true});
-  state.chosenSession=state.session.id;state.tab='session';await refreshAndShow();return;
+  const finishedId=state.session.id;
+  await rpc('finish_couple_session',{p_session:finishedId,p_count:true});
+  state.chosenSession=finishedId;state.tab='session';await refreshAndShow();return;
  }
  if(verb==='cancel-session'){state.confirmCancel=true;render();return;}
  if(verb==='dismiss-cancel'){state.confirmCancel=false;render();return;}
