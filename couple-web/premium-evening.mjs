@@ -34,7 +34,7 @@ const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=
   officialTarget>=0&&officialTarget!==roll.face;
  const displayCount=adjusted?officialTarget:reveal?roll.face:null;
  return '<article class="evening-user-die evening-my-die">'+
-  '<strong class="evening-person">'+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
+  '<strong class="evening-person">'+(localUser?'MON DÉ · ':'')+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
   premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser&&Number.isInteger(rollFace)) +
   '<div class="evening-face-result" aria-label="'+(reveal?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(reveal?esc(displayCount):'♡')+'</strong>'+
   '<small>'+(reveal?'défi'+(displayCount>1?'s':'')+' ce soir':localUser&&rolling?'Brassage…':roll?'Résultat en attente':'Pas encore lancé')+'</small>'+
@@ -47,7 +47,7 @@ const partnerStatusCard=(partner,roll)=>{
  const confirmed=roll?.face!=null&&Number.isInteger(face)&&face>=1&&face<=6;
  const name=esc(partner?.name?.split(' ')[0]||'Partenaire');
  return '<aside class="evening-partner-card '+(confirmed?'is-confirmed':'is-pending')+'" aria-live="polite" aria-label="Résultat du dé de '+name+'">'+
-  '<span class="evening-partner-caption">DÉ DE '+name+'</span>'+
+  '<span class="evening-partner-caption">PARTENAIRE · '+name+'</span>'+
   '<span class="evening-partner-medallion">'+(confirmed?esc(face):'♡')+'</span>'+
   '<strong class="evening-partner-message">'+(confirmed?'Résultat confirmé':'En attente')+'</strong>'+
   '<small>'+(confirmed?(face===1?'1 défi ce soir':esc(face)+' défis ce soir'):'Pas encore lancé')+'</small>'+
