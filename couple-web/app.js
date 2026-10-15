@@ -596,6 +596,15 @@ async function refreshShared(){
   state.personal=personal;state.challenges=challenges;state.rollStatus=status?.[0]||null;
  }else{state.personal=[];state.challenges=[];state.rollStatus=null;}
  state.feedback=await query('couple_feedback',{eq:{couple_id:c}});
+ const lastCompleted=[...sessions].filter(x=>x.finished_at&&x.counted)
+  .sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+ state.feedbackStatus=null;
+ if(lastCompleted){
+  try{
+   const items=await rpc('my_love_feedback_status',{p_session:lastCompleted.id});
+   state.feedbackStatus={sessionId:lastCompleted.id,items:Array.isArray(items)?items:[]};
+  }catch(error){console.warn('Statut des avis indisponible',error.code||'');}
+ }
 }
 function subscribe(){
  if(!state.coupleId)return;
@@ -919,11 +928,14 @@ function renderSession(){
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts):{};
  const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+ const official=state.feedbackStatus?.sessionId===last?.id?state.feedbackStatus.items:null;
+ const ownSubmitted=official?.find(x=>x.user_id===uid)?.submitted;
+ const otherSubmitted=official?.find(x=>x.user_id!==uid)?.submitted;
  const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
     c=>c.session_id===last.id&&c.status==='completed').length,
-   responses:state.feedback.filter(f=>f.session_id===last.id).length,
-   myResponse:state.feedback.some(f=>f.session_id===last.id&&f.author_id===uid),
-   partnerResponse:state.feedback.some(f=>f.session_id===last.id&&f.author_id!==uid)}:null;
+   responses:official?official.filter(x=>x.submitted).length:null,
+   myResponse:ownSubmitted??state.feedback.some(f=>f.session_id===last.id&&f.author_id===uid),
+   partnerResponse:otherSubmitted??null}:null;
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
@@ -1365,10 +1377,12 @@ async function renderFeedback(){
  const entries=state.feedback.filter(f=>f.session_id===session.id);
  const yours=entries.find(x=>x.author_id===state.user.id);
  const complete=state.members.every(m=>entries.some(x=>x.author_id===m.user_id));
+ const statuses=state.feedbackStatus?.sessionId===session.id?state.feedbackStatus.items:null;
+ const submitted=statuses?statuses.filter(x=>x.submitted).length:entries.length;
  let body='<section class="card"><div class="eyebrow">♥ APRÈS LA SOIRÉE</div>'+
  '<h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
  '<p>Trois questions pour chacun. Votre partenaire ne pourra lire vos réponses qu’une fois que vous aurez répondu tous les deux.</p>'+
- '<div class="stat-grid"><div class="stat"><strong>'+entries.length+'/2</strong><small>Avis déposés</small></div></div>';
+ '<div class="stat-grid"><div class="stat"><strong>'+submitted+'/2</strong><small>Avis déposés</small></div></div>';
  if(!state.unlockKey){
   body+='<p>Déverrouillez votre journal chiffré pour répondre ou voir les résultats.</p>'+
    '<input type="password" id="journal-pass" placeholder="Phrase secrète commune">'+button('unlock','Déverrouiller');
@@ -2394,7 +2408,15 @@ async function handle(action,element){
   render();notify('Invitation annulée.');return;
  }
  if(verb==='choose-feedback'){
-  state.chosenSession=parts[0];state.tab='feedback';render();return;
+  const sessionId=parts[0];
+  if(!state.sessions.some(x=>x.id===sessionId&&x.finished_at&&x.counted))
+   throw Error('Cette soirée terminée est introuvable.');
+  state.chosenSession=sessionId;
+  try{
+   const items=await rpc('my_love_feedback_status',{p_session:sessionId});
+   state.feedbackStatus={sessionId,items:Array.isArray(items)?items:[]};
+  }catch(error){state.feedbackStatus=null;}
+  state.tab='feedback';render();return;
  }
  if(verb==='save-couple-date'){
   const value=id('couple-started-on')?.value||null;
