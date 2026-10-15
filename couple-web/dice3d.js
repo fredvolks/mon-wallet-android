@@ -269,7 +269,9 @@ export function dieOn(canvas,sides,value,rolling){
  const euler=new THREE.Euler(0,0,0,'XYZ');
  let trajectory=null;
  if(duration){
-  const seed=new Uint32Array(3);crypto.getRandomValues(seed);
+  // New random motion seed on EVERY server-confirmed throw, independent
+  // from the face (which Supabase has already chosen).
+  const seed=new Uint32Array(9);crypto.getRandomValues(seed);
   const random=[...seed].map(n=>n/4294967296);
   const resting=new THREE.Euler().setFromQuaternion(target,'XYZ');
   trajectory=makeForwardRoll([resting.x,resting.y,resting.z],random);
@@ -292,10 +294,10 @@ export function dieOn(canvas,sides,value,rolling){
    built.group.quaternion.setFromEuler(euler);
    const progress=rollProgress(elapsed),damping=1-progress;
    // Subtle tumble on the satin stage, smoothly diminishing to rest.
-   const lift=.12*Math.sin(Math.PI*Math.min(1,elapsed/1250));
-   const contact=.035*damping*Math.abs(Math.sin(elapsed/155));
+   const lift=.06*damping*(1+Math.sin(elapsed/255+trajectory.bouncePhase));
+   const contact=.065*damping*Math.pow(Math.sin(elapsed/190+trajectory.bouncePhase),2);
    built.group.position.y=Math.max(0,lift+contact);
-   built.group.position.x=.055*damping*Math.sin(elapsed/440);
+   built.group.position.x=.065*damping*Math.sin(elapsed/540+trajectory.slidePhase);
   }else if(duration){
    // No visible correction: this is the mathematically same final
    // orientation as the last forward Euler step.
