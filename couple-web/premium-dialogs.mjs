@@ -82,9 +82,19 @@ export async function premiumCopyLink(url){
 
 /* Use for existing activity, challenge and Advent overlays as well as premium confirms.
    Only the overlay may receive focus/clicks while it is visible. */
-export function focusInlineLoveDialog(root){
+let previousInlineTrigger=null,inlineWasOpen=false;
+export function focusInlineLoveDialog(root,openingAction=null){
  const overlay=root?.querySelector('.surprise-modal,.advent-dialog-shade,.evening-confirm');
- if(!overlay)return false;
+ if(!overlay){
+  if(inlineWasOpen&&previousInlineTrigger){
+   const trigger=[...root.querySelectorAll('[data-action]')].find(
+    el=>el.dataset.action===previousInlineTrigger);
+   trigger?.focus?.({preventScroll:true});
+  }
+  previousInlineTrigger=null;inlineWasOpen=false;return false;
+ }
+ if(openingAction)previousInlineTrigger=openingAction;
+ inlineWasOpen=true;
  overlay.setAttribute('role','dialog');
  overlay.setAttribute('aria-modal','true');
  overlay.tabIndex=-1;
