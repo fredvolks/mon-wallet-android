@@ -15,14 +15,15 @@ test('Home D6 stays centered inside the satin theater, clear of the roll button'
  assert.match(page,/data-dice-sides="6"/);
  assert.match(page,/data-face="1"/);
 });
-test('Before any evening D6 roll the TWO dice are shown above their buttons',()=>{
+test('Before any evening D6 roll only our die is rendered; partner has a status badge',()=>{
  const people=[{user_id:'a',name:'Camille'},{user_id:'b',name:'Noémie'}];
  const html=premiumEveningHtml({session:{id:'session'},members:people,me:'a',rolls:[],status:{},turn:{}});
  const start=html.indexOf('class="evening-d6-grid"'),end=html.indexOf('class="evening-ready ',start);
  assert.ok(start>=0&&end>start);
  const step=html.slice(start,end);
- assert.equal((step.match(/data-dice-unrolled="true"/g)||[]).length,2);
- assert.equal((step.match(/data-dice-markers="hearts"/g)||[]).length,2);
+ assert.equal((step.match(/data-dice-unrolled="true"/g)||[]).length,1);
+ assert.equal((step.match(/data-dice-markers="hearts"/g)||[]).length,1);
+ assert.match(step,/evening-partner-card is-pending/);
  assert.ok(step.indexOf('canvas class="dice-canvas"')<step.indexOf('data-action="my-d6"'));
  assert.match(step,/data-action="my-d6"/);
  assert.doesNotMatch(step,/aria-label="Total actuel \d+ défis/);
@@ -37,7 +38,8 @@ test('Decorative 3D D6 has identical heart on every face, not fake official pips
  const page=premiumEveningHtml({session:{id:'session'},members:people,me:'a',
   rolls:[{user_id:'a',face:4}],status:{my_rolled:true},turn:{ready:false}});
  assert.match(page,/data-face="4"/);
- assert.equal((page.match(/data-dice-unrolled="true"/g)||[]).length,1);
+ assert.equal((page.match(/data-dice-unrolled="true"/g)||[]).length,0);
+ assert.match(page,/evening-partner-card is-pending/);
  assert.match(page,/aria-label="Total actuel 4 défis; dé initial 4"/);
 });
 

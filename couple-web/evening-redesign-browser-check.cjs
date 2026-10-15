@@ -36,8 +36,15 @@ async function main(){
         canvases:step.querySelectorAll('canvas[data-dice-sides="6"]').length};
     });
     assert.equal(geometry.canvases,1, 'Two D6 renderers still present');
-    assert.ok(geometry.gift&&geometry.gift.bottom<=(geometry.nav?.top??height)+2,
-      'Gift hidden behind nav '+JSON.stringify({width,height,ready,geometry}));
+    if(width<768){
+     assert.ok(geometry.gift&&geometry.gift.bottom<=(geometry.nav?.top??height)+2,
+       'Gift hidden behind mobile nav '+JSON.stringify({width,height,ready,geometry}));
+    }else{
+     // Existing tablet/desktop navigation may sit above the page. Their
+     // longer landscape layouts are intentionally not mobile no-scroll mode.
+     assert.ok(geometry.gift&&geometry.gift.height>45&&geometry.gift.bottom<=geometry.docH+2,
+       'Gift missing from desktop/tablet '+JSON.stringify({width,height,ready,geometry}));
+    }
     assert.ok(geometry.manage?.width>=28,'Manage not reachable');
     if(!ready){
      assert.ok(geometry.partner&&geometry.partner.width>90,'Partner status missing');
