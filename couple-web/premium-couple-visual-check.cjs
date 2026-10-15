@@ -50,5 +50,38 @@ const {chromium}=require('playwright');
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-vrai-couple.png'});
   await page.close();
  }
+
+ // Production styles on small Android, iPhone and large text. These are
+ // browser emulations, not hardware/Safari tests.
+ for(const device of [
+  {name:'Android-360x700',width:360,height:700},
+  {name:'iPhone-393x852',width:393,height:852},
+  {name:'S25-enlarged-text',width:412,height:824,fontSize:'125%'}
+ ])for(const pageName of ['evening-idle','surprise']){
+  const page=await browser.newPage({viewport:{width:device.width,height:device.height},
+   isMobile:true,hasTouch:true,deviceScaleFactor:2});
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('http://127.0.0.1:8765/__premium-couple-pages-test.html?page='+pageName,{waitUntil:'load'});
+  if(device.fontSize)await page.addStyleTag({content:'body{font-size:'+device.fontSize+'!important}'});
+  await page.waitForFunction(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].every(
+   el=>el.dataset.webglReady==='true'),null,{timeout:20000});
+  const target=page.locator(pageName.startsWith('evening')?'.evening-small-roll':'.surprise-primary').first();
+  await target.scrollIntoViewIfNeeded();
+  const metrics=await page.evaluate(()=>{
+   const target=document.querySelector('.evening-small-roll,.surprise-primary');
+   const rect=target.getBoundingClientRect();
+   return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
+    targetHeight:Math.round(rect.height),targetTop:Math.round(rect.top),
+    targetBottom:Math.round(rect.bottom),navTop:Math.round(document.querySelector('.nav').getBoundingClientRect().top),
+    navCount:document.querySelectorAll('.nav button').length};
+  });
+  console.log('Responsive '+device.name+' '+pageName,JSON.stringify({metrics,errors}));
+  if(errors.length||metrics.scrollWidth>metrics.width+2||metrics.navCount!==5||
+     metrics.targetHeight<44||metrics.targetBottom>metrics.navTop+2){
+    throw Error('Commande inaccessible sur petit écran : '+device.name+' '+pageName);
+  }
+  await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-responsive.png',fullPage:true});
+  await page.close();
+ }
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
