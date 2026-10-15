@@ -3,6 +3,7 @@ import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
+import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite67';
 import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite67';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite67';
@@ -43,7 +44,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -600,13 +601,31 @@ async function refreshShared(){
  state.session=sessions.find(s=>s.finished_at===null)||null;
  state.sessions=sessions;state.events=events;state.journal=diary;state.advent=advents;state.adventServerDate=adventServerDate;
  if(state.session){
-  const [personal,challenges,status]=await Promise.all([
+  const [personal,challenges,status,board]=await Promise.all([
     query('couple_personal_rolls',{eq:{session_id:state.session.id}}),
     query('couple_challenges',{eq:{session_id:state.session.id},order:'created_at'}),
-    rpc('my_love_roll_status',{p_session:state.session.id})
+    rpc('my_love_roll_status',{p_session:state.session.id}),
+    rpc('my_love_evening_board',{p_session:state.session.id})
   ]);
-  state.personal=personal;state.challenges=challenges;state.rollStatus=status?.[0]||null;
- }else{state.personal=[];state.challenges=[];state.rollStatus=null;}
+  state.personal=personal;
+  // The SELECT policy also restricts these rows, so a partner never gets
+  // another person's challenge title, description or D35 face.
+  state.challenges=ownEveningChallenges(challenges,state.user.id,state.session.id);
+  state.rollStatus=status?.[0]||null;
+  state.eveningBoard=board||null;
+  const ownIds=new Set(state.challenges.map(c=>c.id));
+  if(state.eveningQueueSeen?.session===state.session.id){
+   const fresh=state.challenges.find(c=>!state.eveningQueueSeen.ids.has(c.id));
+   if(fresh&&state.tab==='session'&&!state.diceStatus){
+    state.selectedEveningChallengeId=fresh.id;state.showEveningChallenges=true;
+   }
+  }
+  state.eveningQueueSeen={session:state.session.id,ids:ownIds};
+ }else{
+  state.personal=[];state.challenges=[];state.rollStatus=null;
+  state.eveningBoard=null;state.eveningQueueSeen=null;
+  state.selectedEveningChallengeId=null;state.showEveningChallenges=false;
+ }
  state.feedback=await query('couple_feedback',{eq:{couple_id:c}});
  // Only counts are revealed to the invited partner; titles remain owner-private.
  try{
@@ -787,7 +806,7 @@ function renderHome(){
  const members=state.members||[];
  const activeEvening=playableSessionForWeekly(state.session,state.weekly);
  const turn=activeEvening&&activeEvening.self_draws?
-  sharedEveningTurns(activeEvening,members,state.personal,state.challenges,state.gifts):null;
+  state.eveningBoard||sharedEveningTurns(activeEvening,members,state.personal,state.challenges,state.gifts):null;
  frame(premiumHomeHtml({
   weekly:state.weekly,
   rolling:state.diceStatus==='rolling',
@@ -987,7 +1006,8 @@ function renderSession(){
   }catch{}
  }
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
- const turn=session?sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts):{};
+ const turn=session?(state.eveningBoard||sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts)):{};
+ const mineCards=session?ownEveningChallenges(state.challenges,uid,session.id):[];
  const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
  const official=last&&state.feedbackStatus?.sessionId===last.id&&Array.isArray(state.feedbackStatus.items)?state.feedbackStatus.items:null;
  const ownSubmitted=official?.find(x=>x.user_id===uid)?.submitted;
@@ -1000,30 +1020,59 @@ function renderSession(){
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
- const pending=state.rollAnimationKind==='new-challenge'&&state.diceStatus?null:turn.pending;
- if(session&&pending&&state.showEveningChallenge){
-  const card=resolvedCard(pending),receiver=pending.recipient;
-  overlay='<div class="surprise-modal" role="dialog" aria-label="Notre défi en cours">'+
-   '<article class="surprise-modal-content">'+
-   '<div class="eyebrow">♥ '+safe(names[pending.category])+' · carte '+safe(pending.card_id||pending.face)+'/35</div>'+
-   '<h2>'+safe(card.title)+'</h2><p>'+safe(card.description)+'</p>'+
-   timerWidget(pending,card.minutes)+
-   (receiver===uid?'<div class="actions">'+
-    (pending.status==='proposed'?button('answer:'+pending.id+':accepted','♡ Accepter ce défi'):'')+
-    (pending.status==='accepted'?button('answer:'+pending.id+':completed','✓ Défi réalisé'):'')+
-    button('answer:'+pending.id+':passed','Passer ce défi','class="subtle"')+
-    '</div>':'<p>En attente de '+safe(partner?.name||'ton partenaire')+'</p>')+
-    button('evening-challenge','Fermer','class="subtle"')+
-    '</article></div>';
+ // Personal queue: each account sees only cards received by THAT user.
+ // Draws can all be completed before any challenge is accepted or played.
+ const selected=mineCards.find(c=>c.id===state.selectedEveningChallengeId);
+ if(session&&state.showEveningChallenges){
+  const view=selected;
+  const idx=view?queuePosition(mineCards,view.id):-1;
+  overlay='<div class="surprise-modal evening-queue-modal" role="dialog" aria-modal="true" aria-label="Mes défis de ce soir">'+
+   '<article class="surprise-modal-content evening-queue-content">'+
+   '<div class="eyebrow">♡ MES DÉFIS DU SOIR</div>'+
+   (view?
+    '<div class="evening-queue-nav">'+
+     button('evening-list','← Mes défis ('+mineCards.length+')','class="subtle"')+
+     button('evening-close','✕ Fermer','class="subtle"')+'</div>'+
+    '<div class="evening-queue-heading"><h2>Mes '+mineCards.length+' défis</h2>'+
+     button('evening-close','✕ Fermer','class="subtle"')+'</div>')+
+   (view?
+    '<div class="evening-queue-detail">'+
+     '<div class="eyebrow">♥ '+safe(names[view.category]||view.category)+
+      ' · Dé 35 : '+safe(view.face)+' · '+safe(queueLabel(view.status))+'</div>'+
+     '<h2>'+safe(resolvedCard(view).title)+'</h2>'+
+     '<p>'+safe(resolvedCard(view).description)+'</p>'+
+     timerWidget(view,resolvedCard(view).minutes)+
+     (view.status==='proposed'?
+       button('evening-start:'+view.id,'▶ Commencer ce défi','class="evening-primary"'):'')+
+     (view.status==='accepted'?
+       button('answer:'+view.id+':completed','✓ Défi réalisé','class="evening-primary"'):'')+
+     (['proposed','accepted'].includes(view.status)?
+       button('answer:'+view.id+':passed','Passer ce défi','class="subtle"'):'')+
+     '<div class="evening-queue-nav">'+
+       (idx>0?button('evening-open:'+mineCards[idx-1].id,'← Précédent','class="subtle"'):'<span></span>')+
+       (idx<mineCards.length-1?button('evening-open:'+mineCards[idx+1].id,'Suivant →','class="subtle"'):'<span></span>')+
+      '</div></div>':
+    '<p class="evening-queue-instructions">Tous tes tirages restent ici. Pige maintenant, puis commence les défis dans l’ordre de ton choix.</p>'+
+     '<div class="evening-queue-list">'+(mineCards.length?mineCards.map((card,i)=>
+       button('evening-open:'+card.id,
+        '<span class="evening-queue-num">'+(i+1)+'</span>'+
+        '<span class="evening-queue-entry"><strong>'+safe(resolvedCard(card).title)+'</strong>'+
+        '<small>'+safe(names[card.category]||card.category)+' · '+
+        (resolvedCard(card).minutes?resolvedCard(card).minutes+' min · ':'')+
+        safe(queueLabel(card.status))+'</small></span><span>›</span>',
+        'class="evening-queue-item"')).join(''):
+       '<p>Aucun défi pigé pour le moment. Sélectionne Sensuel ou Sexuel, puis lance ton dé.</p>')+
+     '</div>')+
+   '</article></div>';
  }
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
    playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
-   challengeOverlay:overlay,lastEvening,
+   challengeOverlay:overlay,lastEvening,ownChallengeCount:mineCards.length,
    lastD35Face:lastOfficialChallengeFace(
-    state.session?state.challenges:state.challengesHistory,state.session?.id||last?.id||null)
+    session?state.challenges:state.challengesHistory,session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
 function optionalRolledTimer(roll){
@@ -1826,7 +1875,37 @@ async function handle(action,element){
   state.homeNotices=!state.homeNotices;render();return;
  }
  if(verb==='evening-more'){state.eveningMore=!state.eveningMore;render();return;}
- if(verb==='evening-challenge'){state.showEveningChallenge=!state.showEveningChallenge;render();return;}
+ if(verb==='evening-challenge'||verb==='evening-list'){
+  state.showEveningChallenges=true;state.selectedEveningChallengeId=null;render();return;
+ }
+ if(verb==='evening-close'){
+  state.showEveningChallenges=false;state.selectedEveningChallengeId=null;render();return;
+ }
+ if(verb==='evening-open'){
+  if(!ownEveningChallenges(state.challenges,state.user?.id,state.session?.id).some(x=>x.id===parts[0]))
+   throw Error('Ce défi ne fait pas partie de ta liste personnelle.');
+  state.selectedEveningChallengeId=parts[0];state.showEveningChallenges=true;render();return;
+ }
+ if(verb==='evening-start'){
+  const picked=ownEveningChallenges(state.challenges,state.user?.id,state.session?.id).find(x=>x.id===parts[0]);
+  if(!picked||!['proposed','accepted'].includes(picked.status))throw Error('Ce défi ne peut pas être commencé.');
+  if(picked.status==='proposed')
+   await rpc('answer_challenge',{p_id:picked.id,p_status:'accepted'});
+  state.showEveningChallenges=true;state.selectedEveningChallengeId=picked.id;
+  await refreshAndShow();
+  const active=state.challenges.find(c=>c.id===picked.id);
+  const minutes=resolvedCard(active||picked).minutes;
+  if(minutes>0){
+   activeTimer(active||picked,minutes);
+   if(!challengeTimer.running&&challengeTimer.remainingMs>0){
+    challengeTimer.deadline=Date.now()+challengeTimer.remainingMs;
+    challengeTimer.running=true;challengeTimer.notified=false;
+    saveChallengeTimer();
+   }
+   updateChallengeClock();
+  }
+  return;
+ }
  if(verb==='surprise-activity'){state.showSurpriseActivity=!state.showSurpriseActivity;render();return;}
  if(verb==='surprise-how'){
    notify('Chaque événement : un D6 choisit l’activité puis un second D6 choisit sa variante. Les résultats sont synchronisés.');
@@ -2610,7 +2689,7 @@ async function handle(action,element){
   }
   allowBackExit=false;state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
-  if(state.tab!=='session'){state.showEveningChallenge=false;state.eveningMore=false;}
+  if(state.tab!=='session'){state.showEveningChallenge=false;state.showEveningChallenges=false;state.selectedEveningChallengeId=null;state.eveningMore=false;}
   if(state.tab!=='special')state.showSurpriseActivity=false;
   if(state.tab!=='advent'){state.adventSelected=null;state.adventHistory=false;state.adventOpening=null;}
   render();
@@ -2729,15 +2808,26 @@ async function handle(action,element){
   if(!state.session)throw Error('Aucune soirée active.');
   if(!EVENING_CATEGORIES.includes(state.category))
    throw Error('Choisissez Sensuel ou Sexuel avant chaque nouveau défi.');
-  await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
+  const drawn=await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
    p_preference:state.category,p_random:false}),'new-challenge');
+  // The official result is now stored; open only the receiving player's
+  // private card, with the saved timer ready to start later.
+  if(drawn?.id&&drawn.recipient===state.user.id){
+   state.selectedEveningChallengeId=drawn.id;
+   state.showEveningChallenges=true;
+  }
   try{sessionStorage.removeItem('loveroll-category-'+state.session.id);}catch{}
   state.category=null; // Require a fresh category choice for the next challenge.
   render();
   return;
  }
- if(verb==='answer'){await rpc('answer_challenge',{p_id:parts[0],p_status:parts[1]});
-  state.showEveningChallenge=false;await refreshAndShow();return;}
+ if(verb==='answer'){
+  const item=ownEveningChallenges(state.challenges,state.user.id,state.session?.id).find(c=>c.id===parts[0]);
+  if(!item)throw Error('Ce défi n’est pas dans ta liste personnelle.');
+  await rpc('answer_challenge',{p_id:parts[0],p_status:parts[1]});
+  state.showEveningChallenges=true;state.selectedEveningChallengeId=item.id;
+  await refreshAndShow();return;
+ }
  if(verb==='finish-session'){
   if(!state.session)return;
   const finishedId=state.session.id;
