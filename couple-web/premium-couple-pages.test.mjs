@@ -117,27 +117,29 @@ test('D35 always visible and rolling face not displayed as text before settling'
 test('D35 always shows the official saved result below the die after rolling',()=>{
  const live=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
- assert.match(live,/Résultat D35 · N° 21/);
+ assert.match(live,/class="evening-d35-result" role="status" aria-live="polite">21<\/div>/);
+ assert.match(live,/Le dé révèle un défi parmi 70 cartes, à tour de rôle/);
+ assert.doesNotMatch(live,/Résultat D35|Le D35 révèle/);
  assert.match(live,/data-dice-sides="35" data-face="21"/);
  assert.match(live,/class="evening-d35-result" role="status" aria-live="polite"/);
  // After closing a challenge, the last officially stored face remains visible.
  const last=premiumEveningHtml({session,members:people,me:'first',
   turn:turns,status:{both_ready:true},lastD35Face:17});
- assert.match(last,/Résultat D35 · N° 17/);
+ assert.match(last,/class="evening-d35-result" role="status" aria-live="polite">17<\/div>/);
  assert.match(last,/data-dice-sides="35" data-face="17"/);
  // Never reveal a number until the server draw has settled.
  const spinning=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},lastD35Face:17,
   rolling:true,rollingKind:'new-challenge',rollFace:11});
- assert.match(spinning,/Brassage en cours…/);
- assert.doesNotMatch(spinning,/Résultat D35 · N°/);
+ assert.match(spinning,/class="evening-d35-result" role="status" aria-live="polite">…<\/div>/);
+ assert.doesNotMatch(spinning,/class="evening-d35-result"[^>]*>21<\/div>/);
  const waiting=premiumEveningHtml({session,members:people,me:'first',
   turn:turns,status:{both_ready:true}});
- assert.match(waiting,/Résultat D35 · —/);
- assert.doesNotMatch(waiting,/Résultat D35 · N°/);
+ assert.match(waiting,/class="evening-d35-result" role="status" aria-live="polite">—<\/div>/);
+ assert.doesNotMatch(waiting,/Résultat D35|Le D35 révèle/);
  const locked=premiumEveningHtml({session,members:people,me:'first',
   turn:{ready:false},status:{both_ready:false},lastD35Face:12});
- assert.doesNotMatch(locked,/Résultat D35 · N°/);
+ assert.doesNotMatch(locked,/class="evening-d35-result"[^>]*>[0-9]+<\/div>/);
  assert.match(css,/\.evening-d35-result\{/);
  assert.match(app,/lastD35Face:/);
 });

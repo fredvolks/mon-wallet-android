@@ -66,8 +66,8 @@ export function premiumEveningHtml({
  const d35Number=Number(d35Candidate);
  const officialD35=ready&&!rolling&&d35Candidate!=null&&
   Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=35?d35Number:null;
- const d35Result=rolling&&rollingKind==='new-challenge'?'Brassage en cours…':
-  officialD35!==null?'Résultat D35 · N° '+officialD35:'Résultat D35 · —';
+ const d35Result=rolling&&rollingKind==='new-challenge'?'…':
+  officialD35!==null?String(officialD35):'—';
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view">'+
  '<header class="evening-topline"><span class="heartline">♡</span><div><h1>NOTRE SOIRÉE</h1><p>Un jeu synchronisé sur nos deux comptes</p></div>'+
@@ -88,7 +88,7 @@ export function premiumEveningHtml({
     '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-d35-result" role="status" aria-live="polite">'+esc(d35Result)+'</div>'+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
-    '<div class="evening-play-controls"><p>Le D35 révèle un défi parmi 70 cartes, à tour de rôle.</p>'+
+    '<div class="evening-play-controls"><p>Le dé révèle un défi parmi 70 cartes, à tour de rôle.</p>'+
     '<div class="evening-choice">'+
        bt('category:SENSUEL','♡ Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
        bt('category:SEXUEL','♨ Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+'</div>'+
