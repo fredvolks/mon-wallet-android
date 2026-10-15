@@ -890,6 +890,12 @@ function renderLegacySession(){
 }
 function renderSession(){
  const session=state.session,partner=other(),uid=state.user.id;
+ if(session&&!state.category){
+  try{
+   const saved=sessionStorage.getItem('loveroll-category-'+session.id);
+   if(EVENING_CATEGORIES.includes(saved))state.category=saved;
+  }catch{}
+ }
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts):{};
  const last=(state.sessions||[]).find(s=>s.finished_at&&s.counted);
@@ -2387,7 +2393,12 @@ async function handle(action,element){
   if(!state.rollStatus?.both_ready)notify('Dé lancé! Les deux résultats apparaîtront ensemble après le dernier tirage.');
   else notify('♡ Les deux résultats sont maintenant révélés!');return;
  }
- if(verb==='category'){if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');state.category=parts[0];state.randomMode=false;render();return;}
+ if(verb==='category'){
+  if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');
+  state.category=parts[0];state.randomMode=false;
+  if(state.session)try{sessionStorage.setItem('loveroll-category-'+state.session.id,parts[0]);}catch{}
+  render();return;
+ }
   if(verb==='timer-mode'){
    if(parts[0]!=='vibrate'&&parts[0]!=='sound')throw Error('Signal inconnu');
    challengeTimer.mode=parts[0];localStorage.setItem('loveroll-timer-mode',parts[0]);
@@ -2442,6 +2453,7 @@ async function handle(action,element){
    throw Error('Choisissez Sensuel ou Sexuel avant chaque nouveau défi.');
   await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
    p_preference:state.category,p_random:false}),'new-challenge');
+  try{sessionStorage.removeItem('loveroll-category-'+state.session.id);}catch{}
   state.category=null; // Require a fresh category choice for the next challenge.
   render();
   return;
