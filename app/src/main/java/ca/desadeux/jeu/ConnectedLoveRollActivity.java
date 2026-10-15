@@ -61,12 +61,12 @@ public final class ConnectedLoveRollActivity extends Activity {
  private WebView web;
  private ValueCallback<Uri[]> jsonChooser;
  private static final int JSON_PICKER_REQUEST=8625;
- private boolean pageReady = false;
+ private volatile boolean pageReady = false;
  private boolean authInProgress = false;
  private String pendingGoogleResult;
  private final SecureRandom random = new SecureRandom();
 
- private boolean firebaseReady=false;
+ private volatile boolean firebaseReady=false;
  private void initializeLoveRollFirebase(){
   try{
    if(BuildConfig.FIREBASE_APP_ID.isEmpty()||BuildConfig.FIREBASE_API_KEY.isEmpty()||
@@ -163,9 +163,16 @@ public final class ConnectedLoveRollActivity extends Activity {
   }
   @JavascriptInterface public boolean nativePushConfigured(){return firebaseReady;}
   @JavascriptInterface public String nativePushToken(){
-   if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return "";
-   return getSharedPreferences("loveroll_native_push",MODE_PRIVATE)
-    .getString("device_token","");
+   // JavaScriptInterface runs on a background thread: never read web.getUrl() here.
+   // pageReady is cached by the trusted top-level WebViewClient on the UI thread.
+   if(!pageReady||!firebaseReady)return "";
+   try{
+    return getSharedPreferences("loveroll_native_push",MODE_PRIVATE)
+     .getString("device_token","");
+   }catch(RuntimeException e){
+    android.util.Log.w("LoveRollPush","Could not read FCM device token",e);
+    return "";
+   }
   }
   @JavascriptInterface public void enableRemotePush(){
    runOnUiThread(()->{
@@ -354,6 +361,7 @@ public final class ConnectedLoveRollActivity extends Activity {
  private void beginGoogleSignIn() {
   if(authInProgress||web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
   authInProgress=true;
+  try{
   // Supabase hashes the raw nonce before comparing with Google's ID-token claim.
   // Google MUST receive SHA-256 hex; Supabase MUST receive the original nonce.
   final String nonce=randomNonce();
@@ -380,13 +388,27 @@ public final class ConnectedLoveRollActivity extends Activity {
       data.put("token",token);
       data.put("nonce",nonce);
       deliver(data);
-     }catch(Exception e){deliverError("Connexion Google impossible : vérifiez sa configuration.");}
+      }catch(Exception e){
+      android.util.Log.w("LoveRollAuth","Cannot decode Google ID token",e);
+      deliverError("Identité Google reçue, mais jeton invalide. Réessayez ou utilisez votre mot de passe.");
+     }
     }
     @Override public void onError(GetCredentialException error){
      authInProgress=false;
-     deliverError("Connexion Google annulée ou indisponible. Réessayez.");
+     String kind=error.getType()==null?"unknown":error.getType();
+     android.util.Log.w("LoveRollAuth","CredentialManager: "+kind);
+     String lower=kind.toLowerCase(java.util.Locale.ROOT);
+     if(lower.contains("cancel"))deliverError("Connexion Google annulée. Réessayez.");
+     else if(lower.contains("no_credential"))
+      deliverError("Aucun compte Google disponible dans Android. Essayez votre mot de passe LoveRoll.");
+     else deliverError("Google Android a refusé la connexion ("+kind+"). Vérifiez Google Play Services ou utilisez votre mot de passe LoveRoll.");
     }
    });
+  }catch(RuntimeException error){
+   authInProgress=false;
+   android.util.Log.w("LoveRollAuth","Google credential request unavailable",error);
+   deliverError("Connexion Google Android indisponible. Vérifiez Google Play Services ou connectez-vous avec votre mot de passe.");
+  }
  }
  private void deliverError(String message){
   try{JSONObject o=new JSONObject();o.put("error",message);deliver(o);}catch(Exception ignored){}
