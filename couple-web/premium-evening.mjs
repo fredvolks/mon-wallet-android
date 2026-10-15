@@ -110,8 +110,8 @@ export function premiumEveningHtml({
   (lastEvening?'<div class="evening-aftercare"><h2>♡ Notre soirée est terminée</h2>'+
     '<p>'+esc(lastEvening.completed)+' défis réalisés ensemble. Prenez le temps de donner votre avis.</p>'+
     '<p>Vos réponses : <strong>'+(lastEvening.myResponse?'✓ Enregistrées':'En attente')+'</strong> · Votre partenaire : <strong>'+
-    (lastEvening.partnerResponse?'✓ Enregistrées':'En attente')+'</strong></p>'+
-    '<p>'+esc(lastEvening.responses)+' / 2 avis déposés · visibles ensemble après les deux réponses.</p>'+
+    (lastEvening.partnerResponse===null?'Statut indisponible':lastEvening.partnerResponse?'✓ Enregistrées':'En attente')+'</strong></p>'+
+    '<p>'+(lastEvening.responses===null?'—':esc(lastEvening.responses))+' / 2 avis déposés · visibles ensemble après les deux réponses.</p>'+
     bt('choose-feedback:'+lastEvening.id,lastEvening.myResponse?'Voir le suivi de nos avis':'♡ Donner mon avis','evening-primary')+
     bt('tab:journal','Consulter nos avis précédents','subtle')+'</div>':
     '<p>Un tirage choisit qui commence, puis les défis alternent.</p>')+
