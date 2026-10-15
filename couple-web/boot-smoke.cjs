@@ -9,14 +9,27 @@ export function createClient(){
  const mode=new URL(location.href).searchParams.get('boot_case')||'anonymous';
  window.__loveOauthArgs=null;
  const authenticated=mode!=='anonymous';
+ const paired=mode==='paired'||mode==='paired-active';
+ const active=mode==='paired-active';
+ const localDay=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const monday=new Date(localDay+'T12:00:00Z');
+ monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
+ const weeklyKey=monday.toISOString().slice(0,10);
+ const now=new Date();
+ const earlier=new Date(now.getTime()-2*60000).toISOString();
+ const later=new Date(now.getTime()-60000).toISOString();
  const rows={
-  couple_profiles:mode==='paired'?
+  couple_profiles:paired?
    [{id:user.id,display_name:'Test 1',birthday_md:'04-12'},{id:second.id,display_name:'Test 2',birthday_md:'04-13'}]:
    mode==='existing'?[{id:user.id,display_name:'Test 1',birthday_md:'04-12'}]:[],
-  love_wellbeing:mode==='paired'||mode==='existing'?[{user_id:user.id,relationship:'well',intimacy:'well'}]:[],
-  couple_members:mode==='paired'?[{couple_id:'couple-test',user_id:user.id,joined_at:'2026-10-01T00:00:00Z'},
+  love_wellbeing:paired||mode==='existing'?[{user_id:user.id,relationship:'well',intimacy:'well'}]:[],
+  couple_members:paired?[{couple_id:'couple-test',user_id:user.id,joined_at:'2026-10-01T00:00:00Z'},
     {couple_id:'couple-test',user_id:second.id,joined_at:'2026-10-02T00:00:00Z'}]:[],
-  couples:mode==='paired'?[{id:'couple-test',owner_user_id:user.id,journal_salt:'test-journal-salt'}]:[]
+  couples:paired?[{id:'couple-test',owner_user_id:user.id,journal_salt:'test-journal-salt'}]:[],
+  couple_rolls:active?[{id:'weekly-synthetic',couple_id:'couple-test',kind:'weekly',key:weeklyKey,face:2,created_at:earlier}]:[],
+  couple_sessions:active?[{id:'active-session-synthetic',couple_id:'couple-test',started_at:later,finished_at:null,paired_turns:true,self_draws:true}]:[],
+  couple_personal_rolls:active?[{id:'d6-user',session_id:'active-session-synthetic',user_id:user.id,face:2},
+   {id:'d6-second',session_id:'active-session-synthetic',user_id:second.id,face:3}]:[]
  };
  return {
   auth:{
@@ -31,7 +44,15 @@ export function createClient(){
   },
   rpc:async(name)=>({data:name==='get_love_guidance'?'gentle':
    name==='love_advent_server_date'?'2026-10-15':
-   name==='my_love_evening_card_totals'?[{sensual:25,sexual:25,total:50}]:
+   name==='my_love_evening_card_totals'?[{sensual:35,sexual:35,total:70}]:
+   name==='my_love_roll_status'&&active?[{my_rolled:true,partner_rolled:true,both_ready:true}]:
+   name==='my_love_evening_board'&&active?{
+    ready:true,first:user.id,next:user.id,
+    targets:{[user.id]:2,[second.id]:3},remaining:{[user.id]:2,[second.id]:3},
+    drawn:{[user.id]:0,[second.id]:0},
+    completed:{[user.id]:0,[second.id]:0},
+    drawsFinished:false,finished:false
+   }:
    [],error:null}),
   channel(){return {on(){return this},subscribe(){return this}}},
   removeChannel:async()=>{}
@@ -43,7 +64,8 @@ export function createClient(){
  for(const [name,query,expected] of [
   ['anonymous','?boot_case=anonymous','.love-discover'],
   ['google-return','?boot_case=existing&code=simulated-oauth-code','.auth-panel'],
-  ['existing-paired','?boot_case=paired','.loveroll-real-home']
+  ['existing-paired','?boot_case=paired','.loveroll-real-home'],
+  ['active-evening','?boot_case=paired-active','.loveroll-real-home']
  ]){
   const page=await browser.newPage({viewport:{width:412,height:824},serviceWorkers:'block'});
   const errors=[];
@@ -76,6 +98,24 @@ export function createClient(){
    await page.locator('[data-action="tab:home"]').last().click();
    await page.locator('.real-home-shell').waitFor({timeout:10000});
    console.log('SOIREE_LOCKED_ACCESS_OK','Samsung viewport: weekly reset, no feedback items, no technical error');
+  }
+  if(name==='active-evening'){
+   // This is the essential regression: last tests stopped at locked Soirée
+   // and never executed renderSession's real 70-card active branch.
+   await page.locator('.nav [data-action="tab:session"]').click();
+   await page.locator('.evening-premium-view').waitFor({timeout:10000});
+   const evening=await page.locator('.evening-premium-view').innerText();
+   if(!evening.includes('Nos défis disponibles')||!evening.includes('Voir mes défis')||errors.length)
+    throw Error('S25 ACTIVE SOIRÉE failed '+JSON.stringify({evening:evening.slice(0,350),errors}));
+   const warnings=await page.locator('.toast.visible').allInnerTexts();
+   if(warnings.some(t=>/pending is not defined|not defined|impossible/i.test(t)))
+    throw Error('S25 active Soirée still shows JS exception '+JSON.stringify(warnings));
+   await page.locator('.nav [data-action="tab:special"]').click();
+   await page.locator('.surprise-premium-view').waitFor({timeout:10000});
+   await page.locator('.nav [data-action="tab:session"]').click();
+   await page.locator('.evening-premium-view').waitFor({timeout:10000});
+   if(errors.length)throw Error('Returning from Surprise to Soirée caused exception '+JSON.stringify(errors));
+   console.log('SOIREE_ACTIVE_ACCESS_OK','two confirmed dice, shared live board, queue button, tab revisit');
   }
   console.log('BOOT_OK',name,text.slice(0,180).replace(/\\s+/g,' '));
   await page.close();

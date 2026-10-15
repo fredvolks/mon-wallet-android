@@ -55,3 +55,11 @@ test('No other partner personal challenge contents are exposed by the database',
  assert.match(migration,/jsonb_build_object\(/);
  assert.doesNotMatch(migration,/status='completed';\s*select count\(\*\) into second_done/);
 });
+
+test('Active evening is covered by a real Chromium click test, not just the locked weekly page',()=>{
+ const smoke=readFileSync(new URL('./boot-smoke.cjs',import.meta.url),'utf8');
+ assert.match(smoke,/paired-active/);
+ assert.match(smoke,/SOIREE_ACTIVE_ACCESS_OK/);
+ assert.match(smoke,/evening-premium-view/);
+ assert.match(smoke,/tab:special/);
+});

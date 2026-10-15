@@ -34,8 +34,14 @@ test('Renderer resizes to live scene with WebGL camera correctly, also after ori
  assert.match(dice,/resizeObserver\?\.disconnect\(\)/);
 });
 test('PWA and served HTML share v73 CSS and cache-busting tags',()=>{
- assert.match(index,/surprise-dice-layout-v73\.css\?v=20261015-heart80/);
- assert.match(worker,/loveroll-static-v80/);
+ assert.match(index,/surprise-dice-layout-v73\.css\?v=20261015-evening81/);
+ assert.match(worker,/loveroll-static-v81/);
  assert.match(worker,/surprise-dice-layout-v73\.css/);
- assert.match(app,/WEB_RELEASE='2026-10-15\.80'/);
+ assert.match(app,/WEB_RELEASE='2026-10-15\.81'/);
+});
+
+test('Active Soirée does not pass an unbound pending challenge into premiumEveningHtml',()=>{
+ assert.doesNotMatch(app,/giftCount,pending,rolling/);
+ assert.match(app,/turn,category:state\.category,giftCount,rolling:!!state\.diceStatus/);
+ assert.match(app,/pendingInviteReference\(sessionStorage\)/);
 });
