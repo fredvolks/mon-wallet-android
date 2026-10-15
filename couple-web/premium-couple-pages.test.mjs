@@ -179,7 +179,7 @@ test('Monthly D20 unlocks the separate D6 button without covering partner cards'
   activity:{title:'Une escapade',description:'Une sortie pour deux'}});
  assert.match(html,/data-action="surprise-activity"/);
  assert.doesNotMatch(html,/data-action="roll:monthly_activity"/);
- assert.match(html,/data-action="roll:monthly_host">🎲 Brasser le dé 6 faces<\/button>/);
+ assert.match(html,/data-action="roll:monthly_host">Brasser le dé<\/button>/);
  assert.match(html,/class="surprise-host-grid"[^>]*>[\s\S]*class="surprise-host-die"[\s\S]*class="surprise-host-partner"/);
  assert.match(css,/\.surprise-host-grid\{[\s\S]*flex:0 0 83px/);
  assert.match(css,/\.surprise-host>\.surprise-primary\{[\s\S]*margin:1px auto 0!important/);
