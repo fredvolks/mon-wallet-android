@@ -25,7 +25,7 @@ export function isIos(){
 }
 const installKey=id=>'loveroll-install-prompt-'+id;
 export function shouldOfferInstall(userId,store=globalThis.localStorage){
- if(!userId||isStandalone()||isAndroidNative())return false;
+ if(!userId||isStandalone())return false;
  try{return !store?.getItem(installKey(userId));}catch{return true;}
 }
 export function markInstallOffered(userId,store=globalThis.localStorage){
@@ -63,12 +63,14 @@ export async function requestInstall(){
  return {prompted:true,accepted:choice?.outcome==='accepted'};
 }
 export function installOfferHtml(){
+ const native=isAndroidNative();
  return '<div class="install-overlay" role="dialog" aria-modal="true" aria-label="Ajouter LoveRoll à l’écran d’accueil">'+
   '<section class="install-modal"><div class="install-symbol" aria-hidden="true">♥</div>'+
   '<div class="install-recommend">♡ VOTRE ESPACE EST PRÊT</div>'+
   '<h2>LoveRoll à portée de main</h2>'+
-  '<p>Ajoutez LoveRoll à votre écran d’accueil pour retrouver vos jeux et vos surprises en un toucher. C’est gratuit et facultatif.</p>'+
-  '<button type="button" data-action="install-home" class="install-primary">♡ Ajouter à l’écran d’accueil</button>'+
+  '<p>'+(native?'L’application est installée. Ajoutez son icône à l’écran d’accueil pour retrouver vos surprises en un toucher.':
+   'Ajoutez LoveRoll à votre écran d’accueil pour retrouver vos jeux et vos surprises en un toucher. C’est gratuit et facultatif.')+'</p>'+
+  '<button type="button" data-action="install-home" class="install-primary">'+(native?'♡ Placer l’icône LoveRoll':'♡ Ajouter à l’écran d’accueil')+'</button>'+
   '<button type="button" data-action="install-later" class="install-later">Plus tard</button></section></div>';
 }
 export function installStepsHtml(){
