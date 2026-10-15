@@ -2201,7 +2201,10 @@ async function handle(action,element){
   const pendingId=sessionStorage.getItem('pendingInviteId');
   if(pendingId){redirectUrl.searchParams.set('invite_id',pendingId);redirectUrl.searchParams.set('v',INVITATION_REVISION);}
   const redirectTo=redirectUrl.toString();
-  const {error}=await client.auth.signInWithOAuth({provider:verb,options:{redirectTo}});
+  // Google officially supports prompt=select_account; do not clear global
+  // Google cookies or silently reuse a different partner's identity.
+  const options=verb==='google'?{redirectTo,queryParams:{prompt:'select_account'}}:{redirectTo};
+  const {error}=await client.auth.signInWithOAuth({provider:verb,options});
   if(error)throw error;return;
  }
  if(verb==='auth-mode'){
