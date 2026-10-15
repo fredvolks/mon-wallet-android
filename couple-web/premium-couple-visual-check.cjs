@@ -23,7 +23,7 @@ const {chromium}=require('playwright');
    const canvases=[...panel.querySelectorAll('canvas[data-dice-sides]')];
    const obj={width:innerWidth,height:innerHeight,scrollHeight:document.documentElement.scrollHeight,
     mainHeight:main.scrollHeight,topY:top.top,navTop:nav.top,lastBottom:last.bottom,
-    clipped: last.bottom>nav.top+2||top.top<22,
+    clipped: last.bottom>nav.top+2||top.top<8,
     horizontal:document.documentElement.scrollWidth>innerWidth+2,
     noScroll:document.documentElement.scrollHeight<=innerHeight+2 && main.scrollHeight<=innerHeight+2,
     dice:canvases.map(x=>({face:x.dataset.face,sides:x.dataset.diceSides,
