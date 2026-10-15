@@ -10,7 +10,7 @@ async function main(){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  const styles=['styles.css','discover.css','invitation-poster.css',
   'invite-account.css','responsive-fullscreen.css','responsive-tablet-desktop.css',
-  'mobile-one-screen-v74.css','mobile-entry-v76.css','mobile-entry-v77.css','mobile-entry-v78.css'];
+  'mobile-one-screen-v74.css','mobile-entry-v79.css'];
  const css=styles.map(s=>'<link rel="stylesheet" href="'+BASE+s+'">').join('');
  let checked=0;
  try{
@@ -29,8 +29,6 @@ async function main(){
    for(const [name,markup,selector] of cases){
     await page.setContent('<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'+css+'</head><body><main id="app">'+markup+'</main></body></html>',{waitUntil:'load'});
     await page.evaluate(()=>document.fonts.ready);
-    await page.addScriptTag({url:BASE+'entry-viewport-v78.js'});
-    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const measure=await page.evaluate(s=>{
      const element=document.querySelector(s),screen=window.innerHeight;
      const r=element?.getBoundingClientRect();
@@ -49,6 +47,27 @@ async function main(){
     const last=await page.locator(lastControl).first().boundingBox();
     assert.ok(last&&last.y>=-2&&last.y+last.height<=measure.screen+2,
      name+' '+width+'x'+height+' last control clipped '+JSON.stringify({last,screen:measure.screen}));
+    if(name==='invitation'||name==='public'){
+     const visual=await page.evaluate(()=>{
+      const stage=document.querySelector('.discover-editorial-stage')?.getBoundingClientRect();
+      const img=document.querySelector('.discover-editorial-die>img');
+      const art=img?.getBoundingClientRect();
+      const list=document.querySelector('.discover-editorial-list')?.getBoundingClientRect();
+      return {stageHeight:stage?.height,artHeight:art?.height,artWidth:art?.width,
+       listHeight:list?.height,features:document.querySelectorAll('.discover-editorial-item').length,
+       naturalImageWidth:img?.naturalWidth,stageBottom:stage?.bottom};
+     });
+     assert.ok(visual.stageHeight>=130&&visual.artHeight>=100&&visual.listHeight>=125&&
+      visual.features===4&&visual.naturalImageWidth>100,
+      name+' '+width+'x'+height+' showcase disappeared '+JSON.stringify(visual));
+    }else{
+     const fit=await page.locator('.invite-auth-card').evaluate(el=>{
+      const r=el.getBoundingClientRect();
+      return {top:r.top,bottom:r.bottom,height:r.height,viewport:innerHeight};
+     });
+     assert.ok(fit.bottom>=fit.viewport*.87&&fit.bottom<=fit.viewport+2,
+      name+' '+width+'x'+height+' account card must reach screen bottom '+JSON.stringify(fit));
+    }
     assert.ok(measure.scrollHeight<=measure.screen+3,
      name+' '+width+'x'+height+' page scroll '+JSON.stringify(measure));
     if(['signin','signup','invitation-signin'].includes(name)){
@@ -65,7 +84,6 @@ async function main(){
   const page=await browser.newPage({viewport:{width:393,height:360},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   await page.goto(BASE+'__premium-couple-pages-test.html');
   await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'+css+'</head><body><main id="app">'+authHtml(true,'signin')+'</main></body></html>',{waitUntil:'load'});
-  await page.addScriptTag({url:BASE+'entry-viewport-v78.js'});
   await page.locator('#signin-email').focus();
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const keyboard=await page.locator('[data-action="auth-signin-password"]').boundingBox();
