@@ -1,10 +1,26 @@
 {
+  "id": "./",
   "name": "LoveRoll",
   "short_name": "LoveRoll",
+  "description": "Des jeux, défis et surprises à vivre à deux.",
   "lang": "fr-CA",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#1a0b20",
-  "theme_color": "#1a0b20"
+  "theme_color": "#1a0b20",
+  "icons": [
+    {
+      "src": "./assets/loveroll-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/loveroll-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }

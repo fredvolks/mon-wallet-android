@@ -39,7 +39,7 @@ test('Install suggestion is optional and remembers dismissals',()=>{
  const store={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)};
  assert.equal(isStandalone(),false);
  assert.equal(shouldOfferInstall('person1',store),true);
- assert.match(installOfferHtml(),/FORTEMENT RECOMMANDÉ/);
+ assert.match(installOfferHtml(),/VOTRE ESPACE EST PRÊT/);
  assert.match(installOfferHtml(),/Plus tard/);
  dismissInstall('person1',store);
  assert.equal(shouldOfferInstall('person1',store),false);
