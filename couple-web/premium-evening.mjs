@@ -9,8 +9,8 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false){
   return '<div class="love3d love3d-6" role="group" aria-label="'+esc(caption)+' · dé en attente">'+
    '<div class="love3d-stage is-unrolled"><strong class="dice-fallback">♡</strong>'+
    '<canvas class="dice-canvas" width="250" height="250" data-dice-sides="6" '+
-   'data-face="1" data-dice-unrolled="true" data-dice-markers="pips" '+
-   'data-spinning="false" aria-hidden="true"></canvas></div></div>';
+   'data-face="1" data-dice-unrolled="true" data-dice-markers="hearts" '+
+   'data-spinning="false" aria-label="Dé 3D décoratif avec des cœurs, en attente du résultat officiel"></canvas></div></div>';
  }
  const target=valid?face:1;
  return '<div class="love3d love3d-'+sides+'" role="group" aria-label="'+esc(caption)+'">'+

@@ -6,13 +6,13 @@ const {chromium}=require('playwright');
  for(const device of [
    {name:'S25-compact',width:412,height:824},
    {name:'S25-long',width:412,height:915}
- ])for(const pageName of ['evening','surprise']){
+ ])for(const pageName of ['evening','evening-idle','surprise']){
   const page=await browser.newPage({viewport:{width:device.width,height:device.height},
    isMobile:true,hasTouch:true,deviceScaleFactor:2});
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   const url='http://127.0.0.1:8765/__premium-couple-pages-test.html?page='+pageName;
   await page.goto(url,{waitUntil:'load'});
-  await page.locator(pageName==='evening'?'.evening-premium-view':'.surprise-premium-view').waitFor();
+  await page.locator(pageName.startsWith('evening')?'.evening-premium-view':'.surprise-premium-view').waitFor();
   await page.waitForFunction(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].every(x=>x.dataset.webglReady==='true'),null,{timeout:20000});
   await page.waitForTimeout(450);
   const result=await page.evaluate(()=>{
@@ -28,6 +28,13 @@ const {chromium}=require('playwright');
     noScroll:document.documentElement.scrollHeight<=innerHeight+2 && main.scrollHeight<=innerHeight+2,
     dice:canvases.map(x=>({face:x.dataset.face,sides:x.dataset.diceSides,
       webgl:x.dataset.webglReady,height:Math.round(x.getBoundingClientRect().height)})),
+    neutralDice:[...panel.querySelectorAll('canvas[data-dice-unrolled="true"]')].map(el=>({
+      visible:getComputedStyle(el).visibility==='visible',
+      hasWebGL:el.dataset.webglReady==='true',
+      markers:el.dataset.diceMarkers,
+      top:el.getBoundingClientRect().top,
+      buttonTop:el.closest('.evening-user-die')?.querySelector('.evening-small-roll,.evening-wait')?.getBoundingClientRect().top
+    })),
     menu:document.querySelectorAll('.nav button').length,
     sections:panel.querySelectorAll('section').length
    };
@@ -36,7 +43,9 @@ const {chromium}=require('playwright');
   console.log(pageName+' '+device.name,JSON.stringify({result,errors}));
   if(errors.length||result.clipped||result.horizontal||!result.noScroll||
      result.menu!==5||result.dice.some(d=>!d.webgl||d.height<45)||
-     (pageName==='evening'&&result.dice.length!==3)||
+     (pageName.startsWith('evening')&&result.dice.length!==3)||
+     (pageName==='evening-idle'&&(result.neutralDice.length!==2||
+      result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
      (pageName==='surprise'&&result.dice.length!==2))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-vrai-couple.png'});
   await page.close();
