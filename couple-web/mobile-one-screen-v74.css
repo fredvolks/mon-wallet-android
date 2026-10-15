@@ -220,3 +220,12 @@
 }
 /* Do not block dialogs: longer descriptions & privacy forms must remain readable.
    The NO-SCROLL contract applies to the five primary gameplay screens. */
+
+/* Keep the probability reminder, but remove the redundant explanation when
+   the browser toolbar leaves little vertical space: both essential buttons
+   remain in view (the D35 itself explains the draw). */
+@media(max-width:767px){
+ main#app.loveroll-evening-page .evening-play-controls>p{
+  display:none!important;
+ }
+}

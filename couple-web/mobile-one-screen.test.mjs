@@ -21,6 +21,7 @@ test('Step 2 and all private-queue controls fit into the same mobile grid',()=>{
  assert.match(css,/\.evening-play-controls \.evening-primary\{/);
  assert.match(css,/\.evening-play-controls \.evening-queue-open-btn\{/);
  assert.match(css,/\.evening-d35-col\{/);
+ assert.match(css,/\.evening-play-controls>p\{/);
  const html=premiumEveningHtml({session:{id:'s1'},members:[{user_id:'a',name:'Moi'},{user_id:'b',name:'Partenaire'}],
   me:'a',rolls:[{user_id:'a',face:2},{user_id:'b',face:3}],
   status:{my_rolled:true,partner_rolled:true,both_ready:true},
