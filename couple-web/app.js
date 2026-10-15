@@ -1191,7 +1191,7 @@ function renderAdventEditor(){
    '<label>Minuterie facultative (minutes, de 1 à 60)<input id="advent-day-minutes" type="number" min="1" max="60" placeholder="Aucune minuterie" value="'+
     (editing.timer_minutes??'')+'"></label>'+
    button('save-advent-day','♡ Enregistrer uniquement cette journée')+
-   button('close-advent-day','Annuler','class="subtle")+'</section>';
+   button('close-advent-day','Annuler','class="subtle"')+'</section>';
   body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
    '<p class="tiny-note">Ce récapitulatif est privé. Votre partenaire ne voit les consignes qu’en ouvrant les cases autorisées.</p>'+
    '<div class="custom-card-tiles">'+calendar.days.map(entry=>
