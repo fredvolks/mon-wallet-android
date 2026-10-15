@@ -99,6 +99,28 @@ async function open(browser,mode,extra=''){
   console.log('BEHAVIOR_OK', 'landing modes, unconfirmed resend, reset request');
   await page.close();
  }
+ // New signup with no Supabase session must show confirmation, never claim delivery.
+ {
+  const {page,errors}=await open(browser,'anonymous');
+  await page.locator('[data-action="show-auth:signup"]').click();
+  await page.locator('#signin-email').fill('newuser@example.test');
+  await page.locator('#signin-password').fill('ValidPass9');
+  await page.locator('[data-action="auth-signup-password"]').click();
+  await page.locator('.email-confirm-screen').waitFor({timeout:20000});
+  if(!(await page.locator('.email-confirm-screen').innerText()).includes('Encore une petite étape'))
+   throw Error('Signup did not show confirmation gate');
+  await page.locator('[data-action="email-confirm-resend"]').click();
+  await page.waitForFunction(()=>window.__fakeCalls.resend.length===1);
+  const calls=await page.evaluate(()=>window.__fakeCalls);
+  if(calls.signup.length!==1||calls.resend[0]?.email!=='newuser@example.test')
+   throw Error('Signup confirmation lost email');
+  await page.locator('[data-action="email-confirm-login"]').click();
+  await page.locator('[data-action="auth-signin-password"]').waitFor();
+  if(!page.url().includes('auth=signin'))throw Error('Email confirmation return not on signin');
+  if(errors.length)throw Error('Signup confirmation JS errors '+JSON.stringify(errors));
+  console.log('BEHAVIOR_OK','signup confirmation gate, resend requested but receipt unproven, return signin');
+  await page.close();
+ }
  // An existing valid invite must retain its UUID through reload without creating another.
  {
   const {page,errors}=await open(browser,'owner');
