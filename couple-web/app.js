@@ -1017,7 +1017,7 @@ function renderSpecial(){
  if(rollingKind==='monthly_activity')monthly.monthly_activity=null;
  if(rollingKind==='monthly_host')monthly.monthly_host=null;
  frame(premiumSurpriseHtml({
-   monthly,members:state.members,settings:state.occasionSettings,
+   monthly,members:state.members,settings:state.occasionSettings||{},
    activity,
    timerHtml:state.showSurpriseActivity&&activity?.timer_minutes?
     timerWidget({id:'monthly-'+month()},activity.timer_minutes):'',
