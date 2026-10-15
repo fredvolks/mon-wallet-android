@@ -1,4 +1,5 @@
 import * as THREE from 'https://esm.sh/three@0.167.1';
+import {ROLL_TOTAL_MS,makeForwardRoll,rollAngles,rollProgress} from './dice-roll-motion.mjs';
 import {RoundedBoxGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/ConvexGeometry.js';
 /** Safari/Chrome WebGL die. Values come from the shared server, never from animation. */
@@ -264,45 +265,40 @@ export function dieOn(canvas,sides,value,rolling){
  let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true,lastFrame=0;
  let returnStart=null,returnTime=0;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
- const duration=rolling&&!reduceMotion?3100:0,start=performance.now();
- let orientationAtSettle=null,settleStart=.56;
+ const duration=rolling&&!reduceMotion?ROLL_TOTAL_MS:0,start=performance.now();
+ const euler=new THREE.Euler(0,0,0,'XYZ');
+ let trajectory=null;
  if(duration){
   const seed=new Uint32Array(3);crypto.getRandomValues(seed);
-  built.group.quaternion.setFromEuler(new THREE.Euler(
-   ...Array.from(seed,n=>n/4294967296*Math.PI*2)));
-  built.group.position.y=0;
+  const random=[...seed].map(n=>n/4294967296);
+  const resting=new THREE.Euler().setFromQuaternion(target,'XYZ');
+  trajectory=makeForwardRoll([resting.x,resting.y,resting.z],random);
+  euler.set(...trajectory.start);
+  built.group.quaternion.setFromEuler(euler);
+  built.group.position.set(0,0,0);
  }
- const axis=new THREE.Vector3(.63,.78,.42).normalize();
  function step(now){
   frame=0;if(!shown||document.hidden)return;
   const dt=lastFrame?Math.min(.05,Math.max(0,(now-lastFrame)/1000)):0;
   lastFrame=now;
-  const t=duration?Math.min(1,(now-start)/duration):1;
+  const elapsed=duration?Math.min(duration,Math.max(0,now-start)):0;
+  const t=duration?elapsed/duration:1;
   if(t<1){
-   if(t<.56){
-    // Impulse → free 3D tumble → angular damping, independent of frame rate.
-    const rise=Math.min(1,t/.1);
-    const decay=Math.pow(Math.max(0,1-t/.78),1.7);
-    const angle=(11.5*rise*decay+.4)*dt;
-    axis.set(.63+.12*Math.sin(now*.001),.78,.42+.15*Math.cos(now*.0008)).normalize();
-    built.group.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(axis,angle));
-   }else{
-    if(!orientationAtSettle){
-     settleStart=t;orientationAtSettle=built.group.quaternion.clone();
-    }
-    const p=Math.min(1,(t-settleStart)/(1-settleStart));
-    // Interpolate from actual current orientation, never jump at 77%.
-    const eased=1-Math.pow(1-p,3);
-    built.group.quaternion.slerpQuaternions(orientationAtSettle,target,eased);
-   }
-   // Forward flight, then two progressively smaller contact rebounds.
-   const flight=t<.56?Math.sin(Math.PI*t/.56)*.24:0;
-   const landing=t>=.56?Math.max(0,1-(t-.56)/.44):0;
-   const bounce=t>=.56?.12*landing*landing*
-     Math.abs(Math.sin(4*Math.PI*(t-.56)/.44)):0;
-   built.group.position.y=Math.max(0,flight+bounce);
-   built.group.position.x=.16*Math.sin(Math.PI*t)*Math.sin(3*Math.PI*t);
+   // Three continuous, forward-only Euler rotations. Never slerp or snap
+   // backwards to the result: the planned trajectory already ends EXACTLY
+   // on the official face, after 3s fast spin + 1.5s natural slowdown.
+   const angles=rollAngles(trajectory,elapsed);
+   euler.set(angles[0],angles[1],angles[2]);
+   built.group.quaternion.setFromEuler(euler);
+   const progress=rollProgress(elapsed),damping=1-progress;
+   // Subtle tumble on the satin stage, smoothly diminishing to rest.
+   const lift=.12*Math.sin(Math.PI*Math.min(1,elapsed/1250));
+   const contact=.035*damping*Math.abs(Math.sin(elapsed/155));
+   built.group.position.y=Math.max(0,lift+contact);
+   built.group.position.x=.055*damping*Math.sin(elapsed/440);
   }else if(duration){
+   // No visible correction: this is the mathematically same final
+   // orientation as the last forward Euler step.
    built.group.quaternion.copy(target);built.group.position.set(0,0,0);
   }else if(!drag&&returnStart){
    const tReturn=reduceMotion?1:Math.min(1,(now-returnTime)/480);
