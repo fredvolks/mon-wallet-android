@@ -444,3 +444,9 @@ main#app .advent-dialog-shade[aria-modal="true"] .advent-dialog{
  overflow-y:auto;max-height:calc(100dvh - 72px - env(safe-area-inset-bottom,0px));
  overscroll-behavior:contain;
 }
+
+/* Minimum touch targets survive large text and compact screens. */
+main#app.loveroll-surprise-page .surprise-primary{min-height:44px!important}
+main#app.loveroll-surprise-page .surprise-host>.surprise-primary{
+ flex:0 0 44px;min-height:44px!important
+}
