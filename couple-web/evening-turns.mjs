@@ -51,3 +51,10 @@ export function lastOfficialChallengeFace(challenges=[],sessionId=null){
  });
  return valid.length?Number(valid[0].face):null;
 }
+
+// The query is ordered ascending by started_at. Aftercare must use the latest
+// *finished* counted session, not the first item returned by the database.
+export function latestCountedSession(sessions=[]){
+ return [...(sessions||[])].filter(x=>x.finished_at&&x.counted).sort(
+  (a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0]||null;
+}
