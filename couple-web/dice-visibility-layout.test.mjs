@@ -40,3 +40,16 @@ test('Decorative 3D D6 has identical heart on every face, not fake official pips
  assert.equal((page.match(/data-dice-unrolled="true"/g)||[]).length,1);
  assert.match(page,/aria-label="Total actuel 4 défis; dé initial 4"/);
 });
+
+test('Surprise D20 and D6 stay inside the scene, not over their buttons',()=>{
+ const css=read('dice-no-overlay.css');
+ const fixture=read('__premium-couple-pages-test.html');
+ const visual=read('premium-couple-visual-check.cjs');
+ assert.match(css,/\.love3d-stage \.dice-canvas\{[\s\S]*?position:absolute!important/);
+ assert.match(css,/\.surprise-d20-scene,\.surprise-host-die\{[\s\S]*?overflow:hidden/);
+ assert.match(css,/\.surprise-d20-scene \.dice-canvas,\.surprise-host-die \.dice-canvas\{[\s\S]*?position:absolute!important/);
+ assert.match(fixture,/dice-no-overlay\.css/);
+ assert.match(fixture,/evening-private-queue\.css/);
+ assert.match(visual,/surpriseDice/);
+ assert.match(visual,/noButtonOverlap/);
+});
