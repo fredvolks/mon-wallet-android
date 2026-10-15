@@ -95,7 +95,9 @@ test('No default opinion: every rating requires an actual user choice',()=>{
 test('A member waiting for their match is notified when the partner accepts',()=>{
  assert.match(app,/event:'\*',schema:'public',table:'couple_members'/);
  assert.match(app,/Votre partenaire a accepté le match/);
- assert.match(app,/if\(state.members.length<2\)\{state.channel=channel.subscribe\(\);return;\}/);
+ assert.match(app,/if\(state.members.length<2\)\{/);
+ assert.match(app,/state.channel=channel.subscribe\(status=>/);
+ assert.match(app,/liveSync.request\(200\)/);
 });
 test('The five bottom tabs keep Settings while Journal and questionnaires move to Soirée',()=>{
  assert.match(app,/\['settings','⚙','Réglages'\]/);
