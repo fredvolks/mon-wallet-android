@@ -261,3 +261,12 @@ test('Occasion within its seven days-after window is available this year',()=>{
  const later=sixSpecialEvents(new Date('2026-10-22T16:00:00Z'),settings,people);
  assert.equal(later[0].year,2027);
 });
+
+test('Seventh day after the occasion is the last available day, then next year',()=>{
+ const settings={anniversary_md:'10-14',birthday_by_user:{}};
+ const lastDay=sixSpecialEvents(new Date('2026-10-21T16:00:00Z'),settings,people);
+ assert.equal(lastDay[0].year,2026);
+ assert.match(lastDay[0].availability,/dernier jour/);
+ const after=sixSpecialEvents(new Date('2026-10-22T16:00:00Z'),settings,people);
+ assert.equal(after[0].year,2027);
+});
