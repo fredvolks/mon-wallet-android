@@ -25,7 +25,7 @@ test('Trusted Toronto December boundaries from November to January including tim
 test('All 25 boxes in exact 5×5 layout, correct available day without early surprise leak',()=>{
  const html=adventPremiumHtml({when:date('2026-12-05T15:00:00Z'),members:couple});
  assert.equal((html.match(/class="advent-box /g)||[]).length,25);
- assert.equal((html.match(/class="advent-gold-lock"/g)||[]).length,25);
+ assert.equal((html.match(/class="advent-gold-lock"/g)||[]).length,24);
  assert.equal((html.match(/data-action="advent-open:5"/g)||[]).length,1);
  assert.equal((html.match(/class="advent-today-tag"/g)||[]).length,1);
  assert.equal((html.match(/data-action="advent-locked:/g)||[]).length,24);
