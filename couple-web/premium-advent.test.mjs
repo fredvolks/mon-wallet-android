@@ -105,3 +105,24 @@ test('CSS includes exact 5 columns × 5 rows, one-screen shell, safe area, glow 
  assert.match(css,/advent-box\.available/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
+
+test('Missed Advent days never become openable after midnight; visible states are honest',()=>{
+ const cal=sharedAdventState([],date('2026-12-10T16:00:00Z'));
+ assert.equal(cal.days[0].status,'missed');
+ assert.equal(cal.days[0].canOpen,false);
+ assert.equal(cal.days[9].status,'available');
+ assert.equal(cal.days[10].status,'locked');
+ const markup=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),openings:[]});
+ assert.match(markup,/Aujourd’hui/);
+ assert.match(markup,/Jour manqué/);
+ assert.match(markup,/0 \/ 25/);
+ assert.match(markup,/data-action="advent-open:10"/);
+ assert.doesNotMatch(markup,/data-action="advent-open:9"/);
+});
+test('Per-day editor retains server-authenticated import of 25 validated items',()=>{
+ assert.match(app,/if\(verb==='advent-editor-day'\)/);
+ assert.match(app,/if\(verb==='save-advent-day'\)/);
+ assert.match(app,/normalizeLibraryData\(calendar,'advent'\)/);
+ assert.match(app,/rpc\('import_love_advent_2026'/);
+ assert.match(file('import-private-advent-2026.sql'),/No changes to the current year's previously opened/);
+});
