@@ -105,3 +105,23 @@ begin
 end;$$;
 revoke all on function public.initialize_love_journal(uuid,text) from public,anon;
 grant execute on function public.initialize_love_journal(uuid,text) to authenticated;
+
+-- The partner may see library COUNTS without reading owner's private cards.
+create or replace function public.my_love_evening_card_totals(p_couple uuid)
+returns table(sensual integer,sexual integer,total integer)
+language plpgsql stable security definer set search_path='' as $$
+begin
+ perform public.love_require_verified_identity();
+ if auth.uid() is null or not couple_private.is_member(p_couple) then
+  raise exception 'Accès réservé aux partenaires';end if;
+ return query
+ select (25+count(*) filter(where c.category='SENSUEL'))::integer,
+        (25+count(*) filter(where c.category='SEXUEL'))::integer,
+        (50+count(*))::integer
+ from public.love_custom_challenges c
+ where c.couple_id=p_couple and c.card_id between 26 and 35
+   and length(btrim(c.title))>=3 and length(btrim(c.description))>=10
+   and c.category in ('SENSUEL','SEXUEL');
+end;$$;
+revoke all on function public.my_love_evening_card_totals(uuid) from public,anon;
+grant execute on function public.my_love_evening_card_totals(uuid) to authenticated;
