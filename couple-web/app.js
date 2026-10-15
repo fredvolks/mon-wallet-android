@@ -822,7 +822,7 @@ function renderLegacySession(){
  heroDice(null,35,'Nos 70 défis')+
  '<p class="tiny-note">Pour commencer, chacun lance son dé personnel pour découvrir combien de défis il recevra. Vos résultats sont révélés ensemble.</p>';
  if(!s){
-  const latest=(state.sessions||[]).find(x=>x.finished_at&&x.counted);
+  const latest=[...(state.sessions||[])].filter(x=>x.finished_at&&x.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
   if(latest){
    const total=state.challengesHistory.filter(c=>c.session_id===latest.id);
    const done=total.filter(c=>c.status==='completed').length;
@@ -918,7 +918,7 @@ function renderSession(){
  }
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts):{};
- const last=(state.sessions||[]).find(s=>s.finished_at&&s.counted);
+ const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
  const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
     c=>c.session_id===last.id&&c.status==='completed').length,
    responses:state.feedback.filter(f=>f.session_id===last.id).length,
@@ -1337,7 +1337,7 @@ async function renderJournal(){
 async function renderFeedback(){
  const sessions=state.sessions||[];
  const session=sessions.find(x=>x.id===state.chosenSession&&x.finished_at&&x.counted)||
-  sessions.find(x=>x.finished_at&&x.counted);
+  [...sessions].filter(x=>x.finished_at&&x.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
  if(!session){
   frame('<section class="card"><p>Terminez d’abord une soirée pour répondre à vos questions.</p>'+
    button('tab:session','Retour à notre soirée')+'</section>','NOS AVIS','Après une soirée terminée');return;
