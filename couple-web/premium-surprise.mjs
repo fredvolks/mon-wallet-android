@@ -1,5 +1,5 @@
 // LoveRoll — Rendez-vous Surprise, connected to real monthly and occasion draws.
-import {occasionDate} from './special-occasions.mjs';
+import {occasionDate,dueOccasions} from './special-occasions.mjs';
 import {premiumPolyDie} from './premium-evening.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(a,s,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(a)+'"'+(disabled?' disabled':'')+'>'+s+'</button>';
@@ -18,6 +18,7 @@ export const SIX_SPECIAL_KEYS=['anniversary','birthday','birthday','valentine','
 export function sixSpecialEvents(now,settings={},members=[]){
  const day=new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'America/Toronto'}).format(now);
  const year=Number(day.slice(0,4));
+ const available=dueOccasions(day,settings,members);
  const defs=[
   {key:'anniversary',title:'Anniversaire couple',emoji:'♡♡',owner:null},
   ...members.slice(0,2).map((m,i)=>({key:'birthday',title:'Anniversaire '+(m.name?.split(' ')[0]||'Partenaire '+(i+1)),emoji:'♕',owner:m.user_id})),
@@ -28,9 +29,14 @@ export function sixSpecialEvents(now,settings={},members=[]){
  return defs.map(entry=>{
   const possible=[year,year+1,year+2].map(y=>({date:occasionDate(entry.key,y,settings,entry.owner),year:y}))
    .filter(x=>x.date);
+  const active=available.find(x=>x.key===entry.key&&x.actorId===entry.owner);
   const upcoming=possible.find(x=>x.date>=day)||null;
-  const days=upcoming?Math.max(0,Math.round((Date.parse(upcoming.date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'))/86400000)):null;
-  return {...entry,date:upcoming?.date||null,daysLeft:days,year:upcoming?.year||null};
+  const selected=active||upcoming;
+  const days=selected?.daysLeft??(selected?Math.round(
+    (Date.parse(selected.date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'))/86400000):null);
+  const availability=active?(days<0?'Disponible encore '+(7+days)+' jour'+(7+days===1?'':'s'):
+    days===0?'Disponible aujourd’hui':'Disponible · dans '+days+' jour'+(days===1?'':'s')):null;
+  return {...entry,date:selected?.date||null,daysLeft:days,year:selected?.year||null,availability};
  });
 }
 export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new Date(),activity=null,rolling=false,rollingKind=null,rollFace=1,showActivity=false}={}){
@@ -53,15 +59,16 @@ export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new D
   premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity)+'</div>'+
  (a?button('surprise-activity','♡ Voir notre activité','surprise-primary'):
   button('roll:monthly_activity',drawText,'surprise-primary',rolling))+'</section>'+
- '<section class="surprise-host"><div class="surprise-headline"><strong>🎲 QUI PRÉPARE L’ADDITION ?</strong></div>'+
- '<p>Le dé décide qui organise et règle notre rendez-vous.</p>'+
+ '<section class="surprise-host"><div class="surprise-headline"><strong>♡ QUI INVITE ?</strong></div>'+
+ '<p>Le dé choisit qui organise le rendez-vous et paie l’addition.</p>'+
  '<div class="surprise-host-grid" aria-label="Répartition du tirage de l’addition"><div class="surprise-host-partner"><b>1 · 2 · 3</b>'+
   '<span>♡ '+esc(members[0]?.name?.split(' ')[0]||'Partenaire 1')+'</span></div>'+
   '<div class="surprise-host-die">'+premiumPolyDie(6,rollingHost?rollFace:h?.face||null,'Dé 6 faces pour l’addition',rollingHost)+'</div>'+
   '<div class="surprise-host-partner"><b>4 · 5 · 6</b>'+
   '<span>♡ '+esc(members[1]?.name?.split(' ')[0]||'Partenaire 2')+'</span></div></div>'+
  (h?'<div class="surprise-winner">♥ '+esc(host?.name?.split(' ')[0]||'Partenaire')+' prépare notre rendez-vous !</div>':
-  button('roll:monthly_host','🎲 Brasser le dé 6 faces','surprise-primary',!a||rolling))+
+  button('roll:monthly_host','Brasser le dé','surprise-primary',!a||rolling)+
+ (!a?'<small>Commencez par tirer votre activité du mois.</small>':''))+
  (r?'<small class="surprise-restaurant">Restaurant : '+(r.face<=3?'un endroit connu':'une nouvelle adresse')+'</small>':
   (h&&activity?.is_restaurant?button('roll:monthly_restaurant','🎲 Restaurant connu ou nouveau ?','surprise-restaurant-button',rolling):''))+
  '</section>'+
@@ -71,7 +78,7 @@ export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new D
   button('open-occasion:'+e.key+':'+(e.owner||'-'),
    '<span class="surprise-event-symbol" aria-hidden="true">'+eventSymbol(e.key)+'</span>'+
    '<span class="surprise-event-title">'+esc(e.title)+'</span>'+
-   '<span class="surprise-event-days">'+(e.daysLeft===null?'Configurer la date':e.daysLeft===0?'Aujourd’hui ♥':e.daysLeft+' jours')+'</span>'+
+   '<span class="surprise-event-days">'+(e.daysLeft===null?'Configurer la date':e.availability||e.daysLeft+' jours')+'</span>'+
    '<span class="surprise-event-chevron" aria-hidden="true">›</span>',
    'surprise-event-card '+(i===0?'couple':'')+
     (e.daysLeft===null?' no-date':''))).join('')+'</div>'+
