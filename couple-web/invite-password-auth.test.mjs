@@ -89,3 +89,20 @@ test('No other couple app or local journal data is reset for login',()=>{
  assert.doesNotMatch(app,/localStorage\.clear\(\)|sessionStorage\.clear\(\)/);
  assert.match(read('index.html'),/invite-account\.css/);
 });
+
+test('Correct invited email may leave only its own solo space after explicit confirmation',()=>{
+ const sql=read('migrations/20261015_join_invitation_from_solo_atomic.sql');
+ assert.match(app,/if\(pendingInvite&&state\.user&&state\.coupleId\)/);
+ assert.match(app,/const soloOwner=state\.members\.length===1/);
+ assert.match(app,/state\.couple\?\.owner_user_id===state\.user\.id/);
+ assert.match(app,/join-invite-from-solo/);
+ assert.match(app,/premiumConfirm\(/);
+ assert.match(app,/rpc\('join_love_invitation_from_solo',\{p_invitation:invitationId\}\)/);
+ assert.match(app,/finishInviteReference\(\)/);
+ assert.doesNotMatch(app,/Cette invitation attend un autre compte ❤️/);
+ assert.match(sql,/v_email<>lower\(trim\(v_inv\.invited_email\)\)/);
+ assert.match(sql,/v_old_owner is distinct from v_user or v_old_count<>1/);
+ assert.match(sql,/perform public\.end_love_match\(v_old\)/);
+ assert.match(sql,/return public\.accept_love_match_by_id\(p_invitation\)/);
+ assert.match(sql,/grant execute on function public\.join_love_invitation_from_solo\(uuid\) to authenticated/);
+});
