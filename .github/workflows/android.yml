@@ -158,15 +158,15 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/LoveRoll-v0.13.6.apk "$RUNNER_TEMP/aligned.apk"
-          cp dist/LoveRoll-v0.13.6.apk dist/Des-a-Deux-v0.13.6.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.13.6.apk
-          sha256sum dist/LoveRoll-v0.13.6.apk dist/Des-a-Deux-v0.13.6.apk
+            --out dist/LoveRoll-v0.13.7.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.13.7.apk
+          sha256sum dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: LoveRoll-v0.13.6
+          name: LoveRoll-v0.13.7
           path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
@@ -175,9 +175,12 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/LoveRoll-v0.13.6.apk dist/Des-a-Deux-v0.13.6.apk --clobber
+             gh release edit "$TAG" --title "LoveRoll v0.13.7" --notes "Cœur rose animé au démarrage natif et web; APK 0.13.7. Comptes et données conservés."
+            gh release upload "$TAG" dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk --clobber
+            gh release delete-asset "$TAG" LoveRoll-v0.13.6.apk -y || true
+            gh release delete-asset "$TAG" Des-a-Deux-v0.13.6.apk -y || true
           else
-            gh release create "$TAG" dist/LoveRoll-v0.13.6.apk dist/Des-a-Deux-v0.13.6.apk \
-              --target "$GITHUB_SHA" --title "LoveRoll v0.13.6" \
-              --notes "LoveRoll v0.13.6 : WebView avec récupération des fichiers Live Web 73, accès Soirée, position des dés Surprise et cache mis à jour sans effacer les comptes, connexions ni données."
+            gh release create "$TAG" dist/LoveRoll-v0.13.7.apk dist/Des-a-Deux-v0.13.7.apk \
+              --target "$GITHUB_SHA" --title "LoveRoll v0.13.7" \
+              --notes "LoveRoll v0.13.7 : cœur rose animé lors du chargement natif puis web, ouverture fluide, comptes et données du couple préservés."
           fi
