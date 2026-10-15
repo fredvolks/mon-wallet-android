@@ -6,7 +6,7 @@ const html=`<!doctype html><html lang="fr-CA"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./premium-theme.css">
 <link rel="stylesheet" href="./discover.css"><link rel="stylesheet" href="./approved-artwork.css">
-<link rel="stylesheet" href="./satin-reference.css"></head><body><main id="app"></main>
+<link rel="stylesheet" href="./satin-reference.css"><link rel="stylesheet" href="./invitation-poster.css"><link rel="stylesheet" href="./responsive-tablet-desktop.css"></head><body><main id="app"></main>
 <script type="module">
 import {discoverHtml} from './discover.mjs';
 document.getElementById('app').innerHTML=discoverHtml(new URLSearchParams(location.search).has('invite'));
@@ -20,7 +20,11 @@ fs.writeFileSync(path.join(__dirname,'__discover-actual-test.html'),html);
   {name:'Android-360x700',width:360,height:700},
   {name:'iPhone-393x852',width:393,height:852},
   {name:'S25-keyboard',width:412,height:550},
-  {name:'S25-landscape',width:824,height:412}
+  {name:'S25-landscape',width:824,height:412},
+  {name:'iPad-portrait',width:820,height:1180},
+  {name:'iPad-landscape',width:1180,height:820},
+  {name:'Laptop',width:1366,height:768},
+  {name:'Desktop',width:1920,height:1080}
  ])for(const invite of [false,true]){
   const page=await browser.newPage({viewport:{width:config.width,height:config.height},
    isMobile:true,hasTouch:true,deviceScaleFactor:2});
@@ -33,7 +37,12 @@ fs.writeFileSync(path.join(__dirname,'__discover-actual-test.html'),html);
   const metrics=await page.evaluate(invite=>{
    const hero=document.querySelector('.discover-editorial-die>img'),cta=document.querySelector('.discover-accept'),
      buttons=[...document.querySelectorAll('[data-action^="show-auth:"],[data-action="invite-start"]')],r=cta.getBoundingClientRect();
-   return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,heroLoaded:hero.naturalWidth>100,
+   const poster=document.querySelector('.love-discover'),box=poster.getBoundingClientRect();
+   const stage=poster.querySelector('.discover-editorial-stage');
+   return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
+    posterWidth:Math.round(box.width),layoutColumns:getComputedStyle(poster).gridTemplateColumns.split(' ').length,
+    stageHeight:Math.round(stage.getBoundingClientRect().height),
+    heroLoaded:hero.naturalWidth>100,
     primaryHeight:Math.round(r.height),primaryVisible:r.bottom>0&&r.top<innerHeight,
     actions:buttons.map(el=>el.dataset.action),hasRealDiscover:!!document.querySelector('.love-discover'),
     realRows:document.querySelectorAll('.discover-editorial-item').length,
@@ -44,7 +53,9 @@ fs.writeFileSync(path.join(__dirname,'__discover-actual-test.html'),html);
   console.log('Production-discover',config.name,invite?'invitation':'public',JSON.stringify({metrics,errors}));
   if(errors.length||metrics.scrollWidth>metrics.width+2||!metrics.heroLoaded||!metrics.hasRealDiscover||
     !metrics.primaryVisible||metrics.primaryHeight<44||metrics.realRows!==4||!metrics.allRowsStatic||!metrics.hasTitle||
-    metrics.actions.length!==(invite?1:2)||!metrics.noFalseAcceptance)
+    metrics.actions.length!==(invite?1:2)||!metrics.noFalseAcceptance||
+    (metrics.width>=1100&&(metrics.posterWidth<980||metrics.layoutColumns!==2))||
+    (metrics.width>=768&&metrics.width<1100&&metrics.posterWidth<720))
    throw Error('Le vrai parcours découverte déborde ou manque une commande: '+config.name+' '+(invite?'invite':'public'));
   await page.screenshot({path:'landing-captures/'+config.name+'-ACTUEL-'+(invite?'INVITATION':'ACCUEIL')+'.png',fullPage:true});
   await page.close();
