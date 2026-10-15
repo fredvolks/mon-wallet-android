@@ -67,9 +67,15 @@ async function open(browser,mode,extra=''){
   await page.locator('[data-action="show-auth:signin"]').click();
   await page.locator('[data-action="auth-signin-password"]').waitFor();
   if(!(await page.locator('[data-action="auth-reset-request"]').isVisible()))throw Error('Sign-in does not expose Forgot password');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-action="auth-signin-password"]').waitFor();
+  if(!page.url().includes('auth=signin'))throw Error('Reload lost sign-in mode');
   await page.locator('[data-action="show-landing"]').click();
   await page.locator('[data-action="show-auth:signup"]').click();
   await page.locator('[data-action="auth-signup-password"]').waitFor();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-action="auth-signup-password"]').waitFor();
+  if(!page.url().includes('auth=signup'))throw Error('Reload lost signup mode');
   // Unconfirmed email must present a real resend control.
   await page.locator('[data-action="auth-mode:signin"]').click();
   await page.locator('#signin-email').fill('new@example.test');
