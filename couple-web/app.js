@@ -989,7 +989,9 @@ function renderOccasions(){
     year:due?.year||next?.year||year,daysLeft:due?.daysLeft??null});
   }
  }
- let body='<section class="premium-intro"><div class="premium-eyebrow">♥ NOS DATES IMPORTANTES</div><h2>Des occasions à célébrer</h2><p>Saint-Valentin, anniversaires et fêtes : chaque date réserve sa propre surprise.</p></section>'+ 
+ let body=(state.specialFocus?
+  '<section class="occasion-back-top">'+button('occasion-back','← Retour à Surprise','class="subtle"')+'</section>':
+  '<section class="premium-intro"><div class="premium-eyebrow">♥ NOS DATES IMPORTANTES</div><h2>Des occasions à célébrer</h2><p>Saint-Valentin, anniversaires et fêtes : chaque date réserve sa propre surprise.</p></section>')+ 
  '<section class="card"><h2>Les dés de nos événements</h2>'+
   '<p>Pour les fêtes classiques, découvrez une surprise parmi 20 idées. Pour vos occasions personnalisées, un lancer choisit l’activité et un second ajoute une touche de surprise.</p>'+
   '<p>Chaque idée est facultative : vous pouvez en discuter, la modifier ou la refuser.</p></section>';
@@ -1003,10 +1005,14 @@ function renderOccasions(){
   const modifier=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='modifier');
   const displayName=ev.actorId?person(ev.actorId):'';
   const role=occasionRoles(ev,settings,state.members);
-  body+='<section class="card"><div class="eyebrow">'+safe(ev.emoji)+' '+safe(ev.title)+
+  body+='<section class="card occasion-premium-card"><div class="eyebrow">♡ '+safe(ev.title)+
     (displayName?' · '+safe(displayName):'')+'</div>';
-  body+='<p>'+safe(ev.date||'Date non définie')+
-    (ev.daysLeft!==null?' · '+(ev.daysLeft===0?"Aujourd’hui":ev.daysLeft>0?"Dans "+ev.daysLeft+" jours":"Il y a "+(-ev.daysLeft)+" jours"):'')+'</p>';
+  const eventDate=ev.date?new Intl.DateTimeFormat('fr-CA',{
+   day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
+  }).format(new Date(ev.date+'T12:00:00Z')):'Date non définie';
+  body+='<p class="occasion-date">'+safe(eventDate)+
+   (ev.daysLeft!==null?' · '+(ev.daysLeft<0?'Disponible encore '+(7+ev.daysLeft)+' jours':
+    ev.daysLeft===0?'Disponible aujourd’hui':'Dans '+ev.daysLeft+' jours'):'')+'</p>';
   if(!role.shared&&!role.receiver){
    body+='<p class="tag">Personne célébrée non renseignée. L’administrateur la désigne dans Réglages.</p>';
   }else if(role.shared){
@@ -1021,7 +1027,8 @@ function renderOccasions(){
   else if(custom){
    if(!activity){
     if(role.shared||role.receiver)
-     body+=heroDice(null,6,'Activité surprise')+
+     body+='<div class="occasion-step-label">ÉTAPE 1 · NOTRE ACTIVITÉ</div>'+
+       heroDice(null,6,'Activité surprise')+
        button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':activity','🎲 DÉCOUVRIR L’ACTIVITÉ');
    }else{
     body+=heroDice(activity.face,6,'Activité surprise')+
@@ -1029,7 +1036,8 @@ function renderOccasions(){
       '<p>'+safe(activity.special_description||'')+'</p>'+
       '<p class="tiny-note">Une proposition à accepter, modifier ou passer ensemble.</p>'+optionalRolledTimer(activity)+'</div>';
     if(!modifier){
-     body+=heroDice(null,6,'Touche surprise')+
+     body+='<div class="occasion-step-label">ÉTAPE 2 · TOUCHE SURPRISE</div>'+
+       heroDice(null,6,'Touche surprise')+
        button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','🎲 RÉVÉLER LA TOUCHE SURPRISE');
     }else{
      body+=heroDice(modifier.face,6,'Touche surprise')+
@@ -1038,7 +1046,8 @@ function renderOccasions(){
     }
    }
   }
-  else if(!prize){if(role.shared||role.receiver)body+=heroDice(null,20,'Dé de fête')+
+  else if(!prize){if(role.shared||role.receiver)body+='<div class="occasion-step-label">NOTRE SURPRISE</div>'+
+    heroDice(null,20,'Dé de fête')+
     button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 RÉVÉLER LA SURPRISE');}
   else{
    const idea=prize.special_title?
