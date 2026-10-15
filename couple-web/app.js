@@ -596,6 +596,11 @@ async function refreshShared(){
   state.personal=personal;state.challenges=challenges;state.rollStatus=status?.[0]||null;
  }else{state.personal=[];state.challenges=[];state.rollStatus=null;}
  state.feedback=await query('couple_feedback',{eq:{couple_id:c}});
+ // Only counts are revealed to the invited partner; titles remain owner-private.
+ try{
+  const totals=await rpc('my_love_evening_card_totals',{p_couple:c});
+  state.playableCounts=Array.isArray(totals)?totals[0]||null:null;
+ }catch(error){state.playableCounts=null;}
  const lastCompleted=[...sessions].filter(x=>x.finished_at&&x.counted)
   .sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
  state.feedbackStatus=null;
@@ -958,7 +963,7 @@ function renderSession(){
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
    turn,category:state.category,giftCount,pending,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
-   playable:isLoveAdmin()?playableEveningCount(state.customCards):null,
+   playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening,
    lastD35Face:lastOfficialChallengeFace(
