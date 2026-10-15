@@ -118,7 +118,7 @@ test('D35 always shows the official saved result below the die after rolling',()
  const live=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
  assert.match(live,/class="evening-d35-result" role="status" aria-live="polite">21<\/div>/);
- assert.match(live,/Le dé révèle un défi parmi 70 cartes, à tour de rôle/);
+ assert.match(live,/Le dé révèle un défi parmi les cartes jouables, à tour de rôle/);
  assert.doesNotMatch(live,/Résultat D35|Le D35 révèle/);
  assert.match(live,/data-dice-sides="35" data-face="21"/);
  assert.match(live,/class="evening-d35-result" role="status" aria-live="polite"/);
