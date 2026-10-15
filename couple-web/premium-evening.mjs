@@ -69,8 +69,8 @@ export function premiumEveningHtml({
  const d35Number=Number(d35Candidate);
  const officialD35=ready&&!rolling&&d35Candidate!=null&&
   Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=35?d35Number:null;
- const d35Result=rolling&&rollingKind==='new-challenge'?'…':
-  officialD35!==null?String(officialD35):'—';
+ // The official result is already visible on the actual 3D face.
+ // Never render a duplicate text number underneath or behind the die.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view">'+
  '<header class="evening-topline"><span class="heartline">♡</span><div><h1>NOTRE SOIRÉE</h1><p>Un jeu synchronisé sur nos deux comptes</p></div>'+
@@ -90,7 +90,7 @@ export function premiumEveningHtml({
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
     '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
-       '<div class="evening-d35-result" role="status" aria-live="polite">'+esc(d35Result)+'</div>'+
+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
     '<div class="evening-play-controls"><p>Le dé révèle un défi parmi les cartes jouables, à tour de rôle.</p>'+
     '<div class="evening-choice">'+
