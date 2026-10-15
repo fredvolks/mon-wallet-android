@@ -663,7 +663,7 @@ function subscribe(){
   });
 }
 function heroDice(face,sides,label){
- return '<div class="dice-row premium-dice-row"><div class="die premium-die premium-die-'+sides+'"><strong class="dice-fallback">'+safe(face||'?')+'</strong><canvas class="dice-canvas" width="190" height="190"'+
+ return '<div class="dice-row premium-dice-row"><div class="die premium-die premium-die-'+sides+'"><strong class="dice-fallback">'+'♡'+'</strong><canvas class="dice-canvas" width="190" height="190"'+
   ' data-dice-sides="'+sides+'" data-face="'+(face||1)+'" data-spinning="'+(!!state.diceStatus)+'"'+
   ' aria-label="Dé '+sides+' en 3D. Résultat '+(face||'pas encore tiré')+'"></canvas></div>'+
  '<div class="premium-die-caption"><div class="eyebrow">'+safe(label)+'</div>'+
