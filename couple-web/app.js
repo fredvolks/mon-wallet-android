@@ -132,11 +132,18 @@ async function query(table,options={}){
 // Unsaved form text lives ONLY in process memory: no LocalStorage, logs or cloud.
 // It is restored after partner realtime refreshes and activity resume.
 let lastFormTab=null;
+let allowBackExit=false;
 function snapshotDraft(){
  const inputs=[...root.querySelectorAll('input[id],select[id],textarea[id]')].filter(el=>
   !el.disabled&&!el.readOnly&&!['password','file','hidden'].includes(el.type));
- return inputs.filter(el=>el.type==='checkbox'||el.type==='radio'?
-   el.checked!==el.defaultChecked:el.value!==el.defaultValue).map(el=>({
+ return inputs.filter(el=>{
+  if(el.type==='checkbox'||el.type==='radio')return el.checked!==el.defaultChecked;
+  if(el.tagName==='SELECT'){
+   const options=[...el.options],initial=options.findIndex(o=>o.defaultSelected);
+   return el.selectedIndex!==(initial<0?0:initial);
+  }
+  return el.value!==el.defaultValue;
+ }).map(el=>({
     id:el.id,value:el.value,checked:el.checked,type:el.type
  }));
 }
@@ -151,6 +158,7 @@ function restoreDraft(draft){
 }
 function backFromLoveRoll(){
  if(document.querySelector('.lr-dialog-overlay'))return true;
+ if(allowBackExit){allowBackExit=false;return false;}
  if(state.showEveningChallenge){state.showEveningChallenge=false;render();return true;}
  if(state.showSurpriseActivity){state.showSurpriseActivity=false;render();return true;}
  if(state.adventSelected!==null){state.adventSelected=null;render();return true;}
@@ -163,8 +171,7 @@ function backFromLoveRoll(){
   'special-editor':'settings','personal-journal':'settings',journal:'session',
   feedback:'session',occasions:'special',ideas:'home',invitation:'settings'
  }[state.tab];
- const target=parent||state.tab!=='home'?'home':null;
- const destination=parent||target;
+ const destination=parent||(state.tab!=='home'?'home':null);
  if(destination){
   handle('tab:'+destination).catch(fail);
   return true;
@@ -172,7 +179,7 @@ function backFromLoveRoll(){
  if(hasUnsavedForm()){
   premiumConfirm('Vous avez une saisie non enregistrée. La quitter sans enregistrer ?',{
    kind:'library',title:'Quitter le formulaire ?',accept:'Quitter',cancel:'Continuer'
-  }).then(ok=>{if(ok){restoreDraft([]);notify('Saisie non enregistrée : vérifiez avant de quitter LoveRoll.');}});
+  }).then(ok=>{if(ok){allowBackExit=true;notify('Appuyez de nouveau sur Retour pour quitter.');}});
   return true;
  }
  return false;
@@ -2246,7 +2253,7 @@ async function handle(action,element){
     !(await premiumConfirm('Vos modifications non enregistrées seront perdues. Voulez-vous quitter cette page ?',{
       kind:'library',title:'Quitter sans enregistrer ?',accept:'Quitter',cancel:'Rester'
     })))return;
-  state.tab=parts[0];state.confirmCancel=false;
+  allowBackExit=false;state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.eveningMore=false;}
   if(state.tab!=='special')state.showSurpriseActivity=false;
