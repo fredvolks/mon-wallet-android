@@ -33,7 +33,7 @@ const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=
  const adjusted=reveal&&effectiveTarget!=null&&Number.isInteger(officialTarget)&&
   officialTarget>=0&&officialTarget!==roll.face;
  const displayCount=adjusted?officialTarget:reveal?roll.face:null;
- return '<article class="evening-user-die">'+
+ return '<article class="evening-user-die evening-my-die">'+
   '<strong class="evening-person">'+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
   premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser&&Number.isInteger(rollFace)) +
   '<div class="evening-face-result" aria-label="'+(reveal?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(reveal?esc(displayCount):'♡')+'</strong>'+
@@ -41,6 +41,17 @@ const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=
   (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>'+
   (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):(!roll?'<small class="evening-wait">En attente</small>':''))+
   '</article>';
+};
+const partnerStatusCard=(partner,roll)=>{
+ const face=Number(roll?.face);
+ const confirmed=roll?.face!=null&&Number.isInteger(face)&&face>=1&&face<=6;
+ const name=esc(partner?.name?.split(' ')[0]||'Partenaire');
+ return '<aside class="evening-partner-card '+(confirmed?'is-confirmed':'is-pending')+'" aria-live="polite" aria-label="Résultat du dé de '+name+'">'+
+  '<span class="evening-partner-caption">DÉ DE '+name+'</span>'+
+  '<span class="evening-partner-medallion">'+(confirmed?esc(face):'♡')+'</span>'+
+  '<strong class="evening-partner-message">'+(confirmed?'Résultat confirmé':'En attente')+'</strong>'+
+  '<small>'+(confirmed?(face===1?'1 défi ce soir':esc(face)+' défis ce soir'):'Pas encore lancé')+'</small>'+
+  '</aside>';
 };
 export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
@@ -74,20 +85,19 @@ export function premiumEveningHtml({
  // Never render a duplicate text number underneath or behind the die.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):'is-inactive')+'">'+
- '<header class="evening-topline"><span class="heartline">♡</span><div><h1>NOTRE SOIRÉE</h1><p>Un jeu synchronisé sur nos deux comptes</p></div>'+
- bt('evening-more','⋯ Options','evening-more-button')+'</header>'+
- '<div class="evening-intro"><span>♥ NOTRE SOIRÉE PARTAGÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
+ '<div class="evening-intro"><span>♥ NOTRE RITUEL À DEUX</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
  (session?
   '<section class="evening-step one '+(ready?'is-complete':'is-incomplete')+'"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
-  '<div class="evening-d6-grid">'+d6(mine,myRoll,true,canMyRoll,ready,rollingKind==='my-d6'&&rolling,rollFace,turn?.ready?turn.targets?.[mine.user_id]:null)+
-  d6(partner,theirRoll,false,false,ready,false,null,turn?.ready?turn.targets?.[partner.user_id]:null)+'</div>'+
+  '<div class="evening-d6-grid">'+
+   d6(mine,myRoll,true,canMyRoll,ready,rollingKind==='my-d6'&&rolling,rollFace,turn?.ready?turn.targets?.[mine.user_id]:null)+
+   partnerStatusCard(partner,theirRoll)+'</div>'+
   (ready?'<div class="evening-step1-summary"><span>'+esc(mine.name?.split(' ')[0]||'Moi')+' : <b>'+esc(totals[me]??myRoll?.face??'—')+'</b></span><span>'+esc(partner.name?.split(' ')[0]||'Partenaire')+' : <b>'+esc(totals[partner.user_id]??theirRoll?.face??'—')+'</b></span></div>':'')+
   '<div class="evening-ready '+(ready?'yes':'')+'">'+stateText+'</div></section>'+
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
   '<small>'+(!ready?'Attendez les deux dés':first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
-  '</div>'+
+  '<button type="button" class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée" title="Gérer notre soirée">⋯</button></div>'+ 
   '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
