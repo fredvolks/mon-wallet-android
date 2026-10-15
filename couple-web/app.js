@@ -1,4 +1,4 @@
-import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261014-couple54';
 import {premiumEveningHtml} from './premium-evening.mjs?v=20261014-couple54';
@@ -1444,13 +1444,19 @@ function settingRow(title,detail,action,label='Ouvrir'){
   '<span class="settings-link-copy"><strong>'+safe(title)+'</strong><small>'+safe(detail)+'</small></span>'+
   '<span class="settings-link-affordance">'+safe(label)+' <b aria-hidden="true">›</b></span></button>';
 }
+function frenchMonthDay(md){
+ if(!/^\d{2}-\d{2}$/.test(md||''))return 'Non renseigné';
+ const date=new Date('2000-'+md+'T12:00:00Z');
+ return Number.isNaN(date.valueOf())?'Non renseigné':
+  new Intl.DateTimeFormat('fr-CA',{day:'numeric',month:'long',timeZone:'UTC'}).format(date);
+}
 function renderCoupleDateSetting(){
  const started=state.occasionSettings?.relationship_started_on||'';
  return (isLoveAdmin()?
   '<label class="settings-date-field"><span>Date de début</span><input id="couple-started-on" type="date" max="'+safe(today())+
   '" value="'+safe(started)+'"></label>':
   '<div class="settings-date-field"><strong>Date de début</strong><p>'+safe(formatCoupleDate(started))+'</p></div>')+
-  '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(state.occasionSettings?.anniversary_md||'Non renseigné')+'</p>';
+  '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(frenchMonthDay(state.occasionSettings?.anniversary_md))+'</p>';
 }
 function initSettingsAccordion(){
  const groups=[...root.querySelectorAll('details.settings-group[data-settings-section]')];
@@ -1477,9 +1483,12 @@ function renderSettings(){
   '<label class="settings-inline-name"><span>Prénom affiché</span>'+
   '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label></div>'+
   '<div class="settings-actions">'+
-  button('profile','Enregistrer mon prénom','class="settings-primary"')+
+  button('profile','Enregistrer mon profil','class="settings-primary"')+
   button('signout','Déconnexion','class="subtle settings-secondary"')+'</div>'+
-  '<p class="tiny-note settings-footer-hint">Anniversaire du profil : '+safe(state.profile.birthday_md||'Non renseigné')+'</p>';
+  '<details class="settings-birthday-edit"><summary>Modifier ma date d’anniversaire · '+
+   safe(frenchMonthDay(state.profile.birthday_md))+'</summary>'+
+  '<p>Cette date sera aussi corrigée dans les occasions du couple.</p>'+
+  monthDayInputs('settings-birthday',state.profile.birthday_md)+'</details>';
  let partner='';
  if(hasPartner){
   partner='<div class="settings-split settings-couple-top"><div class="settings-couple-status">'+
@@ -2169,8 +2178,9 @@ async function handle(action,element){
  if(verb==='profile'){
   const name=id('profile-name')?.value.trim();
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
-  await rpc('complete_love_registration',{p_name:name,p_birthday_md:state.profile.birthday_md});
-  await reload();return;
+  const birthday=parseMonthDay('settings-birthday');
+  await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
+  await reload();notify('Votre profil et votre date sont enregistrés.');return;
  }
  if(verb==='prepare-cards'){
   if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
@@ -2257,6 +2267,10 @@ async function handle(action,element){
     !(await premiumConfirm('Vos modifications non enregistrées seront perdues. Voulez-vous quitter cette page ?',{
       kind:'library',title:'Quitter sans enregistrer ?',accept:'Quitter',cancel:'Rester'
     })))return;
+  if(parts[0]==='settings'&&state.tab==='occasions'){
+   settingsOpenSection='couple';
+   try{sessionStorage.setItem('loveroll-settings-section','couple');}catch{}
+  }
   allowBackExit=false;state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.eveningMore=false;}
