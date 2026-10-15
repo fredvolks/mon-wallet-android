@@ -63,9 +63,9 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  const migration=read('migrations/20261014_d6_immediate_official_result.sql');
  assert.match(migration,/RETURN r;/);
  assert.doesNotMatch(migration,/r\.face\s*:=\s*null/i);
- assert.match(migration,/couple_private\\.is_member/);
- assert.match(migration,/user_id=auth\\.uid\\(\\)/);
- assert.match(migration,/couple_private\\.both_rolls_ready\\(session_id\\)/);
+ assert.match(migration,/couple_private\.is_member/);
+ assert.match(migration,/user_id=auth\.uid\(\)/);
+ assert.match(migration,/couple_private\.both_rolls_ready\(session_id\)/);
  assert.match(migration,/love_require_verified_identity/);
  assert.doesNotMatch(app,/Number\(result\?\.face\)\|\|1/);
  assert.match(app,/Le serveur n’a pas confirmé le résultat officiel/);
