@@ -89,7 +89,7 @@ test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and real 3.1s tumble',
 test('Admin reset requires privileged server action and never touches custom challenges',()=>{
  assert.match(app,/isLoveAdmin\(\)&&hasPartner/);
  assert.match(app,/if\(verb==='admin-reset-weekly'\)/);
- assert.match(app,/confirm\(message\)/);
+ assert.match(app,/premiumConfirm\(message,\{kind:'reset'/);
  assert.match(app,/rpc\('reset_love_weekly_roll_admin'/);
  assert.match(sql,/c\.owner_user_id=auth\.uid\(\)/);
  assert.match(sql,/for update/);
