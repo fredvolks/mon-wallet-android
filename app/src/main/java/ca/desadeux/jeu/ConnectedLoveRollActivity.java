@@ -425,7 +425,17 @@ public final class ConnectedLoveRollActivity extends Activity {
    "window.dispatchEvent(new CustomEvent('loveroll-native-google-result',{detail:"+result+"}));",null);
  }
  @Override public void onBackPressed(){
-  if(web!=null&&web.canGoBack())web.goBack();else finish();
+  // The PWA switches tabs without creating WebView history entries. Give it the
+  // first chance to dismiss a dialog or move back to its parent subpage.
+  if(web!=null&&web.getUrl()!=null&&isTrusted(Uri.parse(web.getUrl()))){
+   web.evaluateJavascript("window.loveRollHandleBack && window.loveRollHandleBack()===true",
+    result->{
+     if("true".equals(result))return;
+     if(web!=null&&web.canGoBack())web.goBack();
+     else finish();
+    });
+  }else if(web!=null&&web.canGoBack())web.goBack();
+  else finish();
  }
  @Override public void onDestroy(){
   if(web!=null){
