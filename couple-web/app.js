@@ -1129,6 +1129,17 @@ function renderAdventEditor(){
    button('import-advent-2026','♡ Prévisualiser avant remplacement')+
   '</section>'+jsonToolsPanel('advent','25 cases de l’Avent',state.jsonPending);
  if(calendar){
+  const editing=calendar.days.find(x=>x.day===state.adventEditorDay);
+  if(editing)body+='<section class="card advent-day-edit" id="advent-day-editor">'+
+   '<h3>Modifier le '+editing.day+' décembre</h3>'+
+   '<p>Cette modification concerne uniquement le contenu à découvrir. Les cases déjà ouvertes conservent leur surprise officielle.</p>'+
+   '<label>Catégorie<input id="advent-day-type" maxlength="90" value="'+safe(editing.type)+'"></label>'+
+   '<label>Titre<input id="advent-day-title" maxlength="200" value="'+safe(editing.title)+'"></label>'+
+   '<label>Description<textarea id="advent-day-description" maxlength="1500" rows="5">'+safe(editing.description)+'</textarea></label>'+
+   '<label>Minuterie facultative (minutes, de 1 à 60)<input id="advent-day-minutes" type="number" min="1" max="60" placeholder="Aucune minuterie" value="'+
+    (editing.timer_minutes??'')+'"></label>'+
+   button('save-advent-day','♡ Enregistrer uniquement cette journée')+
+   button('close-advent-day','Annuler','class="subtle")+'</section>';
   body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
    '<p class="tiny-note">Ce récapitulatif est privé. Votre partenaire ne voit les consignes qu’en ouvrant les cases autorisées.</p>'+
    '<div class="custom-card-tiles">'+calendar.days.map(entry=>
@@ -1903,10 +1914,36 @@ async function handle(action,element){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   const day=Number(parts[0]);
   if(!Number.isInteger(day)||day<1||day>25)throw Error('Journée invalide.');
-  const contents=id('advent-2026-json');
-  if(contents)contents.focus();
-  notify('Jour '+day+' : modifiez sa section dans le JSON, puis enregistrez les 25 cases.');
+  if(hasUnsavedForm()&&!(await premiumConfirm('Un brouillon non enregistré pourrait être perdu en changeant de journée.',{
+    kind:'library',title:'Changer de journée ?',accept:'Continuer',cancel:'Rester'})))return;
+  state.adventEditorDay=day;render();
+  id('advent-day-title')?.scrollIntoView({behavior:'smooth',block:'center'});
   return;
+ }
+ if(verb==='close-advent-day'){
+  if(hasUnsavedForm()&&!(await premiumConfirm('Fermer sans enregistrer les modifications de cette journée ?',{
+    kind:'library',title:'Fermer le brouillon ?',accept:'Fermer',cancel:'Rester'})))return;
+  state.adventEditorDay=null;render();return;
+ }
+ if(verb==='save-advent-day'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  const calendar=calendarFromSaved(state.advent2026Config,state.advent2026Days);
+  const day=state.adventEditorDay;
+  if(!calendar||!Number.isInteger(day)||day<1||day>25)
+   throw Error('Aucune journée du calendrier à modifier.');
+  const durationText=id('advent-day-minutes')?.value.trim()||'';
+  const minutes=durationText===''?null:Number(durationText);
+  const entry=calendar.days.find(x=>x.day===day);
+  Object.assign(entry,{type:id('advent-day-type')?.value.trim(),
+   title:id('advent-day-title')?.value.trim(),
+   description:id('advent-day-description')?.value.trim(),timer_minutes:minutes});
+  normalizeLibraryData(calendar,'advent'); // Validate all 25 days before mutation.
+  if(!(await premiumConfirm('Enregistrer la modification du '+day+
+    ' décembre ? Les autres journées et les résultats déjà ouverts restent identiques.',{
+    kind:'library',title:'Enregistrer cette journée ?'})))return;
+  await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:calendar});
+  state.adventEditorDay=null;state.jsonPending=null;
+  await reload();notify('Journée '+day+' enregistrée. Le calendrier partagé reste intact.');return;
  }
  if(verb==='monthly-slot'){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
