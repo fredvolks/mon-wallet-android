@@ -234,3 +234,30 @@ test('Mobile full-height layout with safe area and fixed existing tabs',()=>{
  assert.match(css,/repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(app,/if\(verb==='occasion-back'\)/);
 });
+
+test('Selected category is visually distinct and reported to assistive technology',()=>{
+ const html=premiumEveningHtml({session,members:people,me:'first',
+  rolls:[{user_id:'first',face:4},{user_id:'second',face:6}],
+  status:{both_ready:true,my_rolled:true},turn:{...turns,targets:{first:4,second:6}},category:'SENSUEL'});
+ assert.match(html,/data-action="category:SENSUEL" aria-pressed="true"/);
+ assert.match(html,/data-action="category:SEXUEL" aria-pressed="false"/);
+ assert.match(html,/✓ Sensuel/);
+ assert.match(css,/\.evening-choice-btn\.selected/);
+ assert.match(css,/min-height:46px!important/);
+});
+test('After finishing the evening the official feedback pathway remains available',()=>{
+ const html=premiumEveningHtml({members:people,me:'first',
+  lastEvening:{id:'past',completed:10,responses:1,myResponse:true,partnerResponse:false}});
+ assert.match(html,/choose-feedback:past/);
+ assert.match(html,/Votre partenaire/);
+ assert.match(html,/1 \/ 2 avis déposés/);
+ assert.match(html,/Consulter nos avis précédents/);
+});
+test('Occasion within its seven days-after window is available this year',()=>{
+ const settings={anniversary_md:'10-14',birthday_by_user:{}};
+ const entries=sixSpecialEvents(new Date('2026-10-15T16:00:00Z'),settings,people);
+ assert.equal(entries[0].year,2026);
+ assert.match(entries[0].availability,/Disponible encore 6 jours/);
+ const later=sixSpecialEvents(new Date('2026-10-22T16:00:00Z'),settings,people);
+ assert.equal(later[0].year,2027);
+});
