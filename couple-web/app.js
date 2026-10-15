@@ -820,15 +820,29 @@ function renderHome(){
  }),'LOVEROLL','La complicité se joue à deux');
 }
 
+function saveChallengeTimer(){
+ if(!challengeTimer.id||!state.user)return;
+ try{sessionStorage.setItem('loveroll-challenge-clock:'+state.user.id+':'+challengeTimer.id,
+  JSON.stringify({durationMs:challengeTimer.durationMs,remainingMs:clockMs(),
+   deadline:challengeTimer.deadline,running:challengeTimer.running,notified:challengeTimer.notified}));
+ }catch{}
+}
 function activeTimer(challenge,minutes){
  const millis=minutes*60000;
  if(challengeTimer.id!==challenge.id){
+  saveChallengeTimer();
+  let stored=null;
+  try{
+   stored=JSON.parse(sessionStorage.getItem('loveroll-challenge-clock:'+state.user.id+':'+challenge.id)||'null');
+  }catch{}
   challengeTimer.id=challenge.id;
   challengeTimer.durationMs=millis;
-  challengeTimer.remainingMs=millis;
-  challengeTimer.deadline=0;
-  challengeTimer.running=false;
-  challengeTimer.notified=false;
+  challengeTimer.remainingMs=stored?.durationMs===millis&&Number.isFinite(stored.remainingMs)?
+   Math.max(0,Math.min(millis,stored.remainingMs)):millis;
+  challengeTimer.deadline=stored?.durationMs===millis&&Number.isFinite(stored.deadline)?
+   stored.deadline:0;
+  challengeTimer.running=!!(stored?.running&&challengeTimer.deadline>0);
+  challengeTimer.notified=!!stored?.notified;
  }
 }
 function clockMs(){
@@ -862,7 +876,7 @@ function endSignal(){
 function updateChallengeClock(){
  if(!challengeTimer.id)return;
  if(challengeTimer.running&&Date.now()>=challengeTimer.deadline){
-  challengeTimer.running=false;challengeTimer.remainingMs=0;endSignal();
+  challengeTimer.running=false;challengeTimer.remainingMs=0;endSignal();saveChallengeTimer();
  }
  const clock=document.getElementById('challenge-timer-clock');
  if(clock)clock.textContent=formatCountdown(clockMs());
@@ -2767,7 +2781,7 @@ async function handle(action,element){
    challengeTimer.running=false;
    challengeTimer.deadline=0;
    challengeTimer.remainingMs=challengeTimer.durationMs;
-   challengeTimer.notified=false;updateChallengeClock();return;
+   challengeTimer.notified=false;saveChallengeTimer();updateChallengeClock();return;
  }
  if(verb==='timer-toggle'){
    if(!challengeTimer.id)throw Error('Aucun défi avec minuteur');
@@ -2785,7 +2799,7 @@ async function handle(action,element){
     challengeTimer.running=true;
     challengeTimer.notified=false;
    }
-   updateChallengeClock();return;
+   saveChallengeTimer();updateChallengeClock();return;
  }
  if(verb==='give-challenge'){
   if(!state.session?.paired_turns||!state.session?.self_draws||!state.rollStatus?.both_ready)
