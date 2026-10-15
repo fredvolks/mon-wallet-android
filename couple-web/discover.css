@@ -70,3 +70,19 @@ main:has(.love-discover){max-width:none;padding:0;min-height:100dvh}
 @media(max-width:370px){
  .discover-showcase:has(.discover-hero-premium){padding:0!important;min-height:0;aspect-ratio:1630/870}
 }
+
+/* Explicit Messenger handoff, not an automatic browser escape. */
+.messenger-browser-handoff{width:100%;box-sizing:border-box;margin:5px auto 0;padding:8px 11px;
+ border:1px solid #f47cb46b;border-radius:17px;background:linear-gradient(140deg,#44152f,#260c22);
+ color:#ffe3f1;text-align:center}
+.messenger-browser-handoff>strong{display:block;font-size:.73rem;letter-spacing:.015em;margin-bottom:7px}
+.messenger-browser-primary{display:flex!important;align-items:center;justify-content:center;
+ box-sizing:border-box;min-height:42px;width:100%;padding:8px 12px;border:1px solid #ff86bd!important;
+ border-radius:13px;background:linear-gradient(110deg,#b52d77,#ea408c)!important;color:white!important;
+ text-decoration:none!important;font-weight:800;font-size:.85rem;text-align:center}
+.messenger-browser-handoff details{margin-top:5px;font-size:.72rem;color:#edc8da}
+.messenger-browser-handoff summary{cursor:pointer;min-height:26px;padding:4px;list-style:none}
+.messenger-browser-handoff details p{font-size:.72rem;line-height:1.45;margin:6px 3px}
+.messenger-browser-copy{border:1px solid #d881ab!important;border-radius:9px!important;
+ padding:7px 13px!important;min-height:36px!important;color:#fff!important;
+ background:#4c193b!important;margin-bottom:4px!important;font-size:.75rem!important}
