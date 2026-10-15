@@ -936,11 +936,14 @@ function renderSpecial(){
  const original=state.monthly||{},active=original.monthly_activity;
  const rollingKind=state.diceStatus?state.rollAnimationKind:null;
  const monthly={...original};
+ const activity=active?monthlyActivityForRoll(active):null;
  if(rollingKind==='monthly_activity')monthly.monthly_activity=null;
  if(rollingKind==='monthly_host')monthly.monthly_host=null;
  frame(premiumSurpriseHtml({
    monthly,members:state.members,settings:state.occasionSettings,
-   activity:active?monthlyActivityForRoll(active):null,
+   activity,
+   timerHtml:state.showSurpriseActivity&&activity?.timer_minutes?
+    timerWidget({id:'monthly-'+month()},activity.timer_minutes):'',
    rolling:!!state.diceStatus,rollingKind,rollFace:state.rollAnimationFace,
    showActivity:state.showSurpriseActivity
  }), 'RENDEZ-VOUS SURPRISE','Un mois, un tirage, une expérience à deux');
@@ -1097,11 +1100,15 @@ function renderAdvent(){
  // The database's Toronto clock determines the UI's active day; only the
  // authenticated RPC can open a case, after checking server time again.
  const serverDate=state.adventServerDate||today();
+ const selected=state.advent.find(r=>r.day===state.adventSelected&&
+  r.year===(state.adventYear||Number(serverDate.slice(0,4))));
  frame(adventPremiumHtml({
   openings:state.advent,members:state.members,
   when:new Date(serverDate+'T16:00:00Z'),year:state.adventYear,
   selectedDay:state.adventSelected,
-  openingDay:state.adventOpening,showHistory:state.adventHistory
+  openingDay:state.adventOpening,showHistory:state.adventHistory,
+  timerHtml:selected?.advent_timer_minutes?
+   timerWidget({id:'advent-'+selected.year+'-'+selected.day},selected.advent_timer_minutes):''
  }), 'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
 }
 
