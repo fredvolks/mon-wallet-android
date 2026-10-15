@@ -1167,21 +1167,29 @@ async function decryptJson(ciphertext,key=state.unlockKey){
 function ratingChoice(idName){return '<div class="chipline">'+[1,2,3,4,5].map(v=>
  '<label class="pill"><input type="radio" name="'+idName+'" value="'+v+'" style="width:auto;display:inline;min-height:0;margin:0" '+
  ''+'> '+v+'★</label>').join('')+'</div>';}
-async function renderPersonalJournal(){
+async function frenchCalendarMonth(yyyyMm){
+ const date=new Date(yyyyMm+'-01T12:00:00Z');
+ return new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'}).format(date);
+}
+const weekdayHeaders=()=>['lun','mar','mer','jeu','ven','sam','dim']
+ .map(x=>'<span class="calendar-weekday">'+x+'</span>').join('');
+function renderPersonalJournal(){
  const items=state.personalJournal||[],mo=state.personalCalendarMonth||month(),day=state.personalSelectedDate||today();
  const [y,m]=mo.split('-').map(Number),length=new Date(y,m,0).getDate();
  const offset=(new Date(y,m-1,1).getDay()+6)%7;
- let calendar='<div class="calendar">'+Array.from({length:offset},()=>'<span></span>').join('');
+ let calendar='<div class="calendar">'+weekdayHeaders()+
+  Array.from({length:offset},()=>'<span></span>').join('');
  for(let n=1;n<=length;n++){
   const d=mo+'-'+String(n).padStart(2,'0'),count=items.filter(x=>x.happened_on===d).length;
-  calendar+='<button class="'+(count?'marked':'')+'" data-action="personal-date:'+d+'">'+
+  calendar+='<button class="'+(count?'marked ':'')+(d===today()?'today ':'')+
+   (d===day?'selected':'')+'" data-action="personal-date:'+d+'">'+
    (count?'♥ ':'')+n+'</button>';
  }
  calendar+='</div>';
  let body='<section class="card"><h2>♥ Mon calendrier privé</h2>'+
  '<p>'+items.length+' moment(s) enregistré(s) dans votre historique personnel. Le changement de partenaire n’efface aucune entrée.</p>'+
  '<div class="actions">'+button('personal-month-prev','←','class="subtle"')+
- '<button class="subtle" disabled>'+safe(mo)+'</button>'+
+ '<button class="subtle" disabled>'+safe(frenchCalendarMonth(mo))+'</button>'+
  button('personal-month-next','→','class="subtle"')+'</div>'+calendar+'</section>';
  if(!state.personalPass){
   body+='<section class="card"><h3>🔒 Déverrouiller mes notes</h3>'+
@@ -1221,11 +1229,13 @@ async function renderJournal(){
  const average=grades.length?(grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(1):'—';
  const [y,m]=mo.split('-').map(Number),length=new Date(y,m,0).getDate();
  const offset=(new Date(y,m-1,1).getDay()+6)%7;
- let cal='<div class="calendar">'+Array.from({length:offset},()=>'<span></span>').join('');
+ let cal='<div class="calendar">'+weekdayHeaders()+
+  Array.from({length:offset},()=>'<span></span>').join('');
  for(let day=1;day<=length;day++){
   const date=mo+'-'+String(day).padStart(2,'0');
   const count=dates.filter(d=>d===date).length;
-  cal+='<button class="'+(count?'marked':'')+'" data-action="date:'+date+'">'+
+  cal+='<button class="'+(count?'marked ':'')+(date===now?'today ':'')+
+   (date===(state.selectedDate||now)?'selected':'')+'" data-action="date:'+date+'">'+
    (count?'♥ ':'')+day+'</button>';
  }
  cal+='</div>';
@@ -1236,7 +1246,7 @@ async function renderJournal(){
  '<p class="result">'+average+' / 5 ★</p><p>Note moyenne des questionnaires enregistrés.</p></section>'+
  '<section class="card"><h2>♡ Calendrier des relations</h2>'+
  '<div class="actions">'+button('month-prev','←', 'class="subtle"')+
- '<button disabled class="subtle">'+safe(mo)+'</button>'+
+ '<button disabled class="subtle">'+safe(frenchCalendarMonth(mo))+'</button>'+
  button('month-next','→','class="subtle"')+'</div>'+cal+'</section>';
  if(!state.unlockKey)body+='<section class="card"><h2>🔒 Journal chiffré</h2>'+
   '<p>Entrez votre phrase secrète commune pour lire ou remplir vos entrées et vos avis. Elle n’est pas envoyée au serveur.</p>'+
