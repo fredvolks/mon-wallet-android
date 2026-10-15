@@ -1,5 +1,5 @@
 {
-  "build": "2026-10-15.77",
-  "label": "LoveRoll — correctif Chrome mobile : inscription et connexion sur un écran",
+  "build": "2026-10-15.78",
+  "label": "LoveRoll — authentification Chrome ajustée à la hauteur visible",
   "released_at": "2026-10-15"
 }

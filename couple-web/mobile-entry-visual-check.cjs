@@ -10,7 +10,7 @@ async function main(){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  const styles=['styles.css','discover.css','invitation-poster.css',
   'invite-account.css','responsive-fullscreen.css','responsive-tablet-desktop.css',
-  'mobile-one-screen-v74.css','mobile-entry-v76.css','mobile-entry-v77.css'];
+  'mobile-one-screen-v74.css','mobile-entry-v76.css','mobile-entry-v77.css','mobile-entry-v78.css'];
  const css=styles.map(s=>'<link rel="stylesheet" href="'+BASE+s+'">').join('');
  let checked=0;
  try{
@@ -29,6 +29,8 @@ async function main(){
    for(const [name,markup,selector] of cases){
     await page.setContent('<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'+css+'</head><body><main id="app">'+markup+'</main></body></html>',{waitUntil:'load'});
     await page.evaluate(()=>document.fonts.ready);
+    await page.addScriptTag({url:BASE+'entry-viewport-v78.js'});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const measure=await page.evaluate(s=>{
      const element=document.querySelector(s),screen=window.innerHeight;
      const r=element?.getBoundingClientRect();
@@ -42,6 +44,11 @@ async function main(){
     assert.ok(measure.interactive,name+' '+width+'x'+height+' missing active CTA');
     assert.ok(measure.primary.top>=-3&&measure.primary.bottom<=measure.screen+2,
      name+' '+width+'x'+height+' CTA clipped '+JSON.stringify(measure));
+    const lastControl=name.includes('invitation')&&name==='invitation'?
+     '[data-action="invite-start"]':'.invite-auth-back';
+    const last=await page.locator(lastControl).first().boundingBox();
+    assert.ok(last&&last.y>=-2&&last.y+last.height<=measure.screen+2,
+     name+' '+width+'x'+height+' last control clipped '+JSON.stringify({last,screen:measure.screen}));
     assert.ok(measure.scrollHeight<=measure.screen+3,
      name+' '+width+'x'+height+' page scroll '+JSON.stringify(measure));
     if(['signin','signup','invitation-signin'].includes(name)){
@@ -58,7 +65,9 @@ async function main(){
   const page=await browser.newPage({viewport:{width:393,height:360},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   await page.goto(BASE+'__premium-couple-pages-test.html');
   await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'+css+'</head><body><main id="app">'+authHtml(true,'signin')+'</main></body></html>',{waitUntil:'load'});
+  await page.addScriptTag({url:BASE+'entry-viewport-v78.js'});
   await page.locator('#signin-email').focus();
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const keyboard=await page.locator('[data-action="auth-signin-password"]').boundingBox();
   assert.ok(keyboard&&keyboard.y>=0&&keyboard.y+keyboard.height<=360,
    'Submit must fit inside a keyboard-shrunken viewport '+JSON.stringify(keyboard));

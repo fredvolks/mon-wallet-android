@@ -23,12 +23,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Vérifier la configuration PWA
+      - name: Valider la PWA, l'authentification et l'adaptation mobile
         run: |
           set -euo pipefail
           node --check couple-web/app.js
-          node --check couple-web/config.js
-          node --test couple-web/soiree-surprise-recovery.test.mjs couple-web/dice-visibility-layout.test.mjs couple-web/feedback-status.test.mjs couple-web/evening-private-queue.test.mjs couple-web/mobile-entry-screen.test.mjs couple-web/mobile-one-screen.test.mjs couple-web/reset-ghost-session.test.mjs couple-web/all-dice-reset.test.mjs couple-web/couple-live-sync.test.mjs couple-web/dice-roll-motion.test.mjs couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs
+          node --check couple-web/entry-viewport-v78.js
+          node --check couple-web/mobile-entry-visual-check.cjs
+          node --test couple-web/mobile-entry-screen.test.mjs couple-web/pwa-update.test.mjs
       - name: Vérifier TOUS les scripts JavaScript livrés
         run: node couple-web/check-shipped-js.cjs
       - name: Tester le vrai démarrage dans Chromium avant publication
