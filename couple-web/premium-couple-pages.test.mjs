@@ -198,7 +198,7 @@ test('D20 and D35 are true glossy rounded polyhedra without pink wireframe',()=>
  assert.doesNotMatch(die,/new THREE\.LineSegments|new THREE\.LineBasicMaterial|new THREE\.EdgesGeometry/);
  assert.match(die,/new THREE\.IcosahedronGeometry\(1\.16,0\)/);
  assert.match(die,/const count=35/);
- assert.match(die,/digits\(value,sides===6,pips\)/);
+ assert.match(die,/digits\(value,sides===6,pips,neutral\)/);
 });
 test('Mobile full-height layout with safe area and fixed existing tabs',()=>{
  assert.match(css,/100dvh/);
