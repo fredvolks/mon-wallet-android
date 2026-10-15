@@ -2768,6 +2768,12 @@ async function start(){
  const errorCode=currentUrl.searchParams.get('error_code')||frag.get('error_code');
  const authError=currentUrl.searchParams.get('error')||frag.get('error');
  if(errorCode||authError){
+  // An expired/used recovery link MUST return to sign-in, not a password form
+  // that cannot submit without a valid Supabase recovery session.
+  if(state.passwordRecovery){
+   state.passwordRecovery=false;state.authMode='signin';
+   currentUrl.searchParams.set('auth','signin');
+  }
   state.authNotice=/expired|invalid|not_found/i.test(String(errorCode||''))?
    'Le lien est expiré ou a déjà été utilisé. Si ton courriel est confirmé, tu peux te connecter avec Google ou demander un nouveau lien lorsque la limite d’envoi sera levée.':
    'La confirmation n’a pas ouvert de session. Tu peux te connecter avec Google ou utiliser un nouveau lien de connexion plus tard.';
