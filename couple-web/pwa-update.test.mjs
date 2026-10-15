@@ -5,7 +5,7 @@ const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),sw=read('service-worker.js');
 const release=JSON.parse(read('web-version.json'));
 test('LoveRoll build versions agree between endpoint, app, HTML and imported modules',()=>{
- const build='2026-10-14.52',tag='20261014-d35-simple52';
+ const build='2026-10-14.52',tag='20261014-dialog52';
  assert.equal(release.build,build);
  assert.match(app,/const WEB_RELEASE='2026-10-14\.52'/);
  assert.match(html,new RegExp('app\\.js\\?v='+tag));
