@@ -1321,7 +1321,7 @@ async function renderJournal(){
  '<button disabled class="subtle">'+safe(frenchCalendarMonth(mo))+'</button>'+
  button('month-next','→','class="subtle"')+'</div>'+cal+'</section>';
  if(!state.unlockKey){
-  const exists=state.journal.length>0||state.feedback.length>0;
+  const exists=!!state.couple?.journal_verifier||state.journal.length>0||state.feedback.length>0;
   body+='<section class="card"><h2>🔒 '+(exists?'Déverrouiller notre journal':'Créer la phrase secrète de notre journal')+'</h2>'+
    '<p>'+(exists?'Saisissez votre phrase secrète commune pour accéder aux anciennes données.':
     'Choisissez une phrase secrète de 12 caractères ou plus et partagez-la en personne avec votre partenaire. Ni la phrase ni vos notes en clair ne sont envoyées au serveur.')+'</p>'+
@@ -2622,17 +2622,29 @@ async function handle(action,element){
  }
  if(verb==='unlock'){
   const pass=id('journal-pass')?.value||'';
-  if(state.journal.length===0&&state.feedback.length===0&&
-    pass!==id('journal-pass-confirm')?.value)
-    throw Error('Les deux phrases secrètes doivent être identiques.');
+  const savedProbe=state.couple?.journal_verifier||null;
+  const hasLegacy=state.journal.length>0||state.feedback.length>0;
+  const creating=!savedProbe&&!hasLegacy;
+  if(creating&&pass!==id('journal-pass-confirm')?.value)
+   throw Error('Les deux phrases secrètes doivent être identiques.');
   const key=await createCipherKey(pass);
+  if(creating){
+   // Only a ciphertext proving the key can be opened is stored remotely.
+   const envelope=await encryptJson({purpose:'loveroll-journal-check',version:1},key);
+   await rpc('initialize_love_journal',{p_couple:state.coupleId,p_verifier:envelope});
+   state.couple.journal_verifier=envelope;
+  }else{
+   try{
+    const probe=savedProbe||state.journal[0]?.ciphertext||state.feedback[0]?.ciphertext;
+    if(!probe)throw Error('Aucune preuve de clé disponible.');
+    const clear=await decryptJson(probe,key);
+    if(savedProbe&&clear?.purpose!=='loveroll-journal-check')
+     throw Error('Vérification du journal invalide.');
+   }catch{state.unlockKey=null;throw Error('Phrase secrète incorrecte pour les données existantes.');}
+  }
   state.unlockKey=key;
-  // Test existing envelope if one exists, to catch wrong passphrase.
-  try{
-   const probe=state.journal[0]?.ciphertext||state.feedback[0]?.ciphertext;
-   if(probe)await decryptJson(probe);
-  }catch{state.unlockKey=null;throw Error('Phrase secrète incorrecte pour les données existantes.');}
-  notify('Journal déverrouillé sur cet appareil.');render();return;
+  notify(creating?'Phrase secrète du journal créée. Partagez-la en personne avec votre partenaire.':
+   'Journal déverrouillé sur cet appareil.');render();return;
  }
  if(verb==='lock'){state.unlockKey=null;render();return;}
  if(verb==='date'){state.selectedDate=parts[0];render();return;}
