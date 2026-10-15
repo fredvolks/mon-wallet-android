@@ -12,14 +12,14 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: couple-web-pages-v66-fastlane
+  group: couple-web-pages-v67-bootstrap-fix
   cancel-in-progress: true
 jobs:
   deploy:
     if: github.ref == 'refs/heads/des-a-deux-apk-20261013'
     runs-on: ubuntu-latest
     environment:
-      name: loveroll-web-v66-fastlane
+      name: loveroll-web-v67-startup
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
