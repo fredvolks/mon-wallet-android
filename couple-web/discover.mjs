@@ -49,7 +49,7 @@ export function discoverHtml(hasInvitation=false,externalBrowserHelp=''){
   ['avent','Avent','25 cases à ouvrir ensemble','avent'],
   ['couple','Couple','Un espace commun, discret et synchronisé','couple']
  ];
- return '<div class="love-discover discover-v58 '+(hasInvitation?'discover-invite':'discover-public')+'" aria-label="'+
+ return '<div class="love-discover discover-v58 discover-v59 '+(hasInvitation?'discover-invite':'discover-public')+'" aria-label="'+
  (hasInvitation?'Invitation LoveRoll':'Présentation LoveRoll')+'">'+
  '<header class="discover-header"><div class="discover-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
  '<span class="discover-kicker">'+(hasInvitation?'UNE INVITATION POUR VOTRE COUPLE':'LA COMPLICITÉ SE JOUE À DEUX')+'</span>'+
