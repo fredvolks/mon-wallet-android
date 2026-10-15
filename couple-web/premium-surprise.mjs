@@ -39,7 +39,7 @@ export function sixSpecialEvents(now,settings={},members=[]){
   return {...entry,date:selected?.date||null,daysLeft:days,year:selected?.year||null,availability};
  });
 }
-export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new Date(),activity=null,rolling=false,rollingKind=null,rollFace=1,showActivity=false}={}){
+export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new Date(),activity=null,rolling=false,rollingKind=null,rollFace=1,showActivity=false,timerHtml=''}={}){
  const a=monthly.monthly_activity,h=monthly.monthly_host,r=monthly.monthly_restaurant;
  const rollingActivity=rolling&&rollingKind==='monthly_activity';
  const rollingHost=rolling&&rollingKind==='monthly_host';
@@ -87,7 +87,7 @@ export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new D
  (showActivity&&a?'<div class="surprise-modal" role="dialog" aria-label="Notre activité">'+
   '<article class="surprise-modal-content"><strong>♡ ACTIVITÉ DU MOIS · '+esc(a.face)+'</strong>'+
   '<h2>'+esc(activity?.title||'Notre sortie')+'</h2><p>'+esc(activity?.description||'')+'</p>'+
-  '<p>Le résultat est commun aux deux comptes.</p>'+
+  '<p>Le résultat est commun aux deux comptes.</p>'+timerHtml+
   button('surprise-activity','Fermer','surprise-primary')+'</article></div>':'')+
  '</div>';
 }
