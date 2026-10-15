@@ -297,3 +297,17 @@ main#app.loveroll-real-home{
  color:#e9bcd4;font-size:clamp(.49rem,1.62vw,.7rem);
  line-height:1.06;overflow-wrap:anywhere;
 }
+
+/* S25 Ultra: center the real WebGL die within the satin theater instead of
+   letting its bottom edge disappear behind the weekly roll button. */
+.loveroll-real-home .home-die-theater{
+ align-items:center;justify-items:center;
+}
+.loveroll-real-home .home-die-platform{
+ justify-self:center;align-self:center;
+ transform:translate3d(0,-18%,0);
+ transform-origin:50% 50%;
+}
+@media (max-width:650px) and (max-height:740px){
+ .loveroll-real-home .home-die-platform{transform:translate3d(0,-13%,0)}
+}
