@@ -1417,6 +1417,14 @@ function renderSettings(){
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
   window.LoveRollNativeAuth.appVersion():'';
+ const homeInstall=nativeApp?
+  settingRow('Placer LoveRoll sur l’écran d’accueil',
+   'L’APK est déjà installé. Voir comment placer son icône.','show-install-guide','Voir'):
+  installStatus()==='installed'?
+  settingRow('LoveRoll sur l’écran d’accueil',
+   'Déjà installé et prêt à être utilisé.','show-install-guide','Voir'):
+  settingRow('Ajouter LoveRoll à l’écran d’accueil',
+   'Accès rapide sur Android ou iPhone.','install-home','Ajouter');
  const appSettings=(nativeApp?
   '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>Version Android : '+
   safe(nativeVersion||'non fournie par cette version APK')+'</p></div></div>'+
