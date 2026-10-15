@@ -1248,11 +1248,16 @@ async function renderJournal(){
  '<div class="actions">'+button('month-prev','←', 'class="subtle"')+
  '<button disabled class="subtle">'+safe(frenchCalendarMonth(mo))+'</button>'+
  button('month-next','→','class="subtle"')+'</div>'+cal+'</section>';
- if(!state.unlockKey)body+='<section class="card"><h2>🔒 Journal chiffré</h2>'+
-  '<p>Entrez votre phrase secrète commune pour lire ou remplir vos entrées et vos avis. Elle n’est pas envoyée au serveur.</p>'+
-  '<input id="journal-pass" type="password" minlength="12" autocomplete="off" placeholder="Phrase secrète à partager hors de l’application">'+
-  button('unlock','Déverrouiller')+
-  '<p>Sans cette phrase, les anciens messages chiffrés ne pourront pas être récupérés.</p></section>';
+ if(!state.unlockKey){
+  const exists=state.journal.length>0||state.feedback.length>0;
+  body+='<section class="card"><h2>🔒 '+(exists?'Déverrouiller notre journal':'Créer la phrase secrète de notre journal')+'</h2>'+
+   '<p>'+(exists?'Saisissez votre phrase secrète commune pour accéder aux anciennes données.':
+    'Choisissez une phrase secrète de 12 caractères ou plus et partagez-la en personne avec votre partenaire. Ni la phrase ni vos notes en clair ne sont envoyées au serveur.')+'</p>'+
+   '<input id="journal-pass" type="password" minlength="12" autocomplete="off" placeholder="Phrase secrète commune">'+
+   (exists?'':'<label>Confirmer la phrase secrète<input id="journal-pass-confirm" type="password" minlength="12" autocomplete="off" placeholder="Confirmez la même phrase"></label>')+
+   button('unlock',exists?'Déverrouiller':'Créer et ouvrir notre journal')+
+   '<p>Conservez cette phrase : une erreur de déchiffrement ne signifie jamais que votre journal est vide.</p></section>';
+ }
  else{
   body+='<section class="card"><h3>♥ Enregistrer un moment</h3>'+
    '<label>Date<input id="event-date" type="date" value="'+safe(state.selectedDate||now)+'"></label>'+
@@ -2453,6 +2458,9 @@ async function handle(action,element){
  }
  if(verb==='unlock'){
   const pass=id('journal-pass')?.value||'';
+  if(state.journal.length===0&&state.feedback.length===0&&
+    pass!==id('journal-pass-confirm')?.value)
+    throw Error('Les deux phrases secrètes doivent être identiques.');
   const key=await createCipherKey(pass);
   state.unlockKey=key;
   // Test existing envelope if one exists, to catch wrong passphrase.
