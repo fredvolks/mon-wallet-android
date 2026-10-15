@@ -17,10 +17,10 @@ test('Mobile main screens have fixed dynamic viewport; bottom navigation remains
  assert.doesNotMatch(css,/scroll-padding-bottom|grid-auto-rows:max-content/);
 });
 test('Home 3D die is optically centered in the satin theater on phones',()=>{
- assert.match(css,/home-die-platform\\{[\\s\\S]*?transform:translate3d\\(0,-18%,0\\)!important/);
- assert.match(css,/@media \\(max-width:767px\\) and \\(max-height:740px\\)\\{/);
- assert.match(css,/transform:translate3d\\(0,-13%,0\\)!important/);
- assert.doesNotMatch(css,/home-die-platform\\{transform:none!important\\}/);
+ assert.match(css,/home-die-platform\{[\s\S]*?transform:translate3d\(0,-18%,0\)!important/);
+ assert.match(css,/@media \(max-width:767px\) and \(max-height:740px\)\{/);
+ assert.match(css,/transform:translate3d\(0,-13%,0\)!important/);
+ assert.doesNotMatch(css,/home-die-platform\{transform:none!important\}/);
 });
 test('Step 2 and all private-queue controls fit into the same mobile grid',()=>{
  assert.match(css,/grid-template-rows:minmax\(36px,\.48fr\)/);
