@@ -11,8 +11,9 @@ export function sharedAdventState(openings=[],when=new Date(),year=null){
  const days=Array.from({length:25},(_,i)=>{
   const d=i+1,entry=opened.get(d)||null;
   const today=shown===currentYear&&month===12&&day===d;
+  const missed=shown<currentYear||(shown===currentYear&&(month>12||(month===12&&d<day)));
   return {day:d,opened:!!entry,entry,today,canOpen:today&&!entry,
-   status:entry?'opened':today?'available':'locked'};
+   status:entry?'opened':today?'available':missed?'missed':'locked'};
  });
  const note=shown!==currentYear?'Historique de décembre '+shown:
   month<12?'Notre Avent commence le 1er décembre ♥':
@@ -47,17 +48,20 @@ export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=n
  const who=id=>members.find(m=>m.user_id===id)?.name?.split(' ')[0]||'Votre partenaire';
  const grid=cal.days.map(d=>{
   const act=d.opened?'advent-view:'+d.day:d.canOpen?'advent-open:'+d.day:'advent-locked:'+d.day;
-  const locked=d.status==='locked';
+  const locked=d.status==='locked'||d.status==='missed';
   const accessible=d.opened?'Consulter la surprise du '+d.day+' décembre':
-   d.canOpen?'Ouvrir la surprise du '+d.day+' décembre':'Case '+d.day+' verrouillée';
+   d.canOpen?'Ouvrir la surprise du '+d.day+' décembre':
+   d.status==='missed'?'Jour '+d.day+' manqué · sans rattrapage':'Case '+d.day+' à venir';
   return '<button class="advent-box '+d.status+(openingDay===d.day?' opening':'')+
    '" type="button" data-action="'+act+'" aria-label="'+escape(accessible)+'"'+
    (locked?' disabled aria-disabled="true"':'')+'>'+
-   (d.canOpen?'<span class="advent-today-tag">Jour du jour</span>':'')+
+   (d.canOpen?'<span class="advent-today-tag">Aujourd’hui</span>':'')+
    '<span class="advent-box-shimmer" aria-hidden="true"></span>'+
-   '<span class="advent-box-icon">'+(d.opened?openGift():goldHeartLock(d.day))+'</span>'+
+   '<span class="advent-box-icon">'+(d.opened||d.canOpen?openGift():goldHeartLock(d.day))+'</span>'+
    '<span class="advent-box-number">'+d.day+'</span>'+
-   (d.opened?'<span class="advent-opened-mark">✓</span>':'')+
+   (d.opened?'<span class="advent-opened-mark">✓ Ouvert</span>':
+   d.status==='missed'?'<span class="advent-state-label">Jour manqué</span>':
+   d.canOpen?'<span class="advent-state-label">À ouvrir</span>':'')+
    '</button>';
  }).join('');
  const historyYears=[...new Set(openings.map(x=>x.year).filter(y=>Number.isInteger(y)&&y!==cal.currentYear))].sort((a,b)=>b-a);
@@ -68,8 +72,8 @@ export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=n
  '<h2><em>25</em> moments à découvrir</h2>'+
  '<p>Chaque jour de décembre, une nouvelle surprise<br>rien que pour nous.</p></div>'+
  '<section class="advent-shell" aria-label="Les 25 jours de décembre '+cal.year+'">'+
- '<div class="advent-shell-head"><h3>Ouvrons une surprise à la fois</h3>'+
- '<p>Une seule case officielle se déverrouille<br>chaque jour du 1er au 25 décembre.</p></div>'+
+ '<div class="advent-shell-head"><h3>Ouvrons une surprise à la fois · '+cal.totalOpened+' / 25</h3>'+
+ '<p>Disponible aujourd’hui, ouverte ou manquée : chaque case ne peut être ouverte que le jour exact, une seule fois pour le couple.</p></div>'+
  '<div class="advent-tiles">'+grid+'</div>'+
  '<div class="advent-shell-bottom">'+
  '<span>'+escape(cal.note)+'</span>'+
