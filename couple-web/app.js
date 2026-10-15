@@ -268,6 +268,20 @@ function nav(){
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
+ const librarySearch=root.querySelector('#custom-card-search');
+ const libraryFilter=root.querySelector('#custom-card-filter');
+ const updateLibraryFilter=()=>{
+  const term=(librarySearch?.value||'').trim().toLocaleLowerCase('fr-CA');
+  const choice=libraryFilter?.value||'all';
+  root.querySelectorAll('.custom-card-tiles button[data-card-id]').forEach(card=>{
+   const matchesText=(card.textContent||'').toLocaleLowerCase('fr-CA').includes(term);
+   const matchesKind=choice==='all'||choice==='edited'&&card.dataset.saved==='true'||
+    choice==='empty'&&card.dataset.empty==='true';
+   card.hidden=!(matchesText&&matchesKind);
+  });
+ };
+ librarySearch?.addEventListener('input',updateLibraryFilter);
+ libraryFilter?.addEventListener('change',updateLibraryFilter);
  document.querySelectorAll('[data-action]').forEach(el=>{
   el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
  });
@@ -1373,7 +1387,8 @@ function renderCardLibrary(){
    (card.saved?'custom-filled ':'')+
    (slot.cardId===card.cardId?'custom-active':'')+
    '" data-action="custom-slot:'+card.cardId+
-   '" aria-label="Modifier carte '+card.cardId+' : '+safe(title)+'">'+
+   '" data-card-id="'+card.cardId+'" data-saved="'+card.saved+
+   '" data-empty="'+(!card.filled)+'" aria-label="Modifier carte '+card.cardId+' : '+safe(title)+'">'+
    '<span class="custom-tile-number">'+String(card.cardId).padStart(2,'0')+'</span>'+
    '<span class="custom-tile-name">'+safe(title)+'</span></button>';
  }).join('');
@@ -1384,7 +1399,10 @@ function renderCardLibrary(){
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
     '<button class="pill '+(category===c?'selected':'')+
     '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
-  '</section>'+jsonToolsPanel('evening',names[category],state.jsonPending)+
+  '</section>'+
+  '<details class="card library-technical"'+(state.jsonPending?.kind==='evening'?' open':'')+
+  '><summary>Importer / exporter les défis</summary>'+
+  jsonToolsPanel('evening',names[category],state.jsonPending)+'</details>'+
   '<section class="card"><div class="eyebrow">RÈGLE DE PIGE</div>'+
   '<h3>Éviter les répétitions</h3>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="no-repeat-cards"'+
@@ -1394,6 +1412,8 @@ function renderCardLibrary(){
   button('save-draw-rule','Enregistrer cette règle','class="subtle"')+
   '</section>'+
   '<section class="card"><div class="eyebrow">CHOISIR UNE CARTE À MODIFIER</div>'+
+  '<label>Rechercher une carte<input id="custom-card-search" type="search" placeholder="Titre, mot-clé ou numéro"></label>'+
+  '<label>Afficher<select id="custom-card-filter"><option value="all">Toutes les cartes</option><option value="edited">Cartes personnalisées</option><option value="empty">Emplacements libres</option></select></label>'+
   '<h3>25 cartes prêtes</h3><div class="custom-card-tiles">'+table(slots.slice(0,25))+
   '</div><h3>10 emplacements facultatifs</h3><div class="custom-card-tiles">'+
   table(slots.slice(25))+'</div>'+
@@ -1437,7 +1457,10 @@ function renderMonthlyLibrary(){
   '<p>Changez les 20 idées de sortie, même avant d’inviter votre partenaire. Vous pouvez remplacer complètement une idée de sortie et sa description.</p>'+
   '<div class="custom-card-tiles">'+tiles+'</div>'+
   '<p class="tiny-note">Les changements seront utilisés aux prochains tirages. Le résultat déjà obtenu ce mois-ci reste inchangé pour les deux partenaires.</p>'+
-  '</section>'+jsonToolsPanel('monthly','20 activités du mois',state.jsonPending)+
+  '</section>'+
+  '<details class="card library-technical"'+(state.jsonPending?.kind==='monthly'?' open':'')+
+  '><summary>Importer / exporter les activités</summary>'+
+  jsonToolsPanel('monthly','20 activités du mois',state.jsonPending)+'</details>'+
   '<section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
   '<h3>'+safe(entry.title)+'</h3>'+
   '<label>Nom de l’activité<input id="monthly-title" maxlength="120" value="'+
