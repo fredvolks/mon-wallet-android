@@ -4,9 +4,10 @@ import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite69';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite69';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite69';
+import {feedbackItemsFor} from './feedback-status.mjs';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite70';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite70';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite70';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -14,7 +15,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite69';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite70';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -28,10 +29,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite69';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite70';
 
 
-const WEB_RELEASE='2026-10-15.69';
+const WEB_RELEASE='2026-10-15.70';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -249,7 +250,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite69').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite70').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -1023,7 +1024,7 @@ function renderSession(){
  const turn=session?(state.eveningBoard||sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts)):{};
  const mineCards=session?ownEveningChallenges(state.challenges,uid,session.id):[];
  const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
- const official=last&&state.feedbackStatus?.sessionId===last.id&&Array.isArray(state.feedbackStatus?.items)?state.feedbackStatus.items:null;
+ const official=last?feedbackItemsFor(state.feedbackStatus,last.id):null;
  const ownSubmitted=official?.find(x=>x.user_id===uid)?.submitted;
  const otherSubmitted=official?.find(x=>x.user_id!==uid)?.submitted;
  const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
@@ -1501,7 +1502,7 @@ async function renderFeedback(){
  const entries=state.feedback.filter(f=>f.session_id===session.id);
  const yours=entries.find(x=>x.author_id===state.user.id);
  const complete=state.members.every(m=>entries.some(x=>x.author_id===m.user_id));
- const statuses=state.feedbackStatus?.sessionId===session.id&&Array.isArray(state.feedbackStatus?.items)?state.feedbackStatus.items:null;
+ const statuses=feedbackItemsFor(state.feedbackStatus,session.id);
  const submitted=statuses?statuses.filter(x=>x.submitted).length:entries.length;
  let body='<section class="card"><div class="eyebrow">♥ APRÈS LA SOIRÉE</div>'+
  '<h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
@@ -3141,6 +3142,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite69',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite70',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
