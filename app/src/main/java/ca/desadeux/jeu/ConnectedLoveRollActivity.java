@@ -250,6 +250,20 @@ public final class ConnectedLoveRollActivity extends Activity {
   WebSettings settings = web.getSettings();
   settings.setJavaScriptEnabled(true);
   settings.setDomStorageEnabled(true);
+  // Online LoveRoll is the same live HTML/JS on PC and Android. Older WebView
+  // disk HTTP entries can keep the old Soirée null-items error and off-center
+  // Surprise dice even after GitHub Pages has been corrected.
+  // Bypass ONLY the HTTP resource cache; retain cookies, Supabase auth,
+  // Web Storage/IndexedDB, account state and all couple data.
+  settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+  // One-time resource-cache refresh for this native APK build. clearCache()
+  // does not clear cookies, DOM storage, shared preferences or user data.
+  android.content.SharedPreferences webAssets=
+   getSharedPreferences("loveroll_web_assets",MODE_PRIVATE);
+  if(webAssets.getInt("refreshed_at_native_build",0)<BuildConfig.VERSION_CODE){
+   web.clearCache(true);
+   webAssets.edit().putInt("refreshed_at_native_build",BuildConfig.VERSION_CODE).apply();
+  }
   settings.setAllowFileAccess(false);
   settings.setAllowContentAccess(false);
   settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
@@ -315,6 +329,9 @@ public final class ConnectedLoveRollActivity extends Activity {
   // Route notification taps only to known sections, never to remote URLs.
   if(pushed!=null&&pushed.matches("home|session|special|advent"))
    suffix="?open="+pushed;
+  // Distinct top-level document URL on native upgrade. It must not strip
+  // invitation IDs, OAuth callbacks or the authenticated browser session.
+  suffix+=(suffix.isEmpty()?"?":"&")+"apk_build="+BuildConfig.VERSION_CODE;
   web.loadUrl(SITE+suffix);
   if(getSharedPreferences("des_a_deux_game",MODE_PRIVATE).getBoolean("auto_update",true))
    UpdateManager.check(this,true);
@@ -338,7 +355,7 @@ public final class ConnectedLoveRollActivity extends Activity {
   setIntent(intent);
   String section=intent.getStringExtra("push_section");
   if(web!=null&&section!=null&&section.matches("home|session|special|advent"))
-   web.loadUrl(SITE+"?open="+section);
+   web.loadUrl(SITE+"?open="+section+"&apk_build="+BuildConfig.VERSION_CODE);
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
   super.onActivityResult(requestCode,resultCode,data);
