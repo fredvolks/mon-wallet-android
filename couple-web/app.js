@@ -24,7 +24,7 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink} from './premium-dialogs.mjs?v=20261014-audit55';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261014-audit55';
 
 
 const WEB_RELEASE='2026-10-14.55';
@@ -196,6 +196,7 @@ document.addEventListener('keydown',event=>{
 });
 
 function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
+ const openerAction=document.activeElement?.dataset?.action||null;
  const draft=lastFormTab===state.tab?snapshotDraft():[];
  lastFormTab=state.tab;
  const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
@@ -239,6 +240,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.innerHTML=(realHome?homeHeader:usualHeader)+body+notifications+(connected?nav():'')+installation;
  restoreDraft(draft);
  bindActions();
+ focusInlineLoveDialog(root,openerAction);
  // Render idle evening D6 in WebGL too: each side is a neutral heart,
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
