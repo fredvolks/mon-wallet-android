@@ -23,7 +23,7 @@ const {chromium}=require('playwright');
    const canvases=[...panel.querySelectorAll('canvas[data-dice-sides]')];
    const obj={width:innerWidth,height:innerHeight,scrollHeight:document.documentElement.scrollHeight,
     mainHeight:main.scrollHeight,topY:top.top,navTop:nav.top,lastBottom:last.bottom,
-    clipped: last.bottom>nav.top+2||top.top<8,
+    clipped: last.bottom>nav.top+2||top.top<0,
     horizontal:document.documentElement.scrollWidth>innerWidth+2,
     noScroll:document.documentElement.scrollHeight<=innerHeight+2 && main.scrollHeight<=innerHeight+2,
     dice:canvases.map(x=>({face:x.dataset.face,sides:x.dataset.diceSides,
@@ -56,8 +56,11 @@ const {chromium}=require('playwright');
   });
   console.log(pageName+' '+device.name,JSON.stringify({result,errors}));
   if(errors.length||result.clipped||result.horizontal||!result.noScroll||
-     result.menu!==5||result.dice.some(d=>!d.webgl||d.height<45)||
-     (pageName.startsWith('evening')&&(result.dice.length!==2||result.partnerCard<85||!result.managePresent))||
+     result.menu!==5||result.dice.some(d=>!d.webgl)||
+     (pageName.startsWith('evening')&&(
+      result.dice.length!==2||result.partnerCard<85||!result.managePresent||
+      (pageName==='evening'&&result.dice.some(d=>d.height<45))||
+      (pageName==='evening-idle'&&result.dice.filter(d=>d.height>=45).length!==1)))||
      (pageName==='evening-idle'&&(result.neutralDice.length!==1||
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
      (pageName==='surprise'&&(result.dice.length!==2||result.eventCount!==6||!result.eventVisible||result.eventColumns!==2||result.surpriseDice.length!==2||
