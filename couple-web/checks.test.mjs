@@ -305,7 +305,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v53/);
+ assert.match(sw,/loveroll-static-v54/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -363,7 +363,7 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(app,/function renderWaitingPartner\(/);
  assert.doesNotMatch(app,/function renderSolo\(/);
  assert.match(app,/Dissocier mon partenaire/);
- assert.match(app,/Préparer mon couple/);
+ assert.match(app,/Inviter un conjoint ou une conjointe/);
  assert.match(app,/function ideaHtml\(/);
  assert.match(app,/Chacun peut dire non/);
 });
@@ -413,7 +413,7 @@ test('Unpaired members only see invitation, personal account, calendar and priva
            app.includes("state.tab==='library'&&isLoveAdmin()"));
  assert.ok(app.includes("if(verb==='prepare-cards')"));
  assert.ok(app.includes("state.tab='library'"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
+ assert.ok(app.includes("['home','settings','invitation','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  for(const forbidden of ['renderSoloSession','renderSoloSpecial','renderSoloOccasions',
   'renderSoloAdvent','renderSolo()','solo-roll','solo-category','solo-advent',
   'SOLO_MESSAGE','drawSoloFace','state.solo','loveroll-skip']){
@@ -737,7 +737,7 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(!sql.includes('delete from public.couple_intimacy'));
  assert.ok(app.includes("function renderMonthlyLibrary(){"));
  assert.ok(app.includes("state.tab==='monthly-library'&&isLoveAdmin()"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
+ assert.ok(app.includes("['home','settings','invitation','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  assert.ok(app.includes("query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}})"));
  assert.ok(app.includes("rpc('save_love_monthly_activity_with_timer'"));
  assert.ok(app.includes("rpc('reset_love_monthly_activity'"));
@@ -795,7 +795,7 @@ test('Founder-only Advent editor, server date locks and shared immutable case sn
  assert.ok(app.includes("import_love_advent_2026"));
  assert.ok(app.includes("previewPortableJson('advent')"));
  assert.ok(app.includes("state.advent2026Config=adventConfig[0]||null"));
- assert.ok(app.includes("['home','settings','library','personal-journal','monthly-library','advent-editor','special-editor']"));
+ assert.ok(app.includes("['home','settings','invitation','library','personal-journal','monthly-library','advent-editor','special-editor']"));
  assert.ok(app.includes("['library','monthly-library','advent-editor','special-editor'].includes(parts[0])"));
  const newAdvent=readFileSync(new URL('./premium-advent.mjs',import.meta.url),'utf8');
  assert.match(newAdvent,/opened\.advent_description/);
