@@ -300,3 +300,38 @@ body:has(.invite-account-screen){
  .invite-account-screen .invite-google{font-size:.85rem}
 }
 @media(prefers-reduced-motion:reduce){.invite-account-screen *{animation:none!important}}
+
+/* Invitation recipient already has a SINGLE-member LoveRoll space (v60).
+   Show the real issue instead of accusing the authenticated email. */
+main#app:has(.invite-existing-space){
+ width:100%;max-width:650px;min-height:100dvh;
+ padding:clamp(18px,4vw,28px) clamp(14px,4.5vw,28px) calc(24px + env(safe-area-inset-bottom,0px));
+}
+.invite-existing-space{
+ margin-top:21px;padding:clamp(21px,5vw,30px);
+ border:1px solid #e96da4;border-radius:27px;
+ background:radial-gradient(ellipse at 4% 0%,#a92e6945,transparent 58%),linear-gradient(150deg,#41182f,#1e0b1c);
+ box-shadow:0 16px 35px #0e031299,inset 0 1px #ffb4d150;
+}
+.invite-existing-space h2{
+ color:#fff3fa;font:700 clamp(1.65rem,6.2vw,2.7rem)/1.08 Georgia,serif;
+ margin:16px 0 20px;letter-spacing:-.035em;
+}
+.invite-existing-space p{font-size:clamp(.9rem,3.5vw,1.04rem);line-height:1.47;color:#f0d3e2;margin-bottom:14px}
+.invite-existing-space .invite-archive-note{
+ padding:12px;border-radius:13px;border:1px solid #bb6295b0;
+ background:#4e19377d;color:#ffe3f0;font-size:.85rem;
+}
+.invite-existing-space button[data-action="join-invite-from-solo"]{
+ width:100%;margin-top:12px;min-height:67px;border-radius:18px;
+ border:2px solid #ffbedb;
+ background:linear-gradient(180deg,#ff85bc,#f52e88 65%,#bb1269);
+ color:white;font-size:clamp(.99rem,3.8vw,1.2rem);font-weight:900;
+ box-shadow:0 0 25px #ff39876b,inset 0 2px #fff4fa92;
+}
+.invite-existing-space button[data-action="switch-account-invite"],
+.invite-existing-space button[data-action="invite-return"]{
+ display:block;width:100%;margin-top:12px;min-height:50px;
+ border:1px solid #9a5a81;background:#32142a;color:#f5d0e3;
+}
+.invite-existing-space .invite-auth-feedback{padding:12px;font-size:.88rem}
