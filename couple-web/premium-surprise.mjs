@@ -34,7 +34,7 @@ export function sixSpecialEvents(now,settings={},members=[]){
   const selected=active||upcoming;
   const days=selected?.daysLeft??(selected?Math.round(
     (Date.parse(selected.date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'))/86400000):null);
-  const availability=active?(days<0?'Disponible encore '+(7+days)+' jour'+(7+days===1?'':'s'):
+  const availability=active?(days<=-7?'Disponible aujourd’hui · dernier jour':days<0?'Disponible encore '+(7+days)+' jour'+(7+days===1?'':'s'):
     days===0?'Disponible aujourd’hui':'Disponible · dans '+days+' jour'+(days===1?'':'s')):null;
   return {...entry,date:selected?.date||null,daysLeft:days,year:selected?.year||null,availability};
  });
