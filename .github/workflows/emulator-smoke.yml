@@ -3,6 +3,9 @@ on:
   push:
     branches: [des-a-deux-apk-20261013]
   workflow_dispatch:
+concurrency:
+  group: loveroll-responsive-emulator-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   emulator-smoke:
     runs-on: ubuntu-latest
