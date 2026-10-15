@@ -63,8 +63,8 @@ test('All existing settings actions are still wired',()=>{
 });
 
 test('Settings theme is scoped and loaded last with cache revision',()=>{
- assert.match(index,/settings-premium\.css\?v=20261014-surprise53/);
- assert.match(index,/app\.js\?v=20261014-surprise53/);
+ assert.match(index,/settings-premium\.css\?v=20261014-couple54/);
+ assert.match(index,/app\.js\?v=20261014-couple54/);
  assert.match(css,/main#app\.loveroll-settings-page/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\)!important/);
  assert.match(css,/\.settings-group-icon/);
@@ -79,4 +79,20 @@ test('Native version is real and unavailable notifications are not marked as on'
  assert.match(push,/available&&prefs\[key\]!==false/);
  assert.match(push,/\(!available\?' disabled':''\)/);
  assert.match(push,/weeklyReminderEnabled/);
+});
+
+test('Couple menu removes fictional preview and directs the invitation CTA to the real invite screen',()=>{
+ const settings=app.slice(app.indexOf('function renderSettings(){'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings(){')));
+ const waiting=app.slice(app.indexOf('function renderWaitingPartner(){'),app.indexOf('function renderHome(){'));
+ assert.match(settings,/Inviter un conjoint ou une conjointe/);
+ assert.match(settings,/button\('start-couple'/);
+ assert.doesNotMatch(settings,/button\('demo-enter'/);
+ assert.doesNotMatch(waiting,/button\('demo-enter'/);
+ assert.match(app,/function renderPartnerInvitation\(\)/);
+ assert.match(app,/if\(state\.tab==='invitation'&&state\.coupleId\)renderPartnerInvitation\(\)/);
+ assert.match(app,/button\('tab:invitation','♡ Inviter mon partenaire'\)/);
+ const action=app.slice(app.indexOf("if(verb==='start-couple'){"),app.indexOf("if(verb==='end-couple'){"));
+ assert.match(action,/rpc\('create_love_match',\{p_anniversary_md:null\}\)/);
+ assert.match(action,/state\.tab='invitation'/);
+ assert.match(action,/await reload\(\)/);
 });
