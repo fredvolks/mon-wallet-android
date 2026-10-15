@@ -24,6 +24,7 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
+import {premiumConfirm,premiumCopyLink} from './premium-dialogs.mjs';
 
 
 const WEB_RELEASE='2026-10-14.51';
@@ -90,8 +91,23 @@ function invitationLandingHeader(showAction=true){
  '<p class="premium-invite-note">♡ Votre invitation est privée · Un compte par personne</p>'+ 
  (showAction?button('invite-start','♡ ACCEPTER L’INVITATION ❤️'):'')+'</section>';
 }
-function notify(message){toastEl.textContent=message;toastEl.classList.add('visible');
- clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>toastEl.classList.remove('visible'),4500);}
+function notify(message){
+ const msg=String(message??'');
+ const isError=/erreur|impossible|refusé|échoué|indisponible|invalide|non confirmé/i.test(msg);
+ const isResult=/résultat officiel|résultat.*(?:dé|D6|D35)|tirage de|révélés/i.test(msg);
+ toastEl.replaceChildren();
+ toastEl.className='lr-premium-toast '+(isError?'lr-toast-error':isResult?'lr-toast-result':'lr-toast-info');
+ const glyph=document.createElement('span');glyph.className='lr-toast-glyph';
+ glyph.textContent=isError?'!':isResult?'🎲':'♡';glyph.setAttribute('aria-hidden','true');
+ const content=document.createElement('span');content.className='lr-toast-message';content.textContent=msg;
+ const close=document.createElement('button');close.type='button';close.className='lr-toast-close';
+ close.textContent='×';close.setAttribute('aria-label','Fermer la notification');
+ close.addEventListener('click',()=>{clearTimeout(notify.timeout);toastEl.classList.remove('visible');});
+ toastEl.append(glyph,content,close);
+ toastEl.classList.add('visible');
+ clearTimeout(notify.timeout);
+ notify.timeout=setTimeout(()=>toastEl.classList.remove('visible'),isResult?5200:4400);
+}
 function fail(error){console.error(error);notify(error?.message||'Une erreur est survenue');}
 async function rpc(name,args={}){const {data,error}=await client.rpc(name,args);if(error)throw error;return data;}
 async function query(table,options={}){
@@ -1547,7 +1563,7 @@ async function handle(action,element){
     'Cette action est enregistrée. Les défis et soirées restent intacts. '+
     'Même si une soirée a déjà commencé, elle et ses défis resteront enregistrés. ' +
     'Seul le résultat hebdomadaire sera effacé et vous pourrez relancer le D6.';
-  if(!confirm(message))return;
+  if(!(await premiumConfirm(message,{kind:'reset',title:'Relancer le dé hebdomadaire ?'})))return;
   const changed=await rpc('reset_love_weekly_roll_admin',{p_couple:state.coupleId});
   await refreshAndShow();
   notify(changed?'Résultat hebdomadaire réinitialisé pour le couple.':'Aucun tirage hebdomadaire à réinitialiser.');
@@ -1635,8 +1651,8 @@ async function handle(action,element){
    CONFIG.siteUrl+'?v='+INVITATION_REVISION+'#invite='+invite.value;
   try{await navigator.clipboard.writeText(url);}
   catch(error){
-   const fallback=prompt('Copiez votre lien complet pour l’ouvrir dans Chrome ou Safari :',url);
-   if(fallback===null)return;
+   const manuallyCopied=await premiumCopyLink(url);
+   if(!manuallyCopied)return;
   }
   notify('Lien personnel prêt. Collez-le dans Chrome ou Safari.');return;
  }
@@ -1678,7 +1694,7 @@ async function handle(action,element){
  }
  if(verb==='native-legacy'){
   if(!window.LoveRollNativeAuth?.openLegacyOffline)throw Error('Anciennes données locales disponibles dans l’APK Android.');
-  if(!confirm('Ouvrir votre ancien espace local Android ? Les données hors ligne ne sont pas synchronisées avec votre couple connecté.'))return;
+  if(!(await premiumConfirm('Les anciennes données hors ligne ne sont pas synchronisées avec votre couple connecté.',{kind:'legacy'})))return;
   window.LoveRollNativeAuth.openLegacyOffline();return;
  }
  if(verb==='show-install-guide'){
@@ -1730,9 +1746,9 @@ async function handle(action,element){
   const preview=state.jsonPending;
   if(!preview||preview.kind!==parts[0])throw Error('Prévisualisez d’abord votre JSON.');
   normalizeLibraryData(preview.data,preview.kind);
-  if(!confirm('Remplacer la bibliothèque « '+preview.summary.label+' » avec '+
+  if(!(await premiumConfirm('Remplacer « '+preview.summary.label+' » avec '+
     preview.summary.count+' éléments et '+preview.summary.timers+
-    ' minuteur(s) configuré(s) ? Les anciens tirages restent inchangés.'))return;
+    ' minuteur(s) configuré(s) ? Les anciens tirages restent inchangés.',{kind:'library',title:'Importer la bibliothèque ?'})))return;
   if(preview.kind==='evening')
    await rpc('import_love_evening_library',{p_couple:state.coupleId,p_library:preview.data});
   else if(preview.kind==='monthly')
@@ -1784,7 +1800,7 @@ async function handle(action,element){
  }
  if(verb==='reset-monthly-activity'){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
-  if(!confirm('Restaurer cette activité comme à l’origine ? Les anciens tirages resteront inchangés.'))return;
+  if(!(await premiumConfirm('Les anciens tirages resteront inchangés.',{kind:'reset',title:'Restaurer cette activité ?'})))return;
   await rpc('reset_love_monthly_activity',{p_couple:state.coupleId,p_face:state.monthlySlot});
   await reload();notify('Activité d’origine restaurée.');return;
  }
@@ -1828,9 +1844,10 @@ async function handle(action,element){
  if(verb==='delete-custom-card'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   const original=state.customSlot<=25;
-  if(!confirm(original?
-   'Rétablir la carte officielle et ses réglages par défaut ? Les défis déjà tirés restent inchangés.':
-   'Vider cet emplacement ? Les cartes déjà tirées restent dans l’historique.'))return;
+  if(!(await premiumConfirm(original?
+   'La carte officielle et ses réglages seront restaurés. Les défis déjà tirés restent inchangés.':
+   'Cet emplacement sera vidé. Les cartes déjà tirées restent dans l’historique.',
+   {kind:original?'reset':'delete',title:original?'Rétablir la carte ?':'Vider cet emplacement ?'})))return;
   await rpc('delete_love_custom_card',{p_couple:state.coupleId,
    p_category:state.customCategory,p_card_id:state.customSlot});
   await reload();notify(original?'Carte officielle rétablie.':'Emplacement vidé, historique conservé.');return;
@@ -1840,7 +1857,7 @@ async function handle(action,element){
  }
  if(verb==='end-couple'){
   if(!state.coupleId)return;
-  if(!confirm('Dissocier le partenaire pour LES DEUX personnes ? Vos défis et cartes personnalisées sont conservés. Les anciennes données communes restent privées et inaccessibles.'))return;
+  if(!(await premiumConfirm('La dissociation s’appliquera aux deux personnes. Vos comptes, défis et cartes personnalisées seront conservés. Les anciennes données communes resteront privées et inaccessibles.',{kind:'couple'})))return;
   await rpc('end_love_match',{p_couple:state.coupleId});
   state.unlockKey=null;state.personalPass=null;
   state.inviteDraft=null;state.invitations=[];
@@ -2228,8 +2245,9 @@ async function handle(action,element){
    throw Error('Aucun défi non commencé à donner.');
   const monthCount=state.gifts.filter(g=>g.donor_user_id===me&&g.month_key?.slice(0,7)===month()).length;
   if(monthCount>=3)throw Error('Vos 3 dons du mois sont utilisés.');
-  if(!confirm('Offrir un de tes défis restants à '+otherPerson.name+
-   ' ? Son nombre de défis à recevoir augmentera de 1 et le tien diminuera de 1.'))return;
+  if(!(await premiumConfirm('Offrir un de tes défis restants à '+otherPerson.name+
+   ' ? Son nombre de défis à recevoir augmentera de 1 et le tien diminuera de 1.',
+   {kind:'gift'})))return;
   await rpc('give_love_challenge',{p_session:state.session.id});
   await refreshAndShow();
   notify('♥ Défi transféré ! '+otherPerson.name+' choisira la catégorie de son prochain défi.');
@@ -2325,7 +2343,7 @@ async function handle(action,element){
   state.selectedDate=date;await reload();notify('Moment ajouté au calendrier partagé et à votre calendrier privé');return;
  }
  if(verb==='delete-event'){
-  if(!confirm('Supprimer définitivement cette entrée du journal ?'))return;
+  if(!(await premiumConfirm('Cette entrée personnelle sera définitivement supprimée.',{kind:'delete',title:'Supprimer ce souvenir ?'})))return;
   const {error}=await client.from('couple_intimacy').delete().eq('id',parts[0]).eq('author_id',state.user.id);
   if(error)throw error;await refreshAndShow();return;
  }
