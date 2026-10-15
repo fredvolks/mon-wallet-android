@@ -18,12 +18,14 @@ export function createClient(){
   couple_invitations:[{id:invite,couple_id:'couple-test',invited_email:'invited@example.test',
    created_at:'2026-10-14T09:00:00Z',expires_at:'2027-10-15T09:00:00Z',accepted_at:null,cancelled_at:null}]
  };
- window.__fakeCalls={resend:[],reset:[],signin:[],accept:[],createInvite:[],markSent:[]};
+ window.__fakeCalls={resend:[],reset:[],signin:[],signup:[],updated:[],accept:[],createInvite:[],markSent:[]};
  let authCallback=()=>{};
  return {
   auth:{
    getUser:async()=>({data:{user:authenticated?identity:null},error:null}),
    onAuthStateChange:fn=>{authCallback=fn;return {data:{subscription:{unsubscribe(){}}}}},
+   signUp:async args=>{window.__fakeCalls.signup.push(args);return {data:{user:null,session:null},error:null};},
+   updateUser:async args=>{window.__fakeCalls.updated.push(args);return {data:{},error:null};},
    signInWithPassword:async args=>{window.__fakeCalls.signin.push(args);
     return {data:{user:null},error:{code:'email_not_confirmed',message:'Email not confirmed'}};},
    resend:async args=>{window.__fakeCalls.resend.push(args);return {data:{},error:null};},
@@ -127,6 +129,32 @@ async function open(browser,mode,extra=''){
   if(calls.accept.length!==1)throw Error('Wrong recipient did not reach server guard');
   if(errors.length)throw Error('Wrong recipient JS errors '+JSON.stringify(errors));
   console.log('BEHAVIOR_OK','wrong recipient refused without changing DB');
+  await page.close();
+ }
+ // Correct invited email is accepted by the mock identity guard and drops the pending reference.
+ {
+  const {page,errors}=await open(browser,'right','&invite_id=123e4567-e89b-42d3-a456-426614174003');
+  await page.locator('[data-action="invite-start"]').waitFor();
+  await page.locator('[data-action="invite-start"]').click();
+  await page.locator('.invite-welcome').waitFor({timeout:20000});
+  const calls=await page.evaluate(()=>window.__fakeCalls);
+  if(calls.accept.length!==1)throw Error('Correct recipient not passed to server exactly once');
+  if(errors.length)throw Error('Right recipient errors '+JSON.stringify(errors));
+  console.log('BEHAVIOR_OK','right recipient accepted once by mocked RPC');
+  await page.close();
+ }
+ // A password recovery callback with an authenticated recovery identity updates Supabase,
+ // without clearing the existing invitation or silently signing into another Google account.
+ {
+  const {page,errors}=await open(browser,'right','&auth=recover&invite_id=123e4567-e89b-42d3-a456-426614174003');
+  await page.locator('[data-action="auth-update-password"]').waitFor({timeout:20000});
+  await page.locator('#signin-password').fill('Abcdefg8');
+  await page.locator('[data-action="auth-update-password"]').click();
+  await page.waitForFunction(()=>window.__fakeCalls.updated.length===1);
+  const call=await page.evaluate(()=>window.__fakeCalls.updated[0]);
+  if(call.password!=='Abcdefg8')throw Error('Wrong password update method');
+  if(errors.length)throw Error('Recovery errors '+JSON.stringify(errors));
+  console.log('BEHAVIOR_OK','recovery callback saves password with authenticated Supabase session');
   await page.close();
  }
  await browser.close();
