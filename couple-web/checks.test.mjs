@@ -363,7 +363,7 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(app,/function renderWaitingPartner\(/);
  assert.doesNotMatch(app,/function renderSolo\(/);
  assert.match(app,/Dissocier mon partenaire/);
- assert.match(app,/Préparer mon couple/);
+ assert.match(app,/Inviter un conjoint ou une conjointe/);
  assert.match(app,/function ideaHtml\(/);
  assert.match(app,/Chacun peut dire non/);
 });
