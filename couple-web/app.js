@@ -40,7 +40,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -405,7 +405,7 @@ function render(){
   if(!state.user&&!state.showAuth){root.innerHTML=discoverHtml(false);bindActions();}
   else{
    root.innerHTML=authHtml(!!pendingInvite,state.passwordRecovery?'recover':state.authMode,
-    state.authNotice||'',state.authDraftEmail)+inviteBrowserHelp();
+    state.authNotice||'',state.authDraftEmail,state.authNeedsEmailConfirmation)+inviteBrowserHelp();
    bindActions();
   }
   return;
@@ -2179,6 +2179,10 @@ async function handle(action,element){
  if(verb==='show-auth'){
   if(pendingInviteReference(sessionStorage)&&!state.inviteAccepted)
    throw Error('Acceptez d’abord l’invitation.');
+  // Both landing buttons must enter their actual requested authentication flow.
+  state.authMode=parts[0]==='signin'?'signin':'signup';
+  state.authNeedsEmailConfirmation=false;
+  state.authNotice=null;state.passwordRecovery=false;
   state.showDiscover=false;state.showAuth=true;render();return;
  }
  if(verb==='show-landing'){state.showDiscover=false;state.showAuth=false;render();return;}
@@ -2210,6 +2214,7 @@ async function handle(action,element){
  if(verb==='auth-mode'){
   state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
   state.authMode=parts[0]==='signin'?'signin':'signup';
+  state.authNeedsEmailConfirmation=false;
   state.authNotice=null;state.passwordRecovery=false;render();return;
  }
  if(verb==='auth-eye'){
@@ -2242,8 +2247,18 @@ async function handle(action,element){
     state.authNotice=null;render();
    }else{
     const {data,error}=await client.auth.signInWithPassword({email,password});
-    if(error){authMessage(passwordAuthMessage(error));return;}
+    if(error){
+     state.authDraftEmail=email;
+     state.authNeedsEmailConfirmation=error.code==='email_not_confirmed'||
+      /email not confirmed|courriel non confirm/i.test(error.message||'');
+     if(state.authNeedsEmailConfirmation){
+      state.authNotice='Votre adresse courriel doit être confirmée avant de vous connecter. Vous pouvez demander un nouveau courriel ci-dessous.';
+      render();
+     }else authMessage(passwordAuthMessage(error));
+     return;
+    }
     if(!data?.user)throw Error('Aucune session ouverte.');
+    state.authNeedsEmailConfirmation=false;
     state.user=data.user;state.authNotice=null;state.showAuth=false;
     await reload();
    }
@@ -2277,17 +2292,25 @@ async function handle(action,element){
    'Votre adresse n’est pas encore confirmée dans Supabase. Ouvrez le lien reçu.';
   return;
  }
- if(verb==='email-confirm-resend'){
-  const email=state.authDraftEmail||state.user?.email;
-  if(!email)throw Error('Indiquez votre adresse courriel.');
+ if(verb==='email-confirm-resend'||verb==='auth-resend-confirmation'){
+  const btn=element;if(btn?.disabled)return;
+  let email;
+  try{email=loginEmail(id('signin-email')?.value||state.authDraftEmail||state.user?.email);}
+  catch(error){authMessage(error.message);return;}
   const until=Number(sessionStorage.getItem('loverollConfirmResendAfter')||0);
-  if(Date.now()<until)throw Error('Attendez une minute avant de renvoyer le courriel.');
-  const {error}=await client.auth.resend({type:'signup',email,
-   options:{emailRedirectTo:pendingInviteUrl()}});
-  if(error){authMessage(passwordAuthMessage(error));return;}
-  sessionStorage.setItem('loverollConfirmResendAfter',String(Date.now()+60000));
-  const status=id('email-confirm-status');
-  if(status)status.textContent='Supabase a accepté la demande. Si cette adresse appartient déjà à un compte Google confirmé, aucun nouveau courriel ne sera envoyé. Essayez « Continuer avec Google ».';
+  if(Date.now()<until){authMessage('Veuillez patienter avant de demander un autre courriel.');return;}
+  if(btn)btn.disabled=true;
+  try{
+   const {error}=await client.auth.resend({type:'signup',email,
+    options:{emailRedirectTo:pendingInviteUrl()}});
+   if(error){authMessage(passwordAuthMessage(error));return;}
+   state.authDraftEmail=email;
+   sessionStorage.setItem('loverollConfirmResendAfter',String(Date.now()+60000));
+   const status=id('auth-resend-status')||id('email-confirm-status');
+   const msg='Demande reçue par le serveur. Cela ne garantit pas la réception du courriel. Vérifiez votre boîte et les indésirables. Si ce compte est déjà confirmé avec Google, utilisez « Continuer avec Google ».';
+   if(status)status.textContent=msg;else authMessage(msg);
+  }catch(error){authMessage(passwordAuthMessage(error));}
+  finally{if(btn)btn.disabled=false;}
   return;
  }
  if(verb==='email-confirm-edit'){
@@ -2296,13 +2319,22 @@ async function handle(action,element){
   state.authMode='signup';state.showAuth=true;render();return;
  }
  if(verb==='auth-reset-request'){
+  state.authDraftEmail=id('signin-email')?.value.trim()||state.authDraftEmail;
+  state.authMode='request-reset';state.authNeedsEmailConfirmation=false;
+  state.authNotice=null;state.showAuth=true;render();return;
+ }
+ if(verb==='auth-send-reset'){
   let email;
   try{email=loginEmail(id('signin-email')?.value);}catch(error){authMessage(error.message);return;}
+  const until=Number(sessionStorage.getItem('loverollResetAfter')||0);
+  if(Date.now()<until){authMessage('Veuillez patienter avant une nouvelle demande.');return;}
   const btn=element;if(btn?.disabled)return;if(btn)btn.disabled=true;
   try{
    const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pendingInviteUrl(true)});
    if(error){authMessage(passwordAuthMessage(error));return;}
-   authMessage('Si cette adresse possède un compte, un lien de réinitialisation a été envoyé. Vérifiez votre courriel.');
+   state.authDraftEmail=email;
+   sessionStorage.setItem('loverollResetAfter',String(Date.now()+60000));
+   authMessage('Demande de récupération acceptée. Si ce compte existe, le fournisseur pourra envoyer un lien. Vérifiez vos courriels; sa réception n’est pas encore confirmée.');
   }catch(error){authMessage(passwordAuthMessage(error));}
   finally{if(btn)btn.disabled=false;}
   return;
