@@ -23,6 +23,8 @@ jobs:
           node --check couple-web/premium-evening.mjs
           node --check couple-web/evening-private-queue.mjs
           node --test couple-web/evening-private-queue.test.mjs
+          node --check couple-web/feedback-status.mjs
+          node --test couple-web/feedback-status.test.mjs
           node --check couple-web/premium-surprise.mjs
           node --check couple-web/premium-advent.mjs
           node --check couple-web/dice3d.js
