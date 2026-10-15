@@ -1046,7 +1046,7 @@ function renderSession(){
    (view?
     '<div class="evening-queue-nav">'+
      button('evening-list','← Mes défis ('+mineCards.length+')','class="subtle"')+
-     button('evening-close','✕ Fermer','class="subtle"')+'</div>'+
+     button('evening-close','✕ Fermer','class="subtle"')+'</div>':
     '<div class="evening-queue-heading"><h2>Mes '+mineCards.length+' défis</h2>'+
      button('evening-close','✕ Fermer','class="subtle"')+'</div>')+
    (view?
