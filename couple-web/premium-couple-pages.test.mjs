@@ -271,7 +271,7 @@ test('Fullscreen v61 renders all six event choices in two columns and three rows
 });
 test('Soirée never crashes if the last session and feedback status are both missing',()=>{
  assert.doesNotMatch(app,/const official=state.feedbackStatus\?\.sessionId===last\?\.id\?state.feedbackStatus.items:null/);
- assert.match(app,/const official=last&&state.feedbackStatus\?\.sessionId===last.id&&Array.isArray/);
+ assert.match(app,/const official=last\?feedbackItemsFor\(state.feedbackStatus,last.id\):null/);
  assert.match(app,/if\(!state.weekly\)\{/);
  assert.match(app,/evening-locked-view/);
  assert.match(app,/Brassez d’abord le dé hebdomadaire/);
