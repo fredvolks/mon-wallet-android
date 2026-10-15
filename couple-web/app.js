@@ -1,8 +1,8 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite59';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite59';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite59';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-invite60';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-invite60';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-invite60';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -10,7 +10,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite59';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-invite60';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -24,10 +24,10 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite59';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-invite60';
 
 
-const WEB_RELEASE='2026-10-15.59';
+const WEB_RELEASE='2026-10-15.60';
 const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -245,7 +245,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-invite59').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-invite60').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -411,13 +411,22 @@ function render(){
   return;
  }
  if(pendingInvite&&state.user&&state.coupleId){
+  const soloOwner=state.members.length===1&&state.members[0]?.user_id===state.user.id&&
+   state.couple?.owner_user_id===state.user.id;
   root.innerHTML='<header class="header"><div><h1>♡ LOVEROLL</h1><p>Votre invitation privée</p></div></header>'+
-   '<section class="auth-panel invite-switch-account">'+
-   '<div class="eyebrow">♡ UTILISER LE BON COMPTE</div>'+
-   '<h2>Cette invitation attend un autre compte ❤️</h2>'+
-   '<p>Vous êtes connecté avec <strong>'+safe(state.user.email||'un compte existant')+
-   '</strong>. Pour rejoindre votre partenaire, utilisez le compte du destinataire.</p>'+
-   button('switch-account-invite','Changer de compte pour cette invitation')+
+   '<section class="auth-panel invite-switch-account invite-existing-space">'+
+   '<div class="eyebrow">♡ INVITATION ET COMPTE EXISTANT</div>'+
+   '<h2>'+(soloOwner?'Votre compte possède déjà un espace LoveRoll ♡':
+    'Ce compte fait déjà partie d’un couple ♡')+'</h2>'+
+   '<p>Compte connecté : <strong>'+safe(state.user.email||'un compte existant')+'</strong>.</p>'+
+   '<p>'+(soloOwner?
+    'Cet espace ne contient que vous. Si vous êtes bien le destinataire de l’invitation, vous pouvez rejoindre votre partenaire sans créer un nouveau compte.':
+    'Ce compte est déjà associé à un autre couple. Un changement automatique risquerait d’affecter votre partenaire actuel.')+'</p>'+
+   (soloOwner?
+    '<p class="invite-archive-note">Vos cartes personnelles et votre historique intime sont archivés avant le changement. Les cartes de l’ancien espace ne sont pas ajoutées au nouveau couple.</p>'+
+    button('join-invite-from-solo','♡ REJOINDRE LE COUPLE INVITÉ'):'')+
+   (state.inviteError?'<p class="invite-auth-feedback" role="alert">'+safe(state.inviteError)+'</p>':'')+
+   button('switch-account-invite','Utiliser un autre compte','class="subtle"')+
    button('invite-return','← Revoir l’invitation','class="subtle"')+'</section>';
   bindActions();return;
  }
@@ -1913,6 +1922,34 @@ async function handle(action,element){
   state.authNotice='Connectez-vous à votre compte existant avec votre mot de passe ou « Continuer avec Google ».';
   render();return;
  }
+ if(verb==='join-invite-from-solo'){
+  const invite=pendingInviteReference(sessionStorage);
+  if(!invite||!state.user||!state.coupleId||
+     state.members.length!==1||state.members[0]?.user_id!==state.user.id||
+     state.couple?.owner_user_id!==state.user.id)
+   throw Error('Votre espace personnel doit être le seul membre avant de rejoindre cette invitation.');
+  const yes=await premiumConfirm(
+   'Votre espace LoveRoll actuel (où vous êtes seul) sera dissocié. Vos cartes personnalisées et votre historique personnel seront sauvegardés dans votre archive. Ils ne seront pas automatiquement mélangés avec les cartes du couple invité. Voulez-vous rejoindre le nouveau couple ?',
+   {kind:'couple',title:'Rejoindre votre partenaire ?',accept:'Oui, rejoindre ce couple',cancel:'Conserver mon espace'});
+  if(!yes)return;
+  try{
+   const invitationId=invite.kind==='id'?invite.value:
+    await rpc('resolve_love_invite_reference',{p_token_hash:await hashToken(invite.value)});
+   if(!invitationId)throw Error('Invitation introuvable ou expirée.');
+   // Server verifies recipient email and performs archive + membership move
+   // ATOMICALLY; any failure rolls back the prior solo membership.
+   await rpc('join_love_invitation_from_solo',{p_invitation:invitationId});
+   state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
+   state.inviteError=null;
+   finishInviteReference();
+   state.showAuth=false;state.showDiscover=false;state.inviteWelcome=true;state.tab='home';
+   await reload();
+  }catch(error){
+   state.inviteError=invitationAuthMessage(error);
+   render();
+  }
+  return;
+ }
  if(verb==='switch-account-invite'){
   if(state.user&&safeNativePushToken()){
    try{await disablePush(client,state.user.id);}catch(error){console.warn('Déconnexion FCM',error.code||'');}
@@ -2931,6 +2968,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite59',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-invite60',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
