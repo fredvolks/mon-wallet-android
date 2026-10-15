@@ -46,7 +46,7 @@ export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
- lastEvening=null,lastD35Face=null
+ lastEvening=null,lastD35Face=null,playable=null
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
  partner=members.find(m=>m.user_id!==me)||members[1]||{},
@@ -59,7 +59,8 @@ export function premiumEveningHtml({
  const canDraw=ready&&turn.ready&&!turn.pending&&!turn.finished&&turn.next===me;
  const canGive=ready&&turn.ready&&giftCount<3&&Number(turn.remaining?.[me])>0;
  const challengeText=pending?'♡ Voir notre défi en cours':turn.finished?'Tous les défis terminés':!ready?'En attente des deux D6':canDraw?'À toi de jouer':'En attente de '+esc(partner.name?.split(' ')[0]||'ton partenaire');
- const help='35 défis Sensuel et 35 défis Sexuel · résultats synchronisés';
+ const help=playable?playable.sensual+' Sensuel + '+playable.sexual+
+  ' Sexuel · '+playable.total+' cartes jouables':'Cartes de base et personnalisées · résultats synchronisés';
  const stateText=ready?'✓ Étape 2 débloquée':(status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':'Chaque partenaire brasse son propre dé.');
  const currentStatus=turn.finished?'♡ Tous nos défis sont terminés':pending?'♡ Défi en cours · réponse attendue':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
@@ -74,7 +75,7 @@ export function premiumEveningHtml({
  return '<div class="evening-premium-view">'+
  '<header class="evening-topline"><span class="heartline">♡</span><div><h1>NOTRE SOIRÉE</h1><p>Un jeu synchronisé sur nos deux comptes</p></div>'+
  bt('evening-more','⋯ Options','evening-more-button')+'</header>'+
- '<div class="evening-intro"><span>♥ NOTRE SOIRÉE PARTAGÉE</span><h2>Nos 70 défis</h2><p>'+help+'</p></div>'+
+ '<div class="evening-intro"><span>♥ NOTRE SOIRÉE PARTAGÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
  (session?
   '<section class="evening-step one"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
@@ -91,7 +92,7 @@ export function premiumEveningHtml({
     '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-d35-result" role="status" aria-live="polite">'+esc(d35Result)+'</div>'+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
-    '<div class="evening-play-controls"><p>Le dé révèle un défi parmi 70 cartes, à tour de rôle.</p>'+
+    '<div class="evening-play-controls"><p>Le dé révèle un défi parmi les cartes jouables, à tour de rôle.</p>'+
     '<div class="evening-choice">'+
        bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
        bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+'</div>'+
