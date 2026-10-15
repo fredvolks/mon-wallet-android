@@ -10,27 +10,28 @@ const sql=readFileSync(new URL('./migrations/20261014_safe_unpair_portable_libra
 
 test('Invitation immediately renders the approved premium visual, not authentication',()=>{
  const h=discoverHtml(true);
- for(const label of ['LA COMPLICITÉ SE JOUE À DEUX','Jeux','Défis','Rendez-vous','Surprises','Un dé.','Une surprise.','Deux sourires.','UN ESPACE RIEN QU'])
+ for(const label of ['UNE INVITATION POUR VOTRE COUPLE','Ce soir,','on joue','ensemble.','Soirée','Surprise','Avent','Couple','Prêts à lancer le dé'])
   assert.ok(h.includes(label),label);
  assert.match(h,/data-action="invite-start"/);
  assert.match(h,/ACCEPTER L’INVITATION/);
  assert.doesNotMatch(h,/\bD6\b|\bD20\b|\bD35\b/);
  assert.doesNotMatch(h,/data-action="(show-auth|google|apple|email-login|verify-email-code)"/);
  assert.doesNotMatch(h,/Revenir à mon invitation|Continuer avec Google/);
- assert.match(h,/discover-premium-die/);
- assert.match(css,/\.discover-premium-die/);
+ assert.match(h,/discover-editorial-die/);
+ assert.match(css,/\.discover-editorial-die/);
  assert.match(css,/\.discover-accept/);
- assert.match(h,/loveroll-invitation-hero-hd\.webp/);
+ assert.match(h,/loveroll-die-approved\.webp/);
  assert.match(h,/fetchpriority="high"/);
- assert.match(css,/\.discover-hero-premium/);
- assert.match(css,/aspect-ratio:1630\/870/);
+ assert.match(css,/\.discover-editorial-list/);
+ assert.equal((h.match(/class="discover-editorial-item /g)||[]).length,4);
  const shell=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(shell,/loveroll-invitation-hero-hd\.webp/);
 });
 
 test('Public homepage shares the same premium visual while retaining account entry',()=>{
  const h=discoverHtml(false);
- assert.match(h,/data-action="show-auth"/);
+ assert.match(h,/data-action="show-auth:signup"/);
+ assert.match(h,/data-action="show-auth:signin"/);
  assert.match(h,/COMMENCER NOTRE AVENTURE/);
  assert.doesNotMatch(h,/data-action="invite-start"/);
  assert.match(marketingHtml(),/love-onepage/);
