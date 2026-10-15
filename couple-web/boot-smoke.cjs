@@ -42,7 +42,7 @@ export function createClient(){
  const browser=await chromium.launch({headless:true});
  for(const [name,query,expected] of [
   ['anonymous','?boot_case=anonymous','.love-discover'],
-  ['google-return','?boot_case=existing&code=simulated-oauth-code','.waiting-hero'],
+  ['google-return','?boot_case=existing&code=simulated-oauth-code','.auth-panel'],
   ['existing-paired','?boot_case=paired','.loveroll-real-home']
  ]){
   const page=await browser.newPage({viewport:{width:412,height:824},serviceWorkers:'block'});
