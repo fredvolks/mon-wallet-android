@@ -28,7 +28,7 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
  const parseFailures=[];
  cdp.on('Debugger.scriptFailedToParse',d=>parseFailures.push({
   url:d.url,lineNumber:d.startLine,column:d.startColumn,
-  endLine:d.endLine,endColumn:d.endColumn,sourceSnippet:remote.split('\\n').slice(Math.max(0,d.startLine-2),d.startLine+3)}));
+  endLine:d.endLine,endColumn:d.endColumn,errorMessage:d.errorMessage||null}));
  cdp.on('Runtime.exceptionThrown',d=>parseFailures.push({exception:d.exceptionDetails.text,
   url:d.exceptionDetails.url,line:d.exceptionDetails.lineNumber,column:d.exceptionDetails.columnNumber,
   description:d.exceptionDetails.exception?.description?.slice(0,1900)}));
