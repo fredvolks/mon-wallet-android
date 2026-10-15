@@ -305,7 +305,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v61/);
+ assert.match(sw,/loveroll-static-v62/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
