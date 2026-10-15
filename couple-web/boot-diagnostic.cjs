@@ -48,6 +48,7 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
  console.log('PRODUCTION_RENDER',JSON.stringify(state));
  console.log('PRODUCTION_LOGS',JSON.stringify(logs.slice(0,25)));
  console.log('CDP_PARSE',JSON.stringify(parseFailures.slice(0,25)));
+ await browser.close(); // Never leave Chromium alive when the strict check fails.
  if(process.env.LOVEROLL_REQUIRE_HEALTHY==='1'){
   const expected=JSON.parse(fs.readFileSync('couple-web/web-version.json','utf8')).build;
   const expectedTag=expected==='2026-10-15.57'?'20261015-boot57':null;
@@ -56,5 +57,4 @@ const fs=require('node:fs'), crypto=require('node:crypto'), {execFileSync}=requi
    throw Error('LIVE_SITE_STARTUP_FAILED: '+JSON.stringify({expected,version,ready:state.ready,logs:logs.slice(0,6)}));
  }
 
- await browser.close();
 })().catch(e=>{console.error('DIAG_FATAL',e);process.exitCode=1});
