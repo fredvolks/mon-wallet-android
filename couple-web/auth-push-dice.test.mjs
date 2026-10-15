@@ -30,16 +30,17 @@ test('Server protects security-definer game RPCs and 29 RLS tables',()=>{
 });
 test('Dice D6, D20, D35 share frame-independent 3D physics and deterministic end result',()=>{
  for(const n of ['6','20','35'])assert.ok(dice.includes('sides==='+n),'geometry '+n);
- assert.match(dice,/const duration=rolling&&!reduceMotion\?3100:0/);
+ assert.match(dice,/const duration=rolling&&!reduceMotion\?ROLL_TOTAL_MS:0/);
  assert.match(dice,/dt=lastFrame\?Math\.min\(\.05/);
- assert.match(dice,/built\.group\.quaternion\.slerpQuaternions\(orientationAtSettle,target,eased\)/);
+ assert.match(dice,/rollAngles\(trajectory,elapsed\)/);
+ assert.doesNotMatch(dice,/orientationAtSettle|slerpQuaternions\(orientationAtSettle/);
  assert.match(dice,/built\.normals\.get\(Number\(value\)\|\|1\)/);
  assert.match(dice,/new THREE\.Euler\(\.16,-\.18,-\.02\)/);
  assert.match(dice,/prefers-reduced-motion: reduce/);
  assert.match(dice,/built\.group\.quaternion\.copy\(target\)/);
  assert.doesNotMatch(dice,/t<\.77/);
  assert.doesNotMatch(app,/setTimeout\(resolve,2750\)/);
- assert.equal((app.match(/setTimeout\(resolve,3250\)/g)||[]).length,2);
+ assert.equal((app.match(/setTimeout\(resolve,window\.matchMedia\?/g)||[]).length,2);
 });
 test('Native Android FCM is truly configured, permission gated and routed',()=>{
  assert.match(manifest,/POST_NOTIFICATIONS/);
