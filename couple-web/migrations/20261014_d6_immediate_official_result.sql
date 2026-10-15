@@ -31,8 +31,8 @@ BEGIN
 END;
 $function$;
 
--- After the first roll, both verified couple members can read the genuine
--- saved result. The second unrolled player's face does not exist yet.
+-- Before both roll, only the owner sees their saved result.
+-- After both roll, each verified couple member can read BOTH official faces.
 DROP POLICY IF EXISTS personal_rolls_read ON public.couple_personal_rolls;
 CREATE POLICY personal_rolls_read
 ON public.couple_personal_rolls
@@ -42,6 +42,10 @@ USING (
   SELECT 1 FROM public.couple_sessions s
   WHERE s.id=couple_personal_rolls.session_id
     AND couple_private.is_member(s.couple_id)
+ )
+ AND (
+   user_id=auth.uid()
+   OR couple_private.both_rolls_ready(session_id)
  )
 );
 -- Existing restrictive email-verification policy still applies.
