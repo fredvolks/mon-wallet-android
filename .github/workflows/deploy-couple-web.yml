@@ -12,14 +12,14 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: couple-web-pages-v68-private-challenges
+  group: couple-web-pages-v69-fixed-challenge-modal
   cancel-in-progress: true
 jobs:
   deploy:
     if: github.ref == 'refs/heads/des-a-deux-apk-20261013'
     runs-on: ubuntu-latest
     environment:
-      name: loveroll-web-v68-private
+      name: loveroll-web-v69-fixed
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +32,7 @@ jobs:
       - name: Vérifier TOUS les scripts JavaScript livrés
         run: node couple-web/check-shipped-js.cjs
       - name: Tester le vrai démarrage dans Chromium avant publication
-        timeout-minutes: 1
-        continue-on-error: true # Browser network failures must not indefinitely block the validated static PWA; full browser suite remains separate and post-deploy health runs.
+        timeout-minutes: 2
         run: |
           set -euo pipefail
           npm install --no-save playwright@1.56.0
