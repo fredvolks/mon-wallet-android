@@ -66,5 +66,52 @@ export function createClient(){
   console.log('BOOT_OK',name,text.slice(0,180).replace(/\\s+/g,' '));
   await page.close();
  }
+ // Real production navigation in a fake-data browser: no Supabase writes.
+ // Responsive smoke for the five connected tabs and auth entry points.
+ for(const v of [
+  {name:'iPad portrait',width:820,height:1180},
+  {name:'iPad landscape',width:1180,height:820},
+  {name:'PC laptop',width:1366,height:768},
+  {name:'PC widescreen',width:1920,height:1080}
+ ]){
+  const page=await browser.newPage({viewport:{width:v.width,height:v.height},serviceWorkers:'block'});
+  const errors=[];page.on('pageerror',err=>errors.push(err.message));
+  await page.route('https://esm.sh/@supabase/supabase-js@2.57.0*',
+   route=>route.fulfill({status:200,contentType:'application/javascript',body:fakeSupabase}));
+  await page.goto(site+'?boot_case=paired',{waitUntil:'domcontentloaded'});
+  await page.locator('.loveroll-real-home .real-home-shell').waitFor({timeout:20000});
+  const inspect=async(tab,selector)=>{
+   await page.locator('.nav [data-action="tab:'+tab+'"]').click();
+   await page.locator(selector).waitFor({timeout:12000});
+   const result=await page.evaluate(sel=>{
+    const main=document.querySelector('#app'),nav=document.querySelector('.nav');
+    const node=document.querySelector(sel),n=nav.getBoundingClientRect(),el=node.getBoundingClientRect();
+    return {page:document.documentElement.scrollWidth,screen:innerWidth,navTop:n.top,
+     tabs:nav.querySelectorAll('[data-action^="tab:"]').length,
+     visible:el.width>200&&el.height>60,
+     navigation:!!nav.querySelector('.active[data-action="tab:'+sel.replace(/^\\./,'')+'"]')};
+   },selector);
+   if(result.page>result.screen+2||result.navTop>2||result.tabs!==5||!result.visible)
+    throw Error('Adaptive tab error '+v.name+' '+tab+' '+JSON.stringify(result));
+   return result;
+  };
+  const initial=await page.evaluate(()=>{
+   const box=document.querySelector('.real-home-shell').getBoundingClientRect();
+   return {width:box.width,screen:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth+2};
+  });
+  if(initial.overflow||initial.width<Math.min(v.width*.75,1000))
+   throw Error('Home not responsive '+v.name+' '+JSON.stringify(initial));
+  await inspect('session','.evening-locked-view');
+  await inspect('special','.surprise-premium-view');
+  const cards=await page.locator('.surprise-event-card').count();
+  if(cards!==6)throw Error('Surprise events missing '+v.name+' '+cards);
+  await inspect('advent','.advent-premium-view');
+  if(await page.locator('.advent-box').count()!==25)throw Error('Advent tiles missing '+v.name);
+  await inspect('settings','.settings-grid');
+  await page.locator('details.settings-group summary').first().click();
+  if(errors.length)throw Error('Browser console errors '+v.name+' '+JSON.stringify(errors));
+  console.log('RESPONSIVE_NAV_OK',v.name,JSON.stringify({homeWidth:initial.width,events:cards,tabs:5}));
+  await page.close();
+ }
  await browser.close();
 })().catch(e=>{console.error('BOOT_FAILURE',e);process.exitCode=1});
