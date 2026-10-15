@@ -21,7 +21,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
 import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken} from './push-notifications.mjs';
-import {shouldOfferInstall,dismissInstall,requestInstall,installOfferHtml,installStepsHtml} from './home-install.mjs';
+import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus} from './home-install.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 
 
@@ -38,7 +38,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:'signup',emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -113,7 +113,15 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.classList.toggle('loveroll-settings-page',connected&&state.tab==='settings');
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
  const token=++renderToken;
- const installation=connected&&(state.forceInstallGuide||shouldOfferInstall(state.user?.id))?
+ // Offer only after completing a NEW account. Never interrupt ordinary logins.
+ if(connected&&state.installAfterSignup){
+  state.installAfterSignup=false;
+  if(shouldOfferInstall(state.user?.id)){
+   state.installModalOpen=true;
+   markInstallOffered(state.user?.id);
+  }
+ }
+ const installation=connected&&(state.installModalOpen||state.forceInstallGuide)?
   (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
  const homeHeader='<header class="home-brandbar"><div class="home-brand"><b>♡ Love<em>Roll</em>♡</b>'+
   '<small>LA COMPLICITÉ SE JOUE À DEUX</small></div>'+
@@ -1409,12 +1417,19 @@ function renderSettings(){
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
   window.LoveRollNativeAuth.appVersion():'';
+ const homeInstall=nativeApp?
+  settingRow('Placer LoveRoll sur l’écran d’accueil',
+   'L’APK est déjà installé. Voir comment placer son icône.','show-install-guide','Voir'):
+  installStatus()==='installed'?
+  settingRow('LoveRoll sur l’écran d’accueil',
+   'Déjà installé et prêt à être utilisé.','show-install-guide','Voir'):
+  settingRow('Ajouter LoveRoll à l’écran d’accueil',
+   'Accès rapide sur Android ou iPhone.','install-home','Ajouter');
  const appSettings=(nativeApp?
   '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>Version Android : '+
   safe(nativeVersion||'non fournie par cette version APK')+'</p></div></div>'+
-  settingRow('Vérifier les mises à jour APK','Rechercher une version Android signée plus récente.','native-update','Vérifier'):
-  settingRow('Ajouter LoveRoll à l’écran d’accueil',
-    'Installation recommandée sur Safari iPhone et iPad.','show-install-guide','Afficher'))+
+  settingRow('Vérifier les mises à jour APK','Rechercher une version Android signée plus récente.','native-update','Vérifier'):'')+
+  homeInstall+
   '<div class="settings-item"><div><strong>Version Web '+WEB_RELEASE+'</strong>'+
   '<p>Version du contenu Web actuellement chargé.</p></div></div>'+
   settingRow('Actualiser LoveRoll maintenant',
@@ -1661,18 +1676,31 @@ async function handle(action,element){
   window.LoveRollNativeAuth.openLegacyOffline();return;
  }
  if(verb==='show-install-guide'){
-  state.showInstallSteps=true;
-  state.forceInstallGuide=true;
+  state.installModalOpen=false;state.showInstallSteps=true;state.forceInstallGuide=true;
   render();return;
  }
  if(verb==='install-home'){
   const result=await requestInstall();
-  if(result.prompted&&result.accepted){dismissInstall(state.user?.id);state.showInstallSteps=false;}
-  else state.showInstallSteps=true;
+  if(result.prompted){
+   dismissInstall(state.user?.id);
+   state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;
+   if(result.accepted)notify('LoveRoll a été ajouté à votre écran d’accueil ♡');
+  }else{
+   state.installModalOpen=false;state.showInstallSteps=true;state.forceInstallGuide=true;
+  }
   render();return;
  }
+ if(verb==='install-copy-url'){
+  const link=new URL(CONFIG.siteUrl||location.origin+location.pathname);
+  link.search='';link.hash='';
+  await navigator.clipboard.writeText(link.toString());
+  notify('Adresse LoveRoll copiée. Ouvrez-la dans Safari ou Chrome.');
+  return;
+ }
  if(verb==='install-later'||verb==='install-understood'){
-  dismissInstall(state.user?.id);state.showInstallSteps=false;state.forceInstallGuide=false;render();return;
+  dismissInstall(state.user?.id);
+  state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;
+  render();return;
  }
  if(verb==='set-celebrant'){
   if(!isLoveAdmin())throw Error('Réglage réservé à l’administrateur.');
@@ -1816,7 +1844,9 @@ async function handle(action,element){
   const relationship=id('wellbeing-relationship')?.value,intimacy=id('wellbeing-intimacy')?.value;
   if(!RELATIONSHIP_OPTIONS.some(([v])=>v===relationship)||!INTIMACY_OPTIONS.some(([v])=>v===intimacy))
    throw Error('Répondez aux deux questions ou choisissez « Je préfère ne pas répondre ».');
+  const firstOnboarding=!state.wellbeing&&!!state.profile?.birthday_md;
   await rpc('save_my_wellbeing',{p_relationship:relationship,p_intimacy:intimacy});
+  if(firstOnboarding)state.installAfterSignup=true;
   await reload();notify('Réponses enregistrées en privé.');return;
  }
  if(verb==='unlock-personal'){
@@ -1988,7 +2018,9 @@ async function handle(action,element){
   state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   const {error}=await client.auth.signOut();if(error)throw error;
-  state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;state.passwordRecovery=false;render();return;
+  state.user=null;state.profile=null;state.coupleId=null;state.showAuth=false;state.passwordRecovery=false;
+  state.installAfterSignup=false;state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;
+  render();return;
  }
  if(verb==='complete-registration'){
   const name=id('profile-name')?.value.trim();
@@ -2000,6 +2032,7 @@ async function handle(action,element){
    throw Error('Répondez aux deux questions ou choisissez « Je préfère ne pas répondre ».');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
   await rpc('save_my_wellbeing',{p_relationship:relationship,p_intimacy:intimacy});
+  state.installAfterSignup=true;
   await reload();return;
  }
  if(verb==='profile'){
@@ -2417,6 +2450,11 @@ async function reloadWebAssets(force=false){
  }finally{versionProbeRunning=false;}
 }
 window.addEventListener('load',()=>{reloadWebAssets().catch(console.warn);});
+window.addEventListener('appinstalled',()=>{
+ dismissInstall(state.user?.id);
+ state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;
+ if(state.user)render();
+});
 // When left open across midnight, server time (not phone time) changes the
 // current Advent door without requiring a restart or manual refresh.
 setInterval(async()=>{
