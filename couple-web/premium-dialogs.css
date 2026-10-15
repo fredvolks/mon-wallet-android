@@ -104,3 +104,9 @@
 #toast.lr-toast-result{border-color:#ffadd5;box-shadow:0 8px 28px #000b,0 0 20px #ff5fa266}
 #toast.lr-toast-error{border-color:#edbd8f}
 @media(max-height:720px){#toast.lr-premium-toast{top:max(51px,calc(env(safe-area-inset-top,0px) + 11px))}}
+
+/* Compact genuine roll outcome: clear number, source and safe-area margins. */
+#toast .lr-toast-kicker{display:block;color:#ffa0ca;font-size:.64rem;font-weight:850;letter-spacing:.14em;margin-bottom:3px}
+#toast .lr-toast-result-line{display:flex;align-items:center;gap:9px;font-size:.82rem;font-weight:700}
+#toast .lr-toast-result-number{font:750 1.85rem/1 Georgia,serif;color:#fff;min-width:22px;
+ text-align:center;text-shadow:0 0 16px #ff8fc9}
