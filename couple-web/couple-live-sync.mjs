@@ -19,9 +19,11 @@ export function coupleSyncChanged(local,remote,{week,month,tab}={}){
  }
  const session=(remote.sessions||[]).find(s=>s.finished_at==null)||null;
  if(keyOf(session)!==keyOf(local.session))return true;
- if(tab==='session'&&session){
-  // Only public yes/no statuses; NEVER query private partner faces here.
-  if(stableStatus(remote.rollStatus)!==stableStatus(local.rollStatus))return true;
+ if((tab==='session'||tab==='home')&&session){
+  // Share only anonymous counts/next-player from a verified server RPC,
+  // never the partner's challenge title, description or private D35 face.
+  if(remote.board&&JSON.stringify(remote.board)!==JSON.stringify(local.eveningBoard))return true;
+  if(stableStatus(remote.rollStatus)!==stableStatus(local.rollStatus)&&tab==='session')return true;
   if(remote.challenges&&challengeSignature(remote.challenges)!==challengeSignature(local.challenges))return true;
  }
  return false;
@@ -37,7 +39,7 @@ function sharedSignature(state){
   pairs(state.gifts),pairs(state.sessions),pairs(state.events),pairs(state.occasionRolls),
   pairs(state.advent),pairs(state.feedback),
   state.monthly?.monthly_activity?.id,state.monthly?.monthly_host?.id,
-  state.monthly?.monthly_restaurant?.id
+  state.monthly?.monthly_restaurant?.id,state.eveningBoard
  ]);
 }
 /** Realtime fast path + secure fallback for browsers with sleeping/blocked sockets.
@@ -85,16 +87,17 @@ export function createCoupleLiveSync({state,query,rpc,refresh,render,ready,week,
    ]);
    if(state.coupleId!==couple||state.diceStatus)return;
    const active=sessions.find(s=>s.finished_at==null)||null;
-   let rollStatus=null,challenges=null;
-   if(tab==='session'&&active){
-    [rollStatus,challenges]=await Promise.all([
+   let rollStatus=null,challenges=null,board=null;
+   if((tab==='session'||tab==='home')&&active){
+    [rollStatus,challenges,board]=await Promise.all([
      rpc('my_love_roll_status',{p_session:active.id})
       .then(data=>Array.isArray(data)?data[0]||null:null),
-     query('couple_challenges',{eq:{session_id:active.id},columns:'id,status'})
+     query('couple_challenges',{eq:{session_id:active.id},columns:'id,status'}),
+     rpc('my_love_evening_board',{p_session:active.id})
     ]);
    }
    if(state.coupleId!==couple||state.diceStatus)return;
-   if(coupleSyncChanged(state,{rolls,sessions,rollStatus,challenges},
+   if(coupleSyncChanged(state,{rolls,sessions,rollStatus,challenges,board},
     {week:week(),month:month(),tab}))request(0);
   }catch(e){
    if(online())console.warn('Statut des dés en direct',e?.code||e?.message);
