@@ -26,3 +26,9 @@ test('Re-rolling weekly cannot resurrect stale old session with personal D6s',()
  assert.doesNotMatch(sql,/delete from public\.couple_personal_rolls/);
  assert.doesNotMatch(sql,/delete from public\.couple_challenges/);
 });
+
+test('Settings JS is free from literal backslash-n that broke the live v66 page',()=>{
+ assert.doesNotMatch(app,/;\\n const notifications=/);
+ assert.match(app,/;\n const notifications=/);
+ assert.match(app,/const WEB_RELEASE='2026-10-15\\.67'/);
+});
