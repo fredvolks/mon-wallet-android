@@ -12,7 +12,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: couple-web-pages-v57-verification
+  group: couple-web-pages-v59-hd-invitation
   cancel-in-progress: false
 jobs:
   deploy:
