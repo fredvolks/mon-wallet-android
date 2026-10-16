@@ -113,12 +113,12 @@ export function premiumEveningHtml({
     '<div class="evening-choice" role="group" aria-label="Choisir la catégorie de ce défi">'+
        '<div class="evening-choice-option">'+
          bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
-         (category==='SENSUEL'?'<small class="evening-choice-odds">88 % de chances</small>':'')+'</div>'+
+         (category==='SENSUEL'?'<small class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie</span></small>':'')+'</div>'+
        '<div class="evening-choice-option">'+
          bt('category:HASARD',(category==='HASARD'?'✓ ':'🎲 ')+'Au hasard','evening-choice-btn '+(category==='HASARD'?'selected':''),!canDraw)+'</div>'+
        '<div class="evening-choice-option">'+
          bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+
-         (category==='SEXUEL'?'<small class="evening-choice-odds">88 % de chances</small>':'')+'</div></div>'+
+         (category==='SEXUEL'?'<small class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie</span></small>':'')+'</div></div>'+
     '<div class="evening-die-row">'+
       '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
