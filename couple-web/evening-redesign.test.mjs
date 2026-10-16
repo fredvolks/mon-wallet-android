@@ -67,7 +67,7 @@ test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D
  assert.match(ready,/evening-summary-die/);
  assert.match(ready,/data-dice-sides="35"/);
  assert.match(ready,/88 %/);
- assert.match(ready,/des chances d’obtenir la catégorie souhaitée/);
+ assert.match(ready,/class="evening-choice-odds">88 % de chances/);
  assert.doesNotMatch(ready,/12 % autre|Défi cadeau : 100 %/);
  assert.match(ready,/data-action="new-challenge"/);
  assert.match(ready,/data-action="evening-list"/);
