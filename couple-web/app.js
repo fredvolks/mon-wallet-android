@@ -6,7 +6,7 @@ import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-unified112';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-restore113';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise109';
@@ -15,12 +15,12 @@ import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQualit
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
 import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
-import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-unified112';
+import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-restore113';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-no-toast87';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
-import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-unified112';
+import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-restore113';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.112';
+const WEB_RELEASE='2026-10-16.113';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -46,10 +46,10 @@ const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
 let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('loveroll-settings-section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'MIXTE',customSlot:1,monthlyActivities:[],monthlySlot:1,
+ tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
-const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel',MIXTE:'Défi'};
+const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
 }
@@ -829,7 +829,7 @@ function renderWaitingPartner(){
   '<p><strong>3.</strong> Dès qu’elle est acceptée, vos dés et soirées seront activés</p></div></section>'+
   '<section class="card"><h3>♡ À préparer pendant l’attente</h3>'+
   '<div class="waiting-actions">'+
-  button('tab:library','♡ Nos 100 défis')+
+  button('tab:library','♡ Nos 200 défis')+
   button('tab:monthly-library','✦ 20 activités du mois','class="subtle"')+
   button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
   button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
@@ -937,9 +937,9 @@ function timerWidget(challenge,minutes){
 function renderLegacySession(){
  let s=state.session; const p=other();
  let body='<section class="premium-intro"><div class="premium-eyebrow">🎲 NOTRE SOIRÉE À DEUX</div>'+
- '<h2>Les défis de notre soirée</h2><p>100 cartes à personnaliser dans une seule bibliothèque.</p></section>'+
+ '<h2>Les défis de notre soirée</h2><p>200 cartes à personnaliser : 100 Sensuel + 100 Sexuel.</p></section>'+
  '<section class="card hero-game-card"><div class="premium-eyebrow">♡ LE DÉ DES DÉFIS</div>'+
- heroDice(null,100,'Nos 100 défis')+
+ heroDice(null,100,'Nos 200 défis')+
  '<p class="tiny-note">Pour commencer, chacun lance son dé personnel pour découvrir combien de défis il recevra. Vos résultats sont révélés ensemble.</p>';
  if(!s){
   const latest=latestCountedSession(state.sessions);
@@ -995,8 +995,13 @@ function renderLegacySession(){
    if(!otherActive&&otherCompleted<theirs.face){
     body+='<div class="card"><h3>Défi '+(otherCompleted+1)+' / '+theirs.face+
      ' à offrir à '+safe(p.name)+'</h3>'+
-     '<p>Brasse le D100 pour découvrir une des 100 cartes.</p>'+
-     button('new-challenge','🎲 DÉCOUVRIR UN DÉFI POUR '+safe(p.name))+'</div>';
+     '<p>Choisissez votre catégorie. LoveRoll sélectionnera le défi parmi nos 200 emplacements.</p>'+
+     '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
+     '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
+     '<p>88 % dans votre catégorie choisie · 12 % dans l’autre. Choisissez à chaque défi.</p>'+
+     (EVENING_CATEGORIES.includes(state.category)?
+      button('new-challenge','🎲 DÉCOUVRIR UN DÉFI POUR '+safe(p.name)):
+      '<p class="tiny-note">Sélectionnez Sensuel ou Sexuel pour activer le tirage.</p>')+'</div>';
    }else if(otherActive){const giving=resolvedCard(otherActive);
     body+='<section class="card"><div class="challenge-roles">♡ '+safe(state.profile.display_name).toUpperCase()+' OFFRE → '+safe(p.name).toUpperCase()+' REÇOIT</div>'+
     '<h3>Mon défi à offrir : '+safe(giving.title)+'</h3><p>'+safe(giving.description)+'</p>'+
@@ -1028,7 +1033,15 @@ function renderSession(){
  // Always show the same Soirée page, even when the weekly die is unrolled.
  // In that case the launch control is disabled, not replaced with a separate page.
  const session=playableSessionForWeekly(state.session,state.weekly),partner=other(),uid=state.user.id;
- state.category='MIXTE';
+ if(session&&!state.category){
+  try{
+   const saved=sessionStorage.getItem('loveroll-category-'+session.id);
+   if(EVENING_CATEGORIES.includes(saved)||saved==='HASARD')state.category=saved;
+  }catch{}
+ }
+ if((state.category==='SENSUEL'&&state.couple?.show_sensuel_button===false)||
+    (state.category==='SEXUEL'&&state.couple?.show_sexuel_button===false))
+  state.category=null;
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?(state.eveningBoard||sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts)):{};
  const mineCards=session?ownEveningChallenges(state.challenges,uid,session.id):[];
@@ -1086,13 +1099,16 @@ function renderSession(){
         (card.status==='completed'?'✓ ':'')+
         safe(queueLabel(card.status))+'</small></span><span>›</span>',
         'class="evening-queue-item'+(card.status==='completed'?' is-completed':'')+'"')).join(''):
-       '<p>Aucun défi pigé pour le moment. Lance le D100 pour découvrir une carte.</p>')+
+       '<p>Aucun défi pigé pour le moment. Sélectionne Sensuel ou Sexuel, puis lance ton dé.</p>')+
      '</div>')+
    '</article></div>';
  }
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
-   turn,category:state.category,giftCount,rolling:state.diceStatus==='rolling'||state.diceStatus==='pending',rollFace:state.rollAnimationFace,
+   turn,category:state.category,
+   showSensuel:state.couple?.show_sensuel_button!==false,
+   showSexuel:state.couple?.show_sexuel_button!==false,
+   giftCount,rolling:state.diceStatus==='rolling'||state.diceStatus==='pending',rollFace:state.rollAnimationFace,
    playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening,canStartEvening,
@@ -1244,7 +1260,7 @@ function renderOccasions(){
  frame(body,'FÊTES ET ANNIVERSAIRES','Un moment LoveRoll pensé pour chaque grande occasion');
 }
 function portableLibrary(kind){
- if(kind==='evening')return buildEveningLibrary('MIXTE',state.customCards);
+ if(kind==='evening')return buildEveningLibrary(state.customCategory,state.customCards);
  if(kind==='monthly')return buildMonthlyLibrary(state.monthlyActivities);
  if(kind==='advent')return calendarFromSaved(state.advent2026Config,state.advent2026Days);
  if(kind==='special')return state.specialEventsConfig;
@@ -1254,7 +1270,7 @@ function exportLibraryFile(kind){
  const data=portableLibrary(kind);
  if(!data)throw Error('Aucun contenu enregistré dans cette liste.');
  librarySummary(data,kind);
- const label=kind==='evening'?'soiree-100-cartes':kind;
+ const label=kind==='evening'?'soiree-'+state.customCategory.toLowerCase():kind;
  return exportJsonFile('loveroll-'+label+'.json',JSON.stringify(data,null,2));
 }
 function previewPortableJson(kind){
@@ -1264,6 +1280,8 @@ function previewPortableJson(kind){
  let data;
  try{data=JSON.parse(text);}catch{throw Error('Syntaxe JSON invalide (virgules, guillemets, accolades).');}
  data=normalizeLibraryData(data,kind);
+ if(kind==='evening'&&data.category!==state.customCategory)
+  throw Error('Choisissez la catégorie '+data.category+' avant cet import.');
  state.jsonPending={kind,data,summary:librarySummary(data,kind)};
 }
 function renderSpecialEventsEditor(){
@@ -1507,7 +1525,7 @@ async function renderJournal(){
 function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
 function renderCardLibrary(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
- const category='MIXTE';
+ const category=state.customCategory;
  const slots=editableCardSlots(category,state.customCards);
  const slot=slots.find(x=>x.cardId===state.customSlot)||slots[0];
  const roleNames={both:'Les deux partenaires',him:'Homme',her:'Femme'};
@@ -1534,12 +1552,15 @@ function renderCardLibrary(){
  }).join('');
  let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
   '<h2>'+playableEveningCount(state.customCards).total+' cartes jouables</h2>'+
-  '<p>Une seule bibliothèque de 100 cartes. Les emplacements vides ne sont jamais tirés.</p>'+
-  
+  '<p>'+playableEveningCount(state.customCards).sensual+' Sensuel · '+
+   playableEveningCount(state.customCards).sexual+' Sexuel. Les emplacements vides ne sont jamais tirés.</p>'+
+  '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
+    '<button class="pill '+(category===c?'selected':'')+
+    '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
   '</section>'+
   '<details class="card library-technical"'+(state.jsonPending?.kind==='evening'?' open':'')+
   '><summary>Importer / exporter les défis</summary>'+
-  jsonToolsPanel('evening','100 cartes',state.jsonPending)+'</details>'+
+  jsonToolsPanel('evening',names[category],state.jsonPending)+'</details>'+
   '<section class="card"><div class="eyebrow">RÈGLE DE PIGE</div>'+
   '<h3>Éviter les répétitions</h3>'+
   '<label class="custom-draw-setting"><input type="checkbox" id="no-repeat-cards"'+
@@ -1551,9 +1572,7 @@ function renderCardLibrary(){
   '<section class="card"><div class="eyebrow">CHOISIR UNE CARTE À MODIFIER</div>'+
   '<label>Rechercher une carte<input id="custom-card-search" type="search" placeholder="Titre, mot-clé ou numéro"></label>'+
   '<label>Afficher<select id="custom-card-filter"><option value="all">Toutes les cartes</option><option value="edited">Cartes personnalisées</option><option value="empty">Emplacements libres</option></select></label>'+
-  '<h3>50 cartes prêtes</h3><div class="custom-card-tiles">'+table(slots.slice(0,50))+
-  '</div><h3>50 emplacements personnalisables</h3><div class="custom-card-tiles">'+
-  table(slots.slice(50))+'</div>'+
+  '<h3>100 cartes · '+safe(names[category])+'</h3><div class="custom-card-tiles">'+table(slots)+'</div>'+
   '<p class="tiny-note">Les emplacements vides ne sont jamais pigés. Les cartes modifiées et les cartes officielles restent indiscernables pendant le jeu.</p></section>'+
   '<section class="card"><div class="eyebrow">ÉDITEUR PRIVÉ · CARTE '+String(slot.cardId).padStart(2,'0')+'</div>'+
   '<h2>'+safe(slot.title||'Nouvelle carte')+'</h2>'+
@@ -1718,12 +1737,20 @@ function renderSettings(){
     '</div></div>';
   }).join(''):'';
  const game=isLoveAdmin()?
-  settingRow('Mes cartes','100 cartes · une seule bibliothèque.','tab:library','Modifier')+
+  settingRow('Mes cartes','200 cartes · 100 Sensuel et 100 Sexuel.','tab:library','Modifier')+
   settingRow('Activités du mois','20 activités du dé D20.','tab:monthly-library','Modifier')+
   settingRow('Calendrier de l’Avent','25 surprises du calendrier partagé.','tab:advent-editor','Modifier')+
   settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
-  celebrants:
+  eveningButtons+celebrants:
   '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
+ const eveningButtons=isLoveAdmin()?
+  '<div class="settings-item"><div><strong>Choix du dé de Soirée</strong>'+
+  '<p>Masquer ou afficher Sensuel et Sexuel. Aléatoire reste toujours disponible (50/50).</p></div></div>'+
+  '<label class="custom-draw-setting"><input id="show-sensuel-button" type="checkbox"'+
+    (state.couple?.show_sensuel_button!==false?' checked':'')+'> Afficher le bouton Sensuel (88 %)</label>'+
+  '<label class="custom-draw-setting"><input id="show-sexuel-button" type="checkbox"'+
+    (state.couple?.show_sexuel_button!==false?' checked':'')+'> Afficher le bouton Sexuel (88 %)</label>'+
+  button('save-evening-buttons','Enregistrer les boutons de Soirée','class="subtle"'):'';
  const resettableDice=!!(state.weekly||state.session||
   Object.keys(state.monthly||{}).length||state.occasionRolls?.length);
  const adminWeekly=isLoveAdmin()&&hasPartner?
@@ -2351,6 +2378,19 @@ async function handle(action,element){
   await rpc('reset_love_monthly_activity',{p_couple:state.coupleId,p_face:state.monthlySlot});
   await reload();notify('Activité d’origine restaurée.');return;
  }
+ if(verb==='save-evening-buttons'){
+  if(!isLoveAdmin())throw Error('Réglage réservé à l’administrateur.');
+  const sensuel=!!id('show-sensuel-button')?.checked;
+  const sexuel=!!id('show-sexuel-button')?.checked;
+  await rpc('save_love_evening_buttons',{
+   p_couple:state.coupleId,p_sensuel:sensuel,p_sexuel:sexuel
+  });
+  if((state.category==='SENSUEL'&&!sensuel)||
+     (state.category==='SEXUEL'&&!sexuel))state.category=null;
+  await reload();
+  notify(!sensuel&&!sexuel?'Seul Aléatoire reste disponible.':'Choix de Soirée enregistrés.');
+  return;
+ }
  if(verb==='save-draw-rule'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   const enabled=!!id('no-repeat-cards')?.checked;
@@ -2358,6 +2398,11 @@ async function handle(action,element){
   await reload();
   notify(enabled?'Chaque carte doit être pigée avant de pouvoir revenir.':'Répétition libre activée.');
   return;
+ }
+ if(verb==='custom-category'){
+  if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie invalide.');
+  state.customCategory=parts[0];state.customSlot=1;render();return;
  }
  if(verb==='custom-slot'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
@@ -2386,7 +2431,7 @@ async function handle(action,element){
  }
  if(verb==='delete-custom-card'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
-  const original=state.customSlot<=50;
+  const original=state.customSlot<=25;
   if(!(await premiumConfirm(original?
    'La carte officielle et ses réglages seront restaurés. Les défis déjà tirés restent inchangés.':
    'Cet emplacement sera vidé. Les cartes déjà tirées restent dans l’historique.',
@@ -2864,7 +2909,16 @@ async function handle(action,element){
   // La carte de l'étape 1 affiche l'état du lancer; aucun toast supplémentaire.
   return;
  }
- if(verb==='timer-mode'){
+ if(verb==='category'){
+  if(!EVENING_CATEGORIES.includes(parts[0])&&parts[0]!=='HASARD')
+   throw Error('Catégorie interdite');
+  state.category=parts[0];state.randomMode=parts[0]==='HASARD';
+  if(state.session)try{sessionStorage.setItem('loveroll-category-'+state.session.id,parts[0]);}catch{}
+  // Never tear down all WebGL renderers for a category-only UI change.
+  if(!updateEveningCategoryUi(root,parts[0]))render();
+  return;
+ }
+  if(verb==='timer-mode'){
    if(parts[0]!=='vibrate'&&parts[0]!=='sound')throw Error('Signal inconnu');
    challengeTimer.mode=parts[0];localStorage.setItem('loveroll-timer-mode',parts[0]);
    if(parts[0]==='vibrate'&&typeof navigator.vibrate!=='function')
@@ -2909,15 +2963,23 @@ async function handle(action,element){
    {kind:'gift'})))return;
   await rpc('give_love_challenge',{p_session:state.session.id});
   await refreshAndShow();
-  notify('♥ Défi transféré ! '+otherPerson.name+' découvrira son prochain défi au D100.');
+  notify('♥ Défi transféré ! '+otherPerson.name+' choisira la catégorie de son prochain défi.');
   return;
  }
  if(verb==='new-challenge'){
   if(!state.session)throw Error('Aucune soirée active.');
+  if(!EVENING_CATEGORIES.includes(state.category)&&state.category!=='HASARD')
+   throw Error('Choisissez Sensuel, Au hasard ou Sexuel avant chaque nouveau défi.');
+  // A 50/50 draw is decided on Supabase before the official D100 result is saved.
+  // Never fabricate a provisional category or bypass the existing turn/anti-repeat rules.
+  const selectedCategory=state.category;
   const sessionId=state.session.id;
-  const drawn=await animateRoll(()=>rpc('draw_for_partner',{
-    p_session:sessionId,p_preference:'MIXTE',p_random:false
-  }),'new-challenge');
+  const drawn=await animateRoll(()=>
+   selectedCategory==='HASARD'?
+    rpc('draw_for_partner_random',{p_session:sessionId}):
+    rpc('draw_for_partner',{p_session:sessionId,
+      p_preference:selectedCategory,p_random:false}),
+   'new-challenge');
   // The official result is now stored; open only the receiving player's
   // private card, with the saved timer ready to start later.
   if(drawn?.id&&drawn.recipient===state.user.id&&
@@ -2925,7 +2987,8 @@ async function handle(action,element){
    state.selectedEveningChallengeId=drawn.id;
    state.showEveningChallenges=true;
   }
-  state.category='MIXTE';
+  try{sessionStorage.removeItem('loveroll-category-'+state.session.id);}catch{}
+  state.category=null; // Choix renouvelé à chaque défi.
   render();
   return;
  }
