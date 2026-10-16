@@ -48,12 +48,12 @@ test('v83 final responsive CSS reserves a fixed single-screen D6 and partner res
  assert.match(css,/max-width:154px!important/);
  assert.match(css,/grid-template-rows:minmax\(51px,\.7fr\)/);
  assert.match(css,/\.evening-premium-view\.is-ready\{/);
- assert.match(index,/evening-clean-v83\.css\?v=20261015-evening85/);
- assert.match(index,/evening-focused-v84\.css\?v=20261015-evening85/);
+ assert.match(index,/evening-clean-v83\.css\?v=20261015-surprise86/);
+ assert.match(index,/evening-focused-v84\.css\?v=20261015-surprise86/);
  assert.ok(index.lastIndexOf('evening-clean-v83.css')>index.lastIndexOf('mobile-one-screen-v74.css'));
- assert.match(worker,/loveroll-static-v85/);
+ assert.match(worker,/loveroll-static-v86/);
  assert.match(worker,/\.\/evening-clean-v83\.css/);
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-15.85');
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-15.86');
 });
 
 test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D engines',()=>{
