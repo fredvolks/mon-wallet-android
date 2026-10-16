@@ -102,7 +102,8 @@ export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
- lastEvening=null,lastD35Face=null,playable=null,ownChallengeCount=0,canStartEvening=true
+ lastEvening=null,lastD35Face=null,playable=null,ownChallengeCount=0,canStartEvening=true,
+ weeklyReady=true,weeklyCount=0,weeklyLimit=1,dailyLocked=false
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
  partner=members.find(m=>m.user_id!==me)||members[1]||{},
@@ -129,7 +130,7 @@ export function premiumEveningHtml({
  // The official result is already visible on the actual 3D face.
  // Never render a duplicate text number underneath or behind the die.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
- return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):lastEvening?'is-inactive is-finale':'is-inactive')+'">'+
+ return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):'is-inactive is-finale')+'">'+
  '<div class="evening-intro"><span>♥ NOTRE RITUEL DE LA SOIRÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
  (session?
   '<section class="evening-step one '+(ready?'is-complete':'is-incomplete')+'"><div class="evening-step-label"><span class="step-number">1</span><div>'+
@@ -173,32 +174,47 @@ export function premiumEveningHtml({
    bt('give-challenge','♡ Donner 1 défi à '+esc(partner.name?.split(' ')[0]||'mon partenaire'),
     'evening-gift-btn',!canGive||rolling)+'</section>'
   :
-  '<section class="evening-empty'+(lastEvening?' is-finale':'')+'">'+
-  (lastEvening?
-   '<div class="evening-finale-hero" aria-hidden="true">'+
-    '<span class="evening-finale-heart">♡</span><span class="evening-finale-velvet"></span>'+
+  '<section class="evening-empty is-finale">'+
+  '<div class="evening-finale-hero" aria-hidden="true">'+
+    '<svg class="evening-finale-heart" viewBox="0 0 220 195" focusable="false" aria-hidden="true">'+
+      '<path d="M110 181 C87 160 17 118 17 72 C17 36 40 16 72 16 C91 16 103 27 110 42 C117 27 129 16 148 16 C180 16 203 36 203 72 C203 118 133 160 110 181Z"/></svg>'+
+    '<span class="evening-finale-velvet"></span>'+
     '<div class="evening-finale-dice">'+premiumPolyDie(6,null,'Dé décoratif')+
-     premiumPolyDie(6,null,'Dé décoratif')+'</div></div>'+
-   '<div class="evening-aftercare">'+
+      premiumPolyDie(6,null,'Dé décoratif')+'</div></div>'+
+  '<div class="evening-aftercare">'+
     '<div class="evening-finale-ornament" aria-hidden="true"><span>♡</span></div>'+
-    '<h2>Notre soirée est terminée</h2>'+
-    '<p class="evening-finale-description"><strong>'+esc(lastEvening.completed)+'</strong> défis réalisés ensemble.'+
-     '<span>Prenez le temps de donner votre avis.</span></p>'+
-    '<div class="evening-finale-status" role="status">'+
-     '<div class="evening-finale-person"><i aria-hidden="true">'+(lastEvening.myResponse?'✓':'◷')+'</i>'+
-      '<span>Vos réponses :<strong>'+(lastEvening.myResponse?'Enregistrées':'En attente')+'</strong></span></div>'+
-     '<div class="evening-finale-person"><i aria-hidden="true">'+(lastEvening.partnerResponse?'✓':'◷')+'</i>'+
-      '<span>Votre partenaire :<strong>'+(lastEvening.partnerResponse===null?'Statut indisponible':lastEvening.partnerResponse?'Enregistrées':'En attente')+'</strong></span></div>'+
-     '<div class="evening-finale-progress"><i aria-hidden="true">▤</i>'+
-      '<span><strong>'+(lastEvening.responses===null?'—':esc(lastEvening.responses))+' / 2 bilans déposés</strong>'+
-       '<small>Chacun est visible dans le calendrier après son enregistrement.</small></span></div></div>'+
+    '<div class="evening-finale-weekly">♡ SOIRÉES CETTE SEMAINE · '+
+       esc(weeklyCount)+' / '+(weeklyReady?esc(weeklyLimit):'—')+'</div>'+
+    (lastEvening?
+      '<h2>Notre soirée est terminée</h2>'+
+      '<p class="evening-finale-description"><strong>'+esc(lastEvening.completed)+
+       '</strong> défis réalisés ensemble.<span>Prenez le temps de donner votre avis.</span></p>'+
+      '<div class="evening-finale-status" role="status">'+
+       '<div class="evening-finale-person"><i aria-hidden="true">'+(lastEvening.myResponse?'✓':'◷')+'</i>'+
+        '<span>Vos réponses :<strong>'+(lastEvening.myResponse?'Enregistrées':'En attente')+'</strong></span></div>'+
+       '<div class="evening-finale-person"><i aria-hidden="true">'+(lastEvening.partnerResponse?'✓':'◷')+'</i>'+
+        '<span>Votre partenaire :<strong>'+(lastEvening.partnerResponse===null?'Statut indisponible':lastEvening.partnerResponse?'Enregistrées':'En attente')+'</strong></span></div>'+
+       '<div class="evening-finale-progress"><i aria-hidden="true">▤</i>'+
+        '<span><strong>'+(lastEvening.responses===null?'—':esc(lastEvening.responses))+' / 2 bilans déposés</strong>'+
+         '<small>Chacun est visible dans le calendrier après son enregistrement.</small></span></div>'+
+      '</div>':
+      '<h2>Votre soirée vous attend</h2>'+
+      '<p class="evening-finale-description">'+
+        (!weeklyReady?'Brassez d’abord le dé hebdomadaire depuis l’accueil.':
+         dailyLocked?'Une soirée a déjà eu lieu aujourd’hui. Prochaine soirée au plus tôt demain.':
+         canStartEvening?'Votre prochain moment à deux vous attend.':
+         'Toutes les soirées de la semaine ont été utilisées.')+'</p>'+
+      '<div class="evening-finale-tiles" role="group" aria-label="Informations des soirées">'+
+       '<div><strong>'+esc(weeklyCount)+' / '+(weeklyReady?esc(weeklyLimit):'—')+
+         '</strong><span>Soirées cette semaine</span></div>'+
+       '<div><strong>'+esc(playable?.sensual??35)+' + '+esc(playable?.sexual??35)+
+         '</strong><span>Sensuel / Sexuel</span></div>'+
+       '<div><strong>'+esc(weeklyCount)+'</strong><span>Soirées terminées</span></div></div>')+
     '<div class="evening-finale-actions">'+
-     bt('new-session','♡ COMMENCER NOTRE SOIRÉE','evening-finale-start',!canStartEvening)+
-     bt('evening-calendar','▦ Consulter notre calendrier','evening-finale-calendar')+
-    '</div></div>':
-   '<div class="evening-finale-first"><p>Un tirage choisit qui commence, puis les défis alternent.</p>'+
-    bt('new-session','♡ COMMENCER NOTRE SOIRÉE','evening-primary',!canStartEvening)+'</div>')+
-   '</section>')+
+      bt('new-session','♡ COMMENCER NOTRE SOIRÉE','evening-finale-start',!canStartEvening)+
+      bt('evening-calendar','▦ Consulter notre calendrier','evening-finale-calendar')+
+    '</div>'+
+  '</div></section>')+
  (showMore?'<aside class="evening-more-menu" aria-label="Options de la soirée">'+
   bt('evening-close-request','♡ Clore la soirée','evening-menu-close',!session)+
   bt('evening-calendar','▦ Calendrier','evening-menu-calendar')+'</aside>':'')+

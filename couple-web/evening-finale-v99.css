@@ -206,3 +206,53 @@ main#app.loveroll-evening-page .evening-finale-actions button:focus-visible{
   width:clamp(160px,17vw,220px)!important;height:clamp(160px,17vw,220px)!important;
  }
 }
+/* LoveRoll v100: both the waiting and finished states share one composition. */
+main#app.loveroll-evening-page .evening-premium-view.is-finale .evening-finale-heart{
+ position:absolute!important;z-index:0;top:1%!important;left:50%!important;
+ transform:translateX(-50%)!important;display:block!important;
+ width:min(75%,330px)!important;height:min(80%,250px)!important;
+ overflow:visible!important;filter:drop-shadow(0 0 11px #f22b85) drop-shadow(0 0 19px #f71e80);
+ color:#ff569e!important;opacity:.88;
+}
+main#app.loveroll-evening-page .evening-finale-heart path{
+ fill:none;stroke:currentColor;stroke-width:2.4;stroke-linejoin:round;
+}
+main#app.loveroll-evening-page .evening-finale-dice{
+ z-index:1!important;box-sizing:border-box;
+ align-items:flex-end!important;padding-bottom:clamp(14px,6%,44px)!important;
+}
+main#app.loveroll-evening-page .evening-finale-dice .love3d{
+ width:min(35vw,23dvh,180px)!important;height:min(35vw,23dvh,180px)!important;
+ max-height:75%!important;
+}
+main#app.loveroll-evening-page .evening-premium-view.is-finale .evening-aftercare{
+ gap:clamp(5px,.8dvh,10px)!important;
+}
+main#app.loveroll-evening-page .evening-finale-weekly{
+ color:#ffafcf;font-size:clamp(.68rem,2.3vw,.93rem);
+ font-weight:800;letter-spacing:.08em;text-align:center;
+}
+main#app.loveroll-evening-page .evening-finale-tiles{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+}
+main#app.loveroll-evening-page .evening-finale-tiles>div{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ min-width:0;min-height:57px;padding:8px 3px;
+ border:1px solid #db5d9c8e;border-radius:13px;
+ background:linear-gradient(140deg,#5c173d8c,#250b21c7);
+}
+main#app.loveroll-evening-page .evening-finale-tiles strong{
+ color:#ff89bd;font:800 clamp(.95rem,3.35vw,1.4rem)/1 Georgia,serif;
+}
+main#app.loveroll-evening-page .evening-finale-tiles span{
+ color:#f7d4e7;font-size:clamp(.6rem,1.85vw,.85rem);
+ line-height:1.13;margin-top:5px;text-wrap:balance;
+}
+@media(max-width:767px) and (max-height:720px){
+ main#app.loveroll-evening-page .evening-finale-tiles>div{
+  min-height:44px;padding:4px 2px;
+ }
+ main#app.loveroll-evening-page .evening-finale-dice .love3d{
+  width:min(32vw,19dvh,145px)!important;height:min(32vw,19dvh,145px)!important;
+ }
+}
