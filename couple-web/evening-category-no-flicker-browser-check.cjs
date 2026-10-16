@@ -1,4 +1,4 @@
-// True browser regression: switching category must not recreate a live D35 canvas.
+// True browser regression: switching category must not recreate a live D100 canvas.
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -27,7 +27,7 @@ const origin='http://127.0.0.1:8765';
     const {updateEveningCategoryUi}=await import('/premium-evening.mjs');
     const root=document.querySelector('#app');
     const initialDice=[...root.querySelectorAll('canvas[data-dice-sides]')];
-    const d35=root.querySelector('canvas[data-dice-sides="35"]');
+    const d35=root.querySelector('canvas[data-dice-sides="100"]');
     d35.dataset.webglReady='true'; // Represents a mounted, rendered live WebGL canvas.
     let removals=0;
     const watcher=new MutationObserver(records=>{
@@ -44,7 +44,7 @@ const origin='http://127.0.0.1:8765';
      if(odds.length===(category==='HASARD'?0:1)===false)valid=false;
      if(category!=='HASARD'&&odds[0]?.textContent!=='88 % de chancesd’avoir cette catégorie')valid=false;
      if(root.querySelector('button[data-action="new-challenge"]')?.disabled)valid=false;
-     if(root.querySelector('canvas[data-dice-sides="35"]')!==d35||
+     if(root.querySelector('canvas[data-dice-sides="100"]')!==d35||
        initialDice.some(canvas=>!canvas.isConnected))valid=false;
     }
     await new Promise(resolve=>requestAnimationFrame(resolve));
