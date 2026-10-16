@@ -123,8 +123,7 @@ export function premiumEveningHtml({
   Number(turn.remaining?.[me]||0)>0&&turn.next===me;
  const canGive=ready&&turn.ready&&giftCount<3&&Number(turn.remaining?.[me])>0;
  const challengeText=pending?'♡ Voir notre défi en cours':turn.finished?'Tous les défis terminés':!ready?'En attente des deux D6':canDraw?'À toi de jouer':'En attente de '+esc(partner.name?.split(' ')[0]||'ton partenaire');
- const help=playable?playable.sensual+' Sensuel + '+playable.sexual+
-  ' Sexuel · '+playable.total+' cartes jouables':'Cartes de base et personnalisées · résultats synchronisés';
+ const help='100 Sensuel + 100 Sexuel = 200 cartes · '+(playable?playable.total+' idées jouables':'idées personnalisables')+'; résultats synchronisés';
  const stateText=ready?'✓ Étape 2 débloquée':status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':status?.partner_rolled?'Le résultat de '+esc(partner.name?.split(' ')[0]||'ton partenaire')+' est prêt. À toi de brasser le dé.':'Chaque partenaire brasse son propre dé.';
  const currentStatus=turn.finished?'♡ Tous les défis sont réalisés':turn.drawsFinished?'♡ Tous les défis sont pigés':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
@@ -213,7 +212,7 @@ export function premiumEveningHtml({
       '<div class="evening-finale-tiles" role="group" aria-label="Informations des soirées">'+
        '<div><strong>'+esc(weeklyCount)+' / '+(weeklyReady?esc(weeklyLimit):'—')+
          '</strong><span>Soirées cette semaine</span></div>'+
-       '<div><strong>'+esc(playable?.sensual??25)+' + '+esc(playable?.sexual??25)+
+       '<div><strong>100 + 100
          '</strong><span>Sensuel / Sexuel</span></div>'+
        '<div><strong>'+esc(weeklyCount)+'</strong><span>Soirées terminées</span></div></div>')+
     '<div class="evening-finale-actions">'+
