@@ -24,7 +24,7 @@ test('Reliable PWA boot has a standalone module failure fallback and user-visibl
  assert.match(boot,/serviceWorker\.getRegistration\(\)/);
  assert.match(boot,/location\.replace\(url\.href\)/);
  assert.doesNotMatch(boot,/localStorage\.clear|sessionStorage\.clear|caches\.delete/);
- assert.match(sw,/loveroll-static-v104/);
+ assert.match(sw,/loveroll-static-v105/);
  assert.match(sw,/\.\/boot-recovery\.js/);
 });
 test('Pages publishing refuses any JS syntax error and a failed real Chromium boot',()=>{
