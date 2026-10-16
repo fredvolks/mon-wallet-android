@@ -24,7 +24,7 @@ test('Evening keeps original WebGL dice for partner result, own roll, summary an
  assert.match(html,/0 \/ 1/);
  assert.match(html,/1 \/ 2/);
  assert.match(html,/88 %/);
- assert.match(html,/des chances d’obtenir la catégorie souhaitée/);
+ assert.match(html,/class="evening-choice-odds">88 % de chances/);
  assert.doesNotMatch(html,/12 % autre|Défi cadeau : 100 %/);
  assert.doesNotMatch(html,/Fred|Émilie|Player 1/);
 });
