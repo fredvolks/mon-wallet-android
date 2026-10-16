@@ -39,6 +39,8 @@ test('PWA and served HTML share v73 CSS and cache-busting tags',()=>{
 
 test('Active Soirée does not pass an unbound pending challenge into premiumEveningHtml',()=>{
  assert.doesNotMatch(app,/giftCount,pending,rolling/);
- assert.match(app,/turn,category:state\.category,giftCount,rolling:state\.diceStatus==='rolling'\|\|state\.diceStatus==='pending'/);
+ assert.match(app,/turn,category:state\.category,/);
+ assert.match(app,/showSensuel:state\.couple\?\.show_sensuel_button!==false/);
+ assert.match(app,/giftCount,rolling:state\.diceStatus==='rolling'\|\|state\.diceStatus==='pending'/);
  assert.match(app,/pendingInviteReference\(sessionStorage\)/);
 });
