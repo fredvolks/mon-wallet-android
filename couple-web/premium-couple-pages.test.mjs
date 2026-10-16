@@ -45,8 +45,7 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  assert.doesNotMatch(app,/canvas\.dataset\.diceUnrolled!=='true'/);
  assert.match(die,/const neutral=canvas\.dataset\.diceUnrolled==='true'&&sides===6/);
  assert.match(die,/if\(neutral\)\{/);
- // Server RLS hides the first player's result from the other account
- // until BOTH have rolled; only the owner can view their early face.
+ // A missing partner roll must remain neutral, not look like a real result.
  const secondView=premiumEveningHtml({session,members:people,me:'second',
   rolls:[],status:{both_ready:false,my_rolled:false,partner_rolled:true},
   turn:{ready:false}});
