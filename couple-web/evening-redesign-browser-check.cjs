@@ -18,7 +18,7 @@ async function main(){
       status:{my_rolled:ready,partner_rolled:ready,both_ready:ready},
       turn:{ready,first:me,next:me,targets:{one:2,two:5},remaining:{one:2,two:5},completed:{one:0,two:0}},
       category:'SENSUEL',ownChallengeCount:2,
-      playable:{sensual:35,sexual:35,total:70}});
+      playable:{sensual:25,sexual:25,total:50}});
     const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1,isMobile:width<768,hasTouch:width<768});
     await page.setContent('<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'+styles+
       '</head><body style="margin:0"><main id="app" class="loveroll-evening-page">'+html+
@@ -69,13 +69,15 @@ async function main(){
      assert.ok(geometry.d35&&geometry.row&&geometry.actions,
       'D100 / buttons absent '+JSON.stringify(geometry));
      assert.ok(geometry.d35.height>75&&Math.abs(geometry.d35.width-geometry.d35.height)<4,
-      'D100 must be a visible square '+JSON.stringify({width,height,geometry}));
+      'Original D100 must be a visible square '+JSON.stringify({width,height,geometry}));
      assert.ok(geometry.d35.x>=geometry.row.x-2&&geometry.d35.right<=geometry.row.right+2&&
        geometry.d35.y>=geometry.row.y-2&&geometry.d35.bottom<=geometry.row.bottom+2,
        'D100 gets clipped '+JSON.stringify({width,height,geometry}));
-     assert.equal(geometry.categories.length,0,
-       'Single D100 library must not show category buttons');
-      assert.ok(Math.abs((geometry.d35.x+geometry.d35.right)/2-(geometry.row.x+geometry.row.right)/2)<=5,
+     assert.deepEqual(geometry.categories.map(x=>x.action),
+      ['category:SENSUEL','category:HASARD','category:SEXUEL']);
+     assert.ok(geometry.selectedOdds&&geometry.selectedOdds.y>=geometry.categories[0].rect.bottom-2,
+       'Selected 88% is not below Sensuel button '+JSON.stringify({width,height,geometry}));
+     assert.ok(Math.abs((geometry.d35.x+geometry.d35.right)/2-(geometry.row.x+geometry.row.right)/2)<=5,
        '100-sided die is not centered '+JSON.stringify({width,height,geometry}));
      if(width<768){
       assert.ok(geometry.actions.bottom<=geometry.gift.y+2,
