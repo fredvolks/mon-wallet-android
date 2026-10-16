@@ -18,7 +18,7 @@ test('Soirée locked access always renders explanation and never reads null feed
  assert.match(app,/if\(!state.weekly\)\{/);
  assert.match(app,/frame\(locked,'NOTRE SOIRÉE'/);
  assert.match(app,/Brassez d’abord le dé hebdomadaire/);
- assert.match(app,/const official=last\?feedbackItemsFor\(state.feedbackStatus,last.id\):null/);
+ assert.match(app,/const recentReviews=last\?\(state.eveningReviews\|\|\[\]\)/);
  assert.match(app,/const statuses=feedbackItemsFor\(state.feedbackStatus,session.id\)/);
  assert.doesNotMatch(app,/state\.feedbackStatus\.items/);
 });
