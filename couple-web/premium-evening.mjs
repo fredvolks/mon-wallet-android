@@ -23,6 +23,42 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false){
    '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:'Dé en attente')+'"></canvas>'+
   '</div></div>';
 }
+// Changing the category must not remount a live WebGL canvas. The shared
+// result, 3D geometry and dice engine stay untouched until an actual roll.
+export function updateEveningCategoryUi(root,category){
+ if(!['SENSUEL','HASARD','SEXUEL'].includes(category))return false;
+ const group=root?.querySelector('.evening-step.two .evening-choice');
+ const buttons=[...(group?.querySelectorAll('button[data-action^="category:"]')||[])];
+ if(buttons.length!==3||buttons.every(button=>button.disabled))return false;
+ const names={SENSUEL:'Sensuel',HASARD:'Au hasard',SEXUEL:'Sexuel'};
+ for(const button of buttons){
+  const type=button.dataset.action?.slice('category:'.length);
+  if(!(type in names))return false;
+  const selected=type===category;
+  button.classList.toggle('selected',selected);
+  button.setAttribute('aria-pressed',String(selected));
+  button.textContent=(selected?'✓ ':type==='HASARD'?'🎲 ':'♡ ')+names[type];
+  const option=button.closest('.evening-choice-option');
+  if(!option)continue;
+  let odds=option.querySelector('.evening-choice-odds');
+  if(selected&&category!=='HASARD'){
+   if(!odds){
+    odds=button.ownerDocument.createElement('small');
+    odds.className='evening-choice-odds';
+    option.appendChild(odds);
+   }
+   if(odds.textContent!=='88 % de chancesd’avoir cette catégorie'){
+    odds.textContent='88 % de chances';
+    const detail=button.ownerDocument.createElement('span');
+    detail.textContent='d’avoir cette catégorie';
+    odds.appendChild(detail);
+   }
+  }else odds?.remove();
+ }
+ const roll=group.closest('.evening-step.two')?.querySelector('button[data-action="new-challenge"]');
+ if(roll)roll.disabled=false; // Choices are enabled only when this player may draw.
+ return true;
+}
 const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=>{
  // Reveal a player's real server-confirmed result as soon as THEY roll.
  // Their face is immutable; the second player's roll cannot modify it.
