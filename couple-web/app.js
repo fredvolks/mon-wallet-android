@@ -233,23 +233,10 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  }
  const installation=connected&&(state.installModalOpen||state.forceInstallGuide)?
   (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
- const homeHeader='<header class="home-brandbar"><div class="home-brand"><b>♡ Love<em>Roll</em>♡</b>'+
-  '<small>LA COMPLICITÉ SE JOUE À DEUX</small></div>'+
-  '<div class="home-brand-actions">'+
-  '<button type="button" data-action="home-notices" aria-label="Notifications du couple">'+
-  '<svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><path d="M10 23V13c0-9 12-9 12 0v10l3 3H7zM13 28c1 3 5 3 6 0" fill="none" stroke="#ffd6e9" stroke-width="2.2" stroke-linejoin="round"/></svg>'+
-  (state.events?.length?'<b aria-label="Nouvelles activités"></b>':'')+'</button>'+
-  '<button type="button" data-action="tab:settings" aria-label="Ouvrir le profil du couple">'+
-  '<svg viewBox="0 0 32 32" width="27" height="27" aria-hidden="true"><circle cx="12" cy="10" r="4" fill="none" stroke="#ffbcdb" stroke-width="2"/><circle cx="23" cy="11" r="3.5" fill="none" stroke="#ffbcdb" stroke-width="2"/><path d="M3 28c0-12 18-12 18 0m0-11c5 1 8 4 8 11" fill="none" stroke="#ffbcdb" stroke-width="2"/></svg>'+
-  '</button></div></header>';
  const usualHeader='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user&&state.tab!=='settings'?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+'</header>';
- const notifications=realHome&&state.homeNotices?'<div class="home-notification-popover" role="dialog" aria-label="Activités du couple">'+
-  '<strong>♡ Activités récentes</strong>'+
-  (state.events?.length?state.events.slice(0,4).map(e=>'<p>'+safe(e.title||'Une activité')+' · '+safe(e.happened_at?.slice(0,10)||'')+'</p>').join(''):
-  '<p>Aucune notification pour le moment.</p>')+
-  '<button data-action="home-notices" class="subtle">Fermer</button></div>':'';
- root.innerHTML=(realHome?homeHeader:usualHeader)+body+notifications+(connected?nav():'')+installation;
+ // The connected Home begins directly with the weekly ritual: no top logo or action buttons.
+ root.innerHTML=(realHome?'':usualHeader)+body+(connected?nav():'')+installation;
  restoreDraft(draft);
  bindActions();
  focusInlineLoveDialog(root,openerAction);
