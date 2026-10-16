@@ -120,7 +120,7 @@ main#app.loveroll-evening-calendar-page summary.evening-cal-person>span:not(.eve
 }
 main#app.loveroll-evening-calendar-page summary.evening-cal-person .evening-cal-arrow{
  grid-column:2;grid-row:1/3;
- position:absolute;right:-23px;top:50%;transform:translateY(-50%);
+ position:absolute;right:9px;top:50%;transform:translateY(-50%);
  display:grid;place-items:center;font-size:1.35rem;color:#ff9bc7;
  width:23px;height:30px;transition:transform .16s ease;
 }
