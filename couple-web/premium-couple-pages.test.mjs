@@ -8,7 +8,7 @@ const app=read('app.js'),css=read('premium-couple-pages.css'),die=read('dice3d.j
 const people=[{user_id:'first',name:'Camille'}, {user_id:'second',name:'Noémie'}];
 const session={id:'s',paired_turns:true,self_draws:true,starting_user_id:'first'};
 const turns={ready:true,first:'first',targets:{first:2,second:1},completed:{first:1,second:0},remaining:{first:1,second:1},next:'first',finished:false,pending:null};
-test('Evening keeps original WebGL dice for partner result, own roll, summary and D35',()=>{
+test('Evening keeps original WebGL dice for partner result, own roll, summary and D100',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',
    rolls:[{user_id:'first',face:2},{user_id:'second',face:1}],
    status:{both_ready:true,my_rolled:true,partner_rolled:true},turn:turns,category:'SENSUEL'});
@@ -16,7 +16,7 @@ test('Evening keeps original WebGL dice for partner result, own roll, summary an
  assert.match(html,/Noémie/);
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,4);
  assert.match(html,/evening-partner-die/);
- assert.equal((html.match(/data-dice-sides="35"/g)||[]).length,1);
+ assert.equal((html.match(/data-dice-sides="100"/g)||[]).length,1);
  assert.match(html,/data-action="category:SENSUEL"/);
  assert.match(html,/data-action="category:SEXUEL"/);
  assert.match(html,/data-action="new-challenge"/);
@@ -105,31 +105,31 @@ test('Giving challenges updates both Step 1 totals while the dice show original 
  assert.doesNotMatch(waiting,/Total actuel 3 défis/);
  assert.doesNotMatch(waiting,/Dé initial :/);
 });
-test('D35 always visible and rolling face not displayed as text before settling',()=>{
+test('D100 always visible and rolling face not displayed as text before settling',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:{...turns,pending:{face:21}},rollFace:11,
   rollingKind:'new-challenge',rolling:true,category:'SENSUEL'});
- assert.match(html,/data-dice-sides="35" data-face="11" data-dice-zoom="1.07" data-dice-markers="numbers" data-spinning="true"/);
+ assert.match(html,/data-dice-sides="100" data-face="11" data-dice-zoom="1.07" data-dice-markers="numbers" data-spinning="true"/);
  assert.match(html,/class="dice-fallback" aria-hidden="true">♡<\/strong>/);
  assert.match(css,/\.love3d-stage\.is-rolling \.dice-fallback/);
  assert.match(die, /canvas\.dataset\.diceMarkers==='pips'/);
  assert.match(die,/canvas\.dataset\.diceZoom/);
  assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,window\.matchMedia\?/);
 });
-test('D35 renders the only official result ON the 3D die, never in a duplicate number badge',()=>{
+test('D100 renders the only official result ON the 3D die, never in a duplicate number badge',()=>{
  const live=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
- assert.match(live,/data-dice-sides="35" data-face="21"/);
- assert.doesNotMatch(live,/evening-d35-result/);
+ assert.match(live,/data-dice-sides="100" data-face="21"/);
+ assert.doesNotMatch(live,/evening-d100-result/);
  assert.doesNotMatch(live,/>21<\/div>/);
  const last=premiumEveningHtml({session,members:people,me:'first',
-  turn:turns,status:{both_ready:true},lastD35Face:17});
- assert.match(last,/data-dice-sides="35" data-face="17"/);
- assert.doesNotMatch(last,/evening-d35-result/);
+  turn:turns,status:{both_ready:true},lastD100Face:17});
+ assert.match(last,/data-dice-sides="100" data-face="17"/);
+ assert.doesNotMatch(last,/evening-d100-result/);
  const spinning=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},
   rolling:true,rollingKind:'new-challenge',rollFace:11});
- assert.match(spinning,/data-dice-sides="35" data-face="11"[^>]*data-spinning="true"/);
- assert.doesNotMatch(spinning,/evening-d35-result/);
+ assert.match(spinning,/data-dice-sides="100" data-face="11"[^>]*data-spinning="true"/);
+ assert.doesNotMatch(spinning,/evening-d100-result/);
 });
 test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:turns,
@@ -226,7 +226,7 @@ test('Existing server rolls and cards untouched; migration makes configured 6x6 
  assert.match(app,/rpc\('draw_for_partner'/);
  assert.match(app,/sharedEveningTurns\(/);
 });
-test('D20 and D35 are true glossy rounded polyhedra without pink wireframe',()=>{
+test('D20 and D100 are true glossy rounded polyhedra without pink wireframe',()=>{
  assert.match(die,/roundedPolyhedron\(polygons/);
  assert.match(die,/bevel:sides===20\?\.13:\.095/);
  assert.match(die,/shrink:sides===20\?\.095:\.07/);
@@ -237,7 +237,7 @@ test('D20 and D35 are true glossy rounded polyhedra without pink wireframe',()=>
  assert.match(die,/clearcoat:1,clearcoatRoughness:/);
  assert.doesNotMatch(die,/new THREE\.LineSegments|new THREE\.LineBasicMaterial|new THREE\.EdgesGeometry/);
  assert.match(die,/new THREE\.IcosahedronGeometry\(1\.16,0\)/);
- assert.match(die,/const count=35/);
+ assert.match(die,/function manySidedGeometry(count=35)/);
  assert.match(die,/digits\(value,sides===6,pips,neutral\)/);
 });
 test('Mobile full-height layout with safe area and fixed existing tabs',()=>{
