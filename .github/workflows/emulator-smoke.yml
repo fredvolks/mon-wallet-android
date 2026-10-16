@@ -34,28 +34,7 @@ jobs:
           profile: pixel_7
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: |
-            set -eu
-            adb shell wm size 1440x3120
-            adb shell wm density 560
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
-            adb shell am start -W -n ca.desadeux.jeu/.ConnectedLoveRollActivity
-            sleep 8
-            mkdir -p qa
-            for attempt in 1 2 3; do
-              if adb exec-out screencap -p > qa/loveroll-shared-s25-android.png; then break; fi
-              sleep 3
-            done
-            test "$(stat -c%s qa/loveroll-shared-s25-android.png)" -gt 15000
-            adb shell dumpsys activity activities > qa/activities.txt
-            grep 'ConnectedLoveRollActivity' qa/activities.txt
-            # WebView renders the same HTML app as Safari; UIAutomator may not
-            # see WebView DOM nodes. Exercise those through web Playwright CI.
-            adb logcat -d -v brief -s AndroidRuntime:E > qa/runtime_errors.txt || true
-            if grep -E 'FATAL EXCEPTION' qa/runtime_errors.txt; then
-              cat qa/runtime_errors.txt; exit 1
-            fi
-
+          script: bash .github/scripts/loveroll-emulator-smoke.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
