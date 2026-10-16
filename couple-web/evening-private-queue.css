@@ -120,3 +120,36 @@ main#app.loveroll-evening-page .evening-small-roll{
   flex:none;min-height:42px;
  }
 }
+
+/* v103: finished cards remain readable and openable for review, but no longer
+   look like actionable hot-pink challenges. Only status=completed is muted. */
+main#app.loveroll-evening-page .evening-queue-list
+ button.evening-queue-item.is-completed,
+main#app.loveroll-evening-page .evening-queue-list
+ button.evening-queue-item.is-completed:hover,
+main#app.loveroll-evening-page .evening-queue-list
+ button.evening-queue-item.is-completed:active{
+ background:linear-gradient(120deg,#39323b,#211e28)!important;
+ border:1px solid #847985!important;
+ box-shadow:inset 0 1px #ffffff13!important;
+ color:#d0c8d0!important;
+ filter:none!important;
+ opacity:1!important;
+}
+main#app.loveroll-evening-page .evening-queue-list
+ .evening-queue-item.is-completed .evening-queue-num{
+ background:#57505b!important;border-color:#8c828e!important;
+ color:#eee6ed!important;
+}
+main#app.loveroll-evening-page .evening-queue-list
+ .evening-queue-item.is-completed .evening-queue-entry strong{
+ color:#dfd7df!important;text-shadow:none!important;
+}
+main#app.loveroll-evening-page .evening-queue-list
+ .evening-queue-item.is-completed .evening-queue-entry small{
+ color:#bcb0bd!important;
+}
+main#app.loveroll-evening-page .evening-queue-list
+ .evening-queue-item.is-completed:focus-visible{
+ outline:2px solid #ff9acb!important;outline-offset:3px;
+}

@@ -63,3 +63,13 @@ test('Active evening is covered by a real Chromium click test, not just the lock
  assert.match(smoke,/evening-premium-view/);
  assert.match(smoke,/tab:special/);
 });
+
+test('Only completed challenge cards are greyed but stay clickable for history',()=>{
+ const queueCss=readFileSync(new URL('./evening-private-queue.css',import.meta.url),'utf8');
+ assert.match(app,/card\.status==='completed'\?' is-completed':''/);
+ assert.match(app,/card\.status==='completed'\?'✓ ':''/);
+ assert.match(queueCss,/button\.evening-queue-item\.is-completed/);
+ assert.match(queueCss,/background:linear-gradient\(120deg,#39323b,#211e28\)!important/);
+ assert.doesNotMatch(app,/data-action="evening-open:.*disabled/);
+ assert.match(queueCss,/\.evening-queue-item\.is-completed:focus-visible/);
+});

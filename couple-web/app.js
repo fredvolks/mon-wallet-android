@@ -34,7 +34,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.102';
+const WEB_RELEASE='2026-10-16.103';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -1076,8 +1076,9 @@ function renderSession(){
         '<span class="evening-queue-entry"><strong>'+safe(resolvedCard(card).title)+'</strong>'+
         '<small>'+safe(names[card.category]||card.category)+' · '+
         (resolvedCard(card).minutes?resolvedCard(card).minutes+' min · ':'')+
+        (card.status==='completed'?'✓ ':'')+
         safe(queueLabel(card.status))+'</small></span><span>›</span>',
-        'class="evening-queue-item"')).join(''):
+        'class="evening-queue-item'+(card.status==='completed'?' is-completed':'')+'"')).join(''):
        '<p>Aucun défi pigé pour le moment. Sélectionne Sensuel ou Sexuel, puis lance ton dé.</p>')+
      '</div>')+
    '</article></div>';
