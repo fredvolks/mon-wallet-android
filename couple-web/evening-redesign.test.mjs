@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL('./'+path,import.meta.url),'utf8');
 const members=[{user_id:'one',name:'Fred Messely'},{user_id:'two',name:'Alex Fred'}];
 const base={session:{id:'s1'},members,me:'one',giftCount:0,
  turn:{ready:false,remaining:{one:2,two:3},targets:{one:2,two:3},completed:{one:0,two:0}},
- playable:{sensual:35,sexual:35,total:70}};
+ playable:{sensual:25,sexual:25,total:50}};
 test('Soirée removes oversized header and old top Options, but retains contextual session management',()=>{
  const html=premiumEveningHtml({...base,status:{both_ready:false}});
  assert.doesNotMatch(html,/<header class="evening-topline">/);
@@ -35,7 +35,7 @@ test('Partner numeric result is immutable and separate from our own D6',()=>{
  assert.match(html,/data-dice-sides="6" data-face="5"/);
  assert.match(html,/class="evening-partner-result"[\s\S]*?<strong>5<\/strong>[\s\S]*?défis ce soir/);
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,4);
- assert.match(html,/data-dice-sides="35"/);
+ assert.match(html,/data-dice-sides="100"/);
  assert.match(html,/Voir mes défis \(2\)/);
  assert.match(html,/data-action="new-challenge"/);
 });
@@ -65,14 +65,14 @@ test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D
   rolls:[{user_id:'one',face:3},{user_id:'two',face:6}],
   turn:{...base.turn,ready:true,next:'one'},category:'SEXUEL'});
  assert.match(ready,/evening-summary-die/);
- assert.match(ready,/data-dice-sides="35"/);
+ assert.match(ready,/data-dice-sides="100"/);
  assert.match(ready,/88 %/);
  assert.match(ready,/class="evening-choice-odds">88 % de chances/);
  assert.doesNotMatch(ready,/12 % autre|Défi cadeau : 100 %/);
  assert.match(ready,/data-action="new-challenge"/);
  assert.match(ready,/data-action="evening-list"/);
  const unchanged=read('dice3d.js');
- assert.match(unchanged,/const count=35/);
+ assert.match(unchanged,/function manySidedGeometry(count=35)/);
  assert.match(unchanged,/canvas\.dataset\.diceMarkers==='pips'/);
 });
 
