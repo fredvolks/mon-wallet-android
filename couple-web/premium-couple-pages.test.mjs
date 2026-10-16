@@ -23,8 +23,9 @@ test('Evening keeps original WebGL dice for partner result, own roll, summary an
  assert.match(html,/data-action="give-challenge"/);
  assert.match(html,/0 \/ 1/);
  assert.match(html,/1 \/ 2/);
- assert.match(html,/88 % catégorie choisie/);
- assert.match(html,/12 % autre/);
+ assert.match(html,/88 %/);
+ assert.match(html,/des chances d’obtenir la catégorie souhaitée/);
+ assert.doesNotMatch(html,/12 % autre|Défi cadeau : 100 %/);
  assert.doesNotMatch(html,/Fred|Émilie|Player 1/);
 });
 test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 2 remains locked',()=>{
@@ -62,7 +63,7 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  const spinning=premiumEveningHtml({session,members:people,me:'first',
   rolls:[{user_id:'first',face:4}],status:{both_ready:false,my_rolled:true,partner_rolled:false},
   rolling:true,rollingKind:'my-d6',rollFace:4,turn:{ready:false}});
- assert.match(spinning,/Brassage…/);
+ assert.match(spinning,/data-dice-sides="6" data-face="4"[^>]*data-spinning="true"/);
  assert.doesNotMatch(spinning,/aria-label="Total actuel 4 défis/);
  const migration=read('migrations/20261014_d6_immediate_official_result.sql');
  assert.match(migration,/RETURN r;/);

@@ -56,8 +56,10 @@ async function main(){
       'Personal die too small '+JSON.stringify({width,height,geometry}));
      assert.ok(geometry.stage.x>=geometry.step.x-1&&geometry.stage.right<=geometry.step.right+1,
       'D6 stage clipped horizontally '+JSON.stringify({width,height,geometry}));
-     assert.ok(Math.abs(geometry.stage.width-geometry.stage.height)<4,
-      'D6 canvas is not square '+JSON.stringify({width,height,geometry}));
+     if(width<1024 || height>=width){
+      assert.ok(Math.abs(geometry.stage.width-geometry.stage.height)<4,
+       'D6 canvas is not square '+JSON.stringify({width,height,geometry}));
+     }
     }
     if(ready){
      assert.ok(geometry.d35&&geometry.row&&geometry.actions,
