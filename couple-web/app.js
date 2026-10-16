@@ -2004,7 +2004,7 @@ async function handle(action,element){
    await refreshAndShow();
   }catch(error){
    if(err){err.hidden=false;err.textContent=String(error?.message||'Enregistrement impossible. Réessaie.');}
-  }finally{state.reviewSaving=false;if(save?.isConnected){save.disabled=false;save.textContent='♡ Enregistrer mon bilan';}}
+  }finally{state.reviewSaving=false;if(save?.isConnected){save.disabled=false;save.textContent='♡ Enregistrer notre bilan';}}
   return;
  }
  if(verb==='evening-more'){state.eveningMore=!state.eveningMore;render();return;}
