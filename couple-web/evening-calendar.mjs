@@ -75,7 +75,7 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
      '<div class="evening-cal-person-content">'+
       (cards.length?'<ul>'+picked+'</ul>':
        '<p class="evening-cal-empty">Aucun défi pigé pour cette personne.</p>')+
-      extras+(s.finished_at?eveningPersonReviewMarkup({reviews,sessionId:s.id,person:m,me}):'')+'</div></details>';
+      extras+(s.finished_at&&s.counted?eveningPersonReviewMarkup({reviews,sessionId:s.id,person:m,me}):'')+'</div></details>';
   }).join('');
   return '<article class="evening-cal-session"><header><strong>♡ Soirée '+(forDay.length>1?(i+1):'')+
    '</strong><span>'+(s.finished_at?'Clôturée':'En cours')+'</span></header>'+
