@@ -23,8 +23,10 @@ if(q.get('page')?.startsWith('evening')){
 }else{
  root.className='loveroll-surprise-page';
  markup=premiumSurpriseHtml({
-  members,monthly:q.get('page')==='surprise-ready'?{monthly_activity:{face:7}}:{},
-  activity:q.get('page')==='surprise-ready'?{title:'Un rendez-vous romantique',description:'À deux'}:null,
+  members,monthly:q.get('page')==='surprise-done'?{monthly_activity:{face:7},monthly_host:{face:4}}:
+   q.get('page')==='surprise-ready'?{monthly_activity:{face:7}}:{},
+  activity:['surprise-ready','surprise-done'].includes(q.get('page'))?
+   {title:'Un rendez-vous romantique',description:'À deux'}:null,
   settings:{anniversary_md:'06-15',birthday_by_user:{owner:'01-21',partner:'03-04'}},
   now:new Date('2026-10-14T15:00:00Z')
  });
