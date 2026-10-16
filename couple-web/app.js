@@ -9,7 +9,7 @@ import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-step101';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise104';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise107';
 import {surpriseSlot,surpriseCustom,surpriseTitle,validAnnualDate} from './surprise-event-config.mjs?v=20261016-surprise104';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
