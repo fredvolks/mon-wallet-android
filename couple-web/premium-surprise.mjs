@@ -1,6 +1,7 @@
 // LoveRoll — Rendez-vous Surprise, connected to real monthly and occasion draws.
 import {occasionDate,dueOccasions} from './special-occasions.mjs';
 import {premiumPolyDie} from './premium-evening.mjs';
+import {surpriseSlot,surpriseCustom,surpriseTitle} from './surprise-event-config.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(a,s,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(a)+'"'+(disabled?' disabled':'')+'>'+s+'</button>';
 const eventSymbol=(key)=>{
@@ -36,57 +37,91 @@ export function sixSpecialEvents(now,settings={},members=[]){
     (Date.parse(selected.date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'))/86400000):null);
   const availability=active?(days<=-7?'Disponible aujourd’hui · dernier jour':days<0?'Disponible encore '+(7+days)+' jour'+(7+days===1?'':'s'):
     days===0?'Disponible aujourd’hui':'Disponible · dans '+days+' jour'+(days===1?'':'s')):null;
-  return {...entry,date:selected?.date||null,daysLeft:days,year:selected?.year||null,availability};
+  return {...entry,title:surpriseTitle(settings,entry.key,entry.owner,entry.title),
+   slot:surpriseSlot(entry.key,entry.owner),
+   date:selected?.date||null,daysLeft:days,year:selected?.year||null,availability};
  });
 }
-export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new Date(),activity=null,rolling=false,rollingKind=null,rollFace=1,showActivity=false,timerHtml=''}={}){
+export function premiumSurpriseHtml({
+ monthly={},members=[],settings={},now=new Date(),activity=null,
+ rolling=false,rollingKind=null,rollFace=1,showActivity=false,timerHtml='',editSlot=null
+}={}){
  const a=monthly.monthly_activity,h=monthly.monthly_host;
  const rollingActivity=rolling&&rollingKind==='monthly_activity';
  const rollingHost=rolling&&rollingKind==='monthly_host';
  const host=h?members[h.face<=3?0:1]:null;
  const cards=sixSpecialEvents(now,settings,members);
- const drawText=a?'Voir notre activité':'Brasser le dé';
+ const editEvent=cards.find(e=>e.slot===editSlot)||null;
+ const partner=i=>esc(members[i]?.name?.split(' ')[0]||'Partenaire '+(i+1));
+ const activityTitle=esc(activity?.title||'Notre rendez-vous');
  return '<div class="surprise-premium-view">'+
- '<header class="surprise-header"><div><h1>♡ RENDEZ-VOUS<br><em>SURPRISE</em></h1>'+
- '<p>Un mois. Un tirage. Une expérience à deux.</p></div>'+
- '<div class="surprise-banner" aria-hidden="true">♥ ✧</div></header>'+
- '<section class="surprise-month"><div class="surprise-headline"><strong>▦ &nbsp; ACTIVITÉ DU MOIS</strong><span>20 idées uniques</span></div>'+
- '<div class="surprise-month-title">'+(a?'<strong>♡ '+esc(activity?.title||'Notre rendez-vous')+'</strong>'+
-  '<small>Activité n° '+esc(a.face)+' · déjà tirée ce mois</small>':
-  '<strong>Quel sera notre prochain rendez-vous ?</strong>'+
-  '<small>Brasse le dé pour découvrir une des 20 activités du mois.</small>')+'</div>'+
- '<div class="surprise-d20-scene"><span class="surprise-scene-heart">♡</span>'+
-  premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity)+'</div>'+
- (a?button('surprise-activity','♡ Voir notre activité','surprise-primary'):
-  button('roll:monthly_activity',drawText,'surprise-primary',rolling))+'</section>'+
- '<section class="surprise-host"><div class="surprise-headline"><strong>♡ QUI INVITE ?</strong></div>'+
- '<p>Le dé choisit qui organise le rendez-vous et paie l’addition.</p>'+
- '<div class="surprise-host-grid" aria-label="Répartition du tirage de l’addition"><div class="surprise-host-partner"><b>1 · 2 · 3</b>'+
-  '<span>♡ '+esc(members[0]?.name?.split(' ')[0]||'Partenaire 1')+'</span></div>'+
-  '<div class="surprise-host-die">'+premiumPolyDie(6,rollingHost?rollFace:h?.face||null,'Dé 6 faces pour l’addition',rollingHost)+'</div>'+
-  '<div class="surprise-host-partner"><b>4 · 5 · 6</b>'+
-  '<span>♡ '+esc(members[1]?.name?.split(' ')[0]||'Partenaire 2')+'</span></div></div>'+
- (h?'<div class="surprise-winner">♥ '+esc(host?.name?.split(' ')[0]||'Partenaire')+' prépare notre rendez-vous !</div>':
-  button('roll:monthly_host','Brasser le dé','surprise-primary',!a||rolling)+
- (!a?'<small>Commencez par tirer votre activité du mois.</small>':''))+
- '</section>'+
- '<section class="surprise-special"><div class="surprise-headline"><strong>🎁 ÉVÉNEMENTS SPÉCIAUX</strong><span>6 événements · 6 choix chacun</span></div>'+
- '<p>Des moments uniques à vivre ensemble.</p>'+
- '<div class="surprise-special-grid">'+cards.map((e,i)=>
-  button('open-occasion:'+e.key+':'+(e.owner||'-'),
-   '<span class="surprise-event-symbol" aria-hidden="true">'+eventSymbol(e.key)+'</span>'+
-   '<span class="surprise-event-details">'+
-    '<span class="surprise-event-title">'+esc(e.title)+'</span>'+
-    '<span class="surprise-event-days">'+(e.daysLeft===null?'Configurer la date':e.availability||e.daysLeft+' jours')+'</span>'+
-   '</span><span class="surprise-event-chevron" aria-hidden="true">›</span>',
-   'surprise-event-card '+(i===0?'couple':'')+
-    (e.daysLeft===null?' no-date':''))).join('')+'</div>'+
- '<div class="surprise-bottom-info">🎲 &nbsp; Chaque événement comporte 6 activités et 6 variantes.'+
-  button('surprise-how','›','surprise-info-button')+'</div></section>'+
- (showActivity&&a?'<div class="surprise-modal" role="dialog" aria-modal="true" aria-label="Notre activité du mois">'+
-  '<article class="surprise-modal-content"><strong>♡ ACTIVITÉ DU MOIS · '+esc(a.face)+'</strong>'+
-  '<h2>'+esc(activity?.title||'Notre sortie')+'</h2><p>'+esc(activity?.description||'')+'</p>'+
-  '<p>Le résultat est commun aux deux comptes.</p>'+timerHtml+
-  button('surprise-activity','Fermer','surprise-primary')+'</article></div>':'')+
+  '<header class="surprise-header surprise-new-header">'+
+   '<div class="surprise-eyebrow">♥ NOTRE RITUEL DE LA SURPRISE</div>'+
+   '<h2>Nos surprises disponibles</h2>'+
+   '<p>20 activités du mois · 6 événements à personnaliser</p></header>'+
+  '<section class="surprise-month '+(a?'has-activity':'waiting-activity')+'">'+
+   '<div class="surprise-headline"><strong>▦ ACTIVITÉ DU MOIS</strong><span>20 idées uniques</span></div>'+
+   '<div class="surprise-month-title">'+
+    (a?'<strong>♡ '+activityTitle+'</strong><small>Activité n° '+esc(a.face)+' · ce mois-ci</small>':
+     '<strong>Quel sera notre prochain rendez-vous ?</strong>'+
+     '<small>Brasse le dé pour découvrir une des 20 activités du mois.</small>')+'</div>'+
+   '<div class="surprise-d20-scene"><span class="surprise-scene-heart" aria-hidden="true">♡</span>'+
+    premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity)+
+   '</div>'+
+   (a?button('surprise-activity','♡ Voir notre activité','surprise-primary'):
+    button('roll:monthly_activity','Brasser le dé','surprise-primary',rolling))+
+   (a?
+    '<div class="surprise-invite-inside" aria-label="Deuxième étape : Qui invite ?">'+
+     '<div class="surprise-invite-heading">♡ ÉTAPE 2 · QUI INVITE ?'+
+      '<small>Le dé choisit qui organise et paie notre rendez-vous.</small></div>'+
+     '<div class="surprise-invite-grid">'+
+      '<div class="surprise-invite-person"><strong>1 · 2 · 3</strong><span>♡ '+partner(0)+'</span></div>'+
+      '<div class="surprise-invite-die">'+
+       premiumPolyDie(6,rollingHost?rollFace:h?.face||null,'Dé de qui invite',rollingHost)+
+      '</div>'+
+      '<div class="surprise-invite-person"><strong>4 · 5 · 6</strong><span>♡ '+partner(1)+'</span></div>'+
+     '</div>'+
+     (h?'<div class="surprise-invite-result">♥ '+esc(host?.name?.split(' ')[0]||'Partenaire')+
+      ' invite cette fois-ci !</div>':
+      button('roll:monthly_host','Brasser le dé · Qui invite ?','surprise-primary surprise-invite-button',rolling))+
+    '</div>':'')+
+  '</section>'+
+  '<section class="surprise-special">'+
+   '<div class="surprise-headline"><strong>🎁 ÉVÉNEMENTS SPÉCIAUX</strong><span>6 événements modifiables</span></div>'+
+   '<p>Appuie sur une carte pour modifier son nom ou sa date.</p>'+
+   '<div class="surprise-special-grid">'+cards.map((e,i)=>
+    button('edit-surprise-event:'+e.key+':'+(e.owner||'-'),
+     '<span class="surprise-event-symbol" aria-hidden="true">'+eventSymbol(e.key)+'</span>'+
+     '<span class="surprise-event-details">'+
+      '<span class="surprise-event-title">'+esc(e.title)+'</span>'+
+      '<span class="surprise-event-days">'+
+       (e.daysLeft===null?'Configurer la date':e.availability||e.daysLeft+' jours')+
+      '</span></span><span class="surprise-event-chevron" aria-hidden="true">✎</span>',
+     'surprise-event-card '+(i===0?'couple':'')+(e.daysLeft===null?' no-date':''))).join('')+
+   '</div>'+
+   '<div class="surprise-bottom-info">♡ 6 événements au choix · 6 activités et variantes par événement</div>'+
+  '</section>'+
+  (editEvent?
+   '<div class="surprise-modal surprise-edit-modal" role="dialog" aria-modal="true" aria-label="Modifier un événement spécial">'+
+    '<div class="surprise-modal-content surprise-event-editor">'+
+     '<div class="surprise-edit-top"><span class="surprise-eyebrow">♡ PERSONNALISER CET ÉVÉNEMENT</span>'+
+      button('close-surprise-event','✕','surprise-edit-close')+'</div>'+
+     '<h2>Modifier notre événement</h2>'+
+     '<label for="surprise-event-name">Nom de l’événement</label>'+
+     '<input id="surprise-event-name" type="text" maxlength="55" value="'+esc(editEvent.title)+'">'+
+     '<label for="surprise-event-date">Date de l’événement (chaque année)</label>'+
+     '<input id="surprise-event-date" type="date" value="'+esc(editEvent.date||'')+'">'+
+     '<p>Remplace le nom et choisis une autre date au besoin. Les anciens tirages restent enregistrés.</p>'+
+     '<div class="surprise-edit-actions">'+
+      button('save-surprise-event','Enregistrer','surprise-primary')+
+      button('open-occasion:'+editEvent.key+':'+(editEvent.owner||'-'),'Voir ses surprises','surprise-secondary')+
+     '</div><small>Si tu modifies seulement le nom, la date d’origine demeure inchangée.</small>'+
+    '</div></div>':'')+
+  (showActivity&&a?
+   '<div class="surprise-modal" role="dialog" aria-modal="true" aria-label="Notre activité du mois">'+
+    '<article class="surprise-modal-content"><strong>♡ ACTIVITÉ DU MOIS · '+esc(a.face)+'</strong>'+
+     '<h2>'+activityTitle+'</h2><p>'+esc(activity?.description||'')+'</p>'+
+     '<p>Le résultat est commun aux deux comptes.</p>'+timerHtml+
+     button('surprise-activity','Fermer','surprise-primary')+'</article></div>':'')+
  '</div>';
 }
