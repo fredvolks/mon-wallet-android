@@ -17,12 +17,12 @@ const duration=(v,label)=>{
   throw Error(label+' : la durée doit être un entier de 1 à 60 minutes, ou null pour désactiver le minuteur.');
  return v;
 };
-// Evening file format v2 supports one library. Imports accept v1/v2 old
-// Sensuel/Sexuel exports, and sparse numbered lists up to 100 entries.
-export function buildEveningLibrary(category='MIXTE',overrides=[]){
- if(category!=='MIXTE')throw Error('Une seule bibliothèque de 100 cartes est disponible.');
- return {format:'loveroll-evening',version:2,category:'MIXTE',
-  cards:editableCardSlots('MIXTE',overrides).map(item=>({
+// Evening v1/v2 JSON: one of two category libraries, with 1..100 distinct slots.
+// Separate exports per category. All 100 positions are editable in one grid.
+export function buildEveningLibrary(category='SENSUEL',overrides=[]){
+ if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie Sensuel ou Sexuel requise.');
+ return {format:'loveroll-evening',version:2,category,
+  cards:editableCardSlots(category,overrides).map(item=>({
    card_id:item.cardId,title:item.title,description:item.description,
    timer_minutes:duration(item.minutes,'Minuteur carte '+item.cardId),
    drawer_role:item.drawerRole,recipient_role:item.recipientRole
@@ -31,7 +31,7 @@ export function buildEveningLibrary(category='MIXTE',overrides=[]){
 export function validateEveningLibrary(data){
  if(!object(data)||data.format!=='loveroll-evening'||
    ![1,2].includes(data.version)||
-   (data.category&&!['MIXTE','SENSUEL','SEXUEL'].includes(data.category))||
+   !EVENING_CATEGORIES.includes(data.category)||
    !Array.isArray(data.cards)||data.cards.length<1||data.cards.length>100)
   throw Error('Fichier de soirée : liste de 1 à 100 cartes, version 1 ou 2 attendue.');
  const seen=new Set(),cards=[];
@@ -61,7 +61,7 @@ export function validateEveningLibrary(data){
  }
  // Preserve numbering, existing personal settings and official default cards.
  // A partial library updates only the supplied card IDs.
- return {format:'loveroll-evening',version:2,category:'MIXTE',
+ return {format:'loveroll-evening',version:2,category:data.category,
   cards:cards.sort((a,b)=>a.card_id-b.card_id)};
 }
 export function buildMonthlyLibrary(overrides=[]){
@@ -95,7 +95,7 @@ export function validatePortableSpecial(data){
 export function librarySummary(data,kind){
  if(kind==='evening'){
   const item=validateEveningLibrary(data);
-  return {count:item.cards.filter(c=>!!c.title).length,total:100,timers:item.cards.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Bibliothèque des 100 défis'};
+  return {count:item.cards.filter(c=>!!c.title).length,total:100,timers:item.cards.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Bibliothèque '+(item.category==='SENSUEL'?'Sensuel':'Sexuel')+' · 100 cartes'};
  }
  if(kind==='monthly'){
   const item=validateMonthlyLibrary(data);
