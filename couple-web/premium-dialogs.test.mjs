@@ -36,16 +36,19 @@ test('Gift and dissociation are styled as premium accessible actions, not browse
  assert.match(styles,/\.lr-dialog-card/);
  assert.match(styles,/\.lr-dialog-icon/);
  assert.match(styles,/\.lr-dialog-accept\.lr-dialog-danger/);
- assert.match(html,/premium-dialogs\.css\?v=20261015-surprise86/);
+ assert.match(html,/premium-dialogs\.css\?v=20261015-no-toast87/);
  assert.match(sw,/premium-dialogs\.mjs/);
 });
-test('Result toast respects device safe area and displays only official number',()=>{
- assert.match(app,/isResult=/);
- assert.match(app,/RÉSULTAT OFFICIEL/);
- assert.match(app,/official\[1\]/);
- assert.match(app,/textContent=msg/);
- assert.match(styles,/env\(safe-area-inset-top,0px\)/);
- assert.match(styles,/#toast\.lr-premium-toast\.visible\{display:flex\}/);
- assert.match(styles,/top:max\(62px/);
- assert.match(styles,/max-width:min\(90vw,430px\)/);
+test('No floating toast anywhere; real failures remain inline',()=>{
+ assert.doesNotMatch(html,/id="toast"/);
+ assert.doesNotMatch(app,/toastEl/);
+ const start=app.indexOf('function notify(_message)');
+ const end=app.indexOf('function showInlineError(',start);
+ assert.ok(start>=0&&end>start);
+ assert.doesNotMatch(app.slice(start,end),/document\.createElement|classList|setTimeout/);
+ assert.match(app,/function showInlineError\(message\)/);
+ assert.match(app,/showInlineError\(msg\)/);
+ assert.match(app,/note\.setAttribute\('role','alert'\)/);
+ assert.match(styles,/#toast,#toast\.visible,#toast\.lr-premium-toast\.visible\{display:none!important\}/);
+ assert.match(styles,/\.lr-inline-feedback\{/);
 });
