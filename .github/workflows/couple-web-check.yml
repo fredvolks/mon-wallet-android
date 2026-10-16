@@ -391,6 +391,9 @@ jobs:
       - name: Verify category switches never remount live WebGL dice
         run: node couple-web/evening-category-no-flicker-browser-check.cjs
 
+      - name: Verify end-of-evening 5-heart review on phone tablet and desktop
+        run: node couple-web/evening-review-browser-check.cjs
+
       - name: Verify shared calendar expanding both partners on phone, tablet and PC
         run: node couple-web/evening-calendar-browser-check.cjs
 
