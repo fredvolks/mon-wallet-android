@@ -1813,7 +1813,10 @@ async function animateRoll(fn,kind='general'){
    await new Promise(resolve=>setTimeout(resolve,1000));
   }
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
-  await refreshAndShow();return result;
+  // Open the confirmed activity before repainting: no intermediate D6 flash.
+  await refreshShared();
+  if(kind==='monthly_activity')state.showSurpriseActivity=!!state.monthly?.monthly_activity;
+  render();return result;
  }catch(e){
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
   await refreshAndShow();throw e;
