@@ -1,5 +1,5 @@
-// Pure cross-device state comparison. Never expose the other partner's
-// personal D6 face before the server reports both_ready.
+// Pure cross-device state comparison. The verified couple may read each
+// already-rolled official D6 before both_ready; private challenge cards stay protected.
 const keyOf=row=>row?.id||null;
 const stableStatus=status=>status?
  [Boolean(status.my_rolled),Boolean(status.partner_rolled),Boolean(status.both_ready)].join(':'):'none';
@@ -43,7 +43,7 @@ function sharedSignature(state){
  ]);
 }
 /** Realtime fast path + secure fallback for browsers with sleeping/blocked sockets.
- * Never queries unrevealed partner D6 faces; only my_love_roll_status booleans.
+ * Probes the status booleans, then refreshes confirmed D6 faces through RLS-secured reads.
  */
 export function createCoupleLiveSync({state,query,rpc,refresh,render,ready,week,month,formDirty,
   visible=()=>!document.hidden,clock=()=>Date.now(),online=()=>navigator.onLine}){
