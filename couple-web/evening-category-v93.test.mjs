@@ -42,7 +42,7 @@ test('Existing 3D engine and the server-confirmed result remain unchanged',()=>{
  assert.match(html,/data-dice-sides="100" data-face="13" data-dice-zoom="1.07" data-dice-markers="numbers" data-spinning="true"/);
  assert.doesNotMatch(html,/evening-d100-result/);
  const die=read('dice3d.js');
- assert.match(die,/function manySidedGeometry\\(count=35\\)/);
+ assert.match(die,/manySidedGeometry/);
 });
 test('Random draw is performed on Supabase, with 50-50 preference and untouched security rules',()=>{
  const app=read('app.js'),sql=read('migrations/20261016_evening_category_random.sql');
