@@ -294,6 +294,7 @@ export function dieOn(canvas,sides,value,rolling){
  let trajectory=null;
  function prepareMotion(continueFromFace=false){
   if(!duration){
+   canvas.dataset.spinning='false';
    trajectory=null;built.group.quaternion.copy(target);
    built.group.position.set(0,0,0);return;
   }
