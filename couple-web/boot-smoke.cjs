@@ -121,8 +121,12 @@ export function createClient(){
     throw Error('S25 user still sees null items error');
    await page.locator('[data-action="tab:home"]').last().click();
    await page.locator('.real-home-shell').waitFor({timeout:10000});
-   if(await page.locator('.evening-finale-actions button').count()!==2)
-    throw Error('Soirée waiting state must show exactly two buttons');
+   const buttons=await page.locator('.evening-finale-actions button').count();
+   if(buttons!==2)
+    throw Error('Soirée waiting state must show exactly two buttons: '+JSON.stringify({
+     buttons,actions:await page.locator('[data-action]').evaluateAll(nodes=>nodes.map(n=>n.dataset.action).filter(x=>x==='new-session'||x==='evening-calendar')),
+     html:(await page.locator('.evening-premium-view').innerHTML()).slice(-1200)
+    }));
    console.log('SOIREE_ONE_PAGE_OK','Samsung viewport: shared premium page, disabled weekly start, no old screen');
   }
   if(name==='active-evening'){
