@@ -260,7 +260,7 @@ export const EVENING_CHALLENGES={
 // Single new 100-card library; old category records stay archived for history.
 EVENING_CHALLENGES.MIXTE=[...EVENING_CHALLENGES.SENSUEL,...EVENING_CHALLENGES.SEXUEL];
 export function eveningCard(category,cardId){
- if(!EVENING_CATEGORIES.includes(category)||!Number.isInteger(cardId)||cardId<1||cardId>(category==='MIXTE'?50:25))
+ if(!['MIXTE','SENSUEL','SEXUEL'].includes(category)||!Number.isInteger(cardId)||cardId<1||cardId>(category==='MIXTE'?50:25))
   throw new Error('Carte de défi invalide');
  const [title,minutes,description]=EVENING_CHALLENGES[category][cardId-1];
  return {category,face:cardId,title,minutes,description};
