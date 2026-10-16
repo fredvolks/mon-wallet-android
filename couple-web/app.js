@@ -3,9 +3,10 @@ import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-person-review97';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
+import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-finale99';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-daily100';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
@@ -33,7 +34,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.99';
+const WEB_RELEASE='2026-10-16.100';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -1012,23 +1013,8 @@ function renderLegacySession(){
  frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
 }
 function renderSession(){
- // The weekly roll unlocks Soirée. The monthly roll belongs to Surprise.
- // Never enter the evening/game UI without the server-confirmed weekly roll.
- if(!state.weekly){
-  const locked='<section class="evening-locked-view" aria-label="Soirée en attente du dé hebdomadaire">'+
-   '<div class="evening-locked-brand">♡ Love<em>Roll</em> ♡</div>'+
-   '<div class="evening-locked-eyebrow">♡ SOIRÉE DE DÉFIS</div>'+
-   '<div class="evening-locked-notice" role="status">♡ &nbsp; Brassez d’abord le dé hebdomadaire pour accéder à votre soirée.</div>'+
-   '<div class="evening-locked-hero"><div class="evening-locked-dice" aria-hidden="true">🎲 ♡ 🎲</div>'+
-   '<h2>Votre soirée vous attend</h2><p>Le tirage hebdomadaire détermine le nombre de défis à réaliser à deux.</p>'+
-   button('tab:home','♡ Brasser le dé hebdomadaire','class="evening-locked-cta"')+'</div>'+
-   '<div class="evening-locked-previews">'+
-   '<div>♡ <strong>Défis</strong><small>À découvrir</small></div>'+
-   '<div>♡ <strong>Catégories</strong><small>Sensuel / Sexuel</small></div>'+
-   '<div>♡ <strong>Progression</strong><small>Ensemble</small></div></div></section>';
-  frame(locked,'NOTRE SOIRÉE','Le dé hebdomadaire déverrouille vos défis.');
-  return;
- }
+ // Always show the same Soirée page, even when the weekly die is unrolled.
+ // In that case the launch control is disabled, not replaced with a separate page.
  const session=playableSessionForWeekly(state.session,state.weekly),partner=other(),uid=state.user.id;
  if(session&&!state.category){
   try{
@@ -1039,18 +1025,15 @@ function renderSession(){
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
  const turn=session?(state.eveningBoard||sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts)):{};
  const mineCards=session?ownEveningChallenges(state.challenges,uid,session.id):[];
- const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+ const daily=eveningDailyAccess({sessions:state.sessions,weekly:state.weekly});
+ const last=daily.closedToday;
  const recentReviews=last?(state.eveningReviews||[]).filter(x=>x.session_id===last.id):[];
  const lastEvening=last?{id:last.id,completed:state.eveningCalendarChallenges.filter(
     c=>c.session_id===last.id&&c.status==='completed').length,
    responses:recentReviews.length,
    myResponse:recentReviews.some(f=>f.author_id===uid),
-   partnerResponse:recentReviews.some(f=>f.author_id===partner.user_id)}:null;
- // Same weekly limit as the Supabase RPC. Only counted, Québec-local sessions
- // started since this Monday consume the week's 1–6 available evenings.
- const weeklyCounted=(state.sessions||[]).filter(s=>s.counted===true&&
-   eveningLocalDay(s.started_at)>=state.weekly.key).length;
- const canStartEvening=weeklyCounted<Number(state.weekly.face);
+   partnerResponse:recentReviews.some(f=>f.author_id===partner?.user_id)}:null;
+ const canStartEvening=daily.canStart;
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
@@ -1104,7 +1087,9 @@ function renderSession(){
    turn,category:state.category,giftCount,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
    playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
-   challengeOverlay:overlay,lastEvening,canStartEvening,ownChallengeCount:mineCards.length,
+   challengeOverlay:overlay,lastEvening,canStartEvening,
+   weeklyReady:!!state.weekly,weeklyCount:daily.counted,weeklyLimit:daily.limit,
+   dailyLocked:daily.dailyLocked,ownChallengeCount:mineCards.length,
    lastD35Face:lastOfficialChallengeFace(
     session?state.challenges:state.challengesHistory,session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
@@ -2821,6 +2806,10 @@ async function handle(action,element){
  }
  if(verb==='new-session'){
   if(!state.weekly)throw Error('Brassez d’abord le dé de la semaine.');
+  const daily=eveningDailyAccess({sessions:state.sessions,weekly:state.weekly});
+  if(!daily.canStart)throw Error(daily.dailyLocked?
+   'Une seule soirée par jour. Revenez demain (heure du Québec).':
+   'Le quota hebdomadaire est atteint.');
   await rpc('ensure_couple_session',{p_couple:state.coupleId});
   state.tab='session';await refreshAndShow();return;
  }
@@ -3171,6 +3160,17 @@ window.addEventListener('load',()=>{reloadWebAssets().catch(console.warn);});
 // every minute, without interrupting throws, timers or form editing.
 setInterval(()=>{if(state.user&&!document.hidden)
  reloadWebAssets().catch(console.warn);},60_000);
+// Rerender when Québec's calendar day changes with the tab left open.
+let eveningLastDay=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',
+ year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+setInterval(()=>{
+ if(!state.user||document.hidden||state.tab!=='session')return;
+ const current=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',
+  year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ if(current===eveningLastDay)return;
+ eveningLastDay=current;
+ refreshShared().then(render).catch(console.warn);
+},60_000);
 window.addEventListener('appinstalled',()=>{
  dismissInstall(state.user?.id);
  state.installModalOpen=false;state.showInstallSteps=false;state.forceInstallGuide=false;

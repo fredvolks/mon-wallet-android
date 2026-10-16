@@ -1,0 +1,10 @@
+-- Mirror of the live Supabase one-evening-per-Québec-calendar-day policy.
+-- Server migration: loveroll_one_evening_per_quebec_day_v100.
+-- In ensure_couple_session, after weekly quota validation and before insertion:
+-- SELECT count(*) INTO already_today FROM public.couple_sessions s
+-- WHERE s.couple_id=p_couple AND s.started_at>=weekly_created
+-- AND ((s.started_at AT TIME ZONE 'America/Toronto')::date=today_qc
+-- OR (s.finished_at IS NOT NULL
+--  AND (s.finished_at AT TIME ZONE 'America/Toronto')::date=today_qc));
+-- IF already_today>0 THEN RAISE EXCEPTION
+--  'Une seule soirée par jour. Revenez demain (heure du Québec).'; END IF;
