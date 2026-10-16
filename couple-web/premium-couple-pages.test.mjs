@@ -8,14 +8,14 @@ const app=read('app.js'),css=read('premium-couple-pages.css'),die=read('dice3d.j
 const people=[{user_id:'first',name:'Camille'}, {user_id:'second',name:'Noémie'}];
 const session={id:'s',paired_turns:true,self_draws:true,starting_user_id:'first'};
 const turns={ready:true,first:'first',targets:{first:2,second:1},completed:{first:1,second:0},remaining:{first:1,second:1},next:'first',finished:false,pending:null};
-test('Evening reuses both real partner names, one D6, partner result, one D35 and existing action names',()=>{
+test('Evening keeps original WebGL dice for partner result, own roll, summary and D35',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',
    rolls:[{user_id:'first',face:2},{user_id:'second',face:1}],
    status:{both_ready:true,my_rolled:true,partner_rolled:true},turn:turns,category:'SENSUEL'});
  assert.match(html,/Camille/);
  assert.match(html,/Noémie/);
- assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,1);
- assert.match(html,/evening-partner-medallion">1<\/span>/);
+ assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,4);
+ assert.match(html,/evening-partner-die/);
  assert.equal((html.match(/data-dice-sides="35"/g)||[]).length,1);
  assert.match(html,/data-action="category:SENSUEL"/);
  assert.match(html,/data-action="category:SEXUEL"/);
@@ -39,7 +39,7 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  assert.equal((first.match(/data-dice-sides="6"/g)||[]).length,1,'Only own D6 is rendered');
  assert.match(first,/evening-partner-card is-pending/);
  assert.doesNotMatch(first,/data-dice-unrolled="true"/);
- // Only the other person's numeric result is shown once confirmed, never their 3D die.
+ // The partner's official face uses the existing shared 3D D6 renderer once confirmed.
  assert.match(css,/\.love3d-stage\.is-unrolled \.dice-canvas\{[\s\S]*?visibility:visible!important/);
  assert.doesNotMatch(app,/canvas\.dataset\.diceUnrolled!=='true'/);
  assert.match(die,/const neutral=canvas\.dataset\.diceUnrolled==='true'&&sides===6/);
@@ -57,7 +57,7 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
   turn:{...turns,targets:{first:4,second:2}}});
  assert.match(both,/data-dice-sides="6" data-face="4"/);
  assert.match(both,/aria-label="Total actuel 4 défis; dé initial 4"><strong>4<\/strong>/);
- assert.match(both,/evening-partner-medallion">2<\/span>/);
+ assert.match(both,/evening-partner-die/);
  assert.match(both,/Étape 2 débloquée/);
  const spinning=premiumEveningHtml({session,members:people,me:'first',
   rolls:[{user_id:'first',face:4}],status:{both_ready:false,my_rolled:true,partner_rolled:false},
@@ -81,10 +81,10 @@ test('Giving challenges updates both Step 1 totals while the dice show original 
   rolls:[{user_id:'first',face:5},{user_id:'second',face:2}],
   status:{both_ready:true,my_rolled:true,partner_rolled:true},turn:gifted,category:'SENSUEL'});
  assert.match(html,/data-dice-sides="6" data-face="5"/);
- assert.match(html,/evening-partner-medallion">2<\/span>/);
+ assert.match(html,/evening-partner-die/);
  assert.match(html,/aria-label="Total actuel 3 défis; dé initial 5"><strong>3<\/strong>/);
  assert.match(html,/class="evening-partner-card is-confirmed"/);
- assert.match(html,/4 défis ce soir|2 défis ce soir/);
+ assert.match(html,/4 défis ce soir|2 défis ce soir|evening-summary-person/);
  assert.match(html,/Dé initial : 5/);
  assert.doesNotMatch(html,/Dé initial : 2/);
  assert.match(html,/<b>1 \/ 3<\/b>/);

@@ -49,6 +49,10 @@ const {chromium}=require('playwright');
        position:c&&getComputedStyle(c).position,canvasHeight:d?.height,containerHeight:r.height};
     }),
     partnerCard:panel.querySelector('.evening-partner-card')?.getBoundingClientRect().width||0,
+    d35:panel.querySelector('.evening-d35-col .love3d-stage')?.getBoundingClientRect().height||0,
+    d35Visible:(()=>{const e=panel.querySelector('.evening-d35-col .love3d-stage');
+      if(!e)return false;const r=e.getBoundingClientRect(),p=panel.querySelector('.evening-die-row')?.getBoundingClientRect();
+      return !!p&&r.height>90&&r.width>90&&r.left>=p.left-2&&r.right<=p.right+2&&r.top>=p.top-2&&r.bottom<=p.bottom+2;})(),
     managePresent:!!panel.querySelector('.evening-manage[data-action="evening-more"]'),
     sections:panel.querySelectorAll('section').length
    };
@@ -58,8 +62,9 @@ const {chromium}=require('playwright');
   if(errors.length||result.clipped||result.horizontal||!result.noScroll||
      result.menu!==5||result.dice.some(d=>!d.webgl)||
      (pageName.startsWith('evening')&&(
-      result.dice.length!==2||result.partnerCard<85||!result.managePresent||
-      (pageName==='evening'&&result.dice.some(d=>d.height<45))||
+      result.dice.length!==(pageName==='evening'?5:2)||!result.managePresent||
+      (pageName==='evening'&&!result.d35Visible)||
+      (pageName==='evening-idle'&&result.partnerCard<85)||
       (pageName==='evening-idle'&&result.dice.filter(d=>d.height>=45).length!==1)))||
      (pageName==='evening-idle'&&(result.neutralDice.length!==1||
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||

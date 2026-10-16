@@ -28,14 +28,18 @@ async function main(){
       const main=document.querySelector('main'),evening=document.querySelector('.evening-premium-view'),
        step=document.querySelector('.evening-step.one'),stage=document.querySelector('.evening-my-die .love3d-stage, .evening-user-die .love3d-stage'),
        partner=document.querySelector('.evening-partner-card'),gift=document.querySelector('.evening-gift'),
-       nav=document.querySelector('.nav'),manage=document.querySelector('.evening-manage');
+       nav=document.querySelector('.nav'),manage=document.querySelector('.evening-manage'),
+       d35=document.querySelector('.evening-d35-col .love3d-stage'),
+       row=document.querySelector('.evening-die-row'),
+       actions=document.querySelector('.evening-roll-actions');
       const rect=e=>{let r=e?.getBoundingClientRect();return r&&{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};
       return {viewport:{width:innerWidth,height:innerHeight},docH:document.documentElement.scrollHeight,
         main:rect(main),content:rect(evening),step:rect(step),stage:rect(stage),
         partner:rect(partner),gift:rect(gift),nav:rect(nav),manage:rect(manage),
+        d35:rect(d35),row:rect(row),actions:rect(actions),
         canvases:step.querySelectorAll('canvas[data-dice-sides="6"]').length};
     });
-    assert.equal(geometry.canvases,1, 'Two D6 renderers still present');
+    assert.equal(geometry.canvases,ready?4:1,'Only official D6 dice shown: own and partner when waiting, compact originals when ready');
     if(width<768){
      assert.ok(geometry.gift&&geometry.gift.bottom<=(geometry.nav?.top??height)+2,
        'Gift hidden behind mobile nav '+JSON.stringify({width,height,ready,geometry}));
@@ -54,6 +58,17 @@ async function main(){
       'D6 stage clipped horizontally '+JSON.stringify({width,height,geometry}));
      assert.ok(Math.abs(geometry.stage.width-geometry.stage.height)<4,
       'D6 canvas is not square '+JSON.stringify({width,height,geometry}));
+    }
+    if(ready){
+     assert.ok(geometry.d35&&geometry.row&&geometry.actions,
+      'D35 / buttons absent '+JSON.stringify(geometry));
+     assert.ok(geometry.d35.height>75&&Math.abs(geometry.d35.width-geometry.d35.height)<4,
+      'Original D35 must be a visible square '+JSON.stringify({width,height,geometry}));
+     assert.ok(geometry.d35.x>=geometry.row.x-2&&geometry.d35.right<=geometry.row.right+2&&
+       geometry.d35.y>=geometry.row.y-2&&geometry.d35.bottom<=geometry.row.bottom+2,
+       'D35 gets clipped '+JSON.stringify({width,height,geometry}));
+     assert.ok(geometry.actions.bottom<=geometry.gift.y+2,
+      'D35 buttons clip or overlap gifts '+JSON.stringify({width,height,geometry}));
     }
     if(width<768)assert.ok(geometry.docH<=height+3,
       'Mobile page scrolls '+JSON.stringify({width,height,ready,geometry}));

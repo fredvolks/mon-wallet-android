@@ -15,7 +15,7 @@ test('Google OAuth explicitly uses official Google account chooser',()=>{
  assert.doesNotMatch(app,/google\.com\/logout|auth\.signOut\(\).*google/);
 });
 test('Reliable PWA boot has a standalone module failure fallback and user-visible retry',()=>{
- assert.match(html,/script defer src="\.\/boot-recovery\.js\?v=20261015-evening83"/);
+ assert.match(html,/script defer src="\.\/boot-recovery\.js\?v=20261015-evening84"/);
  assert.match(boot,/addEventListener\('error'/);
  assert.match(boot,/\[data-lr-boot\]/);
  assert.match(html,/data-lr-boot/);
@@ -24,7 +24,7 @@ test('Reliable PWA boot has a standalone module failure fallback and user-visibl
  assert.match(boot,/serviceWorker\.getRegistration\(\)/);
  assert.match(boot,/location\.replace\(url\.href\)/);
  assert.doesNotMatch(boot,/localStorage\.clear|sessionStorage\.clear|caches\.delete/);
- assert.match(sw,/loveroll-static-v83/);
+ assert.match(sw,/loveroll-static-v84/);
  assert.match(sw,/\.\/boot-recovery\.js/);
 });
 test('Pages publishing refuses any JS syntax error and a failed real Chromium boot',()=>{

@@ -36,9 +36,9 @@ const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=
  return '<article class="evening-user-die evening-my-die">'+
   '<strong class="evening-person">'+(localUser?'MON DÉ · ':'')+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
   premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser&&Number.isInteger(rollFace)) +
-  '<div class="evening-face-result" aria-label="'+(reveal?'Total actuel '+displayCount+' défis; dé initial '+roll.face:'Dé personnel en attente')+'"><strong>'+(reveal?esc(displayCount):'♡')+'</strong>'+
-  '<small>'+(reveal?'défi'+(displayCount>1?'s':'')+' ce soir':localUser&&rolling?'Brassage…':roll?'Résultat en attente':'Pas encore lancé')+'</small>'+
-  (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>'+
+  (reveal?'<div class="evening-face-result" aria-label="Total actuel '+displayCount+' défis; dé initial '+roll.face+'"><strong>'+esc(displayCount)+'</strong>'+
+   '<small>défi'+(displayCount>1?'s':'')+' ce soir</small>'+
+   (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>':'')+
   (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):(!roll?'<small class="evening-wait">En attente</small>':''))+
   '</article>';
 };
@@ -46,12 +46,19 @@ const partnerStatusCard=(partner,roll)=>{
  const face=Number(roll?.face);
  const confirmed=roll?.face!=null&&Number.isInteger(face)&&face>=1&&face<=6;
  const name=esc(partner?.name?.split(' ')[0]||'Partenaire');
- return '<aside class="evening-partner-card '+(confirmed?'is-confirmed':'is-pending')+'" aria-live="polite" aria-label="Résultat du dé de '+name+'">'+
-  '<span class="evening-partner-caption">PARTENAIRE · '+name+'</span>'+
-  '<span class="evening-partner-medallion">'+(confirmed?esc(face):'♡')+'</span>'+
-  '<strong class="evening-partner-message">'+(confirmed?'Résultat confirmé':'En attente')+'</strong>'+
-  '<small>'+(confirmed?(face===1?'1 défi ce soir':esc(face)+' défis ce soir'):'Pas encore lancé')+'</small>'+
+ return '<aside class="evening-partner-card '+(confirmed?'is-confirmed':'is-pending')+'" aria-live="polite" aria-label="Dé de '+name+'">'+
+   '<span class="evening-partner-caption">'+name+'</span>'+
+   (confirmed?'<div class="evening-partner-die">'+premiumPolyDie(6,face,'Dé confirmé de '+name)+'</div>':
+     '<span class="evening-partner-medallion">♡</span>')+
+   '<strong class="evening-partner-message">'+(confirmed?(face===1?'1 défi ce soir':esc(face)+' défis ce soir'):'En attente')+'</strong>'+
   '</aside>';
+};
+const step1Summary=(mine,partner,myRoll,theirRoll,totals)=>{
+ const item=(member,roll)=>'<div class="evening-summary-person">'+
+  '<span>'+esc(member.name?.split(' ')[0]||'Partenaire')+'</span>'+
+  '<span class="evening-summary-die">'+premiumPolyDie(6,roll?.face??null,'Dé de '+esc(member.name||'partenaire'))+'</span>'+
+  '<b>'+esc(totals[member.user_id]??roll?.face??'—')+'</b></div>';
+ return '<div class="evening-step1-summary">'+item(mine,myRoll)+item(partner,theirRoll)+'</div>';
 };
 export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
@@ -92,28 +99,31 @@ export function premiumEveningHtml({
   '<div class="evening-d6-grid">'+
    d6(mine,myRoll,true,canMyRoll,ready,rollingKind==='my-d6'&&rolling,rollFace,turn?.ready?turn.targets?.[mine.user_id]:null)+
    partnerStatusCard(partner,theirRoll)+'</div>'+
-  (ready?'<div class="evening-step1-summary"><span>'+esc(mine.name?.split(' ')[0]||'Moi')+' : <b>'+esc(totals[me]??myRoll?.face??'—')+'</b></span><span>'+esc(partner.name?.split(' ')[0]||'Partenaire')+' : <b>'+esc(totals[partner.user_id]??theirRoll?.face??'—')+'</b></span></div>':'')+
+  (ready?step1Summary(mine,partner,myRoll,theirRoll,totals):'')+
   '<div class="evening-ready '+(ready?'yes':'')+'">'+stateText+'</div></section>'+
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
-  '<small>'+(!ready?'Attendez les deux dés':first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
+  '<small>'+(!ready?'Compléter l’étape 1 pour brasser le dé':first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
   '<button type="button" class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée" title="Gérer notre soirée">⋯</button></div>'+ 
   '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
-    '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
-
-       '<div class="evening-play-state">'+currentStatus+'</div></div>'+
-    '<div class="evening-play-controls"><p>Le dé révèle un défi parmi les cartes jouables, à tour de rôle.</p>'+
     '<div class="evening-choice">'+
        bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
        bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+'</div>'+
-    '<small>88 % catégorie choisie · 12 % autre<br>Défi cadeau : 100 % de ton choix</small>'+
-    (turn.finished?bt('finish-session','✓ Terminer la soirée','evening-primary'):
-     turn.drawsFinished?'<p class="evening-draw-done">✓ Tous les tirages sont prêts !</p>':
-     bt('new-challenge','🎲 Lancer le dé','evening-primary',!canDraw||!category||rolling))+
-    bt('evening-list','♡ Voir mes défis ('+ownChallengeCount+')','evening-queue-open-btn')+
-    '</div></div></section>'+
+    '<div class="evening-die-row">'+
+      '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
+       '<div class="evening-play-state">'+currentStatus+'</div></div>'+
+      '<div class="evening-probability"><strong>88 %</strong><span>des chances d’obtenir la catégorie souhaitée</span></div>'+
+    '</div>'+
+    '<div class="evening-roll-actions">'+
+      (turn.finished?bt('finish-session','✓ Terminer la soirée','evening-primary'):
+       turn.drawsFinished?'<p class="evening-draw-done">✓ Tous les tirages sont prêts !</p>':
+        bt('new-challenge','🎲 Brasser le dé','evening-primary',!canDraw||!category||rolling))+
+      bt('evening-list','♡ Voir mes défis ('+ownChallengeCount+')','evening-queue-open-btn')+
+    '</div>'+
+  '</div></section>'+
+
   '<section class="evening-gift"><div><strong>🎁 UN PETIT CADEAU</strong>'+
    '<p>Transfère un défi non commencé · '+giftCount+'/3 dons ce mois</p></div>'+
    bt('give-challenge','♡ Donner 1 défi à '+esc(partner.name?.split(' ')[0]||'mon partenaire'),
