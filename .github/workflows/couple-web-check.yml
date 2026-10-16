@@ -25,7 +25,7 @@ jobs:
           node --check couple-web/premium-home.mjs
           node --check couple-web/premium-evening.mjs
           node --check couple-web/evening-private-queue.mjs
-          node --test couple-web/evening-private-queue.test.mjs
+          node --test couple-web/evening-private-queue.test.mjs couple-web/evening-redesign.test.mjs
           node --check couple-web/feedback-status.mjs
           node --test couple-web/feedback-status.test.mjs couple-web/soiree-surprise-recovery.test.mjs
           node --check couple-web/premium-surprise.mjs
