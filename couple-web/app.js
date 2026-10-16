@@ -1940,6 +1940,75 @@ async function handle(action,element){
  if(verb==='home-notices'){
   state.homeNotices=!state.homeNotices;render();return;
  }
+ if(verb==='review-rate'){
+  const key=parts[0],value=Number(parts[1]);
+  if(!state.reviewModalSessionId||!['overall','connection','appreciation','again'].includes(key)||
+    !Number.isInteger(value)||value<1||value>5)throw Error('Note invalide.');
+  state.reviewDraft={...state.reviewDraft,[key]:value};
+  const group=root.querySelector('.lr-review-hearts[aria-label*="'+({
+   overall:'Rendu global',connection:'Connexion',appreciation:'Appréciation',again:'Envie'
+  }[key])+'"]');
+  for(const button of group?.querySelectorAll('button[data-action^="review-rate:"]')||[]){
+   const level=Number(button.dataset.action.split(':')[2]);
+   button.classList.toggle('is-lit',level<=value);
+   button.setAttribute('aria-pressed',String(level===value));
+   button.querySelector('span').textContent=level<=value?'♥':'♡';
+  }
+  return;
+ }
+ if(verb==='review-dismiss'){
+  state.reviewDismissedSessionId=state.reviewModalSessionId;
+  state.reviewModalSessionId=null;state.reviewDraft={};render();return;
+ }
+ if(verb==='review-calendar'){
+  const session=state.sessions.find(x=>x.id===state.reviewModalSessionId);
+  if(session){const date=eveningLocalDay(session.started_at);
+   state.eveningCalendarMonth=date?.slice(0,7)||month();
+   state.eveningCalendarDate=date||today();
+  }
+  state.reviewDismissedSessionId=state.reviewModalSessionId;
+  state.reviewModalSessionId=null;state.reviewDraft={};
+  state.tab='evening-calendar';render();return;
+ }
+ if(verb==='review-open'){
+  const sessionId=parts[0],session=state.sessions?.find(s=>s.id===sessionId&&s.finished_at&&s.counted);
+  if(!session||!isSharedCoupleReady(state.coupleId,state.members))
+   throw Error('Bilan inaccessible.');
+  const previous=state.eveningReviews.find(r=>r.session_id===sessionId&&r.author_id===state.user.id);
+  state.reviewModalSessionId=sessionId;state.reviewDismissedSessionId=null;
+  state.reviewDraft=previous?{overall:previous.overall,connection:previous.connection,
+   appreciation:previous.appreciation,again:previous.again,comment:previous.comment||'',editing:true}:
+   {comment:''};
+  render();return;
+ }
+ if(verb==='review-save'){
+  if(state.reviewSaving)return;
+  const sessionId=state.reviewModalSessionId;
+  const session=state.sessions.find(x=>x.id===sessionId&&x.finished_at&&x.counted);
+  if(!session)throw Error('Cette soirée n’est pas clôturée.');
+  const draft={...state.reviewDraft,comment:root.querySelector('#lr-review-comment')?.value||''};
+  const err=root.querySelector('.lr-review-error');
+  if(!validEveningReview(draft)){
+   if(err){err.hidden=false;err.textContent='Choisis de 1 à 5 cœurs pour chacune des quatre questions.';}
+   return;
+  }
+  const save=root.querySelector('.lr-review-save');
+  state.reviewSaving=true;if(save){save.disabled=true;save.textContent='♡ Enregistrement…';}
+  try{
+   await rpc('save_love_evening_review',{p_session:sessionId,p_overall:draft.overall,
+    p_connection:draft.connection,p_appreciation:draft.appreciation,
+    p_again:draft.again,p_comment:draft.comment});
+   state.reviewModalSessionId=null;state.reviewDraft={};state.reviewDismissedSessionId=sessionId;
+   const date=eveningLocalDay(session.started_at);
+   state.eveningCalendarMonth=date?.slice(0,7)||month();
+   state.eveningCalendarDate=date||today();
+   state.tab='evening-calendar';
+   await refreshAndShow();
+  }catch(error){
+   if(err){err.hidden=false;err.textContent=String(error?.message||'Enregistrement impossible. Réessaie.');}
+  }finally{state.reviewSaving=false;if(save?.isConnected){save.disabled=false;save.textContent='♡ Enregistrer mon bilan';}}
+  return;
+ }
  if(verb==='evening-more'){state.eveningMore=!state.eveningMore;render();return;}
  if(verb==='evening-calendar'){
   state.eveningMore=false;state.confirmCancel=false;
@@ -2796,7 +2865,7 @@ async function handle(action,element){
    liveSync.probe(true).catch(console.warn);
   return;
  }
- if(['evening-close-confirm','save-occasion-date','occasion-roll','roll','new-session','my-d6',
+ if(['review-save','evening-close-confirm','save-occasion-date','occasion-roll','roll','new-session','my-d6',
     'new-challenge','answer','finish-session','cancel-session','confirm-cancel',
     'save-event','delete-event','save-feedback'].includes(verb)&&
     !isSharedCoupleReady(state.coupleId,state.members))
@@ -2943,8 +3012,24 @@ async function handle(action,element){
  if(verb==='answer'){
   const item=ownEveningChallenges(state.challenges,state.user.id,state.session?.id).find(c=>c.id===parts[0]);
   if(!item)throw Error('Ce défi n’est pas dans ta liste personnelle.');
+  const eveningId=state.session.id;
   await rpc('answer_challenge',{p_id:parts[0],p_status:parts[1]});
-  state.showEveningChallenges=true;state.selectedEveningChallengeId=item.id;
+  if(parts[1]==='completed'){
+   // Last completed challenge closes the shared night automatically.
+   // The official server function checks BOTH adjusted D6 quotas atomically.
+   const board=await rpc('my_love_evening_board',{p_session:eveningId});
+   if(board?.finished){
+    try{await rpc('finish_couple_session',{p_session:eveningId,p_count:true});}
+    catch(error){
+     // Partner may have closed the same session milliseconds earlier.
+     const alreadyClosed=(await query('couple_sessions',{eq:{id:eveningId}}))[0]?.finished_at;
+     if(!alreadyClosed)throw error;
+    }
+    state.showEveningChallenges=false;state.selectedEveningChallengeId=null;
+   }else{
+    state.showEveningChallenges=true;state.selectedEveningChallengeId=item.id;
+   }
+  }else{state.showEveningChallenges=true;state.selectedEveningChallengeId=item.id;}
   await refreshAndShow();return;
  }
  if(verb==='finish-session'){
