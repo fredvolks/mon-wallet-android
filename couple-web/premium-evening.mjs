@@ -33,13 +33,13 @@ const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=
  const adjusted=reveal&&effectiveTarget!=null&&Number.isInteger(officialTarget)&&
   officialTarget>=0&&officialTarget!==roll.face;
  const displayCount=adjusted?officialTarget:reveal?roll.face:null;
- return '<article class="evening-user-die evening-my-die">'+
-  '<strong class="evening-person">'+(localUser?'MON DÉ · ':'')+esc(m?.name?.split(' ')[0]||'Partenaire')+'</strong>'+
-  premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Dé de '+(m?.name||'partenaire'),rolling&&localUser&&Number.isInteger(rollFace)) +
+ return '<article class="evening-user-die evening-my-die" aria-label="Mon dé personnel">'+
+  premiumPolyDie(6,rolling&&localUser?rollFace:has?roll.face:null,'Mon dé',rolling&&localUser&&Number.isInteger(rollFace))+
   (reveal?'<div class="evening-face-result" aria-label="Total actuel '+displayCount+' défis; dé initial '+roll.face+'"><strong>'+esc(displayCount)+'</strong>'+
    '<small>défi'+(displayCount>1?'s':'')+' ce soir</small>'+
-   (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>':'')+
-  (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):(!roll?'<small class="evening-wait">En attente</small>':''))+
+   (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>':
+   '<div class="evening-face-result is-empty" aria-hidden="true"></div>')+
+  (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):'')+
   '</article>';
 };
 const partnerStatusCard=(partner,roll)=>{
@@ -48,9 +48,11 @@ const partnerStatusCard=(partner,roll)=>{
  const name=esc(partner?.name?.split(' ')[0]||'Partenaire');
  return '<aside class="evening-partner-card '+(confirmed?'is-confirmed':'is-pending')+'" aria-live="polite" aria-label="Dé de '+name+'">'+
    '<span class="evening-partner-caption">'+name+'</span>'+
-   (confirmed?'<div class="evening-partner-die">'+premiumPolyDie(6,face,'Dé confirmé de '+name)+'</div>':
-     '<span class="evening-partner-medallion">♡</span>')+
-   '<strong class="evening-partner-message">'+(confirmed?(face===1?'1 défi ce soir':esc(face)+' défis ce soir'):'En attente')+'</strong>'+
+   (confirmed?'<div class="evening-partner-die">'+premiumPolyDie(6,face,'Dé confirmé de '+name)+'</div>'+
+     '<div class="evening-partner-result" aria-label="Résultat de '+name+' : '+face+'"><strong>'+esc(face)+'</strong>'+
+     '<small>défi'+(face>1?'s':'')+' ce soir</small></div>':
+     '<div class="evening-partner-pending"><span class="evening-partner-medallion" aria-hidden="true">♡</span>'+
+     '<strong class="evening-partner-message">En attente</strong><small>du lancer</small></div>')+
   '</aside>';
 };
 const step1Summary=(mine,partner,myRoll,theirRoll,totals)=>{
