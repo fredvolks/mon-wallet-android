@@ -6,7 +6,7 @@ const {chromium}=require('playwright');
  for(const device of [
    {name:'S25-compact',width:412,height:824},
    {name:'S25-long',width:412,height:915}
- ])for(const pageName of ['evening','evening-idle','surprise','surprise-ready']){
+ ])for(const pageName of ['evening','evening-idle','surprise','surprise-ready','surprise-done']){
   const page=await browser.newPage({viewport:{width:device.width,height:device.height},
    isMobile:true,hasTouch:true,deviceScaleFactor:2});
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
@@ -57,6 +57,9 @@ const {chromium}=require('playwright');
       if(!e)return false;const r=e.getBoundingClientRect(),p=panel.querySelector('.evening-die-row')?.getBoundingClientRect();
       return !!p&&r.height>90&&r.width>90&&r.left>=p.left-2&&r.right<=p.right+2&&r.top>=p.top-2&&r.bottom<=p.bottom+2;})(),
     managePresent:!!panel.querySelector('.evening-manage[data-action="evening-more"]'),
+    parityLegend:!!panel.querySelector('.surprise-host-legend'),
+    hostWinner:!!panel.querySelector('.surprise-host-winner'),
+    stageHostDice:panel.querySelector('.surprise-main-die-scene canvas')?.dataset.diceSides==='6',
     inlineInvite:!!panel.querySelector('.surprise-invite-inside'),
     oldHostBubble:!!panel.querySelector('.surprise-host'),
     sections:panel.querySelectorAll('section').length
@@ -74,10 +77,13 @@ const {chromium}=require('playwright');
      (pageName==='evening-idle'&&(result.neutralDice.length!==1||
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
      (pageName.startsWith('surprise')&&(
-      result.dice.length!==(pageName==='surprise-ready'?2:1)||
+      result.dice.length!==1||
       result.eventCount!==6||!result.eventVisible||result.eventColumns!==2||
-      result.surpriseDice.length!==(pageName==='surprise-ready'?2:1)||
-      result.inlineInvite!==(pageName==='surprise-ready')||result.oldHostBubble||
+      result.surpriseDice.length!==1||
+      result.inlineInvite||result.oldHostBubble||
+      result.parityLegend!==(pageName==='surprise-ready')||
+      result.hostWinner!==(pageName==='surprise-done')||
+      result.stageHostDice!==(pageName==='surprise-ready')||
       result.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap||d.position!=='absolute')
      )))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-vrai-couple.png'});
@@ -90,7 +96,7 @@ const {chromium}=require('playwright');
   {name:'Android-360x700',width:360,height:700},
   {name:'iPhone-393x852',width:393,height:852},
   {name:'S25-enlarged-text',width:412,height:824,fontSize:'125%'}
- ])for(const pageName of ['evening-idle','surprise','surprise-ready']){
+ ])for(const pageName of ['evening-idle','surprise','surprise-ready','surprise-done']){
   const page=await browser.newPage({viewport:{width:device.width,height:device.height},
    isMobile:true,hasTouch:true,deviceScaleFactor:2});
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -119,7 +125,7 @@ const {chromium}=require('playwright');
   console.log('Responsive '+device.name+' '+pageName,JSON.stringify({metrics,errors}));
   if(errors.length||metrics.scrollWidth>metrics.width+2||metrics.navCount!==5||
      metrics.targetHeight<(pageName.startsWith('surprise')?38:44)||metrics.targetBottom>metrics.navTop+2||
-     (pageName.startsWith('surprise')&&(metrics.surpriseDice.length!==(pageName==='surprise-ready'?2:1)||
+     (pageName.startsWith('surprise')&&(metrics.surpriseDice.length!==1||
         metrics.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap)))){
     throw Error('Commande inaccessible sur petit écran : '+device.name+' '+pageName);
   }
