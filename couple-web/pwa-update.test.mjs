@@ -5,9 +5,9 @@ const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),sw=read('service-worker.js');
 const release=JSON.parse(read('web-version.json'));
 test('LoveRoll build versions agree between endpoint, app, HTML and imported modules',()=>{
- const build='2026-10-16.97',tag='20261015-no-toast87',appTag='20261016-person-review97';
+ const build='2026-10-16.99',tag='20261015-no-toast87',appTag='20261016-finale99';
  assert.equal(release.build,build);
- assert.match(app,/const WEB_RELEASE='2026-10-16\.97'/);
+ assert.match(app,/const WEB_RELEASE='2026-10-16\.99'/);
  assert.match(html,new RegExp('app\\.js\\?v='+appTag));
  for(const css of ['styles.css','premium-theme.css','satin-reference.css','discover.css']){
   assert.ok(html.includes(css+'?v='+tag),css);
@@ -17,7 +17,7 @@ test('LoveRoll build versions agree between endpoint, app, HTML and imported mod
  assert.match(app,new RegExp("dice3d\\.js\\?v="+tag));
 });
 test('PWA bypasses stale Android network caches while preserving offline fallback',()=>{
- assert.match(sw,/loveroll-static-v97/);
+ assert.match(sw,/loveroll-static-v99/);
  assert.match(sw,/fetch\(req,\{cache:'no-store'\}\)/);
  assert.match(sw,/caches\.match\(fallback\.href\)/);
  assert.match(sw,/\.\/web-version\.json/);

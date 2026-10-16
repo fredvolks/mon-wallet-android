@@ -5,7 +5,7 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-person-rev
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-hearts96';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-finale99';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
@@ -33,7 +33,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.97';
+const WEB_RELEASE='2026-10-16.99';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -1046,6 +1046,11 @@ function renderSession(){
    responses:recentReviews.length,
    myResponse:recentReviews.some(f=>f.author_id===uid),
    partnerResponse:recentReviews.some(f=>f.author_id===partner.user_id)}:null;
+ // Same weekly limit as the Supabase RPC. Only counted, Québec-local sessions
+ // started since this Monday consume the week's 1–6 available evenings.
+ const weeklyCounted=(state.sessions||[]).filter(s=>s.counted===true&&
+   eveningLocalDay(s.started_at)>=state.weekly.key).length;
+ const canStartEvening=weeklyCounted<Number(state.weekly.face);
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
@@ -1099,7 +1104,7 @@ function renderSession(){
    turn,category:state.category,giftCount,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
    playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
-   challengeOverlay:overlay,lastEvening,ownChallengeCount:mineCards.length,
+   challengeOverlay:overlay,lastEvening,canStartEvening,ownChallengeCount:mineCards.length,
    lastD35Face:lastOfficialChallengeFace(
     session?state.challenges:state.challengesHistory,session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
