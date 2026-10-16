@@ -158,27 +158,28 @@ test('Before D20 roll, Surprise has no separate host bubble and exactly six edit
  assert.match(html,/data-action="edit-surprise-event:birthday:first"/);
  assert.match(html,/data-action="edit-surprise-event:birthday:second"/);
 });
-test('After D20 roll, Qui invite D6 appears inside the SAME large activity bubble',()=>{
+test('After D20 roll, D6 replaces the full-size D20 then restores it after the host choice',()=>{
  const html=premiumSurpriseHtml({members:people,monthly:{monthly_activity:{face:13}},
   activity:{title:'Une escapade',description:'Une sortie pour deux'}});
- assert.match(html,/data-action="surprise-activity"/);
+ assert.doesNotMatch(html,/data-action="surprise-activity"/);
  assert.doesNotMatch(html,/data-action="roll:monthly_activity"/);
- assert.match(html,/class="surprise-month has-activity"[\s\S]*class="surprise-invite-inside"/);
+ assert.match(html,/class="surprise-month has-activity host-pending"/);
  assert.match(html,/data-action="roll:monthly_host">Brasser le dé · Qui invite \?<\/button>/);
- assert.match(html,/class="surprise-invite-grid"/);
- assert.match(html,/class="surprise-invite-die"/);
- assert.match(html,/1 · 2 · 3/);
- assert.match(html,/4 · 5 · 6/);
+ assert.match(html,/class="surprise-host-legend"/);
+ assert.match(html,/2 · 4 · 6/);
+ assert.match(html,/1 · 3 · 5/);
  assert.match(html,/Camille/);assert.match(html,/Noémie/);
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,1);
- assert.match(html,/data-dice-unrolled="true"/);
- assert.match(html,/data-dice-markers="hearts"/);
- assert.doesNotMatch(html,/class="surprise-host"/);
+ assert.equal((html.match(/data-dice-sides="20"/g)||[]).length,0);
+ assert.doesNotMatch(html,/class="surprise-invite-inside"|class="surprise-host"/);
  const assigned=premiumSurpriseHtml({members:people,monthly:{
   monthly_activity:{face:13},monthly_host:{face:5}}});
  assert.match(assigned,/Noémie invite cette fois-ci/);
+ assert.match(assigned,/class="surprise-month has-activity host-complete"/);
+ assert.match(assigned,/data-action="surprise-activity"/);
  assert.doesNotMatch(assigned,/data-action="roll:monthly_host"/);
- assert.equal((assigned.match(/data-dice-sides="6"/g)||[]).length,1);
+ assert.equal((assigned.match(/data-dice-sides="20"/g)||[]).length,1);
+ assert.equal((assigned.match(/data-dice-sides="6"/g)||[]).length,0);
 });
 test('The six event cards open an editor for shared name/date without rewriting old rolls',()=>{
  const settings={anniversary_md:'08-20',surprise_event_overrides:{
