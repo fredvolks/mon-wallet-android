@@ -2794,8 +2794,8 @@ async function handle(action,element){
  if(verb==='my-d6'){
   if(!state.session)throw Error('Aucune soirée active.');
   await animateRoll(()=>rpc('roll_my_evening_d6',{p_session:state.session.id}),'my-d6');
-  if(!state.rollStatus?.both_ready)notify('Dé lancé! Les deux résultats apparaîtront ensemble après le dernier tirage.');
-  else notify('♡ Les deux résultats sont maintenant révélés!');return;
+  // La carte de l'étape 1 affiche l'état du lancer; aucun toast supplémentaire.
+  return;
  }
  if(verb==='category'){
   if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');
