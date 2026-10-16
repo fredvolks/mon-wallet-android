@@ -171,45 +171,27 @@ test('Brand LoveRoll is applied to PWA',()=>{
  assert.match(app,/LoveRoll/);
 });
 
-test('The evening asks for a category at each draw with 88/12 odds',()=>{
- assert.deepEqual(EVENING_CATEGORIES,['SENSUEL','SEXUEL']);
- assert.deepEqual(availableEveningCategories('SENSUEL'),[{category:'SENSUEL',weight:88},{category:'SEXUEL',weight:12}]);
- assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:12},{category:'SEXUEL',weight:88}]);
- assert.match(app,/EVENING_CATEGORIES\.map/);
- assert.match(app,/88 % dans votre catégorie choisie · 12 % dans l’autre/);
- assert.match(app,/diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false/);
- assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
- assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category)&&state.category!=='HASARD')"));
- assert.match(app,/draw_for_partner_random/);
- assert.ok(app.includes("state.category=null; // Require a fresh category choice"));
- assert.ok(app.includes('Sélectionnez Sensuel ou Sexuel pour activer le tirage.'));
- const weights=availableEveningCategories('SENSUEL');
- assert.equal(weights.reduce((sum,entry)=>sum+entry.weight,0),100);
- assert.equal(availableEveningCategories('SEXUEL').reduce((sum,entry)=>sum+entry.weight,0),100);
- assert.doesNotMatch(app,/Aléatoire : Sexuel 40/);
+test('One D100 library replaces both category choices',()=>{
+ assert.deepEqual(EVENING_CATEGORIES,['MIXTE']);
+ assert.deepEqual(availableEveningCategories('MIXTE'),[{category:'MIXTE',weight:100}]);
+ assert.ok(app.includes("p_preference:'MIXTE'"));
+ assert.doesNotMatch(app,/if\(verb==='category'\)/);
+ assert.ok(!app.includes('Sélectionnez Sensuel ou Sexuel pour activer le tirage.'));
 });
-test('50 seeded cards and 150 optional creator-only slots',()=>{
- for(const category of EVENING_CATEGORIES){
-  assert.equal(EVENING_CHALLENGES[category].length,25);
-  for(let cardId=1;cardId<=25;cardId++){
-   const card=eveningCard(category,cardId);
-   assert.ok(card.title.length>=5);
-   assert.ok(card.description.length>35);
-   assert.ok(Number.isInteger(card.minutes)&&card.minutes>=0&&card.minutes<=15);
-  }
-  const slots=customCardSlots(category);
-  assert.equal(slots.length,75);
-  assert.ok(slots.every(s=>s.cardId>=26&&s.cardId<=100&&!s.filled));
+test('The single library offers 50 built-in and 50 blank slots',()=>{
+ const cards=EVENING_CHALLENGES.MIXTE;
+ assert.equal(cards.length,50);
+ for(let cardId=1;cardId<=50;cardId++){
+  const card=eveningCard('MIXTE',cardId);
+  assert.ok(card.title.length>=5&&card.description.length>35);
+  assert.ok(Number.isInteger(card.minutes)&&card.minutes>=0&&card.minutes<=15);
  }
- assert.equal(eveningCard('SENSUEL',3).minutes,4);
- assert.equal(eveningCard('SEXUEL',5).minutes,12);
- assert.equal(eveningCard('SEXUEL',16).minutes,0);
- assert.throws(()=>eveningCard('COQUIN',1));
- assert.throws(()=>eveningCard('SEXUEL',26));
- const snapshot={category:'SEXUEL',card_id:29,face:5,card_title:'Une carte libre',
-  card_description:'Une proposition personnalisée sans durée.',card_timer_minutes:null};
- assert.equal(resolvedCard(snapshot).minutes,null);
- assert.equal(resolvedCard(snapshot).cardId,29);
+ const slots=customCardSlots('MIXTE');
+ assert.equal(slots.length,50);
+ assert.ok(slots.every(c=>c.cardId>=51&&c.cardId<=100&&!c.filled));
+ assert.equal(eveningCard('MIXTE',26).title,eveningCard('SEXUEL',1).title);
+ assert.throws(()=>eveningCard('MIXTE',101));
+ assert.equal(resolvedCard({category:'SEXUEL',card_id:1,face:5}).title,eveningCard('SEXUEL',1).title);
 });
 test('Countdown uses a monotonic wall deadline, pause reset and optional signals',()=>{
  assert.equal(formatCountdown(600_000),'10:00');
@@ -441,7 +423,7 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("isLoveAdmin()"));
  assert.ok(app.includes("if(state.couple?.owner_user_id===state.user.id)"));
  assert.ok(app.includes("save_love_card_with_roles"));
- assert.ok(app.includes("button('tab:library','♡ Nos 200 défis')"));
+ assert.ok(app.includes("button('tab:library','♡ Nos 100 défis')"));
  assert.ok(app.includes("renderInvitePanel()"));
  assert.ok(app.includes("button('invite','Remplacer le lien actuel'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
@@ -523,35 +505,25 @@ test('Neither partner sees whether a drawn card was created by the admin',()=>{
  assert.ok(app.includes('function isLoveAdmin()'));
 });
 
-test('The administrator can edit all 200 cards without replacing the fixed originals',()=>{
- for(const category of EVENING_CATEGORIES){
-  const original=editableCardSlots(category);
-  assert.equal(original.length,100);
-  assert.equal(original.filter(c=>c.isOriginal).length,25);
-  assert.equal(original.filter(c=>!c.isOriginal).length,75);
-  assert.equal(original.filter(c=>c.filled).length,25);
-  assert.equal(original.filter(c=>c.saved).length,0);
-  const edited=editableCardSlots(category,[
-   {category,card_id:3,title:'Une version adaptée',description:'Des consignes pour un nouveau défi.',
-    timer_minutes:null,recipient_user_id:'recipient',drawer_user_id:'drawer'},
-   {category,card_id:30,title:'Une nouvelle carte',description:'Description d’une carte.',
-    timer_minutes:9,recipient_user_id:null,drawer_user_id:null}
-  ]);
-  assert.equal(edited[2].title,'Une version adaptée');
-  assert.equal(edited[2].minutes,null);
-  assert.equal(edited[2].recipientId,'recipient');
-  assert.equal(edited[2].drawerId,'drawer');
-  assert.equal(edited[2].saved,true);
-  assert.equal(edited[29].minutes,9);
-  assert.equal(edited[29].filled,true);
-  assert.equal(edited[30].filled,false);
-  const snapshot=resolvedCard({category,card_id:3,face:19,
-   card_title:'Une version adaptée',card_description:'Des consignes pour un nouveau défi.',
-   card_timer_minutes:null});
-  assert.equal(snapshot.title,'Une version adaptée');
-  assert.equal(snapshot.minutes,null);
-  assert.equal(Object.hasOwn(snapshot,'custom'),false);
- }
+test('The admin edits 100 positions, while retaining all 50 defaults',()=>{
+ const category='MIXTE',original=editableCardSlots(category);
+ assert.equal(original.length,100);
+ assert.equal(original.filter(c=>c.isOriginal).length,50);
+ assert.equal(original.filter(c=>!c.isOriginal).length,50);
+ assert.equal(original.filter(c=>c.filled).length,50);
+ const edited=editableCardSlots(category,[
+  {category,card_id:3,title:'Une version adaptée',description:'Des consignes pour un nouveau défi.',
+   timer_minutes:null,recipient_user_id:'recipient',drawer_user_id:'drawer'},
+  {category,card_id:60,title:'Une nouvelle carte',description:'Description d’une carte.',
+   timer_minutes:9,recipient_user_id:null,drawer_user_id:null}
+ ]);
+ assert.equal(edited[2].title,'Une version adaptée');
+ assert.equal(edited[2].minutes,null);
+ assert.equal(edited[59].minutes,9);
+ assert.equal(edited[59].filled,true);
+ assert.equal(edited[60].filled,false);
+ assert.equal(resolvedCard({category,card_id:3,face:19,card_title:'Une version adaptée',
+   card_description:'Des consignes pour un nouveau défi.',card_timer_minutes:null}).title,'Une version adaptée');
 });
 test('All card draws respect drawer eligibility and persistent no-repeat cycles',()=>{
  const sql=readFileSync(new URL('./edit-all-cards-shufflebag.sql',import.meta.url),'utf8');
@@ -630,10 +602,10 @@ test('Prepare cards privately before inviting a partner with future partner role
 test('All 50 original cards are varied, ready to play and individually editable',()=>{
  const all=new Set();
  for(const category of EVENING_CATEGORIES){
-  const cards=Array.from({length:25},(_,i)=>eveningCard(category,i+1));
-  assert.equal(cards.length,25);
-  assert.ok(cards.filter(c=>c.minutes>0).length>=9,'Not enough playable timed challenges in '+category);
-  assert.ok(cards.filter(c=>c.minutes===0).length>=9,'Open-ended surprises should never force a countdown in '+category);
+  const cards=Array.from({length:50},(_,i)=>eveningCard(category,i+1));
+  assert.equal(cards.length,50);
+  assert.ok(cards.filter(c=>c.minutes>0).length>=18,'Not enough playable timed challenges in '+category);
+  assert.ok(cards.filter(c=>c.minutes===0).length>=18,'Open-ended surprises should never force a countdown in '+category);
   for(const [i,card] of cards.entries()){
    assert.ok(card.title.length>=8&&card.title.length<=120,'Missing card title '+category+' '+i);
    assert.ok(card.description.length>=90&&card.description.length<=900,'Incomplete instructions '+category+' '+i);
@@ -884,25 +856,18 @@ test('Server protects future D6 options, uses only random 1..6, and preserves pr
  assert.ok(!rolls.includes('delete from public.couple_occasion_rolls'));
 });
 
-test('Real-time server D35 odds mirror 88/12 preference and keep safeguards',()=>{
- const sql=readFileSync(new URL('./draw-category-88-12.sql',import.meta.url),'utf8');
- assert.ok(sql.includes('weights:=array_append(weights,case when v_cat=p_preference then 88 else 12 end);'));
- assert.ok(!sql.includes('then 80 else 20'));
- assert.ok(sql.includes("if p_preference not in ('SENSUEL','SEXUEL')"));
- assert.ok(sql.includes('if capacity>0 then'));
- assert.ok(sql.includes('ticket:=floor(random()*total)::integer;'));
- assert.ok(sql.includes('and history.card_id=card'));
- assert.ok(sql.includes('coalesce(chosen.title,original.title)'));
- assert.ok(sql.includes('coalesce(chosen.description,original.description)'));
- assert.ok(sql.includes('insert into public.love_card_draw_history'));
- assert.ok(sql.includes('cc.drawer_role'));
- assert.ok(sql.includes('cc.recipient_role'));
- assert.ok(sql.includes('d35:=floor(random()*35)::integer+1'));
- assert.ok(!sql.includes('delete from public.couple_challenges'));
- assert.ok(app.includes("p_preference:selectedCategory,p_random:false"));
- assert.match(app,/selectedCategory==='HASARD'/);
+test('Unified D100 migration keeps permission, anti-repeat and privacy safeguards',()=>{
+ const sql=readFileSync(new URL('./migrations/20261016_unified_d100_112.sql',import.meta.url),'utf8');
+ assert.ok(sql.includes("v_cat:='MIXTE'"));
+ assert.ok(sql.includes("if p_preference<>'MIXTE'"));
+ assert.ok(sql.includes("generate_series(1,100)"));
+ assert.ok(sql.includes("couple_private.love_role_allows"));
+ assert.ok(sql.includes("love_card_draw_history"));
+ assert.ok(sql.includes("coalesce(chosen.title,original.title)"));
+ assert.ok(sql.includes("cid<=50"));
+ assert.ok(!app.includes("selectedCategory==='HASARD'"));
+ assert.ok(!app.includes("if(verb==='category'){"));
 });
-
 test('Settings groups remain settings-only; after-party forms live under Soirée',()=>{
  const settings=app.slice(app.indexOf('function renderSettings(){'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
  assert.match(settings,/settingGroup\('Compte'/);
