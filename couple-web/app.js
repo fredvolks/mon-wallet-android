@@ -34,7 +34,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.101';
+const WEB_RELEASE='2026-10-16.102';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -1043,8 +1043,8 @@ function renderSession(){
  if(session&&state.showEveningChallenges){
   const view=selected;
   const idx=view?queuePosition(mineCards,view.id):-1;
-  overlay='<div class="surprise-modal evening-queue-modal" role="dialog" aria-modal="true" aria-label="Mes défis de ce soir">'+
-   '<article class="surprise-modal-content evening-queue-content">'+
+  overlay='<div class="surprise-modal evening-queue-modal'+(view?' is-detail':'')+'" role="dialog" aria-modal="true" aria-label="Mes défis de ce soir">'+
+   '<article class="surprise-modal-content evening-queue-content'+(view?' is-detail':'')+'">'+
    '<div class="eyebrow">♡ MES DÉFIS DU SOIR</div>'+
    (view?
     '<div class="evening-queue-nav">'+
@@ -1084,7 +1084,7 @@ function renderSession(){
  }
  frame(premiumEveningHtml({
    session,members:state.members,me:uid,rolls:state.personal,status:state.rollStatus,
-   turn,category:state.category,giftCount,rolling:!!state.diceStatus,rollFace:state.rollAnimationFace,
+   turn,category:state.category,giftCount,rolling:state.diceStatus==='rolling'||state.diceStatus==='pending',rollFace:state.rollAnimationFace,
    playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
    challengeOverlay:overlay,lastEvening,canStartEvening,
@@ -1801,6 +1801,14 @@ async function animateRoll(fn,kind='general'){
   state.rollAnimationFace=confirmedFace;
   state.diceStatus='rolling';render();
   await new Promise(resolve=>setTimeout(resolve,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?180:ROLL_TOTAL_MS+140));
+  if(kind==='new-challenge'){
+   // Keep official D35 face visible for a full second after the animation.
+   // A truthy status temporarily suppresses refreshShared's automatic popup.
+   state.diceStatus='settled';state.rollAnimationFace=null;
+   await refreshShared();
+   if(state.tab==='session')render();
+   await new Promise(resolve=>setTimeout(resolve,1000));
+  }
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
   await refreshAndShow();return result;
  }catch(e){
@@ -2886,7 +2894,8 @@ async function handle(action,element){
    'new-challenge');
   // The official result is now stored; open only the receiving player's
   // private card, with the saved timer ready to start later.
-  if(drawn?.id&&drawn.recipient===state.user.id){
+  if(drawn?.id&&drawn.recipient===state.user.id&&
+       state.tab==='session'&&state.session?.id===sessionId){
    state.selectedEveningChallengeId=drawn.id;
    state.showEveningChallenges=true;
   }
