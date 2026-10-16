@@ -66,8 +66,8 @@ test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D
   turn:{...base.turn,ready:true,next:'one'},category:'SEXUEL'});
  assert.match(ready,/evening-summary-die/);
  assert.match(ready,/data-dice-sides="100"/);
- assert.match(ready,/88 %/);
- assert.match(ready,/class="evening-choice-odds">88 % de chances/);
+ assert.doesNotMatch(ready,/88 %|evening-choice-odds/);
+ assert.match(ready,/Une seule bibliothèque/);
  assert.doesNotMatch(ready,/12 % autre|Défi cadeau : 100 %/);
  assert.match(ready,/data-action="new-challenge"/);
  assert.match(ready,/data-action="evening-list"/);
