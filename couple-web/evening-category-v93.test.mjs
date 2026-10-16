@@ -68,3 +68,18 @@ test('Three equally sized buttons and a horizontally centered D35 at every break
  assert.match(css,/@media \(max-width:767px\)/);
  assert.match(css,/@media \(min-width:768px\)/);
 });
+
+test('Switching categories must leave mounted WebGL canvases in place',()=>{
+ const app=read('app.js'),module=read('premium-evening.mjs');
+ assert.match(app,/import \{premiumEveningHtml,updateEveningCategoryUi\}/);
+ const start=app.indexOf("if(verb==='category')");
+ const end=app.indexOf("if(verb==='timer-mode')",start);
+ const handler=app.slice(start,end);
+ assert.match(handler,/if\(!updateEveningCategoryUi\(root,parts\[0\]\)\)render\(\)/);
+ assert.doesNotMatch(handler,/\n  render\(\);return;/);
+ assert.match(module,/export function updateEveningCategoryUi\(root,category\)/);
+ const updater=module.slice(module.indexOf('export function updateEveningCategoryUi('),module.indexOf('const d6='));
+ assert.match(updater,/querySelector\('\.evening-step\.two \.evening-choice'\)/);
+ assert.doesNotMatch(updater,/innerHTML|outerHTML|replaceChildren|diceCleanup|clearDice|dieOn|render\(/);
+ assert.match(updater,/roll\.disabled=false/);
+});
