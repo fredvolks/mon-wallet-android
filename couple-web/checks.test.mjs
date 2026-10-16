@@ -174,7 +174,8 @@ test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.match(app,/88 % dans votre catégorie choisie · 12 % dans l’autre/);
  assert.match(app,/diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false/);
  assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
- assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category))"));
+ assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category)&&state.category!=='HASARD')"));
+ assert.match(app,/draw_for_partner_random/);
  assert.ok(app.includes("state.category=null; // Require a fresh category choice"));
  assert.ok(app.includes('Sélectionnez Sensuel ou Sexuel pour activer le tirage.'));
  const weights=availableEveningCategories('SENSUEL');
@@ -892,7 +893,8 @@ test('Real-time server D35 odds mirror 88/12 preference and keep safeguards',()=
  assert.ok(sql.includes('cc.recipient_role'));
  assert.ok(sql.includes('d35:=floor(random()*35)::integer+1'));
  assert.ok(!sql.includes('delete from public.couple_challenges'));
- assert.ok(app.includes("p_preference:state.category,p_random:false"));
+ assert.ok(app.includes("p_preference:selectedCategory,p_random:false"));
+ assert.match(app,/selectedCategory==='HASARD'/);
 });
 
 test('Settings groups remain settings-only; after-party forms live under Soirée',()=>{
