@@ -93,7 +93,7 @@ test('Invitation URL uses non-secret UUID and removes legacy secret tokens from 
 });
 test('No default opinion: every rating requires an actual user choice',()=>{
  assert.doesNotMatch(app,/\(v===4\?'checked':''\)/);
- assert.match(app,/if\(!\(rating>=1&&rating<=5\)\)/);
+ assert.match(app,/validEveningReview\(draft\)/);
 });
 
 test('A member waiting for their match is notified when the partner accepts',()=>{
@@ -106,7 +106,8 @@ test('A member waiting for their match is notified when the partner accepts',()=
 test('The five bottom tabs keep Settings while Journal and questionnaires move to Soirée',()=>{
  assert.match(app,/\['settings','⚙','Réglages'\]/);
  assert.match(app,/Ouvrir notre calendrier partagé/);
- assert.match(app,/NOS AVIS APRÈS LA SOIRÉE/);
+ assert.match(app,/rpc\('save_love_evening_review'/);
+ assert.doesNotMatch(app,/NOS AVIS APRÈS LA SOIRÉE|choose-feedback/);
  assert.match(app,/settingGroup\('Compte'/);
 });
 
