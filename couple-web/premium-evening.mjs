@@ -212,7 +212,7 @@ export function premiumEveningHtml({
       '<div class="evening-finale-tiles" role="group" aria-label="Informations des soirées">'+
        '<div><strong>'+esc(weeklyCount)+' / '+(weeklyReady?esc(weeklyLimit):'—')+
          '</strong><span>Soirées cette semaine</span></div>'+
-       '<div><strong>100 + 100
+       '<div><strong>100 + 100'+
          '</strong><span>Sensuel / Sexuel</span></div>'+
        '<div><strong>'+esc(weeklyCount)+'</strong><span>Soirées terminées</span></div></div>')+
     '<div class="evening-finale-actions">'+
