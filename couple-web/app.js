@@ -2727,12 +2727,6 @@ async function handle(action,element){
     'personal-journal','journal','ideas','monthly-library','advent-editor','special-editor']:
    ['home','settings','invitation','library','personal-journal','monthly-library','advent-editor','special-editor'];
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
-  if(parts[0]==='session'&&!state.weekly){
-   state.tab='session';state.showEveningChallenge=false;state.eveningMore=false;
-   render();
-   notify('♡ Brassez le dé hebdomadaire à l’accueil pour débloquer votre soirée.');
-   return;
-  }
   if(['library','monthly-library','advent-editor','special-editor'].includes(parts[0])&&!isLoveAdmin())
    throw Error('Modification réservée à l’administrateur du couple.');
   if(parts[0]!==state.tab&&hasUnsavedForm()&&
