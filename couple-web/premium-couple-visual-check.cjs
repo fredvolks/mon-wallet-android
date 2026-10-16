@@ -6,7 +6,7 @@ const {chromium}=require('playwright');
  for(const device of [
    {name:'S25-compact',width:412,height:824},
    {name:'S25-long',width:412,height:915}
- ])for(const pageName of ['evening','evening-idle','surprise']){
+ ])for(const pageName of ['evening','evening-idle','surprise','surprise-ready']){
   const page=await browser.newPage({viewport:{width:device.width,height:device.height},
    isMobile:true,hasTouch:true,deviceScaleFactor:2});
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
@@ -39,9 +39,12 @@ const {chromium}=require('playwright');
     eventCount:panel.querySelectorAll('.surprise-event-card').length,
     eventVisible:([...panel.querySelectorAll('.surprise-event-card')].every(el=>{const r=el.getBoundingClientRect();return r.width>70&&r.height>34&&r.bottom<=nav.top+2})),
     eventColumns:panel.querySelector('.surprise-special-grid')?getComputedStyle(panel.querySelector('.surprise-special-grid')).gridTemplateColumns.split(' ').length:0,
-    surpriseDice:[...panel.querySelectorAll('.surprise-d20-scene,.surprise-host-die')].map(zone=>{
+    surpriseDice:[...panel.querySelectorAll('.surprise-d20-scene,.surprise-invite-die')].map(zone=>{
       const c=zone.querySelector('.dice-canvas'),r=zone.getBoundingClientRect(),d=c?.getBoundingClientRect();
-      const btn=zone.closest('section')?.querySelector('.surprise-primary'),b=btn?.getBoundingClientRect();
+      const btn=zone.classList.contains('surprise-invite-die')?
+       zone.closest('.surprise-invite-inside')?.querySelector('.surprise-invite-button'):
+       zone.closest('section')?.querySelector(':scope > .surprise-primary');
+      const b=btn?.getBoundingClientRect();
       return {zone:zone.className,
        inside:!!d&&d.width>0&&d.height>0&&d.left>=r.left-2&&d.top>=r.top-2&&
         d.right<=r.right+2&&d.bottom<=r.bottom+2,
@@ -54,6 +57,8 @@ const {chromium}=require('playwright');
       if(!e)return false;const r=e.getBoundingClientRect(),p=panel.querySelector('.evening-die-row')?.getBoundingClientRect();
       return !!p&&r.height>90&&r.width>90&&r.left>=p.left-2&&r.right<=p.right+2&&r.top>=p.top-2&&r.bottom<=p.bottom+2;})(),
     managePresent:!!panel.querySelector('.evening-manage[data-action="evening-more"]'),
+    inlineInvite:!!panel.querySelector('.surprise-invite-inside'),
+    oldHostBubble:!!panel.querySelector('.surprise-host'),
     sections:panel.querySelectorAll('section').length
    };
    return obj;
@@ -68,8 +73,13 @@ const {chromium}=require('playwright');
       (pageName==='evening-idle'&&result.dice.filter(d=>d.height>=45).length!==1)))||
      (pageName==='evening-idle'&&(result.neutralDice.length!==1||
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
-     (pageName==='surprise'&&(result.dice.length!==2||result.eventCount!==6||!result.eventVisible||result.eventColumns!==2||result.surpriseDice.length!==2||
-      result.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap||d.position!=='absolute'))))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
+     (pageName.startsWith('surprise')&&(
+      result.dice.length!==(pageName==='surprise-ready'?2:1)||
+      result.eventCount!==6||!result.eventVisible||result.eventColumns!==2||
+      result.surpriseDice.length!==(pageName==='surprise-ready'?2:1)||
+      result.inlineInvite!==(pageName==='surprise-ready')||result.oldHostBubble||
+      result.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap||d.position!=='absolute')
+     ))))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-vrai-couple.png'});
   await page.close();
  }
@@ -80,7 +90,7 @@ const {chromium}=require('playwright');
   {name:'Android-360x700',width:360,height:700},
   {name:'iPhone-393x852',width:393,height:852},
   {name:'S25-enlarged-text',width:412,height:824,fontSize:'125%'}
- ])for(const pageName of ['evening-idle','surprise']){
+ ])for(const pageName of ['evening-idle','surprise','surprise-ready']){
   const page=await browser.newPage({viewport:{width:device.width,height:device.height},
    isMobile:true,hasTouch:true,deviceScaleFactor:2});
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -97,17 +107,19 @@ const {chromium}=require('playwright');
     targetHeight:Math.round(rect.height),targetTop:Math.round(rect.top),
     targetBottom:Math.round(rect.bottom),navTop:Math.round(document.querySelector('.nav').getBoundingClientRect().top),
     navCount:document.querySelectorAll('.nav button').length,
-    surpriseDice:[...document.querySelectorAll('.surprise-d20-scene,.surprise-host-die')].map(zone=>{
+    surpriseDice:[...document.querySelectorAll('.surprise-d20-scene,.surprise-invite-die')].map(zone=>{
       const canvas=zone.querySelector('canvas'),r=zone.getBoundingClientRect(),d=canvas?.getBoundingClientRect();
-      const b=zone.closest('section')?.querySelector('.surprise-primary')?.getBoundingClientRect();
+      const b=(zone.classList.contains('surprise-invite-die')?
+        zone.closest('.surprise-invite-inside')?.querySelector('.surprise-invite-button'):
+        zone.closest('section')?.querySelector(':scope > .surprise-primary'))?.getBoundingClientRect();
       return {inside:!!d&&d.left>=r.left-2&&d.top>=r.top-2&&d.right<=r.right+2&&d.bottom<=r.bottom+2,
        noButtonOverlap:!b||d.bottom<=b.top+2};
     })};
   });
   console.log('Responsive '+device.name+' '+pageName,JSON.stringify({metrics,errors}));
   if(errors.length||metrics.scrollWidth>metrics.width+2||metrics.navCount!==5||
-     metrics.targetHeight<(pageName==='surprise'?38:44)||metrics.targetBottom>metrics.navTop+2||
-     (pageName==='surprise'&&(metrics.surpriseDice.length!==2||
+     metrics.targetHeight<(pageName.startsWith('surprise')?38:44)||metrics.targetBottom>metrics.navTop+2||
+     (pageName.startsWith('surprise')&&(metrics.surpriseDice.length!==(pageName==='surprise-ready'?2:1)||
         metrics.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap)))){
     throw Error('Commande inaccessible sur petit écran : '+device.name+' '+pageName);
   }

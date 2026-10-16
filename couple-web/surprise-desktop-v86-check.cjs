@@ -10,7 +10,7 @@ const assert=require('node:assert/strict');
    ['PC-1080',1920,1080],['PC-768',1366,768],
    ['Laptop-650',1280,650],['iPad-Portrait',820,1180],
    ['iPad-Landscape',1180,820]]){
-   for(const view of ['surprise','evening','evening-idle']){
+   for(const view of ['surprise','surprise-ready','evening','evening-idle']){
     const page=await browser.newPage({viewport:{width:w,height:h},deviceScaleFactor:1});
     const issues=[];page.on('pageerror',e=>issues.push(e.message));
     await page.goto('http://127.0.0.1:8765/__premium-couple-pages-test.html?page='+view,
@@ -42,11 +42,13 @@ const assert=require('node:assert/strict');
       'Desktop viewport scroll '+name+' '+view+' '+JSON.stringify(size));
     assert.ok(size.panel.bottom<=h+3&&size.panel.top>=size.nav.bottom-4,
       'Panel outside desktop viewport '+name+' '+view+' '+JSON.stringify(size));
-    if(view==='surprise'){
+    if(view.startsWith('surprise')){
      assert.equal(size.events.length,6,name+' missing events');
      for(const event of size.events)assert.ok(event.height>=20&&event.bottom<=h+2,
        'Clipped event '+name+' '+JSON.stringify(size));
      assert.equal(size.host,null,'Old separate Qui invite card must be gone');
+     if(view==='surprise-ready')
+       assert.ok(size.d20?.height>50,'Monthly activity D20 remains visible with inline invite '+name);
      for(const key of ['month','special'])assert.ok(size[key]?.height>75&&
        size[key].bottom<=h+2,'Section clipped '+key+' '+name+' '+JSON.stringify(size));
      assert.ok(size.d20?.height>50,'D20 missing '+name+' '+JSON.stringify(size));
