@@ -37,12 +37,12 @@ test('Shared loader waits before covering real async work; boot errors still rec
  assert.match(boot,/setTimeout\(show,18000\)/);
 });
 test('v80 caches all boot dependencies, retains mobile v79 and uses coherent version',()=>{
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-15.85');
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-15.86');
  for(const f of ['loveroll-splash.css','loveroll-splash.js','mobile-entry-v79.css'])
-  assert.match(html,new RegExp(f.replaceAll('.','\\.')+'\\?v=20261015-evening85'));
- assert.match(sw,/loveroll-static-v85/);
+  assert.match(html,new RegExp(f.replaceAll('.','\\.')+'\\?v=20261015-surprise86'));
+ assert.match(sw,/loveroll-static-v86/);
  assert.match(sw,/\.\/loveroll-splash\.css/);
  assert.match(sw,/\.\/loveroll-splash\.js/);
  assert.doesNotMatch(html,/mobile-entry-v7[678]\.css|entry-viewport-v78\.js/);
- assert.match(html,/boot-recovery\.js\?v=20261015-evening85/);
+ assert.match(html,/boot-recovery\.js\?v=20261015-surprise86/);
 });

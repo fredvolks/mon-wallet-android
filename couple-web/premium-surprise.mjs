@@ -85,7 +85,7 @@ export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new D
     (e.daysLeft===null?' no-date':''))).join('')+'</div>'+
  '<div class="surprise-bottom-info">🎲 &nbsp; Chaque événement comporte 6 activités et 6 variantes.'+
   button('surprise-how','›','surprise-info-button')+'</div></section>'+
- (showActivity&&a?'<div class="surprise-modal" role="dialog" aria-label="Notre activité">'+
+ (showActivity&&a?'<div class="surprise-modal" role="dialog" aria-modal="true" aria-label="Notre activité du mois">'+
   '<article class="surprise-modal-content"><strong>♡ ACTIVITÉ DU MOIS · '+esc(a.face)+'</strong>'+
   '<h2>'+esc(activity?.title||'Notre sortie')+'</h2><p>'+esc(activity?.description||'')+'</p>'+
   '<p>Le résultat est commun aux deux comptes.</p>'+timerHtml+
