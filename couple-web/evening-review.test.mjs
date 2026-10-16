@@ -14,7 +14,7 @@ test('Premium feedback asks four ratings including Appréciation des défis',()=
  'Rendu global de la soirée','Connexion à deux','Appréciation des défis','Envie de recommencer']);
  const html=eveningReviewModal({sessionId:'s',draft:{overall:4,connection:5,appreciation:3,again:4}});
  assert.equal((html.match(/class="lr-review-question"/g)||[]).length,4);
- assert.equal((html.match(/class="lr-review-heart/g)||[]).length,20);
+ assert.equal((html.match(/class="lr-review-heart(?: is-lit)?"/g)||[]).length,20);
  assert.match(html,/Enregistrer notre bilan/);
  assert.match(html,/Voir le calendrier/);
  assert.match(html,/maxlength="500"/);
