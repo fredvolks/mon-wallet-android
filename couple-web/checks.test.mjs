@@ -181,7 +181,7 @@ test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
  assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category)&&state.category!=='HASARD')"));
  assert.match(app,/draw_for_partner_random/);
- assert.ok(app.includes("state.category=null; // Require a fresh category choice"));
+ assert.ok(app.includes("state.category=null; // Choix renouvelé à chaque défi."));
  assert.ok(app.includes('Sélectionnez Sensuel ou Sexuel pour activer le tirage.'));
  const weights=availableEveningCategories('SENSUEL');
  assert.equal(weights.reduce((sum,entry)=>sum+entry.weight,0),100);
