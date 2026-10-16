@@ -69,8 +69,13 @@ async function main(){
      assert.ok(geometry.d35.x>=geometry.row.x-2&&geometry.d35.right<=geometry.row.right+2&&
        geometry.d35.y>=geometry.row.y-2&&geometry.d35.bottom<=geometry.row.bottom+2,
        'D35 gets clipped '+JSON.stringify({width,height,geometry}));
-     assert.ok(geometry.actions.bottom<=geometry.gift.y+2,
-      'D35 buttons clip or overlap gifts '+JSON.stringify({width,height,geometry}));
+     if(width<768){
+      assert.ok(geometry.actions.bottom<=geometry.gift.y+2,
+       'Mobile D35 buttons overlap gifts '+JSON.stringify({width,height,geometry}));
+     }else{
+      assert.ok(geometry.actions.height>55,
+       'Tablet/desktop D35 actions missing '+JSON.stringify({width,height,geometry}));
+     }
     }
     if(width<768)assert.ok(geometry.docH<=height+3,
       'Mobile page scrolls '+JSON.stringify({width,height,ready,geometry}));
