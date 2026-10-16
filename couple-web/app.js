@@ -1862,7 +1862,8 @@ async function animateRoll(fn,kind='general'){
   // Never fabricate a one-pip result if Supabase has not confirmed a face.
   const confirmedFace=Number(result?.face);
   if(!Number.isInteger(confirmedFace)||confirmedFace<1||
-     (kind==='my-d6'&&confirmedFace>6))
+     (kind==='my-d6'&&confirmedFace>6)||
+     (kind==='new-challenge'&&confirmedFace>100))
    throw new Error('Le serveur n’a pas confirmé le résultat officiel du dé.');
   state.rollAnimationFace=confirmedFace;
   state.diceStatus='rolling';
