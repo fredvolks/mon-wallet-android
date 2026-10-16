@@ -79,7 +79,7 @@ const {chromium}=require('playwright');
       result.surpriseDice.length!==(pageName==='surprise-ready'?2:1)||
       result.inlineInvite!==(pageName==='surprise-ready')||result.oldHostBubble||
       result.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap||d.position!=='absolute')
-     ))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
+     )))throw Error('Rendu S25 incorrect : '+pageName+' '+device.name);
   await page.screenshot({path:'landing-captures/'+device.name+'-'+pageName+'-vrai-couple.png'});
   await page.close();
  }
