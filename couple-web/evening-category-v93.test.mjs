@@ -27,7 +27,8 @@ test('Only a selected Sensuel or Sexuel button displays 88%, never in random mod
   const html=premiumEveningHtml({...ready,category});
   assert.match(html,new RegExp('data-action="category:'+category+'" aria-pressed="true"'));
   assert.equal((html.match(/class="evening-choice-odds"/g)||[]).length,1);
-  assert.match(html,/class="evening-choice-odds">88 % de chances/);
+  assert.match(html,/class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie<\/span><\/small>/);
+  assert.equal((html.match(/d’avoir cette catégorie/g)||[]).length,1);
   assert.doesNotMatch(html,/class="evening-probability"/);
  }
  const random=premiumEveningHtml({...ready,category:'HASARD'});
@@ -60,6 +61,7 @@ test('Random draw is performed on Supabase, with 50-50 preference and untouched 
 test('Three equally sized buttons and a horizontally centered D35 at every breakpoint',()=>{
  const css=read('evening-category-v93.css');
  assert.match(css,/repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.evening-choice-odds span\{/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\)!important/);
  assert.match(css,/align-items:center!important;justify-items:center!important/);
  assert.match(css,/margin-inline:auto!important/);
