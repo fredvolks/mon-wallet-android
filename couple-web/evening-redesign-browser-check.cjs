@@ -67,24 +67,22 @@ async function main(){
     }
     if(ready){
      assert.ok(geometry.d35&&geometry.row&&geometry.actions,
-      'D35 / buttons absent '+JSON.stringify(geometry));
+      'D100 / buttons absent '+JSON.stringify(geometry));
      assert.ok(geometry.d35.height>75&&Math.abs(geometry.d35.width-geometry.d35.height)<4,
-      'Original D35 must be a visible square '+JSON.stringify({width,height,geometry}));
+      'D100 must be a visible square '+JSON.stringify({width,height,geometry}));
      assert.ok(geometry.d35.x>=geometry.row.x-2&&geometry.d35.right<=geometry.row.right+2&&
        geometry.d35.y>=geometry.row.y-2&&geometry.d35.bottom<=geometry.row.bottom+2,
-       'D35 gets clipped '+JSON.stringify({width,height,geometry}));
-     assert.deepEqual(geometry.categories.map(x=>x.action),
-      ['category:SENSUEL','category:HASARD','category:SEXUEL']);
-     assert.ok(geometry.selectedOdds&&geometry.selectedOdds.y>=geometry.categories[0].rect.bottom-2,
-       'Selected 88% is not below Sensuel button '+JSON.stringify({width,height,geometry}));
-     assert.ok(Math.abs((geometry.d35.x+geometry.d35.right)/2-(geometry.row.x+geometry.row.right)/2)<=5,
-       '35-sided die is not centered '+JSON.stringify({width,height,geometry}));
+       'D100 gets clipped '+JSON.stringify({width,height,geometry}));
+     assert.equal(geometry.categories.length,0,
+       'Single D100 library must not show category buttons');
+      assert.ok(Math.abs((geometry.d35.x+geometry.d35.right)/2-(geometry.row.x+geometry.row.right)/2)<=5,
+       '100-sided die is not centered '+JSON.stringify({width,height,geometry}));
      if(width<768){
       assert.ok(geometry.actions.bottom<=geometry.gift.y+2,
-       'Mobile D35 buttons overlap gifts '+JSON.stringify({width,height,geometry}));
+       'Mobile D100 buttons overlap gifts '+JSON.stringify({width,height,geometry}));
      }else{
       assert.ok(geometry.actions.height>55,
-       'Tablet/desktop D35 actions missing '+JSON.stringify({width,height,geometry}));
+       'Tablet/desktop D100 actions missing '+JSON.stringify({width,height,geometry}));
      }
     }
     if(width<768)assert.ok(geometry.docH<=height+3,
