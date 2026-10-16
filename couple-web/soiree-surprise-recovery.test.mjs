@@ -35,9 +35,9 @@ test('Renderer resizes to live scene with WebGL camera correctly, also after ori
 });
 test('PWA and served HTML share v73 CSS and cache-busting tags',()=>{
  assert.match(index,/surprise-dice-layout-v73\.css\?v=20261015-no-toast87/);
- assert.match(worker,/loveroll-static-v95/);
+ assert.match(worker,/loveroll-static-v96/);
  assert.match(worker,/surprise-dice-layout-v73\.css/);
- assert.match(app,/WEB_RELEASE='2026-10-16\.95'/);
+ assert.match(app,/WEB_RELEASE='2026-10-16\.96'/);
 });
 
 test('Active Soirée does not pass an unbound pending challenge into premiumEveningHtml',()=>{
