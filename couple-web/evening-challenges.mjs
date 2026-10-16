@@ -1,6 +1,6 @@
-// LoveRoll — 200 emplacements : 25 idées par catégorie prêtes à jouer, 75 espaces libres par catégorie. Chaque défi a un titre, une consigne et une minuterie facultative.
+// LoveRoll — 100 emplacements : 50 idées prêtes à jouer, 50 espaces libres. Chaque défi a un titre, une consigne et une minuterie facultative.
 // Sur une carte, l’offrant propose l’activité; le destinataire peut accepter, adapter ou passer.
-export const EVENING_CATEGORIES=['SENSUEL','SEXUEL'];
+export const EVENING_CATEGORIES=['MIXTE'];
 export const EVENING_CHALLENGES={
   "SENSUEL": [
     [
@@ -257,27 +257,29 @@ export const EVENING_CHALLENGES={
     ]
   ]
 };
+// Single new 100-card library; old category records stay archived for history.
+EVENING_CHALLENGES.MIXTE=[...EVENING_CHALLENGES.SENSUEL,...EVENING_CHALLENGES.SEXUEL];
 export function eveningCard(category,cardId){
- if(!EVENING_CATEGORIES.includes(category)||!Number.isInteger(cardId)||cardId<1||cardId>25)
+ if(!EVENING_CATEGORIES.includes(category)||!Number.isInteger(cardId)||cardId<1||cardId>(category==='MIXTE'?50:25))
   throw new Error('Carte de défi invalide');
  const [title,minutes,description]=EVENING_CHALLENGES[category][cardId-1];
  return {category,face:cardId,title,minutes,description};
 }
 export function availableEveningCategories(preferred){
  if(!EVENING_CATEGORIES.includes(preferred))throw new Error('Catégorie non reconnue');
- return EVENING_CATEGORIES.map(category=>({category,weight:category===preferred?88:12}));
+ return [{category:'MIXTE',weight:100}];
 }
 export function formatCountdown(milliseconds){
  const seconds=Math.max(0,Math.ceil(milliseconds/1000));
  return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
 }
 
-export const CUSTOM_CARD_START=26;
+export const CUSTOM_CARD_START=51;
 export const CUSTOM_CARD_END=100;
 export function customCardSlots(category,cards=[]){
  if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
- return Array.from({length:75},(_,i)=>{
-  const cardId=26+i,found=cards.find(c=>c.category===category&&c.card_id===cardId);
+ return Array.from({length:50},(_,i)=>{
+  const cardId=51+i,found=cards.find(c=>c.category===category&&c.card_id===cardId);
   return {category,cardId,title:found?.title||'',description:found?.description||'',
    minutes:found?.timer_minutes??null,recipientId:found?.recipient_user_id||null,filled:!!found};
  });
@@ -287,7 +289,7 @@ export function editableCardSlots(category,cards=[]){
  if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
  return Array.from({length:100},(_,i)=>{
   const cardId=i+1;
-  const original=cardId<=25?eveningCard(category,cardId):null;
+  const original=cardId<=50?eveningCard(category,cardId):null;
   const saved=cards.find(c=>c.category===category&&c.card_id===cardId);
   return {category,cardId,
     title:saved?.title??original?.title??'',
@@ -297,11 +299,11 @@ export function editableCardSlots(category,cards=[]){
     drawerId:saved?.drawer_user_id??null,
     drawerRole:saved?.drawer_role??(saved?.drawer_user_id?'owner':'both'),
     recipientRole:saved?.recipient_role??(saved?.recipient_user_id?'partner':'both'),
-    filled:!!saved||!!original,saved:!!saved,isOriginal:cardId<=25};
+    filled:!!saved||!!original,saved:!!saved,isOriginal:cardId<=50};
  });
 }
 export function resolvedCard(draw){
- if(!EVENING_CATEGORIES.includes(draw.category))return {
+ if(!['MIXTE','SENSUEL','SEXUEL'].includes(draw.category))return {
   title:'Défi historique',description:'Retrouvez votre ancien défi dans l’historique.',
   minutes:null,cardId:draw.card_id||draw.face};
  const cardId=draw.card_id||draw.face;
@@ -311,7 +313,7 @@ export function resolvedCard(draw){
    description:draw.card_description||'Consigne momentanément indisponible.',
    minutes:draw.card_timer_minutes??null};
  }
- if(cardId>=CUSTOM_CARD_START){
+ if(cardId>(draw.category==='MIXTE'?50:25)){
   return {category:draw.category,cardId,title:'Défi surprise',
    description:'Consigne momentanément indisponible.',minutes:null};
  }
@@ -320,7 +322,6 @@ export function resolvedCard(draw){
 
 // Count only playable saved cards, never optional blank slots.
 export function playableEveningCount(cards=[]){
- const sensual=editableCardSlots('SENSUEL',cards).filter(x=>x.filled).length;
- const sexual=editableCardSlots('SEXUEL',cards).filter(x=>x.filled).length;
- return {sensual,sexual,total:sensual+sexual};
+ const total=editableCardSlots('MIXTE',cards).filter(x=>x.filled).length;
+ return {total,sensual:0,sexual:0};
 }
