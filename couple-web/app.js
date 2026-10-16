@@ -1,12 +1,12 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
-import {createCoupleLiveSync} from './couple-live-sync.mjs';
+import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261015-step1-v89';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {feedbackItemsFor} from './feedback-status.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-no-toast87';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-no-toast87';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-step1-v89';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -32,7 +32,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-15.88';
+const WEB_RELEASE='2026-10-15.89';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
