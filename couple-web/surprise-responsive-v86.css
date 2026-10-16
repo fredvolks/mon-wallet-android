@@ -211,7 +211,7 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
  main#app.loveroll-evening-page .evening-step.one .evening-user-die .love3d,
  main#app.loveroll-evening-page .evening-step.one .evening-user-die .love3d-stage{
   width:min(100%,23dvh,280px)!important;
-  height:min(100%,23dvh,280px)!important;
+  height:auto!important;
   max-width:280px!important;max-height:280px!important;
   aspect-ratio:1!important;overflow:hidden!important;
  }
