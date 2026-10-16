@@ -5,9 +5,9 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {feedbackItemsFor} from './feedback-status.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-surprise86';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-surprise86';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-surprise86';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-no-toast87';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-no-toast87';
+import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -15,7 +15,7 @@ import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from 
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-surprise86';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-no-toast87';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -29,11 +29,11 @@ import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSet
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-surprise86';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-15.86';
-const root=document.querySelector('#app'),toastEl=document.querySelector('#toast');
+const WEB_RELEASE='2026-10-15.87';
+const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
 const opts={auth:{flowType:'pkce',autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}};
@@ -96,34 +96,22 @@ function invitationLandingHeader(showAction=true){
  '<p class="premium-invite-note">♡ Votre invitation est privée · Un compte par personne</p>'+ 
  (showAction?button('invite-start','♡ ACCEPTER L’INVITATION ❤️'):'')+'</section>';
 }
-function notify(message){
- const msg=String(message??'');
- const isError=/erreur|impossible|refusé|échoué|indisponible|invalide|non confirmé/i.test(msg);
- const isResult=/résultat officiel|résultat.*(?:dé|D6|D35)|tirage de|révélés/i.test(msg);
- toastEl.replaceChildren();
- toastEl.className='lr-premium-toast '+(isError?'lr-toast-error':isResult?'lr-toast-result':'lr-toast-info');
- const official=msg.match(/^Résultat(?: officiel)?\s*:?\s*(\d+)\s*[·-]\s*(.*)$/i);
- const isGift=/défi transféré|défi offert|cadeau/i.test(msg);
- const glyph=document.createElement('span');glyph.className='lr-toast-glyph';
- glyph.textContent=isError?'!':isGift?'🎁':isResult?'🎲':'♡';
- glyph.setAttribute('aria-hidden','true');
- const content=document.createElement('span');content.className='lr-toast-message';
- if(official){
-  const title=document.createElement('span');title.className='lr-toast-kicker';
-  title.textContent='RÉSULTAT OFFICIEL';
-  const line=document.createElement('span');line.className='lr-toast-result-line';
-  const value=document.createElement('strong');value.className='lr-toast-result-number';
-  value.textContent=official[1];
-  const detail=document.createElement('span');detail.textContent=official[2];
-  line.append(value,detail);content.append(title,line);
- }else content.textContent=msg;
- const close=document.createElement('button');close.type='button';close.className='lr-toast-close';
- close.textContent='×';close.setAttribute('aria-label','Fermer la notification');
- close.addEventListener('click',()=>{clearTimeout(notify.timeout);toastEl.classList.remove('visible');});
- toastEl.append(glyph,content,close);
- toastEl.classList.add('visible');
- clearTimeout(notify.timeout);
- notify.timeout=setTimeout(()=>toastEl.classList.remove('visible'),isResult?5200:4400);
+// No floating banners: gameplay and confirmation states remain inside their pages.
+function notify(_message){
+ // Deliberately silent; system push and confirmation dialogs remain separate.
+}
+function showInlineError(message){
+ if(!root)return;
+ const focused=document.activeElement?.closest?.('section,article,.card');
+ const host=(focused&&root.contains(focused)?focused:null)||root.querySelector('section,.card')||root;
+ let note=host.querySelector('.lr-inline-feedback');
+ if(!note){
+  note=document.createElement('p');
+  note.className='lr-inline-feedback';
+  note.setAttribute('role','alert');
+  host.append(note);
+ }
+ note.textContent=String(message||'Une erreur est survenue');
 }
 function fail(error){
  console.error(error);
@@ -140,7 +128,7 @@ function fail(error){
   }
   return;
  }
- notify(msg);
+ showInlineError(msg);
 }
 async function rpc(name,args={}){const {data,error}=await client.rpc(name,args);if(error)throw error;return data;}
 async function query(table,options={}){
@@ -266,7 +254,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-surprise86').then(({dieOn})=>{
+  import('./dice3d.js?v=20261015-no-toast87').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -405,7 +393,7 @@ async function refreshVerifiedIdentity(){
 function authMessage(message){
  const feedback=id('auth-form-feedback');
  if(feedback){feedback.textContent=message;feedback.setAttribute('role','alert');}
- else{state.authNotice=message;notify(message);}
+ else{state.authNotice=message;showInlineError(message);}
 }
 function render(){
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
@@ -3181,6 +3169,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-surprise86',
+    navigator.serviceWorker.register('./service-worker.js?v=20261015-no-toast87',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
