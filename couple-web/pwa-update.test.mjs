@@ -5,9 +5,9 @@ const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),sw=read('service-worker.js');
 const release=JSON.parse(read('web-version.json'));
 test('LoveRoll build versions agree between endpoint, app, HTML and imported modules',()=>{
- const build='2026-10-16.108',tag='20261015-no-toast87',appTag='20261016-surprise108',diceTag='20261016-surprise108';
+ const build='2026-10-16.109',tag='20261015-no-toast87',appTag='20261016-surprise109',diceTag='20261016-surprise108';
  assert.equal(release.build,build);
- assert.match(app,/const WEB_RELEASE='2026-10-16\.108'/);
+ assert.match(app,/const WEB_RELEASE='2026-10-16\.109'/);
  assert.match(html,new RegExp('app\\.js\\?v='+appTag));
  for(const css of ['styles.css','premium-theme.css','satin-reference.css','discover.css']){
   assert.ok(html.includes(css+'?v='+tag),css);
@@ -18,10 +18,11 @@ test('LoveRoll build versions agree between endpoint, app, HTML and imported mod
  assert.ok(html.includes('evening-step1-mobile-v101.css?v=20261016-step101'));
  assert.ok(html.includes('evening-queue-fixed-v102.css?v=20261016-queue102'));
  assert.ok(html.includes('evening-private-queue.css?v=20261016-completed103'));
- assert.ok(html.includes('surprise-refined-v104.css?v=20261016-surprise108'));
+ assert.ok(html.includes('surprise-refined-v104.css?v=20261016-surprise109'));
+ assert.match(app,/surprise-event-config\.mjs\?v=20261016-surprise109/);
 });
 test('PWA bypasses stale Android network caches while preserving offline fallback',()=>{
- assert.match(sw,/loveroll-static-v108/);
+ assert.match(sw,/loveroll-static-v109/);
  assert.match(sw,/fetch\(req,\{cache:'no-store'\}\)/);
  assert.match(sw,/caches\.match\(fallback\.href\)/);
  assert.match(sw,/\.\/web-version\.json/);
