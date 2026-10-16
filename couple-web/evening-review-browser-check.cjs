@@ -4,7 +4,8 @@ const fs=require('node:fs');
 const assert=require('node:assert/strict');
 const origin='http://127.0.0.1:8765';
 (async()=>{
- const {eveningReviewModal,eveningCalendarReviewMarkup}=await import('./evening-review.mjs');
+ const {eveningReviewModal}=await import('./evening-review.mjs');
+ const {eveningHistoryMarkup}=await import('./evening-calendar.mjs');
  const html=fs.readFileSync('couple-web/index.html','utf8');
  const styles=[...html.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)"/g)]
    .map(x=>'<link rel="stylesheet" href="'+origin+'/'+x[1]+'">').join('');
@@ -12,7 +13,9 @@ const origin='http://127.0.0.1:8765';
   sessionId:'testing',draft:{overall:4,connection:5,appreciation:3,again:4,comment:'Très belle soirée !'},
   partnerName:'Émilie'
  });
- const archive=eveningCalendarReviewMarkup({sessionId:'testing',
+ const archive=eveningHistoryMarkup({
+  sessions:[{id:'testing',started_at:'2026-10-16T17:00:00Z',finished_at:'2026-10-16T22:00:00Z'}],
+  month:'2026-10',selectedDate:'2026-10-16',stats:[],historyChallenges:[],
   members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Émilie'}],me:'a',
   reviews:[{session_id:'testing',author_id:'a',overall:4,connection:5,
    appreciation:3,again:4,comment:'Très belle soirée !'},
@@ -28,7 +31,17 @@ const origin='http://127.0.0.1:8765';
    await page.goto(origin+'/review-visual-test.html',{waitUntil:'load'});
    assert.equal(await page.locator('.lr-review-question').count(),4);
    assert.equal(await page.locator('.lr-review-heart').count(),20);
+   assert.equal(await page.locator('details.evening-cal-person-group').count(),2);
    assert.equal(await page.locator('.evening-review-person').count(),2);
+   const nested=await page.evaluate(()=>{
+    const sections=[...document.querySelectorAll('details.evening-cal-person-group')];
+    return sections.length===2&&
+      sections[0].querySelector('.evening-review-person')?.textContent.includes('Très belle soirée')&&
+      !sections[0].querySelector('.evening-review-person')?.textContent.includes('Merci pour ce beau moment')&&
+      sections[1].querySelector('.evening-review-person')?.textContent.includes('Merci pour ce beau moment')&&
+      !document.querySelector('.evening-review-archive');
+   });
+   assert.ok(nested,'Partner feedback must be contained in the correct accordion');
    assert.ok(await page.locator('.lr-review-modal .lr-review-question').nth(2).isVisible());
    const fit=await page.evaluate(()=>{
     const modal=document.querySelector('.lr-review-modal');
