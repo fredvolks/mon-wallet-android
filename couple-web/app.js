@@ -6,7 +6,7 @@ import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {feedbackItemsFor} from './feedback-status.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-step1-v89';
+import {premiumEveningHtml} from './premium-evening.mjs?v=20261016-category93';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261015-evening91';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
@@ -33,7 +33,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-15.92';
+const WEB_RELEASE='2026-10-16.93';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
