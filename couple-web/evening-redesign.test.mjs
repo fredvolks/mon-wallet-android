@@ -51,9 +51,9 @@ test('v83 final responsive CSS reserves a fixed single-screen D6 and partner res
  assert.match(index,/evening-clean-v83\.css\?v=20261015-no-toast87/);
  assert.match(index,/evening-focused-v84\.css\?v=20261015-no-toast87/);
  assert.ok(index.lastIndexOf('evening-clean-v83.css')>index.lastIndexOf('mobile-one-screen-v74.css'));
- assert.match(worker,/loveroll-static-v112/);
+ assert.match(worker,/loveroll-static-v113/);
  assert.match(worker,/\.\/evening-clean-v83\.css/);
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-16.112');
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-16.113');
 });
 
 test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D engines',()=>{
@@ -66,8 +66,8 @@ test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D
   turn:{...base.turn,ready:true,next:'one'},category:'SEXUEL'});
  assert.match(ready,/evening-summary-die/);
  assert.match(ready,/data-dice-sides="100"/);
- assert.doesNotMatch(ready,/88 %|evening-choice-odds/);
- assert.match(ready,/Une seule bibliothèque/);
+ assert.match(ready,/88 %/);
+ assert.match(ready,/class="evening-choice-odds">88 % de chances/);
  assert.doesNotMatch(ready,/12 % autre|Défi cadeau : 100 %/);
  assert.match(ready,/data-action="new-challenge"/);
  assert.match(ready,/data-action="evening-list"/);
