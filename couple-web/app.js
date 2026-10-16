@@ -1736,13 +1736,6 @@ function renderSettings(){
       '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+
     '</div></div>';
   }).join(''):'';
- const game=isLoveAdmin()?
-  settingRow('Mes cartes','200 cartes · 100 Sensuel et 100 Sexuel.','tab:library','Modifier')+
-  settingRow('Activités du mois','20 activités du dé D20.','tab:monthly-library','Modifier')+
-  settingRow('Calendrier de l’Avent','25 surprises du calendrier partagé.','tab:advent-editor','Modifier')+
-  settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
-  eveningButtons+celebrants:
-  '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
  const eveningButtons=isLoveAdmin()?
   '<div class="settings-item"><div><strong>Choix du dé de Soirée</strong>'+
   '<p>Masquer ou afficher Sensuel et Sexuel. Aléatoire reste toujours disponible (50/50).</p></div></div>'+
@@ -1751,6 +1744,13 @@ function renderSettings(){
   '<label class="custom-draw-setting"><input id="show-sexuel-button" type="checkbox"'+
     (state.couple?.show_sexuel_button!==false?' checked':'')+'> Afficher le bouton Sexuel (88 %)</label>'+
   button('save-evening-buttons','Enregistrer les boutons de Soirée','class="subtle"'):'';
+ const game=isLoveAdmin()?
+  settingRow('Mes cartes','200 cartes · 100 Sensuel et 100 Sexuel.','tab:library','Modifier')+
+  settingRow('Activités du mois','20 activités du dé D20.','tab:monthly-library','Modifier')+
+  settingRow('Calendrier de l’Avent','25 surprises du calendrier partagé.','tab:advent-editor','Modifier')+
+  settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
+  eveningButtons+celebrants:
+  '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
  const resettableDice=!!(state.weekly||state.session||
   Object.keys(state.monthly||{}).length||state.occasionRolls?.length);
  const adminWeekly=isLoveAdmin()&&hasPartner?
