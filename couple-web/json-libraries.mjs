@@ -116,6 +116,7 @@ export function librarySummary(data,kind){
  throw Error('Type de bibliothèque inconnu.');
 }
 export function normalizeLibraryData(data,kind){
+ if(kind==='evening')return validateEveningLibrary(data);
  librarySummary(data,kind);
  return data;
 }
