@@ -5,23 +5,23 @@ const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),sw=read('service-worker.js');
 const release=JSON.parse(read('web-version.json'));
 test('LoveRoll build versions agree between endpoint, app, HTML and imported modules',()=>{
- const build='2026-10-16.107',tag='20261015-no-toast87',appTag='20261016-surprise107';
+ const build='2026-10-16.108',tag='20261015-no-toast87',appTag='20261016-surprise108',diceTag='20261016-surprise108';
  assert.equal(release.build,build);
- assert.match(app,/const WEB_RELEASE='2026-10-16\.107'/);
+ assert.match(app,/const WEB_RELEASE='2026-10-16\.108'/);
  assert.match(html,new RegExp('app\\.js\\?v='+appTag));
  for(const css of ['styles.css','premium-theme.css','satin-reference.css','discover.css']){
   assert.ok(html.includes(css+'?v='+tag),css);
  }
  assert.match(html,/premium-home\.css\?v=20261016-center98/);
  assert.match(app,/premium-home\.mjs\?v=20261015-home92/);
- assert.match(app,new RegExp("dice3d\\.js\\?v="+tag));
+ assert.match(app,new RegExp("dice3d\\.js\\?v="+diceTag));
  assert.ok(html.includes('evening-step1-mobile-v101.css?v=20261016-step101'));
  assert.ok(html.includes('evening-queue-fixed-v102.css?v=20261016-queue102'));
  assert.ok(html.includes('evening-private-queue.css?v=20261016-completed103'));
- assert.ok(html.includes('surprise-refined-v104.css?v=20261016-surprise107'));
+ assert.ok(html.includes('surprise-refined-v104.css?v=20261016-surprise108'));
 });
 test('PWA bypasses stale Android network caches while preserving offline fallback',()=>{
- assert.match(sw,/loveroll-static-v107/);
+ assert.match(sw,/loveroll-static-v108/);
  assert.match(sw,/fetch\(req,\{cache:'no-store'\}\)/);
  assert.match(sw,/caches\.match\(fallback\.href\)/);
  assert.match(sw,/\.\/web-version\.json/);
