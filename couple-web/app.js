@@ -9,8 +9,8 @@ import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-surprise108';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise108';
-import {surpriseSlot,surpriseCustom,surpriseTitle,validAnnualDate} from './surprise-event-config.mjs?v=20261016-surprise104';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise109';
+import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.108';
+const WEB_RELEASE='2026-10-16.109';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -283,6 +283,21 @@ function bindActions(){
  libraryFilter?.addEventListener('change',updateLibraryFilter);
  document.querySelectorAll('[data-action]').forEach(el=>{
   el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
+ });
+ // Numeric keyboard: convert typed digits into JJ/MM/AAAA without opening a date picker.
+ const surpriseDate=id('surprise-event-date');
+ surpriseDate?.addEventListener('input',()=>{
+  const raw=surpriseDate.value,at=surpriseDate.selectionStart??raw.length;
+  const digitsBefore=raw.slice(0,at).replace(/\D/g,'').length;
+  const formatted=formatSurpriseDateInput(raw);
+  if(raw===formatted)return;
+  surpriseDate.value=formatted;
+  let caret=0,count=0;
+  while(caret<formatted.length&&count<digitsBefore){
+   if(/\d/.test(formatted[caret]))count++;
+   caret++;
+  }
+  surpriseDate.setSelectionRange(caret,caret);
  });
  document.querySelectorAll('input[data-json-file]').forEach(input=>input.addEventListener('change',async()=>{
   const file=input.files?.[0];if(!file)return;
@@ -2014,9 +2029,10 @@ async function handle(action,element){
     .find(e=>e.slot===state.surpriseEditSlot);
    if(!row)throw Error('Événement introuvable');
    const title=id('surprise-event-name')?.value.trim()||'';
-   const newDate=id('surprise-event-date')?.value||'';
+   const typedDate=id('surprise-event-date')?.value.trim()||'';
+   const newDate=typedDate?parseSurpriseDateInput(typedDate):'';
    if(title.length<2||title.length>55)throw Error('Nom : entre 2 et 55 caractères.');
-   if(newDate&&!validAnnualDate(newDate))throw Error('Choisis une date valide.');
+   if(typedDate&&!newDate)throw Error('Entre une date valide : JJ/MM/AAAA.');
    const prior=surpriseCustom(state.occasionSettings,row.key,row.owner).month_day||null;
    const md=newDate&&newDate!==row.date?newDate.slice(5):prior;
    await rpc('save_love_surprise_event',{p_couple:state.coupleId,
