@@ -188,7 +188,7 @@ test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.equal(availableEveningCategories('SEXUEL').reduce((sum,entry)=>sum+entry.weight,0),100);
  assert.doesNotMatch(app,/Aléatoire : Sexuel 40/);
 });
-test('50 built-in cards and 20 optional creator-only slots',()=>{
+test('50 seeded cards and 150 optional creator-only slots',()=>{
  for(const category of EVENING_CATEGORIES){
   assert.equal(EVENING_CHALLENGES[category].length,25);
   for(let cardId=1;cardId<=25;cardId++){
@@ -198,8 +198,8 @@ test('50 built-in cards and 20 optional creator-only slots',()=>{
    assert.ok(Number.isInteger(card.minutes)&&card.minutes>=0&&card.minutes<=15);
   }
   const slots=customCardSlots(category);
-  assert.equal(slots.length,10);
-  assert.ok(slots.every(s=>s.cardId>=26&&s.cardId<=35&&!s.filled));
+  assert.equal(slots.length,75);
+  assert.ok(slots.every(s=>s.cardId>=26&&s.cardId<=100&&!s.filled));
  }
  assert.equal(eveningCard('SENSUEL',3).minutes,4);
  assert.equal(eveningCard('SEXUEL',5).minutes,12);
@@ -441,7 +441,7 @@ test('Before invitation the account retains its private cards and notes',()=>{
  assert.ok(app.includes("isLoveAdmin()"));
  assert.ok(app.includes("if(state.couple?.owner_user_id===state.user.id)"));
  assert.ok(app.includes("save_love_card_with_roles"));
- assert.ok(app.includes("button('tab:library','♡ Nos 70 défis')"));
+ assert.ok(app.includes("button('tab:library','♡ Nos 200 défis')"));
  assert.ok(app.includes("renderInvitePanel()"));
  assert.ok(app.includes("button('invite','Remplacer le lien actuel'"));
  assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
@@ -523,12 +523,12 @@ test('Neither partner sees whether a drawn card was created by the admin',()=>{
  assert.ok(app.includes('function isLoveAdmin()'));
 });
 
-test('The administrator can edit all 70 cards without replacing the fixed originals',()=>{
+test('The administrator can edit all 200 cards without replacing the fixed originals',()=>{
  for(const category of EVENING_CATEGORIES){
   const original=editableCardSlots(category);
-  assert.equal(original.length,35);
+  assert.equal(original.length,100);
   assert.equal(original.filter(c=>c.isOriginal).length,25);
-  assert.equal(original.filter(c=>!c.isOriginal).length,10);
+  assert.equal(original.filter(c=>!c.isOriginal).length,75);
   assert.equal(original.filter(c=>c.filled).length,25);
   assert.equal(original.filter(c=>c.saved).length,0);
   const edited=editableCardSlots(category,[
@@ -582,31 +582,31 @@ test('All card draws respect drawer eligibility and persistent no-repeat cycles'
  assert.ok(app.includes("custom-drawer"));
  assert.ok(app.includes("custom-recipient"));
  assert.ok(app.includes("state.customSlot=slot"));
- assert.ok(app.includes("slot<1||slot>35"));
+ assert.ok(app.includes("slot<1||slot>100"));
  assert.ok(app.includes("Restaurer cette carte d’origine"));
  assert.ok(!app.includes("CARTE '+safe(challenge.cardId"));
 });
 
-test('Challenge D35 gives 35 physical numbered faces without changing monthly D20s',()=>{
+test('D100 is a genuine 100-face numbered 3D die and Supabase stores 1..100',()=>{
  const webgl=readFileSync(new URL('./dice3d.js',import.meta.url),'utf8');
- const db=readFileSync(new URL('./d35-challenge-dice.sql',import.meta.url),'utf8');
- assert.ok(webgl.includes('function d35Geometry()'));
+ const db=readFileSync(new URL('./migrations/20261016_d100_200_cards.sql',import.meta.url),'utf8');
+ const evening=readFileSync(new URL('./premium-evening.mjs',import.meta.url),'utf8');
+ assert.ok(webgl.includes('function manySidedGeometry(count=35)'));
  assert.ok(webgl.includes('new ConvexGeometry(points)'));
- assert.ok(webgl.includes('const count=35'));
+ assert.ok(webgl.includes('sides===35||sides===100?manySidedGeometry(sides)'));
  assert.ok(webgl.includes('sideNormals.set(i+1,outward)'));
- assert.ok(db.includes('check(face between 1 and 35)'));
- assert.ok(db.includes('d35:=floor(random()*35)::integer+1'));
- assert.ok(db.includes('v_cat,d35,cid'));
+ assert.ok(db.includes('CHECK (face BETWEEN 1 AND 100)'));
+ assert.ok(db.includes('d100:=floor(random()*100)::integer+1'));
+ assert.ok(db.includes('generate_series(1,100)'));
+ assert.ok(db.includes('v_cat,d100,cid'));
  assert.ok(db.includes("cc.drawer_role='owner'"));
  assert.ok(db.includes("cc.recipient_role='partner'"));
  assert.ok(db.includes('love_card_draw_history'));
- assert.ok(!app.includes("heroDice(demo.challenge,35,'D35"));
+ assert.ok(evening.includes('premiumPolyDie(100,'));
+ assert.ok(!app.includes('solo-roll:challenge'));
  assert.ok(app.includes('DÉCOUVRIR UN DÉFI POUR'));
  assert.ok(app.includes('CARTE N° '));
- assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/premiumPolyDie\(20,/);
- assert.ok(app.includes("heroDice(prize.face,20,'Résultat officiel')"));
- assert.ok(!app.includes('solo-roll:challenge'));
- assert.ok(!app.includes('heroDice(demo.challenge,35'));
+ assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/premiumPolyDie\\(20,/);
 });
 test('Prepare cards privately before inviting a partner with future partner roles',()=>{
  const view=matchHtml('Test',false);
@@ -960,7 +960,7 @@ test('Premium screens share a responsive dice and invitation layout on mobile an
  }
  assert.match(css,/@media\(min-width:768px\)/);
  assert.match(app,/premiumHomeHtml\(\{/);
- assert.match(app,/heroDice\(null,35/);
+ assert.match(app,/heroDice\(null,100/);
  assert.match(app,/heroDice\(null,20/);
  assert.match(onboarding,/invite-auth-segments/);
 });
