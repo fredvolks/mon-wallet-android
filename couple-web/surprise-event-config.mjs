@@ -15,3 +15,23 @@ export function validAnnualDate(iso){
  const date=new Date(iso+'T12:00:00Z');
  return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===iso;
 }
+
+
+// Date shown to Quebec users in the keyboard editor (storage stays ISO).
+export function displaySurpriseDate(iso){
+ return validAnnualDate(iso)?iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4):'';
+}
+export function formatSurpriseDateInput(raw){
+ const digits=String(raw??'').replace(/\D/g,'').slice(0,8);
+ if(digits.length<=2)return digits;
+ if(digits.length<=4)return digits.slice(0,2)+'/'+digits.slice(2);
+ return digits.slice(0,2)+'/'+digits.slice(2,4)+'/'+digits.slice(4);
+}
+export function parseSurpriseDateInput(raw){
+ const text=String(raw??'').trim();
+ if(validAnnualDate(text))return text;
+ const match=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+ if(!match)return null;
+ const iso=match[3]+'-'+match[2].padStart(2,'0')+'-'+match[1].padStart(2,'0');
+ return validAnnualDate(iso)?iso:null;
+}
