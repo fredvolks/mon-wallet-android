@@ -93,7 +93,7 @@ test('App uses server date, shared couple realtime, and refreshes only after RPC
  assert.match(app,/await rpc\('open_advent_day'/);
  assert.match(app,/await refreshShared\(\)/);
  assert.match(app,/state\.adventSelected=day/);
- assert.match(app,/'couple_advent','couple_feedback'/);
+ assert.match(app,/'couple_advent','couple_intimacy'/);
  assert.match(app,/if\(verb==='advent-history'\)/);
 });
 test('CSS includes exact 5 columns × 5 rows, one-screen shell, safe area, glow and reduced motion',()=>{
