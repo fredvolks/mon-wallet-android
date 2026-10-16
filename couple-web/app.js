@@ -1108,7 +1108,7 @@ function renderSession(){
    challengeOverlay:overlay,lastEvening,canStartEvening,
    weeklyReady:!!state.weekly,weeklyCount:daily.counted,weeklyLimit:daily.limit,
    dailyLocked:daily.dailyLocked,ownChallengeCount:mineCards.length,
-   lastD100Face:lastOfficialChallengeFace(
+   lastD35Face:lastOfficialChallengeFace(
     session?state.challenges:state.challengesHistory,session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
