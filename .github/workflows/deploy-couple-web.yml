@@ -53,6 +53,7 @@ jobs:
           node couple-web/loveroll-splash-browser-check.cjs
           node couple-web/evening-redesign-browser-check.cjs
           node couple-web/evening-queue-fixed-v102-browser-check.cjs
+          node couple-web/evening-queue-completed-v103-browser-check.cjs
           node couple-web/surprise-desktop-v86-check.cjs
           # Always publish a healthy application: a *layout diagnostic* must not
           # strand browsers on the previous release. Report any visual regression.
