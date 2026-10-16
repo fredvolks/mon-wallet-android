@@ -4,7 +4,6 @@ import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-hearts96';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {feedbackItemsFor} from './feedback-status.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-hearts96';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-hearts96';
@@ -46,8 +45,8 @@ const requestedSettingsSection=launchParams.get('section')||'';
 let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('loveroll-settings-section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
- events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -185,7 +184,7 @@ function backFromLoveRoll(){
  const parent={
   library:'settings','monthly-library':'settings','advent-editor':'settings',
   'special-editor':'settings','personal-journal':'settings',journal:'session','evening-calendar':'session',
-  feedback:'session',occasions:'special',ideas:'home',invitation:'settings'
+  occasions:'special',ideas:'home',invitation:'settings'
  }[state.tab];
  const destination=parent||(state.tab!=='home'?'home':null);
  if(destination){
@@ -512,7 +511,6 @@ function render(){
  else if(state.tab==='advent-editor')renderAdventEditor();
  else if(state.tab==='special-editor')renderSpecialEventsEditor();
  else if(state.tab==='journal')renderJournal().catch(fail);
- else if(state.tab==='feedback')renderFeedback().catch(fail);
  else if(state.tab==='settings')renderSettings();
  else if(state.tab==='library')renderCardLibrary();
  else if(state.tab==='monthly-library')renderMonthlyLibrary();
@@ -556,7 +554,7 @@ async function reload(){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;state.gifts=[];
   state.session=null;state.sessions=[];state.events=[];state.journal=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];state.eveningReviews=[];state.reviewModalSessionId=null;
-  state.feedback=[];state.advent=[];state.adventYear=null;state.adventSelected=null;state.adventServerDate=null;state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
+  state.advent=[];state.adventYear=null;state.adventSelected=null;state.adventServerDate=null;state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
   state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];state.eveningReviews=[];state.reviewModalSessionId=null;state.reviewDraft={};
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
@@ -666,21 +664,11 @@ async function refreshShared(){
   state.eveningBoard=null;state.eveningQueueSeen=null;
   state.selectedEveningChallengeId=null;state.showEveningChallenges=false;
  }
- state.feedback=await query('couple_feedback',{eq:{couple_id:c}});
  // Only counts are revealed to the invited partner; titles remain owner-private.
  try{
   const totals=await rpc('my_love_evening_card_totals',{p_couple:c});
   state.playableCounts=Array.isArray(totals)?totals[0]||null:null;
  }catch(error){state.playableCounts=null;}
- const lastCompleted=[...sessions].filter(x=>x.finished_at&&x.counted)
-  .sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
- state.feedbackStatus=null;
- if(lastCompleted){
-  try{
-   const items=await rpc('my_love_feedback_status',{p_session:lastCompleted.id});
-   state.feedbackStatus={sessionId:lastCompleted.id,items:Array.isArray(items)?items:[]};
-  }catch(error){console.warn('Statut des avis indisponible',error.code||'');}
- }
 }
 const liveSync=createCoupleLiveSync({
  state,query,rpc,refresh:refreshShared,render,ready:isSharedCoupleReady,
@@ -700,7 +688,7 @@ function subscribe(){
   return;
  }
  for(const table of ['couple_occasion_rolls','couple_occasion_settings','couple_rolls','couple_sessions','couple_challenges','couple_challenge_gifts',
-  'couple_advent','couple_feedback','couple_intimacy','couple_events'])
+  'couple_advent','couple_intimacy','couple_events'])
   channel=channel.on('postgres_changes',{event:'*',schema:'public',table,
    filter:'couple_id=eq.'+state.coupleId},async payload=>{
     if(payload.new?.actor_id&&payload.new.actor_id!==state.user.id)
@@ -952,13 +940,14 @@ function renderLegacySession(){
   if(latest){
    const total=state.challengesHistory.filter(c=>c.session_id===latest.id);
    const done=total.filter(c=>c.status==='completed').length;
-   const responses=state.feedback.filter(f=>f.session_id===latest.id).length;
+   const responses=(state.eveningReviews||[]).filter(r=>r.session_id===latest.id).length;
+   const myReview=(state.eveningReviews||[]).some(r=>r.session_id===latest.id&&r.author_id===state.user.id);
    body+='<div class="aftercare-card"><h2>♥ Soirée terminée</h2>'+
-    '<p>Un moment partagé à deux. Prenez quelques instants pour donner votre avis.</p>'+
+    '<p>Un moment partagé à deux. Prenez le temps de donner votre bilan.</p>'+
     '<div class="stat-grid"><div class="stat"><strong>'+done+'</strong><small>Défis réalisés</small></div>'+
-    '<div class="stat"><strong>'+responses+'/2</strong><small>Avis enregistrés</small></div></div>'+
-    button('choose-feedback:'+latest.id,responses===2?'Voir nos avis ❤️':'Répondre à mes 3 questions')+
-    button('tab:journal','Voir notre calendrier','class="subtle"')+'</div>';
+    '<div class="stat"><strong>'+responses+'/2</strong><small>Bilans enregistrés</small></div></div>'+
+    button('review-open:'+latest.id,myReview?'♡ Modifier mon bilan':'♡ Donner mon bilan')+
+    button('evening-calendar','Consulter notre calendrier','class="subtle"')+'</div>';
   }
   body+=button('new-session','Commencer une nouvelle soirée');
  }
@@ -1375,7 +1364,6 @@ function renderAdventEditor(){
 }
 function isoDate(d){return new Date(d).toISOString().slice(0,10);}
 const weekStart=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()-(x.getUTCDay()+6)%7);return isoDate(x);};
-function formattedStars(r){return r?'★ '.repeat(r)+'☆ '.repeat(5-r):'Non noté';}
 async function createCipherKey(passphrase,salt=state.couple?.journal_salt){
  if(!passphrase||passphrase.trim().length<12)throw Error('Utilisez une phrase secrète de 12 caractères ou plus.');
  const base=await crypto.subtle.importKey('raw',enc.encode(passphrase),'PBKDF2',false,['deriveKey']);
@@ -1398,9 +1386,6 @@ async function decryptJson(ciphertext,key=state.unlockKey){
   key,decode64(sealed.payload));
  return JSON.parse(dec.decode(clear));
 }
-function ratingChoice(idName){return '<div class="chipline">'+[1,2,3,4,5].map(v=>
- '<label class="pill"><input type="radio" name="'+idName+'" value="'+v+'" style="width:auto;display:inline;min-height:0;margin:0" '+
- ''+'> '+v+'★</label>').join('')+'</div>';}
 function frenchCalendarMonth(yyyyMm){
  const date=new Date(yyyyMm+'-01T12:00:00Z');
  return new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'}).format(date);
@@ -1465,14 +1450,8 @@ async function renderJournal(){
  const yearCount=dates.filter(x=>x.startsWith(yr)&&x<=now).length;
  const monthCount=dates.filter(x=>x.startsWith(currentMo)&&x<=now).length;
  const weekCount=dates.filter(x=>x>=ws&&x<=now).length;
- let grades=[];
- if(state.unlockKey){
-  for(const item of state.feedback){
-   try{let entry=await decryptJson(item.ciphertext);
-    if(Number(entry.rating)>=1&&Number(entry.rating)<=5)grades.push(Number(entry.rating));
-   }catch{ /* keep one unopenable entry from crashing the calendar */ }
-  }
- }
+ const grades=(state.eveningReviews||[]).map(r=>Number(r.overall))
+  .filter(n=>Number.isInteger(n)&&n>=1&&n<=5);
  const average=grades.length?(grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(1):'—';
  const [y,m]=mo.split('-').map(Number),length=new Date(y,m,0).getDate();
  const offset=(new Date(y,m-1,1).getDay()+6)%7;
@@ -1490,13 +1469,13 @@ async function renderJournal(){
  '<div class="stat-grid"><div class="stat"><strong>'+yearCount+'</strong><small>Cette année</small></div>'+
  '<div class="stat"><strong>'+monthCount+'</strong><small>Ce mois</small></div>'+
  '<div class="stat"><strong>'+weekCount+'</strong><small>Cette semaine</small></div></div>'+
- '<p class="result">'+average+' / 5 ★</p><p>Note moyenne des questionnaires enregistrés.</p></section>'+
+ '<p class="result">'+average+' / 5 ♥</p><p>Note moyenne des bilans de soirée.</p></section>'+
  '<section class="card"><h2>♡ Calendrier des relations</h2>'+
  '<div class="actions">'+button('month-prev','←', 'class="subtle"')+
  '<button disabled class="subtle">'+safe(frenchCalendarMonth(mo))+'</button>'+
  button('month-next','→','class="subtle"')+'</div>'+cal+'</section>';
  if(!state.unlockKey){
-  const exists=!!state.couple?.journal_verifier||state.journal.length>0||state.feedback.length>0;
+  const exists=!!state.couple?.journal_verifier||state.journal.length>0;
   body+='<section class="card"><h2>🔒 '+(exists?'Déverrouiller notre journal':'Créer la phrase secrète de notre journal')+'</h2>'+
    '<p>'+(exists?'Saisissez votre phrase secrète commune pour accéder aux anciennes données.':
     'Choisissez une phrase secrète de 12 caractères ou plus et partagez-la en personne avec votre partenaire. Ni la phrase ni vos notes en clair ne sont envoyées au serveur.')+'</p>'+
@@ -1539,53 +1518,6 @@ async function renderJournal(){
  body+='<section class="card"><h3>Nos moments à deux</h3>'+
   button('tab:session','Retour à notre soirée','class="subtle"')+'</section>';
  frame(body,'NOTRE JOURNAL','Un calendrier partagé, du contenu chiffré');
-}
-async function renderFeedback(){
- const sessions=state.sessions||[];
- const session=sessions.find(x=>x.id===state.chosenSession&&x.finished_at&&x.counted)||
-  latestCountedSession(sessions);
- if(!session){
-  frame('<section class="card"><p>Terminez d’abord une soirée pour répondre à vos questions.</p>'+
-   button('tab:session','Retour à notre soirée')+'</section>','NOS AVIS','Après une soirée terminée');return;
- }
- state.chosenSession=session.id;
- const entries=state.feedback.filter(f=>f.session_id===session.id);
- const yours=entries.find(x=>x.author_id===state.user.id);
- const complete=state.members.every(m=>entries.some(x=>x.author_id===m.user_id));
- const statuses=feedbackItemsFor(state.feedbackStatus,session.id);
- const submitted=statuses?statuses.filter(x=>x.submitted).length:entries.length;
- let body='<section class="card"><div class="eyebrow">♥ APRÈS LA SOIRÉE</div>'+
- '<h2>Soirée du '+safe(session.started_at.slice(0,10))+'</h2>'+
- '<p>Trois questions pour chacun. Votre partenaire ne pourra lire vos réponses qu’une fois que vous aurez répondu tous les deux.</p>'+
- '<div class="stat-grid"><div class="stat"><strong>'+submitted+'/2</strong><small>Avis déposés</small></div></div>';
- if(!state.unlockKey){
-  body+='<p>Déverrouillez votre journal chiffré pour répondre ou voir les résultats.</p>'+
-   '<input type="password" id="journal-pass" placeholder="Phrase secrète commune">'+button('unlock','Déverrouiller');
- }else if(!complete){
-  if(yours)body+='<div class="invite-status"><strong>✓ Votre avis est enregistré</strong>'+
-   '<p>En attente de la réponse de votre partenaire. Les avis ne sont pas encore visibles.</p></div>';
-  else body+='<h3>Mes 3 questions</h3>'+
-   '<label>1. Comment avez-vous aimé la soirée ?'+ratingChoice('rating')+'</label>'+
-   '<label>2. Votre moment préféré<select id="feedback-liked">'+
-   ['La complicité','La tendresse','Les défis','L’ambiance','Les surprises'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label><label>3. Pour la prochaine fois<select id="feedback-next">'+
-   ['Rien à changer','Plus de douceur','Plus de temps','Plus de surprises','Rythme différent'].map(x=>'<option>'+safe(x)+'</option>').join('')+
-   '</select></label>'+button('save-feedback','Enregistrer mon avis ❤️');
- }else{
-  body+='<h3>♡ Vos deux avis</h3>';
-  for(const member of state.members){
-   const entry=entries.find(x=>x.author_id===member.user_id);
-   let answer=null;
-   try{answer=await decryptJson(entry.ciphertext);}catch{}
-   body+='<div class="muted-line"><h3>'+safe(member.name)+'</h3>'+
-    (answer?'<p>'+formattedStars(answer.rating)+'<br>Préféré : '+safe(answer.liked)+
-      '<br>Pour la prochaine fois : '+safe(answer.next)+'</p>':
-      '<p>Impossible de lire cette réponse. Vérifiez la phrase secrète.</p>')+'</div>';
-  }
- }
- body+='</section><section class="card">'+
- button('tab:session','← Retour à Soirée','class="subtle"')+'</section>';
- frame(body,'NOS AVIS APRÈS LA SOIRÉE','Un moment pour partager vos ressentis');
 }
 function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
 function renderCardLibrary(){
@@ -1958,16 +1890,6 @@ async function handle(action,element){
  if(verb==='review-dismiss'){
   state.reviewDismissedSessionId=state.reviewModalSessionId;
   state.reviewModalSessionId=null;state.reviewDraft={};render();return;
- }
- if(verb==='review-calendar'){
-  const session=state.sessions.find(x=>x.id===state.reviewModalSessionId);
-  if(session){const date=eveningLocalDay(session.started_at);
-   state.eveningCalendarMonth=date?.slice(0,7)||month();
-   state.eveningCalendarDate=date||today();
-  }
-  state.reviewDismissedSessionId=state.reviewModalSessionId;
-  state.reviewModalSessionId=null;state.reviewDraft={};
-  state.tab='evening-calendar';render();return;
  }
  if(verb==='review-open'){
   const sessionId=parts[0],session=state.sessions?.find(s=>s.id===sessionId&&s.finished_at&&s.counted);
@@ -2811,17 +2733,6 @@ async function handle(action,element){
   state.invitations=await query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'});
   render();notify('Invitation annulée.');return;
  }
- if(verb==='choose-feedback'){
-  const sessionId=parts[0];
-  if(!state.sessions.some(x=>x.id===sessionId&&x.finished_at&&x.counted))
-   throw Error('Cette soirée terminée est introuvable.');
-  state.chosenSession=sessionId;
-  try{
-   const items=await rpc('my_love_feedback_status',{p_session:sessionId});
-   state.feedbackStatus={sessionId,items:Array.isArray(items)?items:[]};
-  }catch(error){state.feedbackStatus=null;}
-  state.tab='feedback';render();return;
- }
  if(verb==='save-couple-date'){
   const value=id('couple-started-on')?.value||null;
   await rpc('set_love_relationship_date',{p_couple:state.coupleId,p_date:value});
@@ -2835,7 +2746,7 @@ async function handle(action,element){
   const ready=isSharedCoupleReady(state.coupleId,state.members);
   const allowed=ready?
    ['home','session','special','occasions','advent','settings','library',
-    'personal-journal','journal','ideas','feedback','monthly-library','advent-editor','special-editor']:
+    'personal-journal','journal','ideas','monthly-library','advent-editor','special-editor']:
    ['home','settings','invitation','library','personal-journal','monthly-library','advent-editor','special-editor'];
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
   if(parts[0]==='session'&&!state.weekly){
@@ -2866,7 +2777,7 @@ async function handle(action,element){
  }
  if(['review-save','evening-close-confirm','save-occasion-date','occasion-roll','roll','new-session','my-d6',
     'new-challenge','answer','finish-session','cancel-session','confirm-cancel',
-    'save-event','delete-event','save-feedback'].includes(verb)&&
+    'save-event','delete-event'].includes(verb)&&
     !isSharedCoupleReady(state.coupleId,state.members))
    throw Error('Cette action nécessite deux comptes associés.');
  if(verb==='save-occasion-date'){
@@ -3083,7 +2994,7 @@ async function handle(action,element){
  if(verb==='unlock'){
   const pass=id('journal-pass')?.value||'';
   const savedProbe=state.couple?.journal_verifier||null;
-  const hasLegacy=state.journal.length>0||state.feedback.length>0;
+  const hasLegacy=state.journal.length>0;
   const creating=!savedProbe&&!hasLegacy;
   if(creating&&pass!==id('journal-pass-confirm')?.value)
    throw Error('Les deux phrases secrètes doivent être identiques.');
@@ -3095,7 +3006,7 @@ async function handle(action,element){
    state.couple.journal_verifier=envelope;
   }else{
    try{
-    const probe=savedProbe||state.journal[0]?.ciphertext||state.feedback[0]?.ciphertext;
+    const probe=savedProbe||state.journal[0]?.ciphertext;
     if(!probe)throw Error('Aucune preuve de clé disponible.');
     const clear=await decryptJson(probe,key);
     if(savedProbe&&clear?.purpose!=='loveroll-journal-check')
@@ -3138,18 +3049,7 @@ async function handle(action,element){
   const {error}=await client.from('couple_intimacy').delete().eq('id',parts[0]).eq('author_id',state.user.id);
   if(error)throw error;await refreshAndShow();return;
  }
- if(verb==='save-feedback'){
-  if(!state.chosenSession)throw Error('Aucune soirée sélectionnée.');
-  const rating=Number(document.querySelector('[name=rating]:checked')?.value);
-  if(!(rating>=1&&rating<=5))throw Error('Choisissez une note de 1 à 5.');
-  const payload={rating,liked:id('feedback-liked').value,next:id('feedback-next').value};
-  const ciphertext=await encryptJson(payload);
-  const {error}=await client.from('couple_feedback').upsert({
-    session_id:state.chosenSession,couple_id:state.coupleId,
-    author_id:state.user.id,ciphertext},{onConflict:'session_id,author_id'});
-  if(error)throw error;
-  await refreshAndShow();notify('Votre avis est enregistré. Il sera visible quand vous aurez répondu tous les deux.');return;
- }
+
 }
 async function start(){
  const currentUrl=new URL(location.href);
