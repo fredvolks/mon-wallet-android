@@ -123,7 +123,7 @@ export function premiumEveningHtml({
   Number(turn.remaining?.[me]||0)>0&&turn.next===me;
  const canGive=ready&&turn.ready&&giftCount<3&&Number(turn.remaining?.[me])>0;
  const challengeText=pending?'♡ Voir notre défi en cours':turn.finished?'Tous les défis terminés':!ready?'En attente des deux D6':canDraw?'À toi de jouer':'En attente de '+esc(partner.name?.split(' ')[0]||'ton partenaire');
- const help='100 Sensuel + 100 Sexuel = 200 cartes · '+(playable?playable.total+' idées jouables':'idées personnalisables')+'; résultats synchronisés';
+ const help='100 cartes dans une seule bibliothèque · '+(playable?playable.total+' cartes jouables':'50 idées prêtes et 50 emplacements')+'; résultats synchronisés';
  const stateText=ready?'✓ Étape 2 débloquée':status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':status?.partner_rolled?'Le résultat de '+esc(partner.name?.split(' ')[0]||'ton partenaire')+' est prêt. À toi de brasser le dé.':'Chaque partenaire brasse son propre dé.';
  const currentStatus=turn.finished?'♡ Tous les défis sont réalisés':turn.drawsFinished?'♡ Tous les défis sont pigés':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
@@ -152,15 +152,7 @@ export function premiumEveningHtml({
   '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
-    '<div class="evening-choice" role="group" aria-label="Choisir la catégorie de ce défi">'+
-       '<div class="evening-choice-option">'+
-         bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
-         (category==='SENSUEL'?'<small class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie</span></small>':'')+'</div>'+
-       '<div class="evening-choice-option">'+
-         bt('category:HASARD',(category==='HASARD'?'✓ ':'🎲 ')+'Au hasard','evening-choice-btn '+(category==='HASARD'?'selected':''),!canDraw)+'</div>'+
-       '<div class="evening-choice-option">'+
-         bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+
-         (category==='SEXUEL'?'<small class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie</span></small>':'')+'</div></div>'+
+    '<div class="evening-unified-label">♡ Une seule bibliothèque · 100 cartes</div>'+ 
     '<div class="evening-die-row">'+
       '<div class="evening-d35-col">'+premiumPolyDie(100,rolling&&rollingKind==='new-challenge'?rollFace:officialD100,'Notre dé 100 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
@@ -169,7 +161,7 @@ export function premiumEveningHtml({
     '<div class="evening-roll-actions">'+
       (turn.finished?bt('finish-session','✓ Terminer la soirée','evening-primary'):
        turn.drawsFinished?'<p class="evening-draw-done">✓ Tous les tirages sont prêts !</p>':
-        bt('new-challenge','🎲 Brasser le dé','evening-primary',!canDraw||!category||rolling))+
+        bt('new-challenge','🎲 Brasser le dé','evening-primary',!canDraw||rolling))+
       bt('evening-list','♡ Voir mes défis ('+ownChallengeCount+')','evening-queue-open-btn')+
     '</div>'+
   '</div></section>'+
