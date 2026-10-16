@@ -1919,6 +1919,39 @@ async function handle(action,element){
   state.homeNotices=!state.homeNotices;render();return;
  }
  if(verb==='evening-more'){state.eveningMore=!state.eveningMore;render();return;}
+ if(verb==='evening-calendar'){
+  state.eveningMore=false;state.confirmCancel=false;
+  const date=state.session?eveningLocalDay(state.session.started_at):null;
+  if(date){state.eveningCalendarDate=date;state.eveningCalendarMonth=date.slice(0,7);}
+  state.tab='evening-calendar';render();return;
+ }
+ if(verb==='evening-month-prev'||verb==='evening-month-next'){
+  const d=new Date((state.eveningCalendarMonth||month())+'-15T12:00:00Z');
+  d.setUTCMonth(d.getUTCMonth()+(verb==='evening-month-next'?1:-1));
+  state.eveningCalendarMonth=d.toISOString().slice(0,7);
+  state.eveningCalendarDate=state.eveningCalendarMonth+'-01';
+  render();return;
+ }
+ if(verb==='evening-date'){
+  const date=parts[0];
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date.slice(0,7)!==(state.eveningCalendarMonth||month()))
+   throw Error('Date de calendrier invalide.');
+  state.eveningCalendarDate=date;render();return;
+ }
+ if(verb==='evening-close-request'){
+  if(!state.session)throw Error('Aucune soirée à clore.');
+  state.eveningMore=false;state.confirmCancel=true;render();return;
+ }
+ if(verb==='evening-close-confirm'){
+  if(!state.session)throw Error('Cette soirée est déjà clôturée.');
+  const ended=state.session;
+  await rpc('close_love_evening_preserve',{p_session:ended.id});
+  const date=eveningLocalDay(ended.started_at);
+  state.eveningCalendarMonth=date?.slice(0,7)||month();
+  state.eveningCalendarDate=date||today();
+  state.confirmCancel=false;state.eveningMore=false;state.showEveningChallenges=false;
+  state.tab='evening-calendar';await refreshAndShow();return;
+ }
  if(verb==='evening-challenge'||verb==='evening-list'){
   state.showEveningChallenges=true;state.selectedEveningChallengeId=null;render();return;
  }
@@ -2741,7 +2774,7 @@ async function handle(action,element){
    liveSync.probe(true).catch(console.warn);
   return;
  }
- if(['save-occasion-date','occasion-roll','roll','new-session','my-d6',
+ if(['evening-close-confirm','save-occasion-date','occasion-roll','roll','new-session','my-d6',
     'new-challenge','answer','finish-session','cancel-session','confirm-cancel',
     'save-event','delete-event','save-feedback'].includes(verb)&&
     !isSharedCoupleReady(state.coupleId,state.members))
