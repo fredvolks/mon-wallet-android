@@ -9,6 +9,8 @@ ALTER TABLE public.love_card_draw_history ADD CONSTRAINT love_card_draw_history_
 ALTER TABLE public.couple_challenges DROP CONSTRAINT couple_challenges_category_check;
 ALTER TABLE public.couple_challenges ADD CONSTRAINT couple_challenges_category_check CHECK(category IN ('SENSUEL','COQUIN','SEXUEL','MIXTE'));
 
+ALTER TABLE public.love_base_challenges DROP CONSTRAINT love_base_challenges_card_id_check;
+ALTER TABLE public.love_base_challenges ADD CONSTRAINT love_base_challenges_card_id_check CHECK(card_id BETWEEN 1 AND 50);
 -- 50 default ideas from the old two categories, copied into the new unified library.
 INSERT INTO public.love_base_challenges(category,card_id,title,description,timer_minutes)
  SELECT 'MIXTE',card_id+(CASE WHEN category='SEXUEL' THEN 25 ELSE 0 END),title,description,timer_minutes
