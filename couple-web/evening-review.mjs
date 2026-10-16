@@ -43,7 +43,7 @@ export function eveningReviewModal({sessionId,draft={},saving=false,partnerName=
   'Le bilan de '+esc(partnerName)+' sera ajouté dès qu’il sera enregistré.</p>'+
  '<p class="lr-review-error" role="alert" hidden></p>'+
  '<button type="button" class="lr-review-save" data-action="review-save"'+(saving?' disabled':'')+
-  '>♡ '+(saving?'Enregistrement…':'Enregistrer mon bilan')+'</button>'+
+  '>♡ '+(saving?'Enregistrement…':'Enregistrer notre bilan')+'</button>'+
  '<button type="button" class="lr-review-calendar" data-action="review-calendar">▦ Voir le calendrier</button>'+
  '</section></div>';
 }
