@@ -54,7 +54,7 @@ test('When the official D6 stops, the same face stays visible for the result pau
  assert.match(html,/surprise-month has-activity host-pending/);
  assert.match(html,/data-dice-sides="6"/);
  assert.match(html,/data-face="4"/);
- assert.match(html,/data-dice-preview="false"/);
+ assert.doesNotMatch(html,/data-dice-preview=/);
  assert.match(html,/data-spinning="false"/);
  assert.doesNotMatch(html,/data-dice-unrolled="true"/);
  assert.equal(count(html,'data-dice-sides="20"'),0);
