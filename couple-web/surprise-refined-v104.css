@@ -251,3 +251,46 @@ main#app.loveroll-surprise-page .surprise-edit-close{
  }
  main#app.loveroll-surprise-page .surprise-bottom-info{display:none!important}
 }
+
+/* v105: avoid inline host-D6 overlap with its button on phones under 760px tall.
+   Preserve the giant activity D20 BEFORE drawing the activity. */
+@media(max-width:767px) and (max-height:760px){
+ main#app.loveroll-surprise-page .surprise-premium-view{
+  grid-template-rows:minmax(54px,auto) minmax(0,1fr) 205px!important;
+ }
+ main#app.loveroll-surprise-page .surprise-month.has-activity{
+  padding:7px!important;gap:3px!important;
+ }
+ main#app.loveroll-surprise-page .surprise-month.has-activity>.surprise-d20-scene{
+  min-height:27px!important;flex:0 1 10%!important;
+ }
+ main#app.loveroll-surprise-page .surprise-month.has-activity>.surprise-invite-inside{
+  min-height:130px!important;flex:1 1 auto!important;
+  padding:5px 7px!important;gap:2px!important;
+ }
+ main#app.loveroll-surprise-page .surprise-invite-heading{
+  font-size:clamp(.7rem,2.4vw,.9rem)!important;
+ }
+ main#app.loveroll-surprise-page .surprise-invite-heading small{
+  font-size:clamp(.59rem,1.9vw,.72rem)!important;
+ }
+ main#app.loveroll-surprise-page .surprise-invite-grid{
+  grid-template-columns:minmax(0,1fr) minmax(48px,.55fr) minmax(0,1fr)!important;
+  gap:3px!important;min-height:0!important;
+ }
+ main#app.loveroll-surprise-page .surprise-month.has-activity .surprise-invite-die{
+  width:min(18vw,9dvh,65px)!important;height:min(18vw,9dvh,65px)!important;
+  min-width:0!important;min-height:0!important;max-height:65px!important;
+ }
+ main#app.loveroll-surprise-page .surprise-invite-die .love3d,
+ main#app.loveroll-surprise-page .surprise-invite-die .love3d-stage,
+ main#app.loveroll-surprise-page .surprise-invite-die canvas{
+  width:100%!important;height:100%!important;
+  max-width:100%!important;max-height:100%!important;
+  min-height:0!important;min-width:0!important;
+ }
+ main#app.loveroll-surprise-page .surprise-invite-button{
+  min-height:34px!important;max-height:40px!important;
+  font-size:clamp(.77rem,2.6vw,.94rem)!important;padding:4px!important;
+ }
+}
