@@ -178,7 +178,7 @@ export function premiumEveningHtml({
     '<p>'+esc(lastEvening.completed)+' défis réalisés ensemble. Prenez le temps de donner votre avis.</p>'+
     '<p>Vos réponses : <strong>'+(lastEvening.myResponse?'✓ Enregistrées':'En attente')+'</strong> · Votre partenaire : <strong>'+
     (lastEvening.partnerResponse===null?'Statut indisponible':lastEvening.partnerResponse?'✓ Enregistrées':'En attente')+'</strong></p>'+
-    '<p>'+(lastEvening.responses===null?'—':esc(lastEvening.responses))+' / 2 avis déposés · visibles ensemble après les deux réponses.</p>'+
+    '<p>'+(lastEvening.responses===null?'—':esc(lastEvening.responses))+' / 2 bilans déposés · chacun est visible dans le calendrier après son enregistrement.</p>'+
     bt('review-open:'+lastEvening.id,lastEvening.myResponse?'♡ Modifier mon bilan':'♡ Donner mon bilan','evening-primary')+
     bt('evening-calendar','▦ Consulter notre calendrier','subtle')+'</div>':
     '<p>Un tirage choisit qui commence, puis les défis alternent.</p>')+
