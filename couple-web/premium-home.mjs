@@ -133,7 +133,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    'aria-label="Dé 3D, '+(rolling?'en cours de brassage':ready?'face '+weekly.face:'en attente du tirage')+'"></canvas></div></div>'+
    '<div class="home-roll-area">'+
    (ready?
-    '<button class="home-roll-button is-used" type="button" disabled>♡ Dé déjà brassé cette semaine</button>':
+    '<button class="home-roll-button is-used" type="button" disabled>Déjà brassé cette semaine, revenez la semaine prochaine</button>':
     '<button class="home-roll-button" type="button" data-action="roll:weekly" '+(pending?'disabled':'')+'>'+
     (rolling?'Brassage 3D en cours…':disabled?'Préparation du brassage…':'🎲 BRASSER LE DÉ')+'</button>')+
    '<p>Info : '+(ready?'Par '+escape(members.find(p=>p.user_id===weekly.actor)?.name||'un partenaire')+'. ':
