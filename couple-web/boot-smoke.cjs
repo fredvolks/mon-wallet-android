@@ -205,4 +205,4 @@ export function createClient(){
   await page.close();
  }
  await browser.close();
-})().catch(e=>{console.error('BOOT_FAILURE',e);process.exitCode=1});
+})().catch(e=>{console.error('BOOT_FAILURE',e);process.exit(1)});
