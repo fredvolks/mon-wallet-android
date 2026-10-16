@@ -3,11 +3,11 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const bt=(action,text,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(action)+'"'+
  (action.startsWith('category:')?' aria-pressed="'+(cls.includes('selected')?'true':'false')+'"':'')+
  (disabled?' disabled':'')+'>'+text+'</button>';
-export function premiumPolyDie(sides,face=null,caption='',spinning=false){
+export function premiumPolyDie(sides,face=null,caption='',spinning=false,preview=false){
  const valid=Number.isInteger(face)&&face>=1&&face<=sides;
  // A missing D6 value is NOT 1. Until the official result is known,
  // show a neutral heart rather than a real-looking but fake 'one pip'.
- if(sides===6&&!valid){
+ if(sides===6&&!valid&&!preview){
   return '<div class="love3d love3d-6" role="group" aria-label="'+esc(caption)+' · dé en attente">'+
    '<div class="love3d-stage is-unrolled"><strong class="dice-fallback">♡</strong>'+
    '<canvas class="dice-canvas" width="250" height="250" data-dice-sides="6" '+
@@ -19,8 +19,10 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false){
   '<div class="love3d-stage '+(spinning?'is-rolling':'')+'">'+
    '<strong class="dice-fallback"'+(spinning?' aria-hidden="true"':'')+'>'+'♡'+'</strong>'+
    '<canvas class="dice-canvas" width="250" height="250" data-dice-sides="'+sides+
-   '" data-face="'+target+'" data-dice-zoom="'+(sides===20?'1.30':sides===35?'1.07':'1')+'" data-dice-markers="'+(sides===6?'pips':'numbers')+'" data-spinning="'+(spinning?'true':'false')+
-   '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:'Dé en attente')+'"></canvas>'+
+   '" data-face="'+target+'" data-dice-zoom="'+(sides===20?'1.30':sides===35?'1.07':preview&&!valid?'1.14':'1')+
+   '" data-dice-preview="'+(preview&&!valid?'true':'false')+'" data-dice-markers="'+(sides===6?'pips':'numbers')+'" data-spinning="'+(spinning?'true':'false')+
+   '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:
+     preview?'Dé 3D décoratif en attente du tirage officiel':'Dé en attente')+'"></canvas>'+
   '</div></div>';
 }
 // Changing the category must not remount a live WebGL canvas. The shared
