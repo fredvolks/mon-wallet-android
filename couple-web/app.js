@@ -1023,7 +1023,7 @@ function renderSession(){
  if(session&&!state.category){
   try{
    const saved=sessionStorage.getItem('loveroll-category-'+session.id);
-   if(EVENING_CATEGORIES.includes(saved))state.category=saved;
+   if(EVENING_CATEGORIES.includes(saved)||saved==='HASARD')state.category=saved;
   }catch{}
  }
  if(session&&(!session.paired_turns||!session.self_draws))return renderLegacySession();
@@ -2826,8 +2826,9 @@ async function handle(action,element){
   return;
  }
  if(verb==='category'){
-  if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie interdite');
-  state.category=parts[0];state.randomMode=false;
+  if(!EVENING_CATEGORIES.includes(parts[0])&&parts[0]!=='HASARD')
+   throw Error('Catégorie interdite');
+  state.category=parts[0];state.randomMode=parts[0]==='HASARD';
   if(state.session)try{sessionStorage.setItem('loveroll-category-'+state.session.id,parts[0]);}catch{}
   render();return;
  }
@@ -2881,10 +2882,18 @@ async function handle(action,element){
  }
  if(verb==='new-challenge'){
   if(!state.session)throw Error('Aucune soirée active.');
-  if(!EVENING_CATEGORIES.includes(state.category))
-   throw Error('Choisissez Sensuel ou Sexuel avant chaque nouveau défi.');
-  const drawn=await animateRoll(()=>rpc('draw_for_partner',{p_session:state.session.id,
-   p_preference:state.category,p_random:false}),'new-challenge');
+  if(!EVENING_CATEGORIES.includes(state.category)&&state.category!=='HASARD')
+   throw Error('Choisissez Sensuel, Au hasard ou Sexuel avant chaque nouveau défi.');
+  // A 50/50 draw is decided on Supabase before the official D35 result is saved.
+  // Never fabricate a provisional category or bypass the existing turn/anti-repeat rules.
+  const selectedCategory=state.category;
+  const sessionId=state.session.id;
+  const drawn=await animateRoll(()=>
+   selectedCategory==='HASARD'?
+    rpc('draw_for_partner_random',{p_session:sessionId}):
+    rpc('draw_for_partner',{p_session:sessionId,
+      p_preference:selectedCategory,p_random:false}),
+   'new-challenge');
   // The official result is now stored; open only the receiving player's
   // private card, with the saved timer ready to start later.
   if(drawn?.id&&drawn.recipient===state.user.id){
