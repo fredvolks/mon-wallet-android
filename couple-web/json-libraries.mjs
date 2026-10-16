@@ -28,12 +28,12 @@ export function buildEveningLibrary(category,overrides=[]){
 }
 export function validateEveningLibrary(data){
  if(!object(data)||data.format!=='loveroll-evening'||data.version!==JSON_VERSION||
-  !EVENING_CATEGORIES.includes(data.category)||!Array.isArray(data.cards)||data.cards.length!==35)
-  throw Error('Fichier de soirée : 35 cartes attendues dans une catégorie Sensuel ou Sexuel.');
+  !EVENING_CATEGORIES.includes(data.category)||!Array.isArray(data.cards)||![35,100].includes(data.cards.length))
+  throw Error('Fichier de soirée : 100 cartes attendues (ou ancienne sauvegarde de 35 cartes).');
  const seen=new Set();
  for(const card of data.cards){
-  if(!object(card)||!Number.isInteger(card.card_id)||card.card_id<1||card.card_id>35||
-   seen.has(card.card_id))throw Error('Numérotation invalide : les 35 cartes doivent être uniques.');
+  if(!object(card)||!Number.isInteger(card.card_id)||card.card_id<1||card.card_id>data.cards.length||
+   seen.has(card.card_id))throw Error('Numérotation invalide : chaque carte doit avoir son numéro unique.');
   seen.add(card.card_id);
   const empty=card.card_id>25&&card.title===''&&card.description==='';
   if(!empty){text(card.title,3,120,'Titre carte '+card.card_id);
@@ -80,7 +80,7 @@ export function validatePortableSpecial(data){
 export function librarySummary(data,kind){
  if(kind==='evening'){
   const item=validateEveningLibrary(data);
-  return {count:item.cards.filter(c=>!!c.title).length,total:35,timers:item.cards.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Défis '+item.category};
+  return {count:item.cards.filter(c=>!!c.title).length,total:100,timers:item.cards.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Défis '+item.category};
  }
  if(kind==='monthly'){
   const item=validateMonthlyLibrary(data);
