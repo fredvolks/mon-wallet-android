@@ -6,7 +6,7 @@ import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-surprise108';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-d100110';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise109';
@@ -15,12 +15,12 @@ import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQualit
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
 import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
-import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs';
+import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-d100110';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-no-toast87';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
-import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs';
+import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-d100110';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.109';
+const WEB_RELEASE='2026-10-16.110';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -242,7 +242,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261016-surprise108').then(({dieOn})=>{
+  import('./dice3d.js?v=20261016-d100110').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -653,7 +653,7 @@ async function refreshShared(){
   ]);
   state.personal=personal;
   // The SELECT policy also restricts these rows, so a partner never gets
-  // another person's challenge title, description or D35 face.
+  // another person's challenge title, description or D100 face.
   state.challenges=ownEveningChallenges(challenges,state.user.id,state.session.id);
   state.rollStatus=status?.[0]||null;
   state.eveningBoard=board||null;
@@ -829,7 +829,7 @@ function renderWaitingPartner(){
   '<p><strong>3.</strong> Dès qu’elle est acceptée, vos dés et soirées seront activés</p></div></section>'+
   '<section class="card"><h3>♡ À préparer pendant l’attente</h3>'+
   '<div class="waiting-actions">'+
-  button('tab:library','♡ Nos 70 défis')+
+  button('tab:library','♡ Nos 200 défis')+
   button('tab:monthly-library','✦ 20 activités du mois','class="subtle"')+
   button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
   button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
@@ -937,9 +937,9 @@ function timerWidget(challenge,minutes){
 function renderLegacySession(){
  let s=state.session; const p=other();
  let body='<section class="premium-intro"><div class="premium-eyebrow">🎲 NOTRE SOIRÉE À DEUX</div>'+
- '<h2>Les défis de notre soirée</h2><p>70 défis à découvrir ensemble, parmi nos deux univers de 35 idées.</p></section>'+
+ '<h2>Les défis de notre soirée</h2><p>200 cartes à personnaliser : 100 Sensuel + 100 Sexuel.</p></section>'+
  '<section class="card hero-game-card"><div class="premium-eyebrow">♡ LE DÉ DES DÉFIS</div>'+
- heroDice(null,35,'Nos 70 défis')+
+ heroDice(null,100,'Nos 200 défis')+
  '<p class="tiny-note">Pour commencer, chacun lance son dé personnel pour découvrir combien de défis il recevra. Vos résultats sont révélés ensemble.</p>';
  if(!s){
   const latest=latestCountedSession(state.sessions);
@@ -980,7 +980,7 @@ function renderLegacySession(){
    if(active){
     const challenge=resolvedCard(active);
     body+='<div class="card challenge-present"><div class="eyebrow">'+safe(names[active.category])+
-     ' · CARTE N° '+safe(active.face)+'</div>'+heroDice(active.face,35,'Notre défi surprise')+
+     ' · CARTE N° '+safe(active.face)+'</div>'+heroDice(active.face,100,'Notre défi surprise')+
      '<div class="challenge-roles">♡ '+safe(p.name).toUpperCase()+' OFFRE → '+safe(state.profile.display_name).toUpperCase()+' REÇOIT</div>'+
      '<h3>'+safe(challenge.title)+'</h3>'+
      '<p>'+safe(challenge.description)+'</p>' +
@@ -995,7 +995,7 @@ function renderLegacySession(){
    if(!otherActive&&otherCompleted<theirs.face){
     body+='<div class="card"><h3>Défi '+(otherCompleted+1)+' / '+theirs.face+
      ' à offrir à '+safe(p.name)+'</h3>'+
-     '<p>Choisissez votre catégorie. LoveRoll sélectionnera le défi parmi nos 70 idées.</p>'+
+     '<p>Choisissez votre catégorie. LoveRoll sélectionnera le défi parmi nos 200 emplacements.</p>'+
      '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
      '<p>88 % dans votre catégorie choisie · 12 % dans l’autre. Choisissez à chaque défi.</p>'+
@@ -1072,7 +1072,7 @@ function renderSession(){
    (view?
     '<div class="evening-queue-detail">'+
      '<div class="eyebrow">♥ '+safe(names[view.category]||view.category)+
-      ' · Dé 35 : '+safe(view.face)+' · '+safe(queueLabel(view.status))+'</div>'+
+      ' · Dé 100 : '+safe(view.face)+' · '+safe(queueLabel(view.status))+'</div>'+
      '<h2>'+safe(resolvedCard(view).title)+'</h2>'+
      '<p>'+safe(resolvedCard(view).description)+'</p>'+
      timerWidget(view,resolvedCard(view).minutes)+
@@ -1108,7 +1108,7 @@ function renderSession(){
    challengeOverlay:overlay,lastEvening,canStartEvening,
    weeklyReady:!!state.weekly,weeklyCount:daily.counted,weeklyLimit:daily.limit,
    dailyLocked:daily.dailyLocked,ownChallengeCount:mineCards.length,
-   lastD35Face:lastOfficialChallengeFace(
+   lastD100Face:lastOfficialChallengeFace(
     session?state.challenges:state.challengesHistory,session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
@@ -1543,7 +1543,7 @@ function renderCardLibrary(){
  let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
   '<h2>'+playableEveningCount(state.customCards).total+' cartes jouables</h2>'+
   '<p>'+playableEveningCount(state.customCards).sensual+' Sensuel · '+
-   playableEveningCount(state.customCards).sexual+' Sexuel. Les 20 emplacements facultatifs vides ne sont jamais tirés.</p>'+
+   playableEveningCount(state.customCards).sexual+' Sexuel. Les emplacements vides ne sont jamais tirés.</p>'+
   '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
     '<button class="pill '+(category===c?'selected':'')+
     '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
@@ -1563,7 +1563,7 @@ function renderCardLibrary(){
   '<label>Rechercher une carte<input id="custom-card-search" type="search" placeholder="Titre, mot-clé ou numéro"></label>'+
   '<label>Afficher<select id="custom-card-filter"><option value="all">Toutes les cartes</option><option value="edited">Cartes personnalisées</option><option value="empty">Emplacements libres</option></select></label>'+
   '<h3>25 cartes prêtes</h3><div class="custom-card-tiles">'+table(slots.slice(0,25))+
-  '</div><h3>10 emplacements facultatifs</h3><div class="custom-card-tiles">'+
+  '</div><h3>75 emplacements personnalisables</h3><div class="custom-card-tiles">'+
   table(slots.slice(25))+'</div>'+
   '<p class="tiny-note">Les emplacements vides ne sont jamais pigés. Les cartes modifiées et les cartes officielles restent indiscernables pendant le jeu.</p></section>'+
   '<section class="card"><div class="eyebrow">ÉDITEUR PRIVÉ · CARTE '+String(slot.cardId).padStart(2,'0')+'</div>'+
@@ -1729,7 +1729,7 @@ function renderSettings(){
     '</div></div>';
   }).join(''):'';
  const game=isLoveAdmin()?
-  settingRow('Mes cartes','70 défis · 35 Sensuel et 35 Sexuel.','tab:library','Modifier')+
+  settingRow('Mes cartes','200 cartes · 100 Sensuel et 100 Sexuel.','tab:library','Modifier')+
   settingRow('Activités du mois','20 activités du dé D20.','tab:monthly-library','Modifier')+
   settingRow('Calendrier de l’Avent','25 surprises du calendrier partagé.','tab:advent-editor','Modifier')+
   settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
@@ -1829,7 +1829,7 @@ async function animateRoll(fn,kind='general'){
    await new Promise(resolve=>setTimeout(resolve,1000));
   }
   if(kind==='new-challenge'){
-   // Keep official D35 face visible for a full second after the animation.
+   // Keep official D100 face visible for a full second after the animation.
    // A truthy status temporarily suppresses refreshShared's automatic popup.
    state.diceStatus='settled';state.rollAnimationFace=null;
    await refreshShared();
@@ -2055,7 +2055,7 @@ async function handle(action,element){
   if(!isLoveAdmin()||!isSharedCoupleReady(state.coupleId,state.members))
    throw Error('Réinitialisation réservée à l’administrateur du couple.');
   const message='Réinitialiser TOUS les dés actifs pour les deux partenaires ? '+
-   'Le D6 hebdomadaire, les D6 personnels de la soirée, les défis D35 encore actifs, '+
+   'Le D6 hebdomadaire, les D6 personnels de la soirée, les défis D100 encore actifs, '+
    'les tirages de Surprise du mois et les dés des événements spéciaux seront à refaire. '+
    'Si une soirée est en cours, elle sera clôturée sans être comptée. '+
    'Les défis déjà enregistrés restent dans l’historique, ainsi que les soirées terminées, '+
@@ -2377,7 +2377,7 @@ async function handle(action,element){
  }
  if(verb==='custom-slot'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
-  const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<1||slot>35)throw Error('Emplacement invalide.');
+  const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<1||slot>100)throw Error('Emplacement invalide.');
   state.customSlot=slot;render();
   id('custom-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;
  }
@@ -2935,7 +2935,7 @@ async function handle(action,element){
   if(!state.session)throw Error('Aucune soirée active.');
   if(!EVENING_CATEGORIES.includes(state.category)&&state.category!=='HASARD')
    throw Error('Choisissez Sensuel, Au hasard ou Sexuel avant chaque nouveau défi.');
-  // A 50/50 draw is decided on Supabase before the official D35 result is saved.
+  // A 50/50 draw is decided on Supabase before the official D100 result is saved.
   // Never fabricate a provisional category or bypass the existing turn/anti-repeat rules.
   const selectedCategory=state.category;
   const sessionId=state.session.id;
