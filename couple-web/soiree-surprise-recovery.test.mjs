@@ -1,16 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {feedbackItemsFor} from './feedback-status.mjs';
 const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const app=read('app.js'),dice=read('dice3d.js'),style=read('surprise-dice-layout-v73.css');
 const index=read('index.html'),worker=read('service-worker.js');
-test('Soirée tolerates missing/null aftercare before AND after resets',()=>{
- for(const missing of [null,undefined,false,[],{}, {items:null}, {items:'invalid'}])
-  assert.equal(feedbackItemsFor(missing,'session-id'),null);
+test('Soirée tolerates an absent review and no longer opens legacy feedback',()=>{
  assert.match(app,/const recentReviews=last\?\(state.eveningReviews\|\|\[\]\)/);
- assert.match(app,/const statuses=feedbackItemsFor\(state\.feedbackStatus,session.id\)/);
- assert.doesNotMatch(app,/state\.feedbackStatus\.items\b/);
+ assert.match(app,/reviewModalSessionId/);
+ assert.doesNotMatch(app,/feedbackItemsFor|my_love_feedback_status|choose-feedback|save-feedback/);
  assert.match(app,/loveroll-aftercare-auto-recover-/);
  assert.match(app,/reloadWebAssets\(true\)/);
 });
