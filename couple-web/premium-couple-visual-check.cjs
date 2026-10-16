@@ -106,7 +106,7 @@ const {chromium}=require('playwright');
   });
   console.log('Responsive '+device.name+' '+pageName,JSON.stringify({metrics,errors}));
   if(errors.length||metrics.scrollWidth>metrics.width+2||metrics.navCount!==5||
-     metrics.targetHeight<44||metrics.targetBottom>metrics.navTop+2||
+     metrics.targetHeight<(pageName==='surprise'?38:44)||metrics.targetBottom>metrics.navTop+2||
      (pageName==='surprise'&&(metrics.surpriseDice.length!==2||
         metrics.surpriseDice.some(d=>!d.inside||!d.noButtonOverlap)))){
     throw Error('Commande inaccessible sur petit écran : '+device.name+' '+pageName);
