@@ -1,5 +1,5 @@
-// LoveRoll evening archive. Private challenge titles are rendered ONLY from
-// the authenticated user's own RLS-filtered challenge rows.
+// LoveRoll evening archive. Challenge titles and outcomes are shared ONLY
+// through the member-checked calendar RPC; the live game's RLS stays personal.
 import {resolvedCard} from './evening-challenges.mjs';
 const safe=x=>String(x??'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[k]));
 const isoMonth=v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(v||'')?v:null;
@@ -16,7 +16,7 @@ const statusLabel=s=>({
 })[s]||'○ Non réalisé';
 const monthLabel=mo=>new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'})
  .format(new Date(mo+'-15T12:00:00Z'));
-export function eveningHistoryMarkup({sessions=[],members=[],stats=[],ownChallenges=[],me,month,selectedDate}={}){
+export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyChallenges=[],me,month,selectedDate}={}){
  const current=isoMonth(month)||'2026-10';
  const [year,m]=current.split('-').map(Number);
  const validDate=selectedDate&&/^\d{4}-\d\d-\d\d$/.test(selectedDate)?selectedDate:current+'-01';
@@ -42,32 +42,43 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],ownChallen
  }
  const content=forDay.length?forDay.map((s,i)=>{
   const rolls=stats.filter(r=>r.session_id===s.id);
-  const own=ownChallenges.filter(c=>c.session_id===s.id&&c.recipient===me)
-   .sort((a,b)=>Date.parse(a.created_at||'')-Date.parse(b.created_at||''));
-  const people=members.map(m=>{
-   const r=rolls.find(row=>row.user_id===m.user_id);
-   if(!r)return '<div class="evening-cal-person"><strong>'+safe(m.name?.split(' ')[0]||'Partenaire')+
-    '</strong><span>Données indisponibles</span></div>';
-   const completed=Number(r.completed)||0;
-   const outstanding=r.target==null?Number(r.incomplete)||0:Math.max(0,Number(r.target)-completed);
-   return '<div class="evening-cal-person"><strong>'+safe(m.name?.split(' ')[0]||'Partenaire')+
-    (m.user_id===me?' (moi)':'')+'</strong><span><b>'+completed+'</b> réalisé'+(completed>1?'s':'')+
-    ' · <b>'+outstanding+'</b> non réalisé'+(outstanding>1?'s':'')+
-    (r.target!=null?' · '+Number(r.target)+' prévu'+(Number(r.target)>1?'s':''):'')+
-    '</span></div>';
-  }).join('');
-  const ownItems=own.map(c=>{
-   const card=resolvedCard(c);
-   return '<li class="evening-cal-challenge '+(c.status==='completed'?'is-done':'is-open')+'">'+
-    '<span>'+safe(statusLabel(c.status))+'</span><strong>'+safe(card.title)+'</strong>'+
-    '<small>'+safe(c.category==='SEXUEL'?'Sexuel':'Sensuel')+'</small></li>';
+  const personSections=members.map(m=>{
+   const row=rolls.find(item=>item.user_id===m.user_id);
+   const cards=historyChallenges.filter(c=>c.session_id===s.id&&c.recipient===m.user_id)
+    .sort((a,b)=>Date.parse(a.created_at||'')-Date.parse(b.created_at||''));
+   const countDone=Number(row?.completed)||0;
+   const countOutstanding=row?.target==null
+    ?Number(row?.incomplete)||0
+    :Math.max(0,Number(row.target)-countDone);
+   const name=String(m.name||'Partenaire').trim();
+   const role=m.user_id===me?' (moi)':' (partenaire)';
+   const statusSummary=row
+    ?'<span><b>'+countDone+'</b> réalisé'+(countDone>1?'s':'')+
+     ' · <b>'+countOutstanding+'</b> non réalisé'+(countOutstanding>1?'s':'')+'</span>'
+    :'<span>Bilan indisponible</span>';
+   const picked=cards.map(c=>{
+    const card=resolvedCard(c);
+    return '<li class="evening-cal-challenge '+(c.status==='completed'?'is-done':'is-open')+'">'+
+      '<span>'+safe(statusLabel(c.status))+'</span><strong>'+safe(card.title)+'</strong>'+
+      '<small>'+safe(c.category==='SEXUEL'?'Sexuel':'Sensuel')+'</small></li>';
+   }).join('');
+   const unpicked=row?.target==null?0:Math.max(0,Number(row.target)-Number(row.drawn||cards.length));
+   const extras=unpicked?'<p class="evening-cal-unpicked">♡ '+unpicked+
+      ' défi'+(unpicked>1?'s':'')+' non pigé'+(unpicked>1?'s':'')+
+      ' : aucune carte attribuée.</p>':'';
+   return '<details class="evening-cal-person-group" data-person-id="'+safe(m.user_id)+
+      '" data-session-id="'+safe(s.id)+'">'+
+     '<summary class="evening-cal-person">'+
+      '<strong>'+safe(name+role)+'</strong>'+statusSummary+
+      '<span class="evening-cal-arrow" aria-hidden="true">⌄</span></summary>'+
+     '<div class="evening-cal-person-content">'+
+      (cards.length?'<ul>'+picked+'</ul>':
+       '<p class="evening-cal-empty">Aucun défi pigé pour cette personne.</p>')+
+      extras+'</div></details>';
   }).join('');
   return '<article class="evening-cal-session"><header><strong>♡ Soirée '+(forDay.length>1?(i+1):'')+
    '</strong><span>'+(s.finished_at?'Clôturée':'En cours')+'</span></header>'+
-   '<div class="evening-cal-people">'+people+'</div>'+
-   '<h3>Mes défis pigés</h3>'+
-   (own.length?'<ul>'+ownItems+'</ul>':'<p>Aucun défi pigé sur ce compte pendant cette soirée.</p>')+
-   '<p class="evening-cal-privacy">Les cartes de ton partenaire restent privées; son bilan est partagé.</p>'+
+   '<div class="evening-cal-people">'+personSections+'</div>'+
    '</article>';
  }).join(''):'<p class="evening-cal-empty">Aucune soirée enregistrée pour cette journée.</p>';
  return '<div class="evening-calendar-shell">'+
