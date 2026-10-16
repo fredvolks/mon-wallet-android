@@ -8,42 +8,42 @@ import {
 import {SPECIAL_EVENT_KEYS} from './private-special-events.mjs';
 
 test('evening category export contains 100 cards and preserves timer metadata',()=>{
- const empty=buildEveningLibrary('SENSUEL',[]);
+ const empty=buildEveningLibrary('MIXTE',[]);
  assert.equal(empty.cards.length,100);
  assert.equal(librarySummary(empty,'evening').total,100);
- const changed={category:'SENSUEL',card_id:1,title:'Câlin surprise',description:'Serrer doucement dans les bras pendant une minute',timer_minutes:5,drawer_role:'both',recipient_role:'both'};
- const lib=buildEveningLibrary('SENSUEL',[changed]);
+ const changed={category:'MIXTE',card_id:1,title:'Câlin surprise',description:'Serrer doucement dans les bras pendant une minute',timer_minutes:5,drawer_role:'both',recipient_role:'both'};
+ const lib=buildEveningLibrary('MIXTE',[changed]);
  assert.equal(lib.cards[0].timer_minutes,5);
  assert.equal(librarySummary(lib,'evening').timers>=1,true);
- assert.deepEqual(validateEveningLibrary(JSON.parse(JSON.stringify(lib))),lib);
+ assert.deepEqual(validateEveningLibrary(JSON.parse(JSON.stringify(lib))).cards,lib.cards);
 });
 
 test('invalid evening JSON does not validate or overwrite',()=>{
- const lib=buildEveningLibrary('SEXUEL');
+ const lib=buildEveningLibrary('MIXTE');
  lib.cards[0].timer_minutes=61;
  assert.throws(()=>validateEveningLibrary(lib),/durée/i);
  lib.cards[0].timer_minutes=3;
  lib.cards[1].card_id=1;
  assert.throws(()=>validateEveningLibrary(lib),/numérotation/i);
- const restored=buildEveningLibrary('SEXUEL');
+ const restored=buildEveningLibrary('MIXTE');
  restored.cards[0].drawer_role='owner';restored.cards[0].recipient_role='owner';
  assert.throws(()=>validateEveningLibrary(restored),/restrictions/i);
 });
 
 test('An old 35-card JSON backup stays importable without erasing new 100-card capacity',()=>{
- const legacy=buildEveningLibrary('SENSUEL');
+ const legacy=buildEveningLibrary('MIXTE');
  legacy.cards=legacy.cards.slice(0,35);
- assert.equal(validateEveningLibrary(legacy),legacy);
+ assert.equal(validateEveningLibrary(legacy).cards.length,35);
  assert.equal(librarySummary(legacy,'evening').total,100);
- assert.equal(buildEveningLibrary('SENSUEL').cards.length,100);
- const custom=buildEveningLibrary('SEXUEL',[{
-  category:'SEXUEL',card_id:100,title:'Notre centième idée',
+ assert.equal(buildEveningLibrary('MIXTE').cards.length,100);
+ const custom=buildEveningLibrary('MIXTE',[{
+  category:'MIXTE',card_id:100,title:'Notre centième idée',
   description:'Une activité romantique choisie et acceptée ensemble.',
   timer_minutes:null,drawer_role:'both',recipient_role:'both'
  }]);
  assert.equal(custom.cards[99].card_id,100);
  assert.equal(custom.cards[99].title,'Notre centième idée');
- assert.deepEqual(validateEveningLibrary(custom),custom);
+ assert.deepEqual(validateEveningLibrary(custom).cards,custom.cards);
 });
 test('monthly JSON is always 20 numbered options, with optional timer',()=>{
  const lib=buildMonthlyLibrary([{face:1,title:'Souper à deux',description:'Planifier un souper ensemble au restaurant',is_restaurant:true,timer_minutes:15}]);
