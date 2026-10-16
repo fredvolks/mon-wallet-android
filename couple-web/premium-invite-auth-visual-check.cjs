@@ -40,7 +40,9 @@ const fs=require('node:fs'),path=require('node:path');
   {name:'Android-small',width:360,height:700},
   {name:'keyboard-open',width:412,height:550},
   {name:'iPad-portrait',width:820,height:1180},
+  {name:'iPad-portrait-Messenger',width:820,height:900},
   {name:'iPad-landscape',width:1180,height:820},
+  {name:'iPad-landscape-Messenger',width:1180,height:700},
   {name:'Windows-PC',width:1440,height:900}
  ]){
   const page=await browser.newPage({viewport:{width:v.width,height:v.height},deviceScaleFactor:2,isMobile:true,hasTouch:true});
