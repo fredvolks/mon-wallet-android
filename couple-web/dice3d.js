@@ -275,30 +275,41 @@ export function dieOn(canvas,sides,value,rolling){
   new THREE.MeshBasicMaterial({color:0x08030b,transparent:true,opacity:.28,depthWrite:false}));
  shadow.position.set(0,-1.16,-.68);shadow.scale.set(1,.25,1);
  scene.add(shadow);
- const target=new THREE.Quaternion().setFromUnitVectors(built.normals.get(Number(value)||1),
-  new THREE.Vector3(0,0,1));
- // Face officielle presque directement vers la caméra, léger volume visible.
+ // A server-confirmed face owns the final quaternion. Do not ever restore
+ // the initial mesh rotation after a live D100 throw.
  const tilt=new THREE.Quaternion().setFromEuler(sides===6?
   new THREE.Euler(.16,-.18,-.02):new THREE.Euler(.075,-.09,0));
- target.premultiply(tilt);
+ const orientationFor=face=>{
+  const normal=built.normals.get(Number(face));
+  return normal?new THREE.Quaternion().setFromUnitVectors(normal,
+   new THREE.Vector3(0,0,1)).premultiply(tilt):null;
+ };
+ let target=orientationFor(value)||orientationFor(1);
  built.group.quaternion.copy(target);
  let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true,lastFrame=0;
  let returnStart=null,returnTime=0;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
- const duration=rolling&&!reduceMotion?ROLL_TOTAL_MS:0,start=performance.now();
+ let duration=rolling&&!reduceMotion?ROLL_TOTAL_MS:0,start=performance.now();
  const euler=new THREE.Euler(0,0,0,'XYZ');
  let trajectory=null;
- if(duration){
-  // New random motion seed on EVERY server-confirmed throw, independent
-  // from the face (which Supabase has already chosen).
+ function prepareMotion(continueFromFace=false){
+  if(!duration){
+   trajectory=null;built.group.quaternion.copy(target);
+   built.group.position.set(0,0,0);return;
+  }
+  // Preserve the visible starting orientation during a live reroll.
+  // Only the movement is randomized: Supabase owns the official face.
+  const previous=new THREE.Euler().setFromQuaternion(built.group.quaternion,'XYZ');
   const seed=new Uint32Array(9);crypto.getRandomValues(seed);
   const random=[...seed].map(n=>n/4294967296);
   const resting=new THREE.Euler().setFromQuaternion(target,'XYZ');
-  trajectory=makeForwardRoll([resting.x,resting.y,resting.z],random);
+  trajectory=makeForwardRoll([resting.x,resting.y,resting.z],random,
+   continueFromFace?[previous.x,previous.y,previous.z]:null);
   euler.set(...trajectory.start);
   built.group.quaternion.setFromEuler(euler);
   built.group.position.set(0,0,0);
  }
+ if(duration)prepareMotion();
  function step(now){
   frame=0;if(!shown||document.hidden)return;
   const dt=lastFrame?Math.min(.05,Math.max(0,(now-lastFrame)/1000)):0;
@@ -319,9 +330,9 @@ export function dieOn(canvas,sides,value,rolling){
    built.group.position.y=Math.max(0,lift+contact);
    built.group.position.x=.065*damping*Math.sin(elapsed/540+trajectory.slidePhase);
   }else if(duration){
-   // No visible correction: this is the mathematically same final
-   // orientation as the last forward Euler step.
+   // Keep the official 3D face locked after its last animation frame.
    built.group.quaternion.copy(target);built.group.position.set(0,0,0);
+   canvas.dataset.spinning='false';
   }else if(!drag&&returnStart){
    const tReturn=reduceMotion?1:Math.min(1,(now-returnTime)/480);
    built.group.quaternion.slerpQuaternions(returnStart,target,1-Math.pow(1-tReturn,3));
@@ -340,6 +351,22 @@ export function dieOn(canvas,sides,value,rolling){
   if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003||(preview&&!reduceMotion))request();
  }
  const request=()=>{if(!frame)frame=requestAnimationFrame(step);};
+ const rollTo=face=>{
+  const selected=orientationFor(face);
+  if(!selected)return false;
+  target=selected;canvas.dataset.face=String(face);
+  canvas.dataset.spinning='true';
+  canvas.setAttribute('aria-label','Dé arrêté sur '+face+' après le brassage');
+  duration=reduceMotion?0:ROLL_TOTAL_MS;
+  start=performance.now();
+  drag=false;returnStart=null;vx=vy=0;lastFrame=0;
+  prepareMotion(true);
+  request();
+  return true;
+ };
+ // Allow LoveRoll to launch the next server-confirmed throw on the SAME
+ // WebGL canvas, without teardown, blank frame, or replaying the idle face.
+ canvas.loveRollDie={rollTo};
  const down=e=>{
   if(duration&&performance.now()-start<duration)return;
   drag=true;returnStart=null;x=e.clientX;y=e.clientY;vx=vy=0;
@@ -364,6 +391,7 @@ export function dieOn(canvas,sides,value,rolling){
  const onVisible=()=>{if(!document.hidden){lastFrame=0;request();}};
  document.addEventListener('visibilitychange',onVisible);request();
  const clean=()=>{if(frame)cancelAnimationFrame(frame);obs.disconnect();
+  if(canvas.loveRollDie?.rollTo===rollTo)delete canvas.loveRollDie;
   resizeObserver?.disconnect();window.removeEventListener('resize',resizeDie);
   document.removeEventListener('visibilitychange',onVisible);
   canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);
