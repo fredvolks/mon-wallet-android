@@ -94,7 +94,7 @@ export function premiumEveningHtml({
  // Never render a duplicate text number underneath or behind the die.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):'is-inactive')+'">'+
- '<div class="evening-intro"><span>♥ NOTRE RITUEL À DEUX</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
+ '<div class="evening-intro"><span>♥ NOTRE RITUEL DE LA SOIRÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
  (session?
   '<section class="evening-step one '+(ready?'is-complete':'is-incomplete')+'"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
@@ -110,13 +110,19 @@ export function premiumEveningHtml({
   '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
-    '<div class="evening-choice">'+
-       bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
-       bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+'</div>'+
+    '<div class="evening-choice" role="group" aria-label="Choisir la catégorie de ce défi">'+
+       '<div class="evening-choice-option">'+
+         bt('category:SENSUEL',(category==='SENSUEL'?'✓ ':'♡ ')+'Sensuel','evening-choice-btn '+(category==='SENSUEL'?'selected':''),!canDraw)+
+         (category==='SENSUEL'?'<small class="evening-choice-odds">88 % de chances</small>':'')+'</div>'+
+       '<div class="evening-choice-option">'+
+         bt('category:HASARD',(category==='HASARD'?'✓ ':'🎲 ')+'Au hasard','evening-choice-btn '+(category==='HASARD'?'selected':''),!canDraw)+'</div>'+
+       '<div class="evening-choice-option">'+
+         bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+
+         (category==='SEXUEL'?'<small class="evening-choice-odds">88 % de chances</small>':'')+'</div></div>'+
     '<div class="evening-die-row">'+
       '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
-      '<div class="evening-probability"><strong>88 %</strong><span>des chances d’obtenir la catégorie souhaitée</span></div>'+
+
     '</div>'+
     '<div class="evening-roll-actions">'+
       (turn.finished?bt('finish-session','✓ Terminer la soirée','evening-primary'):
