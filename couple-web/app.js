@@ -172,6 +172,7 @@ function backFromLoveRoll(){
   document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   return true;
  }
+ if(state.reviewModalSessionId){state.reviewDismissedSessionId=state.reviewModalSessionId;state.reviewModalSessionId=null;state.reviewDraft={};render();return true;}
  if(allowBackExit){allowBackExit=false;return false;}
  if(state.showEveningChallenge){state.showEveningChallenge=false;render();return true;}
  if(state.showSurpriseActivity){state.showSurpriseActivity=false;render();return true;}
