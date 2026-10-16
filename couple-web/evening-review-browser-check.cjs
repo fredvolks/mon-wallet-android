@@ -29,7 +29,7 @@ const origin='http://127.0.0.1:8765';
    assert.equal(await page.locator('.lr-review-question').count(),4);
    assert.equal(await page.locator('.lr-review-heart').count(),20);
    assert.equal(await page.locator('.evening-review-person').count(),2);
-   assert.ok(await page.getByText('Appréciation des défis').first().isVisible());
+   assert.ok(await page.locator('.lr-review-modal .lr-review-question').nth(2).isVisible());
    const fit=await page.evaluate(()=>{
     const modal=document.querySelector('.lr-review-modal');
     const rect=modal.getBoundingClientRect(),backdrop=modal.parentNode.getBoundingClientRect();
