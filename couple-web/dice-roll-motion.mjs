@@ -20,11 +20,12 @@ export function rollProgress(elapsedMs){
 // A fresh cryptographic seed changes turn counts, axis rhythms and phase.
 // The server chooses the RESULT; only the motion is random. Every component
 // has strictly positive angular velocity until the shared natural slowdown.
-export function makeForwardRoll(targetEuler,random=[.2,.4,.6]){
+export function makeForwardRoll(targetEuler,random=[.2,.4,.6],startEuler=null){
  const end=targetEuler.map(r=>Number(r)||0);
  const r=i=>Math.max(0,Math.min(.999999,Number(random[i]??(
   ((Number(random[i%3])||0)*(.731+i*.413)+i*.193)%1))||0));
- const start=[0,1,2].map(i=>r(i)*TWO_PI);
+ const start=Array.isArray(startEuler)&&startEuler.length===3&&startEuler.every(Number.isFinite)?
+ startEuler.slice():[0,1,2].map(i=>r(i)*TWO_PI);
  const turns=[0,1,2].map(i=>7+Math.floor(r(i+3)*7)); // 7–13 full revolutions
  const finish=end.map((target,i)=>{
   let angle=target+TWO_PI*turns[i];
