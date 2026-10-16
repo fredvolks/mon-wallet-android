@@ -1,4 +1,4 @@
-// LoveRoll — 50 défis prêts à jouer, 25 Sensuel + 25 Sexuel, et 20 emplacements libres. Chaque défi a un titre, une consigne et une minuterie facultative.
+// LoveRoll — 200 emplacements : 25 idées par catégorie prêtes à jouer, 75 espaces libres par catégorie. Chaque défi a un titre, une consigne et une minuterie facultative.
 // Sur une carte, l’offrant propose l’activité; le destinataire peut accepter, adapter ou passer.
 export const EVENING_CATEGORIES=['SENSUEL','SEXUEL'];
 export const EVENING_CHALLENGES={
@@ -273,10 +273,10 @@ export function formatCountdown(milliseconds){
 }
 
 export const CUSTOM_CARD_START=26;
-export const CUSTOM_CARD_END=35;
+export const CUSTOM_CARD_END=100;
 export function customCardSlots(category,cards=[]){
  if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
- return Array.from({length:10},(_,i)=>{
+ return Array.from({length:75},(_,i)=>{
   const cardId=26+i,found=cards.find(c=>c.category===category&&c.card_id===cardId);
   return {category,cardId,title:found?.title||'',description:found?.description||'',
    minutes:found?.timer_minutes??null,recipientId:found?.recipient_user_id||null,filled:!!found};
@@ -285,7 +285,7 @@ export function customCardSlots(category,cards=[]){
 // Slot IDs are private editor metadata, never shown with the drawn card.
 export function editableCardSlots(category,cards=[]){
  if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
- return Array.from({length:35},(_,i)=>{
+ return Array.from({length:100},(_,i)=>{
   const cardId=i+1;
   const original=cardId<=25?eveningCard(category,cardId):null;
   const saved=cards.find(c=>c.category===category&&c.card_id===cardId);
