@@ -62,6 +62,28 @@ const fs=require('node:fs'),path=require('node:path');
      !first.editorial.includes('Ce soir')||errors.length||
      (v.width>=1100&&first.posterWidth<980)||(v.width>=768&&v.width<1100&&first.posterWidth<720))
    throw Error('Invitation layout '+v.name+' '+JSON.stringify({first,errors}));
+  if(v.name.startsWith('iPad')){
+   const fit=await page.evaluate(()=>{
+    const bounds=s=>document.querySelector(s)?.getBoundingClientRect();
+    const art=bounds('.discover-editorial-die'),panel=bounds('.discover-editorial-list');
+    const header=bounds('.discover-header'),stage=bounds('.discover-editorial-stage');
+    const footer=bounds('.discover-editorial-bottom');
+    const action=bounds('[data-action="invite-start"]');
+    const brand=bounds('.discover-brand');
+    return {
+     viewportHeight:innerHeight,
+     documentHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight),
+     acceptVisible:action.top>=0&&action.bottom<=innerHeight+2,
+     brandVisible:brand.top>=0,
+     sectionsSeparated:header.bottom<=stage.top+2&&
+      art.right<=panel.left+2&&stage.bottom<=footer.top+2,
+     panelVisible:panel.left>=0&&panel.right<=innerWidth+2&&panel.bottom<=innerHeight+2
+    };
+   });
+   if(fit.documentHeight>fit.viewportHeight+2||!fit.acceptVisible||
+      !fit.brandVisible||!fit.sectionsSeparated||!fit.panelVisible)
+    throw Error('iPad invitation must fit without scrolling or overlap: '+v.name+' '+JSON.stringify(fit));
+  }
   await page.locator('[data-action="invite-start"]').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(captures,v.name+'-PAGE1-INVITATION-v58.png'),fullPage:true});
   await page.locator('[data-action="invite-start"]').click();
