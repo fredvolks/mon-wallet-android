@@ -236,7 +236,9 @@ test('Selected category is visually distinct and reported to assistive technolog
 test('After finishing the evening the official feedback pathway remains available',()=>{
  const html=premiumEveningHtml({members:people,me:'first',
   lastEvening:{id:'past',completed:10,responses:1,myResponse:true,partnerResponse:false}});
- assert.match(html,/review-open:past/);
+ assert.doesNotMatch(html,/review-open:past/);
+  assert.match(html,/data-action="evening-calendar"/);
+  assert.equal((html.match(/<button /g)||[]).length,2);
  assert.match(html,/Votre partenaire/);
  assert.match(html,/1 \/ 2 bilans déposés/);
  assert.match(html,/Consulter notre calendrier/);
