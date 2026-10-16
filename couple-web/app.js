@@ -1107,6 +1107,18 @@ function renderSession(){
     session?state.challenges:state.challengesHistory,session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
+function renderEveningCalendar(){
+ const mo=state.eveningCalendarMonth||month();
+ const date=state.eveningCalendarDate?.startsWith(mo)?state.eveningCalendarDate:
+  ((state.sessions||[]).find(s=>eveningLocalDay(s.started_at)?.startsWith(mo))?
+   eveningLocalDay(state.sessions.find(s=>eveningLocalDay(s.started_at)?.startsWith(mo)).started_at):
+   mo+'-01');
+ frame(eveningHistoryMarkup({
+  sessions:state.sessions||[],members:state.members||[],
+  stats:state.eveningHistoryStats||[],ownChallenges:state.challengesHistory||[],
+  me:state.user?.id,month:mo,selectedDate:date
+ }), 'CALENDRIER DES SOIRÉES', 'Un souvenir de chaque moment à deux');
+}
 function optionalRolledTimer(roll){
  if(!roll?.timer_minutes)return '';
  const key='special-'+roll.id;
