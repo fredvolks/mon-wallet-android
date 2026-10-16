@@ -20,7 +20,7 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false,preview
    '<strong class="dice-fallback"'+(spinning?' aria-hidden="true"':'')+'>'+'♡'+'</strong>'+
    '<canvas class="dice-canvas" width="250" height="250" data-dice-sides="'+sides+
    '" data-face="'+target+'" data-dice-zoom="'+(sides===20?'1.30':sides===35?'1.07':preview&&!valid?'1.14':'1')+
-   '" data-dice-preview="'+(preview&&!valid?'true':'false')+'" data-dice-markers="'+(sides===6?'pips':'numbers')+'" data-spinning="'+(spinning?'true':'false')+
+   '"'+(preview&&!valid?' data-dice-preview="true"':'')+' data-dice-markers="'+(sides===6?'pips':'numbers')+'" data-spinning="'+(spinning?'true':'false')+
    '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:
      preview?'Dé 3D décoratif en attente du tirage officiel':'Dé en attente')+'"></canvas>'+
   '</div></div>';
