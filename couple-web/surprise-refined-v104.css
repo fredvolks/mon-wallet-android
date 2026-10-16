@@ -294,3 +294,21 @@ main#app.loveroll-surprise-page .surprise-edit-close{
   font-size:clamp(.77rem,2.6vw,.94rem)!important;padding:4px!important;
  }
 }
+
+/* v106: leave extra room for the host action at 125%-zoom S25 text size.
+   Scope ONLY after the monthly activity exists; large D20 before roll unchanged. */
+@media(max-width:767px) and (min-height:761px){
+ main#app.loveroll-surprise-page .surprise-month.has-activity .surprise-invite-die{
+  width:min(21vw,10dvh,80px)!important;height:min(21vw,10dvh,80px)!important;
+  min-width:0!important;min-height:0!important;max-height:80px!important;
+ }
+ main#app.loveroll-surprise-page .surprise-month.has-activity .surprise-invite-inside{
+  padding:6px 9px!important;gap:3px!important;
+ }
+ main#app.loveroll-surprise-page .surprise-month.has-activity .surprise-invite-die .love3d,
+ main#app.loveroll-surprise-page .surprise-month.has-activity .surprise-invite-die .love3d-stage,
+ main#app.loveroll-surprise-page .surprise-month.has-activity .surprise-invite-die canvas{
+  max-height:100%!important;max-width:100%!important;min-height:0!important;
+  width:100%!important;height:100%!important;
+ }
+}
