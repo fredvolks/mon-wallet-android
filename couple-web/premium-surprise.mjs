@@ -44,14 +44,15 @@ export function sixSpecialEvents(now,settings={},members=[]){
 }
 export function premiumSurpriseHtml({
  monthly={},members=[],settings={},now=new Date(),activity=null,
- rolling=false,rollingKind=null,rollFace=1,showActivity=false,timerHtml='',editSlot=null
+ rolling=false,rollingKind=null,rollFace=1,settlingHost=false,showActivity=false,timerHtml='',editSlot=null
 }={}){
  const a=monthly.monthly_activity,h=monthly.monthly_host;
  const rollingActivity=rolling&&rollingKind==='monthly_activity';
- const rollingHost=rolling&&rollingKind==='monthly_host';
+ const rollingHost=rolling&&rollingKind==='monthly_host'&&!settlingHost;
  // This month has just one large dice stage: D20 -> activity dialog -> D6 -> D20.
  // The server owns the official face; parity only selects which partner invites.
- const needsHost=!!a&&!h;
+ const needsHost=!!a&&(!h||settlingHost);
+ const hostFaceVisible=rollingHost||settlingHost;
  const host=h?members[h.face%2===0?0:1]:null;
  const cards=sixSpecialEvents(now,settings,members);
  const editEvent=cards.find(e=>e.slot===editSlot)||null;
@@ -76,14 +77,14 @@ export function premiumSurpriseHtml({
       (needsHost?'Dé à six faces pour déterminer qui invite':'Dé à vingt faces pour choisir l’activité')+'">'+
     '<span class="surprise-scene-heart" aria-hidden="true">♡</span>'+
     (needsHost?
-       premiumPolyDie(6,rollingHost?rollFace:null,'Dé six faces : pair ou impair',rollingHost):
+       premiumPolyDie(6,hostFaceVisible?rollFace:null,'Dé six faces : pair ou impair',rollingHost,true):
        premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity))+
    '</div>'+
    (needsHost?
     '<div class="surprise-host-legend" aria-label="Règle du dé : pair ou impair">'+
-     '<div class="surprise-host-option"><span>✦ PAIR</span><strong>♡ '+partner(0)+'</strong><small>2 · 4 · 6</small></div>'+
+     '<div class="surprise-host-option"><span>✦ PAIR</span><strong>♡ '+partner(0)+'</strong></div>'+
      '<span class="surprise-host-legend-heart" aria-hidden="true">♡</span>'+
-     '<div class="surprise-host-option"><span>✦ IMPAIR</span><strong>♡ '+partner(1)+'</strong><small>1 · 3 · 5</small></div>'+
+     '<div class="surprise-host-option"><span>✦ IMPAIR</span><strong>♡ '+partner(1)+'</strong></div>'+
     '</div>':'')+
    (needsHost?button('roll:monthly_host','Brasser le dé · Qui invite ?','surprise-primary',rolling):
     a?button('surprise-activity','♡ Voir notre activité','surprise-primary'):
