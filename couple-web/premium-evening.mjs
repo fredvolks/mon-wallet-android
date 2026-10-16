@@ -179,8 +179,8 @@ export function premiumEveningHtml({
     '<p>Vos réponses : <strong>'+(lastEvening.myResponse?'✓ Enregistrées':'En attente')+'</strong> · Votre partenaire : <strong>'+
     (lastEvening.partnerResponse===null?'Statut indisponible':lastEvening.partnerResponse?'✓ Enregistrées':'En attente')+'</strong></p>'+
     '<p>'+(lastEvening.responses===null?'—':esc(lastEvening.responses))+' / 2 avis déposés · visibles ensemble après les deux réponses.</p>'+
-    bt('choose-feedback:'+lastEvening.id,lastEvening.myResponse?'Voir le suivi de nos avis':'♡ Donner mon avis','evening-primary')+
-    bt('tab:journal','Consulter nos avis précédents','subtle')+'</div>':
+    bt('review-open:'+lastEvening.id,lastEvening.myResponse?'♡ Modifier mon bilan':'♡ Donner mon bilan','evening-primary')+
+    bt('evening-calendar','▦ Consulter notre calendrier','subtle')+'</div>':
     '<p>Un tirage choisit qui commence, puis les défis alternent.</p>')+
    bt('new-session','♡ COMMENCER NOTRE SOIRÉE','evening-primary')+'</section>')+
  (showMore?'<aside class="evening-more-menu" aria-label="Options de la soirée">'+
