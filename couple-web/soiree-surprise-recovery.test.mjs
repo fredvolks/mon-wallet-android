@@ -32,7 +32,7 @@ test('Renderer resizes to live scene with WebGL camera correctly, also after ori
 });
 test('PWA and served HTML share v73 CSS and cache-busting tags',()=>{
  assert.match(index,/surprise-dice-layout-v73\.css\?v=20261015-no-toast87/);
- assert.match(worker,/loveroll-static-v106/);
+ assert.match(worker,/loveroll-static-v107/);
  assert.match(worker,/surprise-dice-layout-v73\.css/);
  assert.match(app,/WEB_RELEASE='2026-10-16\.106'/);
 });
