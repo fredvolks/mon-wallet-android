@@ -17,37 +17,52 @@ const duration=(v,label)=>{
   throw Error(label+' : la durée doit être un entier de 1 à 60 minutes, ou null pour désactiver le minuteur.');
  return v;
 };
-export function buildEveningLibrary(category,overrides=[]){
- if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie inconnue.');
- return {format:'loveroll-evening',version:JSON_VERSION,category,
-  cards:editableCardSlots(category,overrides).map(item=>({
+// Evening file format v2 supports one library. Imports accept v1/v2 old
+// Sensuel/Sexuel exports, and sparse numbered lists up to 100 entries.
+export function buildEveningLibrary(category='MIXTE',overrides=[]){
+ if(category!=='MIXTE')throw Error('Une seule bibliothèque de 100 cartes est disponible.');
+ return {format:'loveroll-evening',version:2,category:'MIXTE',
+  cards:editableCardSlots('MIXTE',overrides).map(item=>({
    card_id:item.cardId,title:item.title,description:item.description,
    timer_minutes:duration(item.minutes,'Minuteur carte '+item.cardId),
    drawer_role:item.drawerRole,recipient_role:item.recipientRole
   }))};
 }
 export function validateEveningLibrary(data){
- if(!object(data)||data.format!=='loveroll-evening'||data.version!==JSON_VERSION||
-  !EVENING_CATEGORIES.includes(data.category)||!Array.isArray(data.cards)||![35,100].includes(data.cards.length))
-  throw Error('Fichier de soirée : 100 cartes attendues (ou ancienne sauvegarde de 35 cartes).');
- const seen=new Set();
- for(const card of data.cards){
-  if(!object(card)||!Number.isInteger(card.card_id)||card.card_id<1||card.card_id>data.cards.length||
-   seen.has(card.card_id))throw Error('Numérotation invalide : chaque carte doit avoir son numéro unique.');
+ if(!object(data)||data.format!=='loveroll-evening'||
+   ![1,2].includes(data.version)||
+   (data.category&&!['MIXTE','SENSUEL','SEXUEL'].includes(data.category))||
+   !Array.isArray(data.cards)||data.cards.length<1||data.cards.length>100)
+  throw Error('Fichier de soirée : liste de 1 à 100 cartes, version 1 ou 2 attendue.');
+ const seen=new Set(),cards=[];
+ for(const raw of data.cards){
+  const card=object(raw)?{...raw}:null;
+  if(!card||!Number.isInteger(card.card_id)||card.card_id<1||card.card_id>100||
+    seen.has(card.card_id))throw Error('Numérotation invalide : cartes 1 à 100 uniques.');
   seen.add(card.card_id);
-  const empty=card.card_id>25&&card.title===''&&card.description==='';
-  if(!empty){text(card.title,3,120,'Titre carte '+card.card_id);
-   text(card.description,10,900,'Consigne carte '+card.card_id);}
+  card.title=card.title??'';
+  card.description=card.description??'';
+  card.timer_minutes=card.timer_minutes??null;
+  card.drawer_role=card.drawer_role??'both';
+  card.recipient_role=card.recipient_role??'both';
+  const empty=card.title===''&&card.description==='';
+  if(!empty){
+   text(card.title,3,120,'Titre carte '+card.card_id);
+   text(card.description,10,900,'Consigne carte '+card.card_id);
+  }
   if(!['both','him','her','owner','partner'].includes(card.drawer_role)||
     !['both','him','her','owner','partner'].includes(card.recipient_role)||
     (card.drawer_role===card.recipient_role&&['owner','partner'].includes(card.drawer_role)))
    throw Error('Restrictions de tirage invalides à la carte '+card.card_id);
   duration(card.timer_minutes,'Carte '+card.card_id);
-  if(empty&&(card.timer_minutes!==null&&card.timer_minutes!==undefined||
-    card.drawer_role!=='both'||card.recipient_role!=='both'))
-   throw Error('Une carte vide ne peut contenir ni durée ni restrictions.');
+  if(empty&&(card.timer_minutes!==null||card.drawer_role!=='both'||card.recipient_role!=='both'))
+   throw Error('Une carte vide ne peut contenir ni durée ni restrictions : carte '+card.card_id);
+  cards.push(card);
  }
- return data;
+ // Preserve numbering, existing personal settings and official default cards.
+ // A partial library updates only the supplied card IDs.
+ return {format:'loveroll-evening',version:2,category:'MIXTE',
+  cards:cards.sort((a,b)=>a.card_id-b.card_id)};
 }
 export function buildMonthlyLibrary(overrides=[]){
  return {format:'loveroll-monthly',version:JSON_VERSION,
@@ -80,7 +95,7 @@ export function validatePortableSpecial(data){
 export function librarySummary(data,kind){
  if(kind==='evening'){
   const item=validateEveningLibrary(data);
-  return {count:item.cards.filter(c=>!!c.title).length,total:100,timers:item.cards.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Défis '+item.category};
+  return {count:item.cards.filter(c=>!!c.title).length,total:100,timers:item.cards.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Bibliothèque des 100 défis'};
  }
  if(kind==='monthly'){
   const item=validateMonthlyLibrary(data);
