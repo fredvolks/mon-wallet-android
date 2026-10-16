@@ -213,7 +213,14 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.classList.toggle('loveroll-evening-calendar-page',eveningArchive);
  root.classList.toggle('loveroll-surprise-page',realSurprise);
  root.classList.toggle('loveroll-settings-page',connected&&state.tab==='settings');
- for(const dispose of diceCleanup)dispose();diceCleanup=[];
+ // Preserve the SAME D100 canvas through UI refreshes with an unchanged face.
+ const oldD100=realEvening?root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]'):null;
+ const savedStage=oldD100?.loveRollDie&&oldD100?.loveRollCleanup?
+  oldD100.closest('.love3d-stage'):null;
+ const savedDispose=savedStage?oldD100.loveRollCleanup:null;
+ if(savedStage)savedStage.remove();
+ for(const dispose of diceCleanup)if(dispose!==savedDispose)dispose();
+ diceCleanup=savedDispose?[savedDispose]:[];
  const token=++renderToken;
  // Offer only after completing a NEW account. Never interrupt ordinary logins.
  if(connected&&state.installAfterSignup){
@@ -235,6 +242,17 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   saving:state.reviewSaving,partnerName:other()?.name?.split(' ')[0]||'ton partenaire'
  }):'';
  root.innerHTML=(realHome?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
+ if(savedStage){
+  const freshD100=root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]');
+  const freshStage=freshD100?.closest('.love3d-stage');
+  if(freshStage&&freshD100.dataset.face===oldD100.dataset.face){
+   savedStage.classList.toggle('is-rolling',freshStage.classList.contains('is-rolling'));
+   oldD100.dataset.spinning=freshD100.dataset.spinning;
+   freshStage.replaceWith(savedStage);
+  }else{
+   savedDispose();diceCleanup=diceCleanup.filter(dispose=>dispose!==savedDispose);
+  }
+ }
  restoreDraft(draft);
  bindActions();
  focusInlineLoveDialog(root,openerAction);
@@ -242,13 +260,14 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261016-d100110').then(({dieOn})=>{
+  import('./dice3d.js?v=20261016-d100114').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
-    if(!canvas.isConnected)continue;
+    if(!canvas.isConnected||canvas.loveRollDie)continue;
     try{
      const cleanup=dieOn(canvas,Number(canvas.dataset.diceSides),
        Number(canvas.dataset.face)||1,canvas.dataset.spinning==='true');
+     canvas.loveRollCleanup=cleanup;
      diceCleanup.push(cleanup);
      canvas.closest('.die')?.classList.add('ready');
     }catch(error){console.warn('WebGL non disponible',error);}
@@ -1825,7 +1844,19 @@ function renderSettings(){
 async function refreshAndShow(){await refreshShared();render();}
 async function animateRoll(fn,kind='general'){
  if(state.diceStatus)throw Error('Un dé est déjà en cours de brassage.');
- state.rollAnimationKind=kind;state.diceStatus='pending';render();
+ const activeD100=kind==='new-challenge'&&state.tab==='session'?
+  root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]'):null;
+ const useLiveD100=!!activeD100?.loveRollDie?.rollTo;
+ state.rollAnimationKind=kind;state.diceStatus='pending';
+ if(useLiveD100){
+  // No DOM replacement while the server selects the official face.
+  const button=root.querySelector('button[data-action="new-challenge"]');
+  if(button){button.disabled=true;button.textContent='Brassage en cours…';}
+  for(const option of root.querySelectorAll('.evening-step.two button[data-action^="category:"]'))
+   option.disabled=true;
+  const number=root.querySelector('.evening-d100-result');
+  if(number)number.hidden=true;
+ }else render();
  try{
   const result=await fn(); // Supabase determines and persists the actual result
   // Never fabricate a one-pip result if Supabase has not confirmed a face.
@@ -1834,8 +1865,15 @@ async function animateRoll(fn,kind='general'){
      (kind==='my-d6'&&confirmedFace>6))
    throw new Error('Le serveur n’a pas confirmé le résultat officiel du dé.');
   state.rollAnimationFace=confirmedFace;
-  state.diceStatus='rolling';render();
+  state.diceStatus='rolling';
+  const liveD100Started=useLiveD100&&activeD100.isConnected&&
+   activeD100.loveRollDie?.rollTo(confirmedFace)===true;
+  if(!liveD100Started)render();
   await new Promise(resolve=>setTimeout(resolve,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?180:ROLL_TOTAL_MS+140));
+  if(liveD100Started&&activeD100.isConnected){
+   const number=root.querySelector('.evening-d100-result');
+   if(number){number.textContent=String(confirmedFace);number.hidden=false;}
+  }
   if(kind==='monthly_host'){
    // Show the official D6 face for a full second after it stops, before
    // restoring the monthly D20 scene. No second server roll is performed.
@@ -1847,9 +1885,9 @@ async function animateRoll(fn,kind='general'){
   if(kind==='new-challenge'){
    // Keep official D100 face visible for a full second after the animation.
    // A truthy status temporarily suppresses refreshShared's automatic popup.
-   state.diceStatus='settled';state.rollAnimationFace=null;
+   state.diceStatus='settled';
    await refreshShared();
-   if(state.tab==='session')render();
+   if(state.tab==='session'&&!liveD100Started)render();
    await new Promise(resolve=>setTimeout(resolve,1000));
   }
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
