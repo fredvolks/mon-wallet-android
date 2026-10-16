@@ -51,7 +51,7 @@ test('Production home uses actual saved weekly result, disabled state and live c
  turn:{ready:true,targets:{a:4,b:6},remaining:{a:4,b:6},completed:{a:0,b:0}},now:new Date('2026-10-14T16:00:00Z')};
  const h=premiumHomeHtml(args);
  assert.match(h,/2 soirées de défi/);
- assert.match(h,/Dé déjà brassé cette semaine/);
+ assert.match(h,/Déjà brassé cette semaine, revenez la semaine prochaine/);
  assert.match(h,/data-dice-sides="6"/);
  assert.match(h,/data-face="2"/);
  assert.equal((h.match(/class="home-weight"/g)||[]).length,6);
@@ -67,7 +67,7 @@ test('Production home uses actual saved weekly result, disabled state and live c
  assert.match(rolling,/data-spinning="true"/);
  assert.match(rolling,/data-face="5"/);
  assert.doesNotMatch(rolling,/2 soirées de défi/);
- assert.doesNotMatch(rolling,/Dé déjà brassé cette semaine/);
+ assert.doesNotMatch(rolling,/Déjà brassé cette semaine, revenez la semaine prochaine/);
  assert.match(rolling,/Brassage 3D en cours/);
  assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true">♡<\/strong>/);
 });
@@ -137,4 +137,20 @@ test('D6 uses an actual bevel and no neon wireframe; fallback hidden during thro
  assert.match(css,/webgl-ready \.dice-fallback/);
  assert.match(css,/safe-area-inset-top/);
  assert.match(css,/home-stats-grid/);
+});
+
+test('Connected Home starts at ritual, without logo or top action buttons',()=>{
+ assert.match(app,/root\.innerHTML=\(realHome\?'':usualHeader\)\+body/);
+ assert.doesNotMatch(app,/const homeHeader=|data-action="home-notices" aria-label="Notifications du couple"/);
+ const html=premiumHomeHtml({
+  weekly:{face:1,actor:'a'},members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Émilie'}]
+ });
+ assert.match(html,/Déjà brassé cette semaine, revenez la semaine prochaine/);
+ assert.doesNotMatch(html,/♡ Dé déjà brassé cette semaine|Mon dé/);
+ assert.match(html,/<button class="home-roll-button is-used" type="button" disabled>/);
+ assert.equal((html.match(/home-gift-icon/g)||[]).length,1);
+ assert.match(css,/max-height:55px/);
+ assert.match(css,/width:85%/);
+ assert.match(css,/home-gift-icon svg/);
+ assert.match(css,/transform:translateY\(3px\)/);
 });
