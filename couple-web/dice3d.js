@@ -26,8 +26,8 @@ function digits(value,heart=false,pips=false,neutral=false){const c=document.cre
  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;}
 // A genuine convex 35-faced die. The polar dual of a 35-vertex convex hull
 // has one planar polygonal face per original vertex (no duplicate side labels).
-function d35Geometry(){
- const count=35, goldenAngle=Math.PI*(3-Math.sqrt(5));
+function manySidedGeometry(count=35){
+ const goldenAngle=Math.PI*(3-Math.sqrt(5));
  const points=Array.from({length:count},(_,i)=>{
   const y=1-2*(i+.5)/count,ring=Math.sqrt(Math.max(0,1-y*y)),a=i*goldenAngle;
   return new THREE.Vector3(Math.cos(a)*ring,y,Math.sin(a)*ring);
@@ -42,7 +42,7 @@ function d35Geometry(){
    center=a.clone().add(b).add(c).multiplyScalar(1/3);
   if(outward.dot(center)<0)outward.negate();
   const dist=outward.dot(a);
-  if(dist<.01)throw Error('Invalid D35 hull');
+  if(dist<.01)throw Error('Invalid polyhedral die hull');
   triangles.push({vertices:[a,b,c],dual:outward.divideScalar(dist)});
  }
  hull.dispose();
@@ -52,7 +52,7 @@ function d35Geometry(){
   const corners=triangles.filter(tri=>
    tri.vertices.some(v=>v.distanceToSquared(points[i])<1e-7))
    .map(tri=>tri.dual.clone());
-  if(corners.length<3)throw Error('Incomplete D35 face '+(i+1));
+  if(corners.length<3)throw Error('Incomplete polyhedral die face '+(i+1));
   const center=corners.reduce((a,v)=>a.add(v),new THREE.Vector3())
    .divideScalar(corners.length);
   const u=new THREE.Vector3(0,1,0).cross(outward).normalize();
@@ -196,9 +196,9 @@ function twentyPolygons(geo){
 
 function geometry(sides,pips=false,neutral=false){
  const group=new THREE.Group(),normals=new Map();
- const custom=sides===35?d35Geometry():null;
+ const custom=sides===35||sides===100?manySidedGeometry(sides):null;
  const original20=sides===20?new THREE.IcosahedronGeometry(1.16,0):null;
- const polygons=sides===35?custom.polygons:sides===20?twentyPolygons(original20):null;
+ const polygons=custom?custom.polygons:sides===20?twentyPolygons(original20):null;
  const geo=polygons?roundedPolyhedron(polygons,{bevel:sides===20?.13:.095,shrink:sides===20?.095:.07,steps:8}):
   new RoundedBoxGeometry(1.8,1.8,1.8,9,.30);
  original20?.dispose();
@@ -212,7 +212,7 @@ function geometry(sides,pips=false,neutral=false){
  });
  group.add(new THREE.Mesh(geo,mat));
  // No wireframe: smooth bevel geometry and PBR specular highlights are the
- // only visible transitions between the real black faces on D6, D20 and D35.
+ // only visible transitions between the black faces on D6, D20 and D100.
  const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
   [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
  for(let value=1;value<=sides;value++){
@@ -221,8 +221,8 @@ function geometry(sides,pips=false,neutral=false){
   if(polygon){normal=polygon.normal.clone();}
   else if(layout){normal=new THREE.Vector3(...layout.find(row=>row[0]===value)[1]);depth=.91;}
   normals.set(value,normal);
-  const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===35?.27:sides===20?.36:1.64,
-   sides===35?.27:sides===20?.36:1.64),
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===100?.185:sides===35?.27:sides===20?.36:1.64,
+   sides===100?.185:sides===35?.27:sides===20?.36:1.64),
     new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips,neutral),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
   if(polygon){
    const center=polygon.corners.reduce((a,p)=>a.add(p),new THREE.Vector3())
