@@ -28,7 +28,7 @@
  border-radius:clamp(12px,2.7vw,20px)}
 .lr-review-icon{display:grid;place-items:center;width:100%;aspect-ratio:1;
  border-radius:50%;border:1px solid #fe72b3;background:#3f082b;color:#ffb7d8;font-size:clamp(1rem,3vw,1.55rem)}
-.lr-review-question>strong{font-size:clamp(.7rem,2.1vw,1.02rem);font-weight:780;line-height:1.16}
+.lr-review-question>strong{font-size:clamp(.7rem,2.1vw,1.02rem);font-weight:780;line-height:1.16;overflow-wrap:anywhere;min-width:0}
 .lr-review-hearts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(1px,.5vw,6px);min-width:0}
 .lr-review-heart{display:flex!important;flex-direction:column;align-items:center;justify-content:center;
  gap:0!important;min-height:38px!important;height:auto!important;min-width:0!important;width:100%!important;
