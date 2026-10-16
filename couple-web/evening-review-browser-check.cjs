@@ -25,8 +25,8 @@ const origin='http://127.0.0.1:8765';
  try{
   for(const [width,height] of [[360,640],[393,852],[412,915],[820,1180],[1180,820],[1440,900]]){
    const page=await browser.newPage({viewport:{width,height}});
-   await page.route(origin+'/review-visual-test.html',r=>r.fulfill({contentType:'text/html',
-    body:'<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1">'+styles+
+   await page.route(origin+'/review-visual-test.html',r=>r.fulfill({contentType:'text/html; charset=utf-8',
+    body:'<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+styles+
     '</head><body><main id="app">'+archive+'</main>'+modal+'</body></html>'}));
    await page.goto(origin+'/review-visual-test.html',{waitUntil:'load'});
    assert.equal(await page.locator('.lr-review-question').count(),4);
