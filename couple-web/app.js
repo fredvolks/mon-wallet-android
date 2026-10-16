@@ -7,6 +7,7 @@ import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './eve
 import {feedbackItemsFor} from './feedback-status.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-no-toast87';
 import {premiumEveningHtml} from './premium-evening.mjs?v=20261015-step1-v89';
+import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261015-evening90';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -45,7 +46,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -181,7 +182,7 @@ function backFromLoveRoll(){
  if(state.specialFocus){state.specialFocus=null;state.tab='special';render();return true;}
  const parent={
   library:'settings','monthly-library':'settings','advent-editor':'settings',
-  'special-editor':'settings','personal-journal':'settings',journal:'session',
+  'special-editor':'settings','personal-journal':'settings',journal:'session','evening-calendar':'session',
   feedback:'session',occasions:'special',ideas:'home',invitation:'settings'
  }[state.tab];
  const destination=parent||(state.tab!=='home'?'home':null);
@@ -212,10 +213,12 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const isCouple=connected&&isSharedCoupleReady(state.coupleId,state.members);
  const realHome=isCouple&&state.tab==='home';
  const realEvening=isCouple&&state.tab==='session'&&(!state.session||(state.session.paired_turns&&state.session.self_draws));
+ const eveningArchive=isCouple&&state.tab==='evening-calendar';
  const realSurprise=isCouple&&state.tab==='special';
  root.classList.toggle('loveroll-advent-page',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-real-home',realHome);
  root.classList.toggle('loveroll-evening-page',realEvening);
+ root.classList.toggle('loveroll-evening-calendar-page',eveningArchive);
  root.classList.toggle('loveroll-surprise-page',realSurprise);
  root.classList.toggle('loveroll-settings-page',connected&&state.tab==='settings');
  for(const dispose of diceCleanup)dispose();diceCleanup=[];
@@ -275,7 +278,7 @@ function nav(){
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
- '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
+ '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
@@ -501,6 +504,7 @@ function render(){
  else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
  else if(state.tab==='ideas')renderIdeas();
  else if(state.tab==='session')renderSession();
+ else if(state.tab==='evening-calendar')renderEveningCalendar();
  else if(state.tab==='special')renderSpecial();
  else if(state.tab==='occasions')renderOccasions();
  else if(state.tab==='advent')renderAdvent();
@@ -550,9 +554,9 @@ async function reload(){
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;state.gifts=[];
-  state.session=null;state.sessions=[];state.events=[];state.journal=[];
+  state.session=null;state.sessions=[];state.events=[];state.journal=[];state.eveningHistoryStats=[];
   state.feedback=[];state.advent=[];state.adventYear=null;state.adventSelected=null;state.adventServerDate=null;state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
-  state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];
+  state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];state.eveningHistoryStats=[];
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
   render();return;
@@ -589,7 +593,7 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts,adventServerDate]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts,adventServerDate,eveningStats]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
@@ -600,8 +604,10 @@ async function refreshShared(){
  rpc('my_love_special_event_keys',{p_couple:c}),
  query('couple_challenges',{eq:{couple_id:c}}),
  query('couple_challenge_gifts',{eq:{couple_id:c}}),
- rpc('love_advent_server_date')
+ rpc('love_advent_server_date'),
+ rpc('love_evening_session_stats',{p_couple:c})
  ]);
+ state.eveningHistoryStats=Array.isArray(eveningStats)?eveningStats:[];
  state.gifts=gifts;
  state.challengesHistory=challengeHistory;
  state.occasionSettings=occasionSettings[0]||null;
