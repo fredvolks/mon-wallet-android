@@ -6,7 +6,7 @@ import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-restore113';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-d100114';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise109';
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.113';
+const WEB_RELEASE='2026-10-16.114';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -3359,6 +3359,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261015-no-toast87',
+    navigator.serviceWorker.register('./service-worker.js?v=20261016-d100114',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
