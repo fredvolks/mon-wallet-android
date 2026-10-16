@@ -78,3 +78,19 @@ test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
  assert.ok(sql.indexOf('perform couple_private.snapshot_love_library(p_couple);')<
   sql.indexOf('delete from public.couple_members where couple_id=p_couple;'));
 });
+
+test('iPad invitation fits one viewport without carousel or overlapping poster',()=>{
+ const responsive=readFileSync(new URL('./responsive-tablet-desktop.css',import.meta.url),'utf8');
+ const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
+ const h=discoverHtml(true);
+ assert.match(responsive,/LoveRoll iPad v88/);
+ assert.match(responsive,/max-width:1199px/);
+ assert.match(responsive,/height:100dvh!important/);
+ assert.match(responsive,/max-height:100dvh!important/);
+ assert.match(responsive,/\.discover-editorial-die>img\{/);
+ assert.match(responsive,/object-fit:contain!important/);
+ assert.match(responsive,/overflow:hidden!important/);
+ assert.match(html,/responsive-tablet-desktop\.css\?v=20261015-ipad88/);
+ assert.equal((h.match(/class="discover-editorial-item /g)||[]).length,4);
+ assert.doesNotMatch(h,/carousel|slider|swiper|overflow-x:auto/i);
+});
