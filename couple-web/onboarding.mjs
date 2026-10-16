@@ -183,6 +183,15 @@ export function profileAccountChoiceHtml(user){
  '<small>Si c’est bien votre compte, complétez seulement les informations manquantes. Aucune donnée ne sera supprimée.</small>'+
  '</div>';
 }
+export function profileGenderSelect(gender='',id='profile-gender'){
+ const chosen=gender==='him'||gender==='her'?gender:'';
+ return '<label class="loveroll-gender-select">Mon genre'+
+  '<select id="'+id+'" required aria-label="Mon genre">'+
+   '<option value=""'+(!chosen?' selected':'')+' disabled>Choisir mon genre</option>'+
+   '<option value="him"'+(chosen==='him'?' selected':'')+'>Homme</option>'+
+   '<option value="her"'+(chosen==='her'?' selected':'')+'>Femme</option>'+
+  '</select></label>';
+}
 export function inviteProfileHtml(user,profile){
  const name=profile?.display_name||user?.user_metadata?.given_name||
   user?.user_metadata?.full_name||user?.user_metadata?.name||'';
@@ -194,7 +203,7 @@ export function inviteProfileHtml(user,profile){
   '<section class="invite-auth-card invite-profile-card"><h1>Un peu plus sur vous ♡</h1>'+
   '<p>Ces informations terminent votre inscription personnelle avant de rejoindre votre partenaire.</p>'+
   profileAccountChoiceHtml(user)+
-  '<label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+
+  '<label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+
   '<h3>Votre anniversaire</h3>'+monthDayInputs('signup-birth',profile?.birthday_md||'')+
   wellbeingFields()+
   '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+
@@ -218,7 +227,7 @@ export function profileHtml(user,profile){
  '<h2>Enchanté·e ♡</h2>'+
  profileAccountChoiceHtml(user)+
  '<p>Ton nom peut venir de Google ou Apple. Tu peux le corriger avant de continuer.</p>'+
- '<label>Mon nom à afficher<input id="profile-name" maxlength="80" autocomplete="given-name" value="'+esc(name)+'"></label>'+
+ '<label>Mon nom à afficher<input id="profile-name" maxlength="80" autocomplete="given-name" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+
  '<h3>🎂 Mon anniversaire</h3>'+
  '<p>Il est renseigné une seule fois, à l’inscription, pour les événements spéciaux. Nous ne conservons que le mois et le jour.</p>'+
  monthDayInputs('signup-birth',profile?.birthday_md||'')+
