@@ -1,4 +1,4 @@
-import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,profileGenderSelect,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261016-gender111';
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-person-review97';
@@ -20,7 +20,7 @@ import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} fro
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-no-toast87';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
-import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-d100110';
+import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-gender111';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
 import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
 
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.110';
+const WEB_RELEASE='2026-10-16.111';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -590,7 +590,7 @@ async function reload(){
   state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;
  }
  const profilesAll=await query('couple_profiles');
- state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter'}));
+ state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter',gender:profilesAll.find(p=>p.id===m.user_id)?.gender||null}));
  state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
  if(members.length===2)await refreshShared();
  subscribe();render();
@@ -1522,13 +1522,17 @@ function renderCardLibrary(){
  const category=state.customCategory;
  const slots=editableCardSlots(category,state.customCards);
  const slot=slots.find(x=>x.cardId===state.customSlot)||slots[0];
- const roleNames={both:'Les deux partenaires',
-  owner:'Moi · '+state.profile.display_name,
-  partner:state.members.find(m=>m.user_id!==state.user.id)?.name||'Ma conjointe (à inviter)'};
+ const roleNames={both:'Les deux partenaires',him:'Homme',her:'Femme'};
+ const legacyRole=(role)=>{
+  if(['both','him','her'].includes(role))return role;
+  const owner=state.members.find(m=>m.user_id===state.couple?.owner_user_id);
+  const other=state.members.find(m=>m.user_id!==owner?.user_id);
+  return (role==='owner'?owner:other)?.gender||'both';
+ };
  const chooser=(name,current)=>'<div class="custom-receiver">'+
-   ['both','owner','partner'].map(role=>'<label class="custom-person-option">'+
+   ['both','him','her'].map(role=>'<label class="custom-person-option">'+
      '<input type="radio" name="'+name+'" value="'+role+'"'+
-     (current===role?' checked':'')+'> '+safe(roleNames[role])+'</label>').join('')+'</div>';
+     (legacyRole(current)===role?' checked':'')+'> '+safe(roleNames[role])+'</label>').join('')+'</div>';
  const table=(range)=>range.map(card=>{
   const title=card.title||'Emplacement vide';
   return '<button type="button" class="custom-card-tile '+
@@ -1690,7 +1694,7 @@ function renderSettings(){
  const account='<div class="settings-split settings-account-top">'+
   '<div class="settings-identity"><strong>Compte connecté</strong><p>'+safe(state.user.email||'Courriel privé')+'</p></div>'+
   '<label class="settings-inline-name"><span>Prénom affiché</span>'+
-  '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label></div>'+
+  '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label>'+profileGenderSelect(state.profile.gender)+'</div>'+
   '<div class="settings-actions">'+
   button('profile','Enregistrer mon profil','class="settings-primary"')+
   button('signout','Déconnexion','class="subtle settings-secondary"')+'</div>'+
@@ -2391,9 +2395,9 @@ async function handle(action,element){
    throw Error('Titre de 3 à 120 caractères, description de 10 à 900 caractères et minuteur facultatif de 1 à 60 minutes.');
   const recipient=document.querySelector('[name="custom-recipient"]:checked')?.value;
   const drawer=document.querySelector('[name="custom-drawer"]:checked')?.value;
-  if(!['both','owner','partner'].includes(drawer)||!['both','owner','partner'].includes(recipient))
+  if(!['both','him','her'].includes(drawer)||!['both','him','her'].includes(recipient))
    throw Error('Choisissez qui peut piger et recevoir cette carte.');
-  if(drawer===recipient&&drawer!=='both')throw Error('La même personne ne peut pas piger son propre défi.');
+  // Two partners of the same gender may still draw for each other.
   await rpc('save_love_card_with_roles',{p_couple:state.coupleId,
    p_category:state.customCategory,p_card_id:state.customSlot,
    p_title:title,p_description:description,p_timer_minutes:minutes,
@@ -2681,11 +2685,14 @@ async function handle(action,element){
   const name=id('profile-name')?.value.trim();
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
   const birthday=parseMonthDay('signup-birth');
+  const gender=id('profile-gender')?.value;
+  if(!['him','her'].includes(gender))throw Error('Choisissez Homme ou Femme pour votre profil.');
   if(!id('age-confirm')?.checked)throw Error('LoveRoll est réservé aux personnes de 18 ans et plus.');
   const relationship=id('wellbeing-relationship')?.value,intimacy=id('wellbeing-intimacy')?.value;
   if(!RELATIONSHIP_OPTIONS.some(([v])=>v===relationship)||!INTIMACY_OPTIONS.some(([v])=>v===intimacy))
    throw Error('Répondez aux deux questions ou choisissez « Je préfère ne pas répondre ».');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
+  await rpc('save_my_gender',{p_gender:gender});
   await rpc('save_my_wellbeing',{p_relationship:relationship,p_intimacy:intimacy});
   state.installAfterSignup=true;
   await reload();return;
@@ -2694,8 +2701,11 @@ async function handle(action,element){
   const name=id('profile-name')?.value.trim();
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
   const birthday=parseMonthDay('settings-birthday');
+  const gender=id('profile-gender')?.value;
+  if(!['him','her'].includes(gender))throw Error('Choisissez Homme ou Femme pour votre profil.');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
-  await reload();notify('Votre profil et votre date sont enregistrés.');return;
+  await rpc('save_my_gender',{p_gender:gender});
+  await reload();notify('Votre profil, votre genre et votre date sont enregistrés.');return;
  }
  if(verb==='prepare-cards'){
   if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
