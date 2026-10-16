@@ -82,7 +82,11 @@ const partnerStatusCard=(partner,roll)=>{
  const face=Number(roll?.face);
  const confirmed=roll?.face!=null&&Number.isInteger(face)&&face>=1&&face<=6;
  const name=esc(partner?.name?.split(' ')[0]||'Partenaire');
+ const statusText=confirmed?
+  name+' a obtenu '+esc(face)+' défi'+(face===1?'':'s'):
+  'En attente du lancer de '+name;
  return '<aside class="evening-partner-card '+(confirmed?'is-confirmed':'is-pending')+'" aria-live="polite" aria-label="Dé de '+name+'">'+
+   '<span class="evening-partner-mobile-status">'+statusText+'</span>'+
    '<span class="evening-partner-caption">'+name+'</span>'+
    (confirmed?'<div class="evening-partner-die">'+premiumPolyDie(6,face,'Dé confirmé de '+name)+'</div>'+
      '<div class="evening-partner-result" aria-label="Résultat de '+name+' : '+face+'"><strong>'+esc(face)+'</strong>'+
