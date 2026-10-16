@@ -41,7 +41,7 @@ function sharedSignature(state){
   pairs(state.eveningCalendarChallenges),
   (state.eveningReviews||[]).map(r=>r.session_id+':'+r.author_id+':'+r.submitted_at).sort(),
   pairs(state.gifts),pairs(state.sessions),pairs(state.events),pairs(state.occasionRolls),
-  pairs(state.advent),pairs(state.feedback),
+  pairs(state.advent),
   state.monthly?.monthly_activity?.id,state.monthly?.monthly_host?.id,
   state.monthly?.monthly_restaurant?.id,state.eveningBoard
  ]);
