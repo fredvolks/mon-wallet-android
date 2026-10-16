@@ -1,90 +1,81 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {EVENING_CATEGORIES,EVENING_CHALLENGES,editableCardSlots,eveningCard,playableEveningCount,resolvedCard} from './evening-challenges.mjs';
-import {buildEveningLibrary,validateEveningLibrary,normalizeLibraryData} from './json-libraries.mjs';
+import {EVENING_CATEGORIES,editableCardSlots,customCardSlots,availableEveningCategories,playableEveningCount} from './evening-challenges.mjs';
+import {buildEveningLibrary,normalizeLibraryData,validateEveningLibrary} from './json-libraries.mjs';
 import {premiumEveningHtml} from './premium-evening.mjs';
-const read=(name)=>readFileSync(new URL('./'+name,import.meta.url),'utf8');
-
-test('Exactly one library of 100, with 50 seeded and 50 editable empty slots',()=>{
- assert.deepEqual(EVENING_CATEGORIES,['MIXTE']);
- assert.equal(EVENING_CHALLENGES.MIXTE.length,50);
- const cards=editableCardSlots('MIXTE');
- assert.equal(cards.length,100);
- assert.equal(cards.filter(c=>c.isOriginal).length,50);
- assert.equal(cards.filter(c=>c.filled).length,50);
- assert.equal(cards.filter(c=>!c.filled).length,50);
- assert.equal(playableEveningCount().total,50);
- assert.equal(eveningCard('MIXTE',1).title,eveningCard('SENSUEL',1).title);
- assert.equal(eveningCard('MIXTE',26).title,eveningCard('SEXUEL',1).title);
- assert.equal(eveningCard('SEXUEL',1).title,'Strip-tease privé');
- assert.equal(resolvedCard({category:'SENSUEL',card_id:1,face:16}).title,eveningCard('SENSUEL',1).title);
+const read=p=>readFileSync(new URL('./'+p,import.meta.url),'utf8');
+const people=[{user_id:'one',name:'Fred'},{user_id:'two',name:'Fred'}];
+const ready={session:{id:'s',self_draws:true,paired_turns:true},members:people,me:'one',
+ rolls:[{user_id:'one',face:2},{user_id:'two',face:3}],
+ status:{my_rolled:true,partner_rolled:true,both_ready:true},
+ turn:{ready:true,drawsFinished:false,finished:false,next:'one',
+ remaining:{one:2,two:3},targets:{one:2,two:3},completed:{one:0,two:0}}};
+const actions=html=>[...html.matchAll(/data-action="category:(SENSUEL|HASARD|SEXUEL)"/g)].map(m=>m[1]);
+test('100 Sensuel and 100 Sexuel card slots, without an editor split',()=>{
+ assert.deepEqual(EVENING_CATEGORIES,['SENSUEL','SEXUEL']);
+ for(const cat of EVENING_CATEGORIES){
+  const a=editableCardSlots(cat);
+  assert.equal(a.length,100);
+  assert.equal(a.filter(x=>x.isOriginal).length,25);
+  assert.equal(customCardSlots(cat).length,75);
+  assert.equal(a[99].cardId,100);
+ }
+ const app=read('app.js');
+ assert.ok(app.includes("'<h3>100 cartes · '+safe(names[category])"));
+ assert.ok(app.includes('table(slots)'));
+ assert.ok(!app.includes('25 cartes prêtes'));
+ assert.ok(!app.includes('75 emplacements personnalisables'));
+ assert.deepEqual(playableEveningCount(),{sensual:25,sexual:25,total:50});
 });
-test('Export has 100 unified cards',()=>{
- const exported=buildEveningLibrary('MIXTE');
- assert.equal(exported.version,2);
- assert.equal(exported.category,'MIXTE');
- assert.equal(exported.cards.length,100);
- assert.equal(validateEveningLibrary(exported).cards.length,100);
+test('Sensuel / Aléatoire / Sexuel render and preserve 88/12 and 50/50',()=>{
+ assert.deepEqual(availableEveningCategories('SENSUEL'),[
+  {category:'SENSUEL',weight:88},{category:'SEXUEL',weight:12}]);
+ assert.deepEqual(availableEveningCategories('SEXUEL'),[
+  {category:'SENSUEL',weight:12},{category:'SEXUEL',weight:88}]);
+ assert.deepEqual(availableEveningCategories('HASARD'),[
+  {category:'SENSUEL',weight:50},{category:'SEXUEL',weight:50}]);
+ const html=premiumEveningHtml({...ready,category:'SENSUEL'});
+ assert.deepEqual(actions(html),['SENSUEL','HASARD','SEXUEL']);
+ assert.match(html,/class="evening-choice-odds">88 % de chances/);
+ assert.equal((html.match(/data-dice-sides="100"/g)||[]).length,1);
 });
-test('Import the provided version-2 sexual 100-card file, with him / her / both',()=>{
- const file={format:'loveroll-evening',version:2,category:'SEXUEL',
-  cards:Array.from({length:100},(_,i)=>({card_id:i+1,
-   title:'Défi personnalisé '+(i+1),
-   description:'Une activité consentie entre les deux personnes, numéro '+(i+1)+'.',
-   timer_minutes:i===40?5:null,
-   drawer_role:i===39?'her':i===40?'him':'both',
-   recipient_role:i===39?'him':i===40?'her':'both'
-  }))};
- const result=normalizeLibraryData(file,'evening');
- assert.equal(result.category,'MIXTE');
- assert.equal(result.version,2);
- assert.equal(result.cards.length,100);
- assert.equal(result.cards[39].drawer_role,'her');
- assert.equal(result.cards[39].recipient_role,'him');
- assert.equal(result.cards[40].timer_minutes,5);
+test('Settings hide either or both optional choices, never Aléatoire',()=>{
+ assert.deepEqual(actions(premiumEveningHtml({...ready,showSensuel:false,showSexuel:false,category:'HASARD'})),['HASARD']);
+ assert.deepEqual(actions(premiumEveningHtml({...ready,showSensuel:true,showSexuel:false})),['SENSUEL','HASARD']);
+ assert.deepEqual(actions(premiumEveningHtml({...ready,showSensuel:false,showSexuel:true})),['HASARD','SEXUEL']);
+ const app=read('app.js');
+ for(const x of ['show-sensuel-button','show-sexuel-button','save-evening-buttons','save_love_evening_buttons','show_sensuel_button','show_sexuel_button'])
+  assert.ok(app.includes(x),'missing '+x);
+ const css=read('restore-categories-v113.css');
+ assert.ok(css.includes('evening-choice-option:only-child'));
+ assert.ok(css.includes('nth-child(2):last-child'));
 });
-test('Partial old files update only their numbered cards; other 100 positions persist',()=>{
- const file={format:'loveroll-evening',version:1,category:'SENSUEL',
-   cards:[{card_id:40,title:'Ancienne carte compatible',
-    description:'Consigne personnalisée et consentie.',
-    timer_minutes:null,drawer_role:'both',recipient_role:'both'}]};
- const parsed=normalizeLibraryData(file,'evening');
- assert.equal(parsed.cards.length,1);
- assert.equal(parsed.cards[0].card_id,40);
- assert.equal(parsed.category,'MIXTE');
+test('Both categories independently export all 100 cards and import version 2 with him/her',()=>{
+ for(const cat of EVENING_CATEGORIES){
+  const backup=buildEveningLibrary(cat);
+  assert.equal(backup.version,2);
+  assert.equal(backup.category,cat);
+  assert.equal(backup.cards.length,100);
+  assert.equal(normalizeLibraryData(backup,'evening').category,cat);
+ }
+ const sexual=buildEveningLibrary('SEXUEL');
+ sexual.cards[39]={card_id:40,title:'Les secrets de la barbe',
+  description:'Une idée à deux avec des restrictions de rôles.',
+  timer_minutes:null,drawer_role:'her',recipient_role:'him'};
+ assert.equal(validateEveningLibrary(sexual).cards[39].drawer_role,'her');
+ assert.equal(normalizeLibraryData(sexual,'evening').cards[39].recipient_role,'him');
+ const legacy={...sexual,version:1,cards:sexual.cards.slice(0,35)};
+ assert.equal(normalizeLibraryData(legacy,'evening').cards.length,35);
 });
-test('Duplicate or invalid gender rules do not pass validation',()=>{
- const bad=buildEveningLibrary('MIXTE');
- bad.cards[4].recipient_role='invalid';
- assert.throws(()=>validateEveningLibrary(bad),/Restrictions/);
- bad.cards[4].recipient_role='both';
- bad.cards[5].card_id=5;
- assert.throws(()=>validateEveningLibrary(bad),/Numérotation/);
-});
-test('No category buttons remain in Soirée UI or admin editor',()=>{
- const app=read('app.js'),evening=read('premium-evening.mjs');
- assert.ok(evening.includes('Une seule bibliothèque'));
- assert.ok(!evening.includes('data-action="category:SENSUEL"'));
- assert.ok(!evening.includes("bt('category:SENSUEL'"));
- assert.ok(!evening.includes("bt('category:SEXUEL'"));
- assert.ok(app.includes("p_preference:'MIXTE'"));
- assert.ok(app.includes("jsonToolsPanel('evening','100 cartes'"));
- assert.ok(!app.includes("data-action=\"custom-category:"));
- assert.ok(!app.includes("if(verb==='category'){"));
- assert.ok(app.includes('50 cartes prêtes'));
- assert.ok(app.includes('50 emplacements personnalisables'));
-});
-test('Database keeps historical categories while all future rolls use unified 100',()=>{
- const sql=read('migrations/20261016_unified_d100_112.sql');
- assert.ok(sql.includes('ON CONFLICT(couple_id,category,card_id) DO NOTHING'));
- assert.ok(sql.includes("category IN ('SENSUEL','SEXUEL')"));
- assert.ok(sql.includes("v_cat:='MIXTE'"));
- assert.ok(sql.includes("if p_preference<>'MIXTE'"));
- assert.ok(sql.includes("generate_series(1,100)"));
- assert.ok(sql.includes("cid<=50"));
- assert.ok(sql.includes("p_library->>'version' not in ('1','2')"));
- assert.ok(sql.includes("card_id in (select (value->>'card_id')::integer"));
- assert.ok(sql.includes("couple_private.love_role_allows"));
- assert.ok(sql.includes("love_card_draw_history"));
+test('Existing server drawers use category weighting, durable history and gender restrictions',()=>{
+ const sql=read('migrations/20261016_restore_categories_113.sql');
+ for(const term of ["p_preference not in ('SENSUEL','SEXUEL')",
+  'when p_random then 50','when v_cat=p_preference then 88 else 12',
+  'generate_series(1,100)','love_card_draw_history',
+  'couple_private.love_role_allows',"v_category not in ('SENSUEL','SEXUEL')",
+  'save_love_evening_buttons','show_sensuel_button','show_sexuel_button'])
+  assert.ok(sql.includes(term),'missing '+term);
+ assert.ok(!sql.includes('DELETE FROM public.couple_challenges'));
+ assert.ok(read('app.js').includes("selectedCategory==='HASARD'"));
 });
