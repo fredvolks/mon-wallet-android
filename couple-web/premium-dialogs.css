@@ -110,3 +110,8 @@
 #toast .lr-toast-result-line{display:flex;align-items:center;gap:9px;font-size:.82rem;font-weight:700}
 #toast .lr-toast-result-number{font:750 1.85rem/1 Georgia,serif;color:#fff;min-width:22px;
  text-align:center;text-shadow:0 0 16px #ff8fc9}
+
+/* No floating toast, even if old cached markup attempts to display one. */
+#toast,#toast.visible,#toast.lr-premium-toast.visible{display:none!important}
+/* Real errors are shown within the current page, not above it. */
+.lr-inline-feedback{margin:10px 0 0;padding:9px 12px;border:1px solid #e57da4;border-radius:12px;background:rgba(75,16,42,.45);color:#ffe4f2;font-size:.85rem;line-height:1.4}
