@@ -30,8 +30,8 @@ test('Activity modal shows the server-confirmed title, description and timer and
 });
 test('v86 is last CSS sheet, is cached offline and removes desktop page scroll',()=>{
  const sw=read('service-worker.js'),ver=JSON.parse(read('web-version.json'));
- assert.equal(ver.build,'2026-10-16.95');
- assert.match(sw,/loveroll-static-v95/);
+ assert.equal(ver.build,'2026-10-16.96');
+ assert.match(sw,/loveroll-static-v96/);
  assert.match(sw,/\.\/surprise-responsive-v86\.css/);
  assert.match(index,/surprise-responsive-v86\.css\?v=20261015-no-toast87/);
  assert.ok(index.lastIndexOf('surprise-responsive-v86.css')>index.lastIndexOf('evening-focused-v84.css'));
