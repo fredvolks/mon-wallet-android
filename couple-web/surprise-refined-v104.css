@@ -384,3 +384,21 @@ main#app.loveroll-surprise-page .surprise-host-winner{
  }
  main#app.loveroll-surprise-page .surprise-host-option{min-height:65px;padding:8px 6px}
 }
+
+
+/* v109: keyboard-only event date, one full-width save action. */
+main#app.loveroll-surprise-page .surprise-event-editor #surprise-event-date{
+ appearance:none;-webkit-appearance:none;letter-spacing:.045em;
+ font-variant-numeric:tabular-nums;caret-color:#ff91be;
+}
+main#app.loveroll-surprise-page .surprise-event-editor .surprise-date-hint{
+ display:block;color:#f3b6d2!important;font-size:clamp(.75rem,2.5vw,.86rem)!important;
+ margin:-5px 1px 2px!important;
+}
+main#app.loveroll-surprise-page .surprise-event-editor .surprise-edit-actions{
+ display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+ gap:0!important;
+}
+main#app.loveroll-surprise-page .surprise-event-editor .surprise-edit-actions .surprise-primary{
+ width:100%!important;min-height:48px!important;font-size:clamp(.9rem,2.7vw,1.07rem)!important;
+}
