@@ -44,28 +44,27 @@ export function eveningReviewModal({sessionId,draft={},saving=false,partnerName=
  '<p class="lr-review-error" role="alert" hidden></p>'+
  '<button type="button" class="lr-review-save" data-action="review-save"'+(saving?' disabled':'')+
   '>♡ '+(saving?'Enregistrement…':'Enregistrer notre bilan')+'</button>'+
- '<button type="button" class="lr-review-calendar" data-action="review-calendar">▦ Voir le calendrier</button>'+
  '</section></div>';
 }
-export function eveningCalendarReviewMarkup({reviews=[],sessionId,members=[],me}={}){
- const rows=members.map(person=>{
-  const r=reviews.find(x=>x.session_id===sessionId&&x.author_id===person.user_id);
-  const label=esc(person.name||'Partenaire')+(person.user_id===me?' (moi)':'');
-  if(!r)return '<div class="evening-review-person"><strong>'+label+
-   '</strong><p>♡ En attente de son bilan</p>'+
-   (person.user_id===me?'<button type="button" data-action="review-open:'+esc(sessionId)+
-    '" class="evening-review-edit">♡ Donner mon avis</button>':'')+'</div>';
-  const lines=REVIEW_QUESTIONS.map(q=>{
-   const score=Number(r[q.key])||0;
-   return '<div class="evening-review-score"><span>'+esc(q.label)+'</span>'+
-    '<strong aria-label="'+score+' sur 5">'+('♥'.repeat(Math.max(0,Math.min(5,score))))+
-     ('♡'.repeat(5-Math.max(0,Math.min(5,score))))+'</strong></div>';
-  }).join('');
-  return '<div class="evening-review-person"><strong>'+label+'</strong>'+
-   lines+(r.comment?'<p class="evening-review-note">'+esc(r.comment)+'</p>':'')+
-   (person.user_id===me?'<button type="button" data-action="review-open:'+esc(sessionId)+
-    '" class="evening-review-edit">Modifier mon bilan</button>':'')+'</div>';
+// The review belongs inside its owner's expandable challenge list, never
+// in a separate shared block below both partners.
+export function eveningPersonReviewMarkup({reviews=[],sessionId,person={},me}={}){
+ const isMine=person.user_id===me;
+ const review=reviews.find(r=>r.session_id===sessionId&&r.author_id===person.user_id);
+ const heading='♡ Bilan de '+esc(person.name||'cette personne');
+ const edit=isMine?'<button type="button" class="evening-review-edit" data-action="review-open:'+
+   esc(sessionId)+'">'+(review?'Modifier mon bilan':'♡ Remplir mon bilan')+'</button>':'';
+ if(!review)return '<section class="evening-review-person" data-review-person="'+esc(person.user_id)+'">'+
+  '<h4>'+heading+'</h4><p>♡ '+(isMine?'Ton bilan n’est pas encore rempli.':'En attente de son bilan')+
+  '</p>'+edit+'</section>';
+ const scores=REVIEW_QUESTIONS.map(q=>{
+  const score=Math.max(0,Math.min(5,Number(review[q.key])||0));
+  return '<div class="evening-review-score"><span>'+esc(q.label)+'</span>'+
+   '<strong aria-label="'+score+' sur 5">'+('♥'.repeat(score))+
+    ('♡'.repeat(5-score))+'</strong></div>';
  }).join('');
- return '<section class="evening-review-archive"><h3>♡ Notre bilan de la soirée</h3>'+
-  '<div class="evening-review-archive-grid">'+rows+'</div></section>';
+ return '<section class="evening-review-person" data-review-person="'+esc(person.user_id)+'">'+
+  '<h4>'+heading+'</h4>'+scores+
+  (review.comment?'<p class="evening-review-note">'+esc(review.comment)+'</p>':'')+
+  edit+'</section>';
 }
