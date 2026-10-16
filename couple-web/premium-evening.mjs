@@ -19,7 +19,7 @@ export function premiumPolyDie(sides,face=null,caption='',spinning=false,preview
   '<div class="love3d-stage '+(spinning?'is-rolling':'')+'">'+
    '<strong class="dice-fallback"'+(spinning?' aria-hidden="true"':'')+'>'+'♡'+'</strong>'+
    '<canvas class="dice-canvas" width="250" height="250" data-dice-sides="'+sides+
-   '" data-face="'+target+'" data-dice-zoom="'+(sides===20?'1.30':sides===35?'1.07':preview&&!valid?'1.14':'1')+
+   '" data-face="'+target+'" data-dice-zoom="'+(sides===20?'1.30':sides===35||sides===100?'1.07':preview&&!valid?'1.14':'1')+
    '"'+(preview&&!valid?' data-dice-preview="true"':'')+' data-dice-markers="'+(sides===6?'pips':'numbers')+'" data-spinning="'+(spinning?'true':'false')+
    '" aria-label="'+(spinning?'Dé en cours de brassage':valid?'Dé arrêté, résultat '+face:
      preview?'Dé 3D décoratif en attente du tirage officiel':'Dé en attente')+'"></canvas>'+
@@ -108,7 +108,7 @@ export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
- lastEvening=null,lastD35Face=null,playable=null,ownChallengeCount=0,canStartEvening=true,
+ lastEvening=null,lastD100Face=null,playable=null,ownChallengeCount=0,canStartEvening=true,
  weeklyReady=true,weeklyCount=0,weeklyLimit=1,dailyLocked=false
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
@@ -128,11 +128,11 @@ export function premiumEveningHtml({
  const stateText=ready?'✓ Étape 2 débloquée':status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':status?.partner_rolled?'Le résultat de '+esc(partner.name?.split(' ')[0]||'ton partenaire')+' est prêt. À toi de brasser le dé.':'Chaque partenaire brasse son propre dé.';
  const currentStatus=turn.finished?'♡ Tous les défis sont réalisés':turn.drawsFinished?'♡ Tous les défis sont pigés':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
- // animation face or guess a result while a D35 is being rolled.
- const d35Candidate=pending?.face??turn?.pending?.face??lastD35Face;
+ // animation face or guess a result while a D100 is being rolled.
+ const d35Candidate=pending?.face??turn?.pending?.face??lastD100Face;
  const d35Number=Number(d35Candidate);
- const officialD35=ready&&!rolling&&d35Candidate!=null&&
-  Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=35?d35Number:null;
+ const officialD100=ready&&!rolling&&d35Candidate!=null&&
+  Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=100?d35Number:null;
  // The official result is already visible on the actual 3D face.
  // Never render a duplicate text number underneath or behind the die.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
@@ -163,7 +163,7 @@ export function premiumEveningHtml({
          bt('category:SEXUEL',(category==='SEXUEL'?'✓ ':'♡ ')+'Sexuel','evening-choice-btn '+(category==='SEXUEL'?'selected':''),!canDraw)+
          (category==='SEXUEL'?'<small class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie</span></small>':'')+'</div></div>'+
     '<div class="evening-die-row">'+
-      '<div class="evening-d35-col">'+premiumPolyDie(35,rolling&&rollingKind==='new-challenge'?rollFace:officialD35,'Notre dé 35 faces',rolling&&rollingKind==='new-challenge')+
+      '<div class="evening-d35-col">'+premiumPolyDie(100,rolling&&rollingKind==='new-challenge'?rollFace:officialD100,'Notre dé 100 faces',rolling&&rollingKind==='new-challenge')+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
 
     '</div>'+
@@ -213,7 +213,7 @@ export function premiumEveningHtml({
       '<div class="evening-finale-tiles" role="group" aria-label="Informations des soirées">'+
        '<div><strong>'+esc(weeklyCount)+' / '+(weeklyReady?esc(weeklyLimit):'—')+
          '</strong><span>Soirées cette semaine</span></div>'+
-       '<div><strong>'+esc(playable?.sensual??35)+' + '+esc(playable?.sexual??35)+
+       '<div><strong>'+esc(playable?.sensual??25)+' + '+esc(playable?.sexual??25)+
          '</strong><span>Sensuel / Sexuel</span></div>'+
        '<div><strong>'+esc(weeklyCount)+'</strong><span>Soirées terminées</span></div></div>')+
     '<div class="evening-finale-actions">'+
