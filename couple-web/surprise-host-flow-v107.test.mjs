@@ -49,6 +49,30 @@ test('During D6 roll: only server-confirmed face animates in main scene, button 
  assert.match(html,/data-spinning="true"/);
  assert.match(html,/data-action="roll:monthly_host" disabled/);
 });
+test('When the official D6 stops, the same face stays visible for the result pause',()=>{
+ const html=make(null,{rolling:true,settlingHost:true,rollingKind:'monthly_host',rollFace:4});
+ assert.match(html,/surprise-month has-activity host-pending/);
+ assert.match(html,/data-dice-sides="6"/);
+ assert.match(html,/data-face="4"/);
+ assert.match(html,/data-dice-preview="false"/);
+ assert.match(html,/data-spinning="false"/);
+ assert.doesNotMatch(html,/data-dice-unrolled="true"/);
+ assert.equal(count(html,'data-dice-sides="20"'),0);
+ assert.match(html,/data-action="roll:monthly_host" disabled/);
+ const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
+ assert.match(app,/if\\(kind==='monthly_host'\\)\\{[\\s\\S]*?state\\.diceStatus='settled';[\\s\\S]*?setTimeout\\(resolve,1000\\)/);
+ assert.match(app,/settlingHost:state\\.diceStatus==='settled'/);
+});
+test('Duplicate partner display names are allowed; parity follows partner order, not name',()=>{
+ const same=[{user_id:'account-f',name:'Fred'},{user_id:'account-g',name:'Fred'}];
+ const pending=make(null,{members:same});
+ assert.equal(count(pending,'<strong>♡ Fred</strong>'),2);
+ for(const face of [1,2,3,4,5,6]){
+  const done=make(face,{members:same});
+  assert.match(done,/Fred invite cette fois-ci !/);
+  assert.equal(count(done,'class="surprise-host-winner"'),1);
+ }
+});
 test('Each official D6 face uses parity; the large D20 comes back with only winner text',()=>{
  for(let face=1;face<=6;face++){
   const html=make(face);
@@ -70,10 +94,10 @@ test('Surprise one-screen CSS keeps the same generous stage on phone and desktop
  assert.match(css,/@media\(max-width:767px\)/);
  assert.match(css,/@media\(min-width:768px\)/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.match(app,/premium-surprise\.mjs\?v=20261016-surprise107/);
+ assert.match(app,/premium-surprise\.mjs\?v=20261016-surprise108/);
  assert.match(app,/if\(kind==='monthly_activity'\)state\.showSurpriseActivity=!!state\.monthly\?\.monthly_activity/);
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
- assert.match(html,/surprise-refined-v104\.css\?v=20261016-surprise107/);
+ assert.match(html,/surprise-refined-v104\.css\?v=20261016-surprise108/);
  assert.match(sw,/loveroll-static-v108/);
 });
