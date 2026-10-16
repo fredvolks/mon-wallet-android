@@ -19,7 +19,7 @@ test('new and invited accounts select Homme/Femme, regardless of first name',()=
  assert.match(profileGenderSelect('him'),/value="him" selected/);
 });
 test('JSON accepts screenshot card 40 her->him and both / both without renumbering',()=>{
- const a=buildEveningLibrary('MIXTE');
+ const a=buildEveningLibrary('SENSUEL');
  const changes=[
   [40,'her','him'],[41,'him','her'],[42,'both','both'],
   [43,'both','him'],[44,'her','both'],[45,'him','him']
@@ -29,17 +29,17 @@ test('JSON accepts screenshot card 40 her->him and both / both without renumberi
     description:'Un moment à deux après accord des partenaires.',
     timer_minutes:id===41?5:null,drawer_role,recipient_role};
  }
- assert.equal(validateEveningLibrary(a).cards.length,100);
+ assert.equal(validateEveningLibrary(a),a);
  assert.equal(a.cards[39].drawer_role,'her');
  assert.equal(a.cards[39].recipient_role,'him');
  const old=structuredClone(a);
  old.cards=old.cards.slice(0,35);
  old.cards[0].drawer_role='owner';
  old.cards[0].recipient_role='partner';
- assert.equal(validateEveningLibrary(old).cards.length,35);
+ assert.equal(validateEveningLibrary(old),old);
 });
 test('invalid card genders are rejected before sending to server',()=>{
- const invalid=buildEveningLibrary('MIXTE');
+ const invalid=buildEveningLibrary('SEXUEL');
  invalid.cards[0].drawer_role='someone';
  assert.throws(()=>validateEveningLibrary(invalid),/Restrictions/);
 });
