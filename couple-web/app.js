@@ -117,18 +117,6 @@ function showInlineError(message){
 function fail(error){
  console.error(error);
  const msg=String(error?.message||'Une erreur est survenue');
- // In old cached builds an aftercare null was dereferenced when opening
- // Soirée. Never trap the user in an unhelpful technical toast: attempt
- // ONE asset-refresh on that device, with a guard against reload loops.
- if(/Cannot read properties of null \(reading ['"]items['"]\)/i.test(msg)){
-  notify('♡ LoveRoll actualise la Soirée pour corriger cette erreur.');
-  const key='loveroll-aftercare-auto-recover-'+WEB_RELEASE;
-  if(!sessionStorage.getItem(key)&&!state.diceStatus&&!hasUnsavedForm()){
-   sessionStorage.setItem(key,'1');
-   reloadWebAssets(true).catch(console.warn);
-  }
-  return;
- }
  showInlineError(msg);
 }
 async function rpc(name,args={}){const {data,error}=await client.rpc(name,args);if(error)throw error;return data;}
