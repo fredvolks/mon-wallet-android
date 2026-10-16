@@ -1,13 +1,13 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs';
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
-import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261015-evening91';
+import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-hearts96';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {feedbackItemsFor} from './feedback-status.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-no-flicker95';
-import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261015-evening91';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-hearts96';
+import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-hearts96';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-hearts96';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
@@ -34,7 +34,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.95';
+const WEB_RELEASE='2026-10-16.96';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
