@@ -33,7 +33,7 @@ test('Partner numeric result is immutable and separate from our own D6',()=>{
  assert.match(html,/evening-partner-card is-confirmed/);
  assert.match(html,/evening-partner-die/);
  assert.match(html,/data-dice-sides="6" data-face="5"/);
- assert.match(html,/5 défis ce soir/);
+ assert.match(html,/class="evening-partner-result"[\s\S]*?<strong>5<\/strong>[\s\S]*?défis ce soir/);
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,4);
  assert.match(html,/data-dice-sides="35"/);
  assert.match(html,/Voir mes défis \(2\)/);
@@ -74,4 +74,38 @@ test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D
  const unchanged=read('dice3d.js');
  assert.match(unchanged,/const count=35/);
  assert.match(unchanged,/canvas\.dataset\.diceMarkers==='pips'/);
+});
+
+test('Step 1 shows partner D6 before mine and keeps Step 2 locked',()=>{
+ const html=premiumEveningHtml({...base,me:'one',
+  rolls:[{user_id:'two',face:5}],
+  status:{my_rolled:false,partner_rolled:true,both_ready:false},
+  turn:{ready:false}});
+ assert.match(html,/evening-partner-card is-confirmed/);
+ assert.match(html,/data-dice-sides="6" data-face="5"/);
+ assert.match(html,/class="evening-partner-result"/);
+ assert.match(html,/<strong>5<\/strong>/);
+ assert.match(html,/data-action="my-d6"/);
+ assert.match(html,/data-action="new-challenge"[^>]*disabled/);
+ assert.doesNotMatch(html,/MON DÉ ·|evening-person/);
+ assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,2);
+});
+test('Own official result sits below the unmodified 3D die without a result panel',()=>{
+ const html=premiumEveningHtml({...base,rolls:[{user_id:'one',face:6}],
+  status:{my_rolled:true,partner_rolled:false,both_ready:false}});
+ const own=html.slice(html.indexOf('<article class="evening-user-die'),html.indexOf('</article>')+10);
+ assert.ok(own.indexOf('class="love3d')<own.indexOf('class="evening-face-result"'));
+ assert.match(own,/<strong>6<\/strong>/);
+ assert.doesNotMatch(own,/MON DÉ ·/);
+ const css=read('evening-step1-v89.css');
+ assert.match(css,/\.evening-face-result,/);
+ assert.match(css,/background:none!important;border:0!important/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/);
+ assert.match(css,/@media \(max-width:767px\)/);
+ assert.match(css,/@media \(min-width:768px\) and \(max-width:1099px\)/);
+ assert.match(css,/@media \(min-width:1100px\)/);
+ const migration=read('migrations/20261016_d6_partner_immediate_visible.sql');
+ assert.match(migration,/couple_private\.is_member\(s\.couple_id\)/);
+ assert.match(migration,/FOR SELECT TO authenticated/);
+ assert.doesNotMatch(migration,/both_rolls_ready/);
 });
