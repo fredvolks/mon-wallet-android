@@ -1810,7 +1810,7 @@ async function animateRoll(fn,kind='general'){
    // restoring the monthly D20 scene. No second server roll is performed.
    state.diceStatus='settled';
    await refreshShared();
-   if(state.tab==='special')render();
+   // Keep the existing WebGL canvas mounted: no flash or animation restart.
    await new Promise(resolve=>setTimeout(resolve,1000));
   }
   if(kind==='new-challenge'){
