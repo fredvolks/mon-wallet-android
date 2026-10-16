@@ -24,3 +24,26 @@ test('No weekly draw or exhausted quota stays blocked',()=>{
  assert.equal(eveningDailyAccess({sessions:[past],now:new Date('2026-10-16T12:00:00Z')}).canStart,false);
  assert.equal(eveningDailyAccess({sessions:[past],weekly:{...weekly,face:1},now:new Date('2026-10-16T12:00:00Z')}).canStart,false);
 });
+
+test('New weekly roll reset ignores historical closed sessions and unlocks the button',()=>{
+ const historical={id:'old-session',started_at:'2026-10-16T03:10:00Z',
+  finished_at:'2026-10-16T05:19:00Z',counted:true};
+ const resetWeekly={face:1,key:'2026-10-12',created_at:'2026-10-16T12:48:10Z'};
+ const result=eveningDailyAccess({sessions:[historical],weekly:resetWeekly,
+  now:new Date('2026-10-16T13:00:00Z')});
+ assert.equal(result.counted,0);
+ assert.equal(result.dailyLocked,false);
+ assert.equal(result.closedToday,null);
+ assert.equal(result.canStart,true);
+});
+test('Actual finished evening after new weekly roll disables button until tomorrow',()=>{
+ const roll={face:3,key:'2026-10-12',created_at:'2026-10-16T12:48:10Z'};
+ const fresh={id:'session',started_at:'2026-10-16T13:00:00Z',
+  finished_at:'2026-10-16T14:30:00Z',counted:true};
+ const today=eveningDailyAccess({sessions:[fresh],weekly:roll,
+  now:new Date('2026-10-16T15:00:00Z')});
+ assert.deepEqual([today.counted,today.dailyLocked,today.canStart,today.closedToday.id],[1,true,false,'session']);
+ const tomorrow=eveningDailyAccess({sessions:[fresh],weekly:roll,
+  now:new Date('2026-10-17T13:00:00Z')});
+ assert.deepEqual([tomorrow.counted,tomorrow.dailyLocked,tomorrow.canStart],[1,false,true]);
+});

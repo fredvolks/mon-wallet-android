@@ -112,15 +112,18 @@ export function createClient(){
    // Regression: tap Soirée after weekly reset. This used to throw
    // Cannot read properties of null (reading 'items') on Samsung.
    await page.locator('.nav [data-action="tab:session"]').click();
-   await page.locator('.evening-locked-view').waitFor({timeout:10000});
-   const copy=await page.locator('.evening-locked-view').innerText();
-   if(!copy.includes('Brassez')||errors.length)
+   await page.locator('.evening-premium-view.is-finale').waitFor({timeout:10000});
+   const copy=await page.locator('.evening-premium-view.is-finale').innerText();
+   if(!copy.includes('Nos défis disponibles')||!copy.includes('Brassez')||
+     !(await page.locator('.evening-finale-start').isDisabled())||errors.length)
     throw Error('S25 Soirée access after reset broke '+JSON.stringify({copy:copy.slice(0,200),errors}));
    if((await page.locator('.toast.visible').allInnerTexts()).some(t=>/reading ['"]items['"]/.test(t)))
     throw Error('S25 user still sees null items error');
    await page.locator('[data-action="tab:home"]').last().click();
    await page.locator('.real-home-shell').waitFor({timeout:10000});
-   console.log('SOIREE_LOCKED_ACCESS_OK','Samsung viewport: weekly reset, no feedback items, no technical error');
+   if(await page.locator('.evening-finale-actions button').count()!==2)
+    throw Error('Soirée waiting state must show exactly two buttons');
+   console.log('SOIREE_ONE_PAGE_OK','Samsung viewport: shared premium page, disabled weekly start, no old screen');
   }
   if(name==='active-evening'){
    const info=await page.evaluate(()=>{
@@ -189,7 +192,7 @@ export function createClient(){
   });
   if(initial.overflow||initial.width<Math.min(v.width*.75,1000))
    throw Error('Home not responsive '+v.name+' '+JSON.stringify(initial));
-  await inspect('session','.evening-locked-view');
+  await inspect('session','.evening-premium-view.is-finale');
   await inspect('special','.surprise-premium-view');
   const cards=await page.locator('.surprise-event-card').count();
   if(cards!==6)throw Error('Surprise events missing '+v.name+' '+cards);
