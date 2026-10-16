@@ -129,12 +129,12 @@ export function premiumEveningHtml({
  const currentStatus=turn.finished?'♡ Tous les défis sont réalisés':turn.drawsFinished?'♡ Tous les défis sont pigés':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
  // animation face or guess a result while a D100 is being rolled.
- const d35Candidate=pending?.face??turn?.pending?.face??lastD35Face;
+ const d35Candidate=lastD35Face??pending?.face??turn?.pending?.face;
  const d35Number=Number(d35Candidate);
  const officialD100=ready&&!rolling&&d35Candidate!=null&&
   Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=100?d35Number:null;
- // The official result is already visible on the actual 3D face.
- // Never render a duplicate text number underneath or behind the die.
+ // Keep the official face on the 3D die and show a separate readable
+ // result BELOW it, never painted over the 3D face or used as a placeholder.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):'is-inactive is-finale')+'">'+
  '<div class="evening-intro"><span>♥ NOTRE RITUEL DE LA SOIRÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
@@ -164,6 +164,7 @@ export function premiumEveningHtml({
          (category==='SEXUEL'?'<small class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie</span></small>':'')+'</div>':'')+'</div>'+
     '<div class="evening-die-row">'+
       '<div class="evening-d35-col">'+premiumPolyDie(100,rolling&&rollingKind==='new-challenge'?rollFace:officialD100,'Notre dé 100 faces',rolling&&rollingKind==='new-challenge')+
+       '<div class="evening-d100-result" role="status" aria-live="polite"'+(officialD100?'':' hidden')+'>'+(officialD100||'')+'</div>'+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
 
     '</div>'+

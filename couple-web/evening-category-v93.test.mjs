@@ -40,9 +40,17 @@ test('Existing 3D engine and the server-confirmed result remain unchanged',()=>{
  const html=premiumEveningHtml({...ready,category:'HASARD',
   rolling:true,rollingKind:'new-challenge',rollFace:13});
  assert.match(html,/data-dice-sides="100" data-face="13" data-dice-zoom="1.07" data-dice-markers="numbers" data-spinning="true"/);
- assert.doesNotMatch(html,/evening-d100-result/);
+ assert.match(html,/class="evening-d100-result" role="status" aria-live="polite" hidden/);
  const die=read('dice3d.js');
  assert.match(die,/manySidedGeometry/);
+});
+test('D100 official number stays readable below the stationary 3D face on reload',()=>{
+ const html=premiumEveningHtml({...ready,category:'HASARD',lastD35Face:100});
+ assert.match(html,/data-dice-sides="100" data-face="100"/);
+ assert.match(html,/class="evening-d100-result" role="status" aria-live="polite">100<\/div>/);
+ const app=read('app.js');
+ assert.match(app,/activeD100\.loveRollDie\?\.rollTo\(confirmedFace\)/);
+ assert.match(app,/if\(savedStage\)savedStage\.remove\(\)/);
 });
 test('Random draw is performed on Supabase, with 50-50 preference and untouched security rules',()=>{
  const app=read('app.js'),sql=read('migrations/20261016_evening_category_random.sql');

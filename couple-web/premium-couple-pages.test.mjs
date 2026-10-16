@@ -115,21 +115,21 @@ test('D100 always visible and rolling face not displayed as text before settling
  assert.match(die,/canvas\.dataset\.diceZoom/);
  assert.match(app,/await new Promise\(resolve=>setTimeout\(resolve,window\.matchMedia\?/);
 });
-test('D100 renders the only official result ON the 3D die, never in a duplicate number badge',()=>{
+test('D100 keeps its official face and shows the same number below it',()=>{
  const live=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
  assert.match(live,/data-dice-sides="100" data-face="21"/);
- assert.doesNotMatch(live,/evening-d100-result/);
- assert.doesNotMatch(live,/>21<\/div>/);
+ assert.match(live,/evening-d100-result/);
+ assert.match(live,/>21<\/div>/);
  const last=premiumEveningHtml({session,members:people,me:'first',
   turn:turns,status:{both_ready:true},lastD35Face:17});
  assert.match(last,/data-dice-sides="100" data-face="17"/);
- assert.doesNotMatch(last,/evening-d100-result/);
+ assert.match(last,/evening-d100-result/);
  const spinning=premiumEveningHtml({session,members:people,me:'first',
   turn:{...turns,pending:{face:21}},status:{both_ready:true},
   rolling:true,rollingKind:'new-challenge',rollFace:11});
  assert.match(spinning,/data-dice-sides="100" data-face="11"[^>]*data-spinning="true"/);
- assert.doesNotMatch(spinning,/evening-d100-result/);
+ assert.match(spinning,/evening-d100-result/);
 });
 test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',turn:turns,

@@ -133,7 +133,7 @@ test('D6 uses an actual bevel and no neon wireframe; fallback hidden during thro
  assert.match(die,/RoundedBoxGeometry\(1\.8,1\.8,1\.8,9,\.30\)/);
  assert.doesNotMatch(die,/new THREE\.LineSegments/);
  assert.match(die,/function roundedPolyhedron\(/);
- assert.match(die,/if\(duration\)\{[\s\S]*built\.group\.quaternion\.setFromEuler/);
+ assert.match(die,/if\(duration\)prepareMotion\(\)/);
  assert.match(css,/webgl-ready \.dice-fallback/);
  assert.match(css,/safe-area-inset-top/);
  assert.match(css,/home-stats-grid/);
