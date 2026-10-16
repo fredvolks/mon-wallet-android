@@ -271,7 +271,7 @@ test('Fullscreen v61 renders all six event choices in two columns and three rows
  assert.match(responsive,/overflow-y:auto!important/);
 });
 test('Soirée never crashes if the last session and feedback status are both missing',()=>{
- assert.doesNotMatch(app,/const official=state.feedbackStatus\?\.sessionId===last\?\.id\?state.feedbackStatus.items:null/);
+ assert.doesNotMatch(app,/feedbackItemsFor|my_love_feedback_status|choose-feedback|save-feedback/);
  assert.match(app,/const recentReviews=last\?\(state.eveningReviews\|\|\[\]\)/);
  assert.match(app,/if\(!state.weekly\)\{/);
  assert.match(app,/evening-locked-view/);
