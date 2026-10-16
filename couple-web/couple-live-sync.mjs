@@ -88,7 +88,7 @@ export function createCoupleLiveSync({state,query,rpc,refresh,render,ready,week,
    const [rolls,sessions,reviews]=await Promise.all([
     query('couple_rolls',{eq:{couple_id:couple},columns:'id,kind,key,face'}),
     query('couple_sessions',{eq:{couple_id:couple},columns:'id,finished_at'}),
-    rpc('love_evening_reviews_for_couple',{p_couple:couple})
+    rpc('love_evening_reviews_for_couple',{p_couple:couple}).catch(()=>null)
    ]);
    if(state.coupleId!==couple||state.diceStatus)return;
    const active=sessions.find(s=>s.finished_at==null)||null;
