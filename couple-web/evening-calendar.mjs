@@ -1,6 +1,7 @@
 // LoveRoll evening archive. Challenge titles and outcomes are shared ONLY
 // through the member-checked calendar RPC; the live game's RLS stays personal.
 import {resolvedCard} from './evening-challenges.mjs';
+import {eveningCalendarReviewMarkup} from './evening-review.mjs';
 const safe=x=>String(x??'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[k]));
 const isoMonth=v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(v||'')?v:null;
 export function eveningLocalDay(iso){
@@ -16,7 +17,7 @@ const statusLabel=s=>({
 })[s]||'○ Non réalisé';
 const monthLabel=mo=>new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'})
  .format(new Date(mo+'-15T12:00:00Z'));
-export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyChallenges=[],me,month,selectedDate}={}){
+export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyChallenges=[],reviews=[],me,month,selectedDate}={}){
  const current=isoMonth(month)||'2026-10';
  const [year,m]=current.split('-').map(Number);
  const validDate=selectedDate&&/^\d{4}-\d\d-\d\d$/.test(selectedDate)?selectedDate:current+'-01';
@@ -78,7 +79,8 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
   }).join('');
   return '<article class="evening-cal-session"><header><strong>♡ Soirée '+(forDay.length>1?(i+1):'')+
    '</strong><span>'+(s.finished_at?'Clôturée':'En cours')+'</span></header>'+
-   '<div class="evening-cal-people">'+personSections+'</div>'+
+   '<div class="evening-cal-people">'+personSections+'</div>'+ 
+   (s.finished_at?eveningCalendarReviewMarkup({reviews,sessionId:s.id,members,me}):'')+
    '</article>';
  }).join(''):'<p class="evening-cal-empty">Aucune soirée enregistrée pour cette journée.</p>';
  return '<div class="evening-calendar-shell">'+
