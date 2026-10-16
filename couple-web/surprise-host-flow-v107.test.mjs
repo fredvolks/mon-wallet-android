@@ -29,13 +29,16 @@ test('D20 confirmed: activity opens; closing it reveals one full-stage host D6',
  assert.match(closed,/surprise-month has-activity host-pending/);
  assert.match(closed,/surprise-d20-scene surprise-main-die-scene/);
  assert.equal(count(closed,'data-dice-sides="6"'),1);
+ assert.match(closed,/data-dice-preview="true"/);
+ assert.match(closed,/data-dice-markers="pips"/);
+ assert.doesNotMatch(closed,/data-dice-unrolled="true"/);
  assert.equal(count(closed,'data-dice-sides="20"'),0);
  assert.match(closed,/PAIR/);
  assert.match(closed,/IMPAIR/);
  assert.match(closed,/♡ Fred/);
  assert.match(closed,/♡ Émilie/);
- assert.match(closed,/2 · 4 · 6/);
- assert.match(closed,/1 · 3 · 5/);
+ assert.doesNotMatch(closed,/2 · 4 · 6/);
+ assert.doesNotMatch(closed,/1 · 3 · 5/);
  assert.equal(count(closed,'data-action="roll:monthly_host"'),1);
  assert.doesNotMatch(closed,/surprise-invite-inside/);
 });
@@ -72,5 +75,5 @@ test('Surprise one-screen CSS keeps the same generous stage on phone and desktop
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(html,/surprise-refined-v104\.css\?v=20261016-surprise107/);
- assert.match(sw,/loveroll-static-v107/);
+ assert.match(sw,/loveroll-static-v108/);
 });
