@@ -60,8 +60,14 @@ test('When the official D6 stops, the same face stays visible for the result pau
  assert.equal(count(html,'data-dice-sides="20"'),0);
  assert.match(html,/data-action="roll:monthly_host" disabled/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.match(app,/if\\(kind==='monthly_host'\\)\\{[\\s\\S]*?state\\.diceStatus='settled';[\\s\\S]*?setTimeout\\(resolve,1000\\)/);
- assert.match(app,/settlingHost:state\\.diceStatus==='settled'/);
+ const start=app.indexOf("if(kind==='monthly_host'){",app.indexOf('async function animateRoll'));
+ const end=app.indexOf("if(kind==='new-challenge')",start);
+ assert.ok(start>0&&end>start);
+ const hostPause=app.slice(start,end);
+ assert.ok(hostPause.includes("state.diceStatus='settled'"));
+ assert.ok(hostPause.includes("setTimeout(resolve,1000)"));
+ assert.ok(hostPause.includes("await refreshShared()"));
+ assert.ok(app.includes("settlingHost:state.diceStatus==='settled'"));
 });
 test('Duplicate partner display names are allowed; parity follows partner order, not name',()=>{
  const same=[{user_id:'account-f',name:'Fred'},{user_id:'account-g',name:'Fred'}];
