@@ -72,7 +72,7 @@ test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D
  assert.match(ready,/data-action="new-challenge"/);
  assert.match(ready,/data-action="evening-list"/);
  const unchanged=read('dice3d.js');
- assert.match(unchanged,/function manySidedGeometry(count=35)/);
+ assert.match(unchanged,/function manySidedGeometry\\(count=35\\)/);
  assert.match(unchanged,/canvas\.dataset\.diceMarkers==='pips'/);
 });
 
