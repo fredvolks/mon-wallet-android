@@ -268,6 +268,7 @@ export function dieOn(canvas,sides,value,rolling){
  const rim=new THREE.PointLight(0xff9fcb,22,9);rim.position.set(3,-1,1.9);scene.add(rim);
  const white=new THREE.DirectionalLight(0xfff0fa,2.3);white.position.set(1.3,3,4);scene.add(white);
  const neutral=canvas.dataset.diceUnrolled==='true'&&sides===6;
+ const preview=canvas.dataset.dicePreview==='true'&&sides===6;
  const built=geometry(sides,canvas.dataset.diceMarkers==='pips',neutral);scene.add(built.group);
  // A soft contact shadow stays on the stage while the die rises and settles.
  const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.08,40),
@@ -326,6 +327,8 @@ export function dieOn(canvas,sides,value,rolling){
    built.group.quaternion.slerpQuaternions(returnStart,target,1-Math.pow(1-tReturn,3));
    if(tReturn>=1){built.group.quaternion.copy(target);returnStart=null;}
   }else if(!drag){
+   // Gently turn the decorative D6 until the server confirms a real throw.
+   if(preview&&!reduceMotion){built.group.rotateY(dt*.43);built.group.rotateX(dt*.18);}
    built.group.rotateY(vx);built.group.rotateX(vy);
    const dragFactor=Math.exp(-5*dt);vx*=dragFactor;vy*=dragFactor;
   }
@@ -334,7 +337,7 @@ export function dieOn(canvas,sides,value,rolling){
   shadow.scale.x=1+elevation*.6;
   shadow.position.x=built.group.position.x;
   renderer.render(scene,camera);
-  if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003)request();
+  if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003||(preview&&!reduceMotion))request();
  }
  const request=()=>{if(!frame)frame=requestAnimationFrame(step);};
  const down=e=>{
