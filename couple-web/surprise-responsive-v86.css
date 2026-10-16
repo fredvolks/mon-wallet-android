@@ -197,6 +197,9 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
  }
  main#app.loveroll-evening-page .evening-premium-view>.evening-gift{
   grid-column:1!important;grid-row:3!important;
+  box-sizing:border-box!important;
+  min-height:0!important;height:100%!important;max-height:100%!important;
+  overflow:hidden!important;padding:clamp(3px,.8dvh,9px) clamp(7px,1vw,13px)!important;
  }
  main#app.loveroll-evening-page .evening-premium-view>.evening-step{
   box-sizing:border-box!important;min-height:0!important;height:100%!important;
