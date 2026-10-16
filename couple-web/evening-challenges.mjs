@@ -1,6 +1,6 @@
-// LoveRoll — 100 emplacements : 50 idées prêtes à jouer, 50 espaces libres. Chaque défi a un titre, une consigne et une minuterie facultative.
+// LoveRoll — 2 × 100 card slots, each editable in a single grid.. Chaque défi a un titre, une consigne et une minuterie facultative.
 // Sur une carte, l’offrant propose l’activité; le destinataire peut accepter, adapter ou passer.
-export const EVENING_CATEGORIES=['MIXTE'];
+export const EVENING_CATEGORIES=['SENSUEL','SEXUEL'];
 export const EVENING_CHALLENGES={
   "SENSUEL": [
     [
@@ -266,20 +266,21 @@ export function eveningCard(category,cardId){
  return {category,face:cardId,title,minutes,description};
 }
 export function availableEveningCategories(preferred){
+ if(preferred==='HASARD')return EVENING_CATEGORIES.map(category=>({category,weight:50}));
  if(!EVENING_CATEGORIES.includes(preferred))throw new Error('Catégorie non reconnue');
- return [{category:'MIXTE',weight:100}];
+ return EVENING_CATEGORIES.map(category=>({category,weight:category===preferred?88:12}));
 }
 export function formatCountdown(milliseconds){
  const seconds=Math.max(0,Math.ceil(milliseconds/1000));
  return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
 }
 
-export const CUSTOM_CARD_START=51;
+export const CUSTOM_CARD_START=26;
 export const CUSTOM_CARD_END=100;
 export function customCardSlots(category,cards=[]){
  if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
- return Array.from({length:50},(_,i)=>{
-  const cardId=51+i,found=cards.find(c=>c.category===category&&c.card_id===cardId);
+ return Array.from({length:75},(_,i)=>{
+  const cardId=26+i,found=cards.find(c=>c.category===category&&c.card_id===cardId);
   return {category,cardId,title:found?.title||'',description:found?.description||'',
    minutes:found?.timer_minutes??null,recipientId:found?.recipient_user_id||null,filled:!!found};
  });
@@ -289,7 +290,7 @@ export function editableCardSlots(category,cards=[]){
  if(!EVENING_CATEGORIES.includes(category))throw Error('Catégorie de carte invalide');
  return Array.from({length:100},(_,i)=>{
   const cardId=i+1;
-  const original=cardId<=50?eveningCard(category,cardId):null;
+  const original=cardId<=25?eveningCard(category,cardId):null;
   const saved=cards.find(c=>c.category===category&&c.card_id===cardId);
   return {category,cardId,
     title:saved?.title??original?.title??'',
@@ -299,7 +300,7 @@ export function editableCardSlots(category,cards=[]){
     drawerId:saved?.drawer_user_id??null,
     drawerRole:saved?.drawer_role??(saved?.drawer_user_id?'owner':'both'),
     recipientRole:saved?.recipient_role??(saved?.recipient_user_id?'partner':'both'),
-    filled:!!saved||!!original,saved:!!saved,isOriginal:cardId<=50};
+    filled:!!saved||!!original,saved:!!saved,isOriginal:cardId<=25};
  });
 }
 export function resolvedCard(draw){
@@ -322,6 +323,7 @@ export function resolvedCard(draw){
 
 // Count only playable saved cards, never optional blank slots.
 export function playableEveningCount(cards=[]){
- const total=editableCardSlots('MIXTE',cards).filter(x=>x.filled).length;
- return {total,sensual:0,sexual:0};
+ const sensual=editableCardSlots('SENSUEL',cards).filter(x=>x.filled).length;
+ const sexual=editableCardSlots('SEXUEL',cards).filter(x=>x.filled).length;
+ return {total:sensual+sexual,sensual,sexual};
 }
