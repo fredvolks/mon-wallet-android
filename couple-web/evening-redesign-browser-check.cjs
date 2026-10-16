@@ -37,6 +37,10 @@ async function main(){
         main:rect(main),content:rect(evening),step:rect(step),stage:rect(stage),
         partner:rect(partner),gift:rect(gift),nav:rect(nav),manage:rect(manage),
         d35:rect(d35),row:rect(row),actions:rect(actions),
+        categories:[...document.querySelectorAll('.evening-choice-btn')].map(el=>({
+          action:el.dataset.action,rect:rect(el),selected:el.getAttribute('aria-pressed')
+        })),
+        selectedOdds:rect(document.querySelector('.evening-choice-odds')),
         canvases:step.querySelectorAll('canvas[data-dice-sides="6"]').length};
     });
     assert.equal(geometry.canvases,ready?4:1,'Only official D6 dice shown: own and partner when waiting, compact originals when ready');
@@ -69,6 +73,12 @@ async function main(){
      assert.ok(geometry.d35.x>=geometry.row.x-2&&geometry.d35.right<=geometry.row.right+2&&
        geometry.d35.y>=geometry.row.y-2&&geometry.d35.bottom<=geometry.row.bottom+2,
        'D35 gets clipped '+JSON.stringify({width,height,geometry}));
+     assert.deepEqual(geometry.categories.map(x=>x.action),
+      ['category:SENSUEL','category:HASARD','category:SEXUEL']);
+     assert.ok(geometry.selectedOdds&&geometry.selectedOdds.y>=geometry.categories[0].rect.bottom-2,
+       'Selected 88% is not below Sensuel button '+JSON.stringify({width,height,geometry}));
+     assert.ok(Math.abs((geometry.d35.x+geometry.d35.right)/2-(geometry.row.x+geometry.row.right)/2)<=5,
+       '35-sided die is not centered '+JSON.stringify({width,height,geometry}));
      if(width<768){
       assert.ok(geometry.actions.bottom<=geometry.gift.y+2,
        'Mobile D35 buttons overlap gifts '+JSON.stringify({width,height,geometry}));
