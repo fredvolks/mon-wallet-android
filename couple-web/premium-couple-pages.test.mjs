@@ -138,43 +138,63 @@ test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
  assert.match(html,/3\/3 dons ce mois/);
  assert.match(app,/rpc\('give_love_challenge'/);
 });
-test('Surprise page has official D20, D6, six custom event cards and correct partner splits',()=>{
+test('Before D20 roll, Surprise has no separate host bubble and exactly six editable default events',()=>{
  const html=premiumSurpriseHtml({members:people,settings:{anniversary_md:'08-20',
- birthday_by_user:{first:'01-10',second:'11-25'}},now:new Date('2026-10-14T17:00:00Z')});
+   birthday_by_user:{first:'01-10',second:'11-25'}},now:new Date('2026-10-14T17:00:00Z')});
+ assert.match(html,/class="surprise-header surprise-new-header"/);
+ assert.match(html,/Nos surprises disponibles/);
+ assert.doesNotMatch(html,/surprise-top-icons|surprise-header-symbol|surprise-host-grid/);
  assert.equal((html.match(/class="surprise-event-card /g)||[]).length,6);
+ assert.equal((html.match(/data-action="edit-surprise-event:/g)||[]).length,6);
  assert.equal((html.match(/data-dice-sides="20"/g)||[]).length,1);
- assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,1);
- assert.match(html,/1 · 2 · 3/);
- assert.match(html,/4 · 5 · 6/);
- assert.match(html,/Camille/);assert.match(html,/Noémie/);
+ assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,0,
+  'The D6 appears only after the monthly activity is chosen');
  assert.match(html,/data-action="roll:monthly_activity">Brasser le dé<\/button>/);
+ assert.doesNotMatch(html,/roll:monthly_host|surprise-invite-inside/);
  assert.match(html,/Brasse le dé pour découvrir une des 20 activités du mois\./);
- assert.doesNotMatch(html,/Brasse le dé 20 faces pour découvrir/);
- assert.match(html,/data-action="roll:monthly_host"[^>]*disabled/);
- assert.match(html,/class="surprise-host-die"/);
- assert.match(html,/class="love3d love3d-6"/);
- assert.match(html,/data-dice-unrolled="true"/);
- assert.match(html,/data-dice-markers="hearts"/);
- assert.match(css,/\.surprise-host-die \.love3d-stage\.is-unrolled \.dice-canvas\{visibility:visible!important\}/);
- assert.match(css,/\.surprise-host>\.surprise-primary:disabled/);
- assert.match(css,/grid-template-columns:minmax\(0,1fr\) minmax\(82px,\.9fr\) minmax\(0,1fr\)/);
  assert.match(html,/Fête des Mères/);
  assert.match(html,/Fête des Pères/);
- assert.match(html,/data-action="open-occasion:birthday:first"/);
+ assert.match(html,/Anniversaire couple/);
+ assert.match(html,/data-action="edit-surprise-event:birthday:first"/);
+ assert.match(html,/data-action="edit-surprise-event:birthday:second"/);
 });
-test('Monthly D20 unlocks the separate D6 button without covering partner cards',()=>{
+test('After D20 roll, Qui invite D6 appears inside the SAME large activity bubble',()=>{
  const html=premiumSurpriseHtml({members:people,monthly:{monthly_activity:{face:13}},
   activity:{title:'Une escapade',description:'Une sortie pour deux'}});
  assert.match(html,/data-action="surprise-activity"/);
  assert.doesNotMatch(html,/data-action="roll:monthly_activity"/);
- assert.match(html,/data-action="roll:monthly_host">Brasser le dé<\/button>/);
- assert.match(html,/class="surprise-host-grid"[^>]*>[\s\S]*class="surprise-host-die"[\s\S]*class="surprise-host-partner"/);
- assert.match(css,/\.surprise-host-grid\{[\s\S]*flex:0 0 83px/);
- assert.match(css,/\.surprise-host>\.surprise-primary\{[\s\S]*margin:1px auto 0!important/);
+ assert.match(html,/class="surprise-month has-activity"[\s\S]*class="surprise-invite-inside"/);
+ assert.match(html,/data-action="roll:monthly_host">Brasser le dé · Qui invite \?<\/button>/);
+ assert.match(html,/class="surprise-invite-grid"/);
+ assert.match(html,/class="surprise-invite-die"/);
+ assert.match(html,/1 · 2 · 3/);
+ assert.match(html,/4 · 5 · 6/);
+ assert.match(html,/Camille/);assert.match(html,/Noémie/);
+ assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,1);
+ assert.match(html,/data-dice-unrolled="true"/);
+ assert.match(html,/data-dice-markers="hearts"/);
+ assert.doesNotMatch(html,/class="surprise-host"/);
  const assigned=premiumSurpriseHtml({members:people,monthly:{
   monthly_activity:{face:13},monthly_host:{face:5}}});
- assert.match(assigned,/Noémie prépare notre rendez-vous/);
+ assert.match(assigned,/Noémie invite cette fois-ci/);
  assert.doesNotMatch(assigned,/data-action="roll:monthly_host"/);
+ assert.equal((assigned.match(/data-dice-sides="6"/g)||[]).length,1);
+});
+test('The six event cards open an editor for shared name/date without rewriting old rolls',()=>{
+ const settings={anniversary_md:'08-20',surprise_event_overrides:{
+  anniversary:{title:'Notre journée spéciale',month_day:'12-07'}
+ }};
+ const html=premiumSurpriseHtml({members:people,settings,editSlot:'anniversary',
+  now:new Date('2026-10-14T17:00:00Z')});
+ assert.match(html,/Notre journée spéciale/);
+ assert.match(html,/data-action="save-surprise-event"/);
+ assert.match(html,/id="surprise-event-name"/);
+ assert.match(html,/id="surprise-event-date" type="date" value="2026-12-07"/);
+ assert.match(html,/data-action="close-surprise-event"/);
+ assert.match(html,/data-action="open-occasion:anniversary:-"/);
+ assert.match(app,/rpc\('save_love_surprise_event'/);
+ assert.match(app,/surpriseEditSlot/);
+ assert.match(app,/validAnnualDate/);
 });
 test('Special event Canadian date rollovers and missing anniversary remain correct',()=>{
  const settings={anniversary_md:'01-04',birthday_by_user:{first:'02-29',second:'12-25'}};
