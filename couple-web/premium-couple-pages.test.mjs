@@ -236,10 +236,10 @@ test('Selected category is visually distinct and reported to assistive technolog
 test('After finishing the evening the official feedback pathway remains available',()=>{
  const html=premiumEveningHtml({members:people,me:'first',
   lastEvening:{id:'past',completed:10,responses:1,myResponse:true,partnerResponse:false}});
- assert.match(html,/choose-feedback:past/);
+ assert.match(html,/review-open:past/);
  assert.match(html,/Votre partenaire/);
- assert.match(html,/1 \/ 2 avis déposés/);
- assert.match(html,/Consulter nos avis précédents/);
+ assert.match(html,/1 \/ 2 bilans déposés/);
+ assert.match(html,/Consulter notre calendrier/);
 });
 test('Occasion within its seven days-after window is available this year',()=>{
  const settings={anniversary_md:'10-14',birthday_by_user:{}};
@@ -272,7 +272,7 @@ test('Fullscreen v61 renders all six event choices in two columns and three rows
 });
 test('Soirée never crashes if the last session and feedback status are both missing',()=>{
  assert.doesNotMatch(app,/const official=state.feedbackStatus\?\.sessionId===last\?\.id\?state.feedbackStatus.items:null/);
- assert.match(app,/const official=last\?feedbackItemsFor\(state.feedbackStatus,last.id\):null/);
+ assert.match(app,/const recentReviews=last\?\(state.eveningReviews\|\|\[\]\)/);
  assert.match(app,/if\(!state.weekly\)\{/);
  assert.match(app,/evening-locked-view/);
  assert.match(app,/Brassez d’abord le dé hebdomadaire/);
