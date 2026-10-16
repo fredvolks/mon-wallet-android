@@ -387,6 +387,9 @@ jobs:
       - name: Verify Soirée responsive Step 1 and unchanged D35 on phones and tablets
         run: node couple-web/evening-redesign-browser-check.cjs
 
+      - name: Verify category switches never remount live WebGL dice
+        run: node couple-web/evening-category-no-flicker-browser-check.cjs
+
       - name: Verify shared calendar expanding both partners on phone, tablet and PC
         run: node couple-web/evening-calendar-browser-check.cjs
 
