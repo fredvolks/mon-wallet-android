@@ -9,7 +9,8 @@ import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-step101';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise104';
+import {surpriseSlot,surpriseCustom,surpriseTitle,validAnnualDate} from './surprise-event-config.mjs?v=20261016-surprise104';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
@@ -34,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.103';
+const WEB_RELEASE='2026-10-16.104';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -47,7 +48,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -164,6 +165,7 @@ function backFromLoveRoll(){
  if(allowBackExit){allowBackExit=false;return false;}
  if(state.showEveningChallenge){state.showEveningChallenge=false;render();return true;}
  if(state.showSurpriseActivity){state.showSurpriseActivity=false;render();return true;}
+ if(state.surpriseEditSlot){state.surpriseEditSlot=null;render();return true;}
  if(state.adventSelected!==null){state.adventSelected=null;render();return true;}
  if(state.adventHistory){state.adventHistory=false;render();return true;}
  if(state.eveningMore){state.eveningMore=false;render();return true;}
@@ -1127,7 +1129,7 @@ function renderSpecial(){
    timerHtml:state.showSurpriseActivity&&activity?.timer_minutes?
     timerWidget({id:'monthly-'+month()},activity.timer_minutes):'',
    rolling:!!state.diceStatus,rollingKind,rollFace:state.rollAnimationFace,
-   showActivity:state.showSurpriseActivity
+   showActivity:state.showSurpriseActivity,editSlot:state.surpriseEditSlot
  }), 'RENDEZ-VOUS SURPRISE','Un mois, un tirage, une expérience à deux');
 }
 function renderOccasions(){
@@ -1160,7 +1162,7 @@ function renderOccasions(){
   const modifier=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='modifier');
   const displayName=ev.actorId?person(ev.actorId):'';
   const role=occasionRoles(ev,settings,state.members);
-  body+='<section class="card occasion-premium-card"><div class="eyebrow">♡ '+safe(ev.title)+
+  body+='<section class="card occasion-premium-card"><div class="eyebrow">♡ '+safe(surpriseTitle(settings,ev.key,ev.actorId,ev.title))+
     (displayName?' · '+safe(displayName):'')+'</div>';
   const eventDate=ev.date?new Intl.DateTimeFormat('fr-CA',{
    day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
@@ -1987,12 +1989,34 @@ async function handle(action,element){
    notify('Chaque événement : un D6 choisit l’activité puis un second D6 choisit sa variante. Les résultats sont synchronisés.');
    return;
  }
- if(verb==='open-occasion'){
+ if(verb==='edit-surprise-event'){
+   const key=parts[0],owner=parts[1]==='-'?null:parts[1],slot=surpriseSlot(key,owner);
+   const row=sixSpecialEvents(new Date(),state.occasionSettings||{},state.members)
+    .find(e=>e.slot===slot);
+   if(!row)throw Error('Événement inconnu');
+   state.showSurpriseActivity=false;state.surpriseEditSlot=slot;render();return;
+  }
+  if(verb==='close-surprise-event'){state.surpriseEditSlot=null;render();return;}
+  if(verb==='save-surprise-event'){
+   const row=sixSpecialEvents(new Date(),state.occasionSettings||{},state.members)
+    .find(e=>e.slot===state.surpriseEditSlot);
+   if(!row)throw Error('Événement introuvable');
+   const title=id('surprise-event-name')?.value.trim()||'';
+   const newDate=id('surprise-event-date')?.value||'';
+   if(title.length<2||title.length>55)throw Error('Nom : entre 2 et 55 caractères.');
+   if(newDate&&!validAnnualDate(newDate))throw Error('Choisis une date valide.');
+   const prior=surpriseCustom(state.occasionSettings,row.key,row.owner).month_day||null;
+   const md=newDate&&newDate!==row.date?newDate.slice(5):prior;
+   await rpc('save_love_surprise_event',{p_couple:state.coupleId,
+    p_slot:row.slot,p_title:title,p_month_day:md});
+   state.surpriseEditSlot=null;await refreshAndShow();return;
+  }
+  if(verb==='open-occasion'){
   const key=parts[0],owner=parts[1]==='-'?null:parts[1];
   if(!['anniversary','birthday','valentine','mothers_day','fathers_day'].includes(key))
    throw Error('Événement inconnu');
   if(owner&&!state.members.some(m=>m.user_id===owner))throw Error('Partenaire inconnu');
-  state.specialFocus={key,owner};state.tab='occasions';render();return;
+  state.surpriseEditSlot=null;state.specialFocus={key,owner};state.tab='occasions';render();return;
  }
  if(verb==='occasion-back'){state.specialFocus=null;state.tab='special';render();return;}
 
@@ -2749,7 +2773,7 @@ async function handle(action,element){
   allowBackExit=false;state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.showEveningChallenges=false;state.selectedEveningChallengeId=null;state.eveningMore=false;}
-  if(state.tab!=='special')state.showSurpriseActivity=false;
+  if(state.tab!=='special'){state.showSurpriseActivity=false;state.surpriseEditSlot=null;}
   if(state.tab!=='advent'){state.adventSelected=null;state.adventHistory=false;state.adventOpening=null;}
   render();
   if(isSharedCoupleReady(state.coupleId,state.members))
