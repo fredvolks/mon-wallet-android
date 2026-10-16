@@ -15,6 +15,7 @@ export function jsonToolsPanel(kind,label,pending=null){
  '<input type="file" data-json-file="'+kind+'" accept=".json,application/json,text/plain"></label></div>'+
  (manual?'<label>Ou coller le JSON<textarea id="'+jsonInputId(kind)+
  '" rows="4" spellcheck="false" placeholder="Collez votre liste JSON ici"></textarea></label>':'')+
+ (kind==='evening'?'<p class="tiny-note">Pour les restrictions JSON : <code>both</code> = les deux, <code>him</code> = homme, <code>her</code> = femme. Ces valeurs sont permises dans <code>drawer_role</code> et <code>recipient_role</code>.</p>':'')+
  (kind==='special'?
  '<p class="tiny-note">Minuteries D6 : ajoutez <code>"minuteurs":{"D6_activite":[5,null,null,null,null,null],"D6_modificateur":[null,null,null,null,null,null]}</code> dans chaque événement. Chaque position représente une face, <code>null</code> désactive le minuteur.</p>':
  '<p class="tiny-note">Durée facultative par défi : <code>"timer_minutes": 5</code> prépare un minuteur de 5 minutes; <code>null</code> le désactive.</p>')+
