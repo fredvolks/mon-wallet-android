@@ -606,7 +606,7 @@ test('D100 is a genuine 100-face numbered 3D die and Supabase stores 1..100',()=
  assert.ok(!app.includes('solo-roll:challenge'));
  assert.ok(app.includes('DÉCOUVRIR UN DÉFI POUR'));
  assert.ok(app.includes('CARTE N° '));
- assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/premiumPolyDie\\(20,/);
+ assert.ok(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8').includes('premiumPolyDie(20,'));
 });
 test('Prepare cards privately before inviting a partner with future partner roles',()=>{
  const view=matchHtml('Test',false);
