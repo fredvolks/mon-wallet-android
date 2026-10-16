@@ -6,10 +6,10 @@ import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-step101';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-surprise108';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise107';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise108';
 import {surpriseSlot,surpriseCustom,surpriseTitle,validAnnualDate} from './surprise-event-config.mjs?v=20261016-surprise104';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.107';
+const WEB_RELEASE='2026-10-16.108';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -242,7 +242,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261015-no-toast87').then(({dieOn})=>{
+  import('./dice3d.js?v=20261016-surprise108').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected)continue;
@@ -1129,7 +1129,8 @@ function renderSpecial(){
    timerHtml:state.showSurpriseActivity&&activity?.timer_minutes?
     timerWidget({id:'monthly-'+month()},activity.timer_minutes):'',
    rolling:!!state.diceStatus,rollingKind,rollFace:state.rollAnimationFace,
-   showActivity:state.showSurpriseActivity,editSlot:state.surpriseEditSlot
+   showActivity:state.showSurpriseActivity,editSlot:state.surpriseEditSlot,
+   settlingHost:state.diceStatus==='settled'&&state.rollAnimationKind==='monthly_host'
  }), 'RENDEZ-VOUS SURPRISE','Un mois, un tirage, une expérience à deux');
 }
 function renderOccasions(){
@@ -1804,6 +1805,14 @@ async function animateRoll(fn,kind='general'){
   state.rollAnimationFace=confirmedFace;
   state.diceStatus='rolling';render();
   await new Promise(resolve=>setTimeout(resolve,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?180:ROLL_TOTAL_MS+140));
+  if(kind==='monthly_host'){
+   // Show the official D6 face for a full second after it stops, before
+   // restoring the monthly D20 scene. No second server roll is performed.
+   state.diceStatus='settled';
+   await refreshShared();
+   if(state.tab==='special')render();
+   await new Promise(resolve=>setTimeout(resolve,1000));
+  }
   if(kind==='new-challenge'){
    // Keep official D35 face visible for a full second after the animation.
    // A truthy status temporarily suppresses refreshShared's automatic popup.
