@@ -86,6 +86,17 @@ export function createClient(){
     throw Error('Google OAuth selector missing '+JSON.stringify(args));
   }
   if(name==='existing-paired'){
+   // Home now starts directly with the weekly ritual, no logo nor header icons.
+   if(await page.locator('.home-brandbar,.home-brand-actions').count()!==0)
+    throw Error('Connected Home still displays removed top header');
+   const gift=await page.evaluate(()=>{
+    const button=document.querySelector('.home-next-month')?.getBoundingClientRect();
+    const graphic=document.querySelector('.home-gift-icon svg')?.getBoundingClientRect();
+    return button&&graphic?{diff:(graphic.top+graphic.bottom)/2-(button.top+button.bottom)/2,
+      graphicWidth:graphic.width,buttonHeight:button.height}:null;
+   });
+   if(!gift||gift.graphicWidth<20||Math.abs(gift.diff)>9)
+    throw Error('Home gift not visually centered '+JSON.stringify(gift));
    // The WebGL canvas is centered horizontally, but its visible cube sits
    // lower within it. Verify that the platform is optically lifted on phone.
    const center=await page.evaluate(()=>{
@@ -112,6 +123,17 @@ export function createClient(){
    console.log('SOIREE_LOCKED_ACCESS_OK','Samsung viewport: weekly reset, no feedback items, no technical error');
   }
   if(name==='active-evening'){
+   const info=await page.evaluate(()=>{
+    const b=document.querySelector('.home-roll-button.is-used');
+    const rollArea=document.querySelector('.home-roll-area');
+    const rect=b?.getBoundingClientRect();
+    const parent=rollArea?.getBoundingClientRect();
+    return b&&rect&&parent?{text:b.textContent.trim(),disabled:b.disabled,
+     widthRatio:rect.width/parent.width,height:rect.height}:null;
+   });
+   if(!info||info.text!=='Déjà brassé cette semaine, revenez la semaine prochaine'||
+     !info.disabled||Math.abs(info.widthRatio-.85)>.025||info.height>57)
+    throw Error('Already rolled weekly button was enlarged or mislabeled '+JSON.stringify(info));
    // This is the essential regression: last tests stopped at locked Soirée
    // and never executed renderSession's real 70-card active branch.
    await page.locator('.nav [data-action="tab:session"]').click();
