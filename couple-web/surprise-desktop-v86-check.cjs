@@ -46,7 +46,8 @@ const assert=require('node:assert/strict');
      assert.equal(size.events.length,6,name+' missing events');
      for(const event of size.events)assert.ok(event.height>=20&&event.bottom<=h+2,
        'Clipped event '+name+' '+JSON.stringify(size));
-     for(const key of ['month','host','special'])assert.ok(size[key]?.height>75&&
+     assert.equal(size.host,null,'Old separate Qui invite card must be gone');
+     for(const key of ['month','special'])assert.ok(size[key]?.height>75&&
        size[key].bottom<=h+2,'Section clipped '+key+' '+name+' '+JSON.stringify(size));
      assert.ok(size.d20?.height>50,'D20 missing '+name+' '+JSON.stringify(size));
     }else if(view==='evening'){
