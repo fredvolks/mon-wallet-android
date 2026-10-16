@@ -193,12 +193,15 @@ test('The six event cards open an editor for shared name/date without rewriting 
  assert.match(html,/Notre journée spéciale/);
  assert.match(html,/data-action="save-surprise-event"/);
  assert.match(html,/id="surprise-event-name"/);
- assert.match(html,/id="surprise-event-date" type="date" value="2026-12-07"/);
+ assert.match(html,/id="surprise-event-date" type="text" inputmode="numeric"/);
+ assert.match(html,/placeholder="JJ\/MM\/AAAA"/);
+ assert.match(html,/value="07\/12\/2026"/);
  assert.match(html,/data-action="close-surprise-event"/);
- assert.match(html,/data-action="open-occasion:anniversary:-"/);
+ assert.doesNotMatch(html,/data-action="open-occasion:anniversary:-"/);
+ assert.equal((html.match(/data-action="save-surprise-event"/g)||[]).length,1);
  assert.match(app,/rpc\('save_love_surprise_event'/);
  assert.match(app,/surpriseEditSlot/);
- assert.match(app,/validAnnualDate/);
+ assert.match(app,/parseSurpriseDateInput/);
 });
 test('Special event Canadian date rollovers and missing anniversary remain correct',()=>{
  const settings={anniversary_md:'01-04',birthday_by_user:{first:'02-29',second:'12-25'}};
