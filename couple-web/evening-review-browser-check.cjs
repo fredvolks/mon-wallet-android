@@ -35,13 +35,15 @@ const origin='http://127.0.0.1:8765';
    assert.equal(await page.locator('.evening-review-person').count(),2);
    const nested=await page.evaluate(()=>{
     const sections=[...document.querySelectorAll('details.evening-cal-person-group')];
-    return sections.length===2&&
-      sections[0].querySelector('.evening-review-person')?.textContent.includes('Très belle soirée')&&
-      !sections[0].querySelector('.evening-review-person')?.textContent.includes('Merci pour ce beau moment')&&
-      sections[1].querySelector('.evening-review-person')?.textContent.includes('Merci pour ce beau moment')&&
-      !document.querySelector('.evening-review-archive');
+    const a=sections[0]?.querySelector('.evening-review-person')?.textContent||'';
+    const b=sections[1]?.querySelector('.evening-review-person')?.textContent||'';
+    return {count:sections.length,firstId:sections[0]?.dataset.personId,secondId:sections[1]?.dataset.personId,
+     first:a,second:b,oldArchive:!!document.querySelector('.evening-review-archive'),
+     valid:sections.length===2&&a.includes('Très belle soirée')&&!a.includes('Merci pour ce beau moment')&&
+      b.includes('Merci pour ce beau moment')&&!b.includes('Très belle soirée')&&
+      !document.querySelector('.evening-review-archive')};
    });
-   assert.ok(nested,'Partner feedback must be contained in the correct accordion');
+   assert.ok(nested.valid,'Partner feedback must be contained in the correct accordion '+JSON.stringify(nested));
    assert.ok(await page.locator('.lr-review-modal .lr-review-question').nth(2).isVisible());
    const fit=await page.evaluate(()=>{
     const modal=document.querySelector('.lr-review-modal');
