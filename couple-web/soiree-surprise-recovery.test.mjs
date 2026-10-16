@@ -8,7 +8,7 @@ const index=read('index.html'),worker=read('service-worker.js');
 test('Soirée tolerates missing/null aftercare before AND after resets',()=>{
  for(const missing of [null,undefined,false,[],{}, {items:null}, {items:'invalid'}])
   assert.equal(feedbackItemsFor(missing,'session-id'),null);
- assert.match(app,/const official=last\?feedbackItemsFor\(state\.feedbackStatus,last.id\):null/);
+ assert.match(app,/const recentReviews=last\?\(state.eveningReviews\|\|\[\]\)/);
  assert.match(app,/const statuses=feedbackItemsFor\(state\.feedbackStatus,session.id\)/);
  assert.doesNotMatch(app,/state\.feedbackStatus\.items\b/);
  assert.match(app,/loveroll-aftercare-auto-recover-/);
