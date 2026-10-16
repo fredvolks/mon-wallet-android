@@ -33,7 +33,7 @@ test('v86 is last CSS sheet, is cached offline and removes desktop page scroll',
  assert.equal(ver.build,'2026-10-15.86');
  assert.match(sw,/loveroll-static-v86/);
  assert.match(sw,/\.\/surprise-responsive-v86\.css/);
- assert.match(index,/surprise-responsive-v86\.css\?v=20261015-surprise86/);
+ assert.match(index,/surprise-responsive-v86\.css\?v=20261015-no-toast87/);
  assert.ok(index.lastIndexOf('surprise-responsive-v86.css')>index.lastIndexOf('evening-focused-v84.css'));
  assert.match(css,/height:100dvh!important/);
  assert.match(css,/overflow:hidden!important/);
