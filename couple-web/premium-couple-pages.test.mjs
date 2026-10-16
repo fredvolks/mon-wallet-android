@@ -122,7 +122,7 @@ test('D100 renders the only official result ON the 3D die, never in a duplicate 
  assert.doesNotMatch(live,/evening-d100-result/);
  assert.doesNotMatch(live,/>21<\/div>/);
  const last=premiumEveningHtml({session,members:people,me:'first',
-  turn:turns,status:{both_ready:true},lastD100Face:17});
+  turn:turns,status:{both_ready:true},lastD35Face:17});
  assert.match(last,/data-dice-sides="100" data-face="17"/);
  assert.doesNotMatch(last,/evening-d100-result/);
  const spinning=premiumEveningHtml({session,members:people,me:'first',
