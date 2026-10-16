@@ -18,7 +18,7 @@ test('The weekly wording is replaced only for Soirée and all 3 category choices
  assert.deepEqual(extractButtonOrder(html),['SENSUEL','HASARD','SEXUEL']);
  assert.match(html,/Au hasard/);
  assert.doesNotMatch(html,/NOTRE RITUEL À DEUX/);
- assert.equal((html.match(/data-dice-sides="35"/g)||[]).length,1);
+ assert.equal((html.match(/data-dice-sides="100"/g)||[]).length,1);
  assert.match(html,/data-action="new-challenge"[^>]*disabled/);
  assert.doesNotMatch(html,/88 %|evening-probability/);
 });
@@ -39,10 +39,10 @@ test('Only a selected Sensuel or Sexuel button displays 88%, never in random mod
 test('Existing 3D engine and the server-confirmed result remain unchanged',()=>{
  const html=premiumEveningHtml({...ready,category:'HASARD',
   rolling:true,rollingKind:'new-challenge',rollFace:13});
- assert.match(html,/data-dice-sides="35" data-face="13" data-dice-zoom="1.07" data-dice-markers="numbers" data-spinning="true"/);
- assert.doesNotMatch(html,/evening-d35-result/);
+ assert.match(html,/data-dice-sides="100" data-face="13" data-dice-zoom="1.07" data-dice-markers="numbers" data-spinning="true"/);
+ assert.doesNotMatch(html,/evening-d100-result/);
  const die=read('dice3d.js');
- assert.match(die,/const count=35/);
+ assert.match(die,/function manySidedGeometry(count=35)/);
 });
 test('Random draw is performed on Supabase, with 50-50 preference and untouched security rules',()=>{
  const app=read('app.js'),sql=read('migrations/20261016_evening_category_random.sql');
@@ -58,7 +58,7 @@ test('Random draw is performed on Supabase, with 50-50 preference and untouched 
  assert.match(sql,/GRANT EXECUTE ON FUNCTION public\.draw_for_partner_random\(uuid\) TO authenticated/);
  assert.doesNotMatch(sql,/UPDATE public\.couple_challenges|DELETE FROM public\.couple_challenges|ALTER TABLE/i);
 });
-test('Three equally sized buttons and a horizontally centered D35 at every breakpoint',()=>{
+test('Three equally sized buttons and a horizontally centered D100 at every breakpoint',()=>{
  const css=read('evening-category-v93.css');
  assert.match(css,/repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(css,/\.evening-choice-odds span\{/);
