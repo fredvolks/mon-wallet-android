@@ -746,7 +746,8 @@ test('Only LoveRoll couple owner edits monthly activities, including before part
  assert.ok(app.includes("settingRow('Activités du mois'"));
  assert.ok(app.includes("premiumHomeHtml({")); // monthly activity now displayed via live monthly countdown
  assert.ok(app.includes("const activity=active?monthlyActivityForRoll(active):null"));
- assert.match(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8'),/activity\?\.is_restaurant/);
+ const surpriseMarkup=readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8');
+ assert.doesNotMatch(surpriseMarkup,/Restaurant connu ou nouveau \?|roll:monthly_restaurant|surprise-restaurant-button/);
  assert.ok(serviceWorker.includes("'./monthly-activities.mjs'"));
  assert.ok(!app.includes("safe(outings[a.face-1])"));
 });
