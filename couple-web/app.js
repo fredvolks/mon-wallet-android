@@ -1062,14 +1062,12 @@ function renderSession(){
  const turn=session?(state.eveningBoard||sharedEveningTurns(session,state.members,state.personal,state.challenges,state.gifts)):{};
  const mineCards=session?ownEveningChallenges(state.challenges,uid,session.id):[];
  const last=[...(state.sessions||[])].filter(s=>s.finished_at&&s.counted).sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
- const official=last?feedbackItemsFor(state.feedbackStatus,last.id):null;
- const ownSubmitted=official?.find(x=>x.user_id===uid)?.submitted;
- const otherSubmitted=official?.find(x=>x.user_id!==uid)?.submitted;
- const lastEvening=last?{id:last.id,completed:state.challengesHistory.filter(
+ const recentReviews=last?(state.eveningReviews||[]).filter(x=>x.session_id===last.id):[];
+ const lastEvening=last?{id:last.id,completed:state.eveningCalendarChallenges.filter(
     c=>c.session_id===last.id&&c.status==='completed').length,
-   responses:official?official.filter(x=>x.submitted).length:null,
-   myResponse:ownSubmitted??state.feedback.some(f=>f.session_id===last.id&&f.author_id===uid),
-   partnerResponse:otherSubmitted??null}:null;
+   responses:recentReviews.length,
+   myResponse:recentReviews.some(f=>f.author_id===uid),
+   partnerResponse:recentReviews.some(f=>f.author_id===partner.user_id)}:null;
  const gifts=state.gifts||[];
  const giftCount=gifts.filter(g=>g.donor_user_id===uid&&g.month_key?.slice(0,7)===month()).length;
  let overlay='';
