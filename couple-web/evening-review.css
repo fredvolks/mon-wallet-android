@@ -49,20 +49,18 @@
 .lr-review-note span{align-self:end;font-size:.68rem;color:#cda0b9}
 .lr-review-calendar-note{text-align:center!important;font-size:clamp(.68rem,1.8vw,.83rem);
  line-height:1.24;color:#eec3dc;margin:0!important}
-.lr-review-save,.lr-review-calendar{box-sizing:border-box;width:100%!important;
+.lr-review-save{box-sizing:border-box;width:100%!important;
  min-height:clamp(44px,6dvh,54px)!important;margin:0!important;border-radius:999px!important;
  padding:8px!important;font-size:clamp(.86rem,2.5vw,1.05rem)!important;font-weight:830}
 .lr-review-save{background:linear-gradient(105deg,#ff87bb,#f00080)!important;
  border:1px solid #ffd4e6!important;color:#fff!important}
-.lr-review-calendar{background:#370c2ad9!important;border:1px solid #ee7daf!important;
- color:#ffe5f2!important}
 .lr-review-save:disabled{opacity:.65}
 .lr-review-error{color:#ffcfdf;padding:6px;margin:0}
-.evening-review-archive{border-top:1px solid #e976a777;margin-top:13px;padding-top:10px}
-.evening-review-archive h3{margin:0 0 9px;font:800 clamp(1rem,2.7vw,1.25rem) Georgia,serif;color:#ffb4da}
-.evening-review-archive-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.evening-review-person{min-width:0;border:1px solid #c9589382;border-radius:13px;
- background:#3f0f30bd;padding:10px}
+.evening-review-person{min-width:0;margin-top:13px;border:1px solid #c9589382;border-radius:13px;
+ background:#3f0f30bd;padding:clamp(9px,2.2vw,15px);overflow-wrap:anywhere}
+.evening-review-person h4{font:800 clamp(.95rem,2.8vw,1.2rem) Georgia,serif;color:#ffc1df;margin:0 0 11px}
+.evening-cal-person-content>.evening-review-person{width:100%;max-width:100%;box-sizing:border-box}
+.evening-cal-person-group[open] .evening-review-person{animation:none}
 .evening-review-person>strong{color:#ffd4e9;overflow-wrap:anywhere}
 .evening-review-person>p{margin:8px 0;font-size:.8rem;color:#e8bdd3;overflow-wrap:anywhere}
 .evening-review-score{margin-top:8px;display:flex;flex-direction:column;gap:2px}
@@ -88,5 +86,4 @@
  .lr-review-note textarea{min-height:54px}
  .lr-review-modal h2{font-size:clamp(1.3rem,4vw,1.9rem)!important}
 }
-@media(max-width:500px){.evening-review-archive-grid{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.lr-review-modal,.lr-review-backdrop{transition:none!important}}
