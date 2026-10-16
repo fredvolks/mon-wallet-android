@@ -33,13 +33,14 @@ test('Invitations require the intended verified email, and enforce two members',
  assert.match(sql,/token_hash text not null unique/);
  assert.match(app,/randomInviteToken\(/);
 });
-test('One questionnaire per authenticated partner and encrypted shared journal',()=>{
- assert.match(sql,/primary key\(session_id,author_id\)/);
- assert.match(sql,/feedback_author_update/);
- assert.match(sql,/author_id=\(select auth\.uid\(\)\)/);
+test('One heart review per partner and separately encrypted journal entries',()=>{
+ const reviews=readFileSync(new URL('./migrations/20261016_evening_hearts_reviews.sql',import.meta.url),'utf8');
+ assert.match(reviews,/PRIMARY KEY\(session_id,author_id\)/);
+ assert.match(reviews,/auth\.uid\(\)/);
+ assert.match(reviews,/s\.finished_at IS NOT NULL AND s\.counted IS TRUE/);
  assert.match(app,/crypto\.subtle\.encrypt/);
  assert.match(app,/iterations:240000/);
- assert.match(app,/if\(!state\.unlockKey\)/);
+ assert.match(app,/rpc\('save_love_evening_review'/);
 });
 test('Backend explicitly rejects opening future advent days',()=>{
  assert.match(readFileSync(new URL('./migrations/20261014_advent_one_door_per_day.sql',import.meta.url),'utf8'),/p_day is distinct from extract\(day from d\)::int/);
@@ -77,8 +78,11 @@ test('Cancelled evenings never consume a weekly game and completion needs both D
  assert.match(app,/p_count:false/);
  assert.match(app,/confirm-cancel/);
 });
-test('Feedback can only be submitted after a completed or cancelled session',()=>{
- assert.match(sql,/couple_feedback\.couple_id and s.finished_at is not null/);
+test('The new heart review only belongs to a closed counted session',()=>{
+ const reviews=readFileSync(new URL('./migrations/20261016_evening_hearts_reviews.sql',import.meta.url),'utf8');
+ assert.match(reviews,/s\.finished_at IS NOT NULL AND s\.counted IS TRUE/);
+ assert.match(reviews,/couple_private\.is_member/);
+ assert.doesNotMatch(app,/choose-feedback|save-feedback|renderFeedback/);
 });
 test('Invitation URL uses non-secret UUID and removes legacy secret tokens from address',()=>{
  assert.match(app,/inviteLinkForId\(CONFIG\.siteUrl,invitationId\)/);
@@ -905,7 +909,8 @@ test('Settings groups remain settings-only; after-party forms live under Soirée
  assert.match(settings,/settingGroup\('Application'/);
  assert.doesNotMatch(settings,/button\('tab:feedback'/);
  assert.match(app,/if\(!s&&state\.sessions\?\.some/);
- assert.match(app,/if\(verb==='choose-feedback'\)/);
+ assert.match(app,/if\(verb==='review-open'\)/);
+ assert.doesNotMatch(app,/choose-feedback|save-feedback/);
  assert.match(app,/if\(verb==='send-messenger'\)/);
  assert.match(app,/LoveRollNativeAuth\?\.openShare/);
  assert.match(app,/navigator\.share/);
