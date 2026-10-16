@@ -1,7 +1,7 @@
 // LoveRoll — Rendez-vous Surprise, connected to real monthly and occasion draws.
 import {occasionDate,dueOccasions} from './special-occasions.mjs';
 import {premiumPolyDie} from './premium-evening.mjs';
-import {surpriseSlot,surpriseCustom,surpriseTitle} from './surprise-event-config.mjs';
+import {surpriseSlot,surpriseCustom,surpriseTitle,displaySurpriseDate} from './surprise-event-config.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(a,s,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(a)+'"'+(disabled?' disabled':'')+'>'+s+'</button>';
 const eventSymbol=(key)=>{
@@ -116,11 +116,13 @@ export function premiumSurpriseHtml({
      '<label for="surprise-event-name">Nom de l’événement</label>'+
      '<input id="surprise-event-name" type="text" maxlength="55" value="'+esc(editEvent.title)+'">'+
      '<label for="surprise-event-date">Date de l’événement (chaque année)</label>'+
-     '<input id="surprise-event-date" type="date" value="'+esc(editEvent.date||'')+'">'+
+     '<input id="surprise-event-date" type="text" inputmode="numeric" autocomplete="off" '+
+     'enterkeyhint="done" maxlength="10" placeholder="JJ/MM/AAAA" '+
+     'aria-describedby="surprise-event-date-hint" value="'+esc(displaySurpriseDate(editEvent.date))+'">'+
+     '<small id="surprise-event-date-hint" class="surprise-date-hint">Écris la date avec ton clavier · JJ/MM/AAAA</small>'+
      '<p>Remplace le nom et choisis une autre date au besoin. Les anciens tirages restent enregistrés.</p>'+
      '<div class="surprise-edit-actions">'+
       button('save-surprise-event','Enregistrer','surprise-primary')+
-      button('open-occasion:'+editEvent.key+':'+(editEvent.owner||'-'),'Voir ses surprises','surprise-secondary')+
      '</div><small>Si tu modifies seulement le nom, la date d’origine demeure inchangée.</small>'+
     '</div></div>':'')+
   (showActivity&&a?
