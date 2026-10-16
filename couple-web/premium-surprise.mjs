@@ -40,7 +40,7 @@ export function sixSpecialEvents(now,settings={},members=[]){
  });
 }
 export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new Date(),activity=null,rolling=false,rollingKind=null,rollFace=1,showActivity=false,timerHtml=''}={}){
- const a=monthly.monthly_activity,h=monthly.monthly_host,r=monthly.monthly_restaurant;
+ const a=monthly.monthly_activity,h=monthly.monthly_host;
  const rollingActivity=rolling&&rollingKind==='monthly_activity';
  const rollingHost=rolling&&rollingKind==='monthly_host';
  const host=h?members[h.face<=3?0:1]:null;
@@ -69,8 +69,6 @@ export function premiumSurpriseHtml({monthly={},members=[],settings={},now=new D
  (h?'<div class="surprise-winner">♥ '+esc(host?.name?.split(' ')[0]||'Partenaire')+' prépare notre rendez-vous !</div>':
   button('roll:monthly_host','Brasser le dé','surprise-primary',!a||rolling)+
  (!a?'<small>Commencez par tirer votre activité du mois.</small>':''))+
- (r?'<small class="surprise-restaurant">Restaurant : '+(r.face<=3?'un endroit connu':'une nouvelle adresse')+'</small>':
-  (h&&activity?.is_restaurant?button('roll:monthly_restaurant','🎲 Restaurant connu ou nouveau ?','surprise-restaurant-button',rolling):''))+
  '</section>'+
  '<section class="surprise-special"><div class="surprise-headline"><strong>🎁 ÉVÉNEMENTS SPÉCIAUX</strong><span>6 événements · 6 choix chacun</span></div>'+
  '<p>Des moments uniques à vivre ensemble.</p>'+
