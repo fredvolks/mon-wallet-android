@@ -1,5 +1,6 @@
 // LoveRoll • 20 special-occasion surprises.
 // A suggestion is always optional. Boundaries and mutual enthusiasm come first.
+import {surpriseCustom} from './surprise-event-config.mjs';
 export const SPECIAL_SURPRISES=[
   {
     "title": "La suite secrète",
@@ -117,7 +118,14 @@ export function nthSunday(year,month,n){
  return 1+(7-first)%7+7*(n-1);
 }
 export function occasionDate(kind,year,settings,userId){
+ const override=surpriseCustom(settings,kind,userId).month_day;
  const full=(m,d)=>String(year).padStart(4,"0")+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+ if(typeof override==='string'&&/^\d{2}-\d{2}$/.test(override)){
+  const [m,n]=override.split('-').map(Number);
+  const day=(m===2&&n===29&&!((year%4===0&&year%100!==0)||year%400===0))?28:n;
+  const iso=full(m,day),parsed=new Date(iso+'T12:00:00Z');
+  if(!Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===iso)return iso;
+ }
  if(kind==="valentine")return full(2,14);
  if(kind==="mothers_day")return full(5,nthSunday(year,5,2));
  if(kind==="womens_day")return full(3,8);
