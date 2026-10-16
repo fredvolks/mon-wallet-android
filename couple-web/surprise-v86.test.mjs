@@ -28,13 +28,15 @@ test('Activity modal shows the server-confirmed title, description and timer and
  assert.match(html,/data-action="surprise-activity"/);
  assert.doesNotMatch(premiumSurpriseHtml({...state,showActivity:false}),/aria-modal="true"/);
 });
-test('v86 is last CSS sheet, is cached offline and removes desktop page scroll',()=>{
+test('v104 refines v86, is cached offline and preserves desktop scroll constraints',()=>{
  const sw=read('service-worker.js'),ver=JSON.parse(read('web-version.json'));
- assert.equal(ver.build,'2026-10-16.103');
- assert.match(sw,/loveroll-static-v103/);
+ assert.equal(ver.build,'2026-10-16.104');
+ assert.match(sw,/loveroll-static-v104/);
  assert.match(sw,/\.\/surprise-responsive-v86\.css/);
  assert.match(index,/surprise-responsive-v86\.css\?v=20261015-no-toast87/);
  assert.ok(index.lastIndexOf('surprise-responsive-v86.css')>index.lastIndexOf('evening-focused-v84.css'));
+ assert.ok(index.lastIndexOf('surprise-refined-v104.css')>index.lastIndexOf('surprise-responsive-v86.css'));
+ assert.match(sw,/surprise-refined-v104\.css/);
  assert.match(css,/height:100dvh!important/);
  assert.match(css,/overflow:hidden!important/);
  assert.match(css,/\.evening-summary-die/);
