@@ -116,6 +116,19 @@ test('Last D35 face is the latest official historical result, never the oldest',
  assert.equal(lastOfficialChallengeFace([{face:'—'},...history],id),27);
 });
 
+test('The D100 preserves any official face from 1 to 100 after reload',()=>{
+ const history=[
+  {session_id:id,face:27,created_at:'2026-10-16T14:00:00Z'},
+  {session_id:id,face:55,created_at:'2026-10-16T15:00:00Z'},
+  {session_id:id,face:100,created_at:'2026-10-16T16:00:00Z'}
+ ];
+ assert.equal(lastOfficialChallengeFace(history,id),100);
+ assert.equal(lastOfficialChallengeFace(history.slice(0,2),id),55);
+ assert.equal(lastOfficialChallengeFace(history.slice(0,1),id),27);
+ assert.equal(lastOfficialChallengeFace([{session_id:id,face:101},...history],id),100);
+ assert.equal(lastOfficialChallengeFace([{session_id:id,face:0},...history],id),100);
+});
+
 test('Aftercare selects newest counted evening even when backend returns oldest first',()=>{
  const history=[
   {id:'one',finished_at:'2026-10-10T21:00:00Z',counted:true},
