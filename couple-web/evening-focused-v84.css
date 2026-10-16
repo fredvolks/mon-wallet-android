@@ -245,3 +245,11 @@ main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.tw
   width:min(100%,34dvh,340px)!important;
  }
 }
+
+/* v85 accessibility fix: 360px Android touch target never below 44px. */
+@media(max-width:767px){
+ main#app.loveroll-evening-page .evening-step.one .evening-small-roll{
+  flex:0 0 46px!important;min-height:46px!important;height:46px!important;
+  max-height:46px!important;line-height:1.12!important;
+ }
+}
