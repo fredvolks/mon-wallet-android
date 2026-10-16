@@ -166,8 +166,11 @@ test('After D20 roll, D6 replaces the full-size D20 then restores it after the h
  assert.match(html,/class="surprise-month has-activity host-pending"/);
  assert.match(html,/data-action="roll:monthly_host">Brasser le dé · Qui invite \?<\/button>/);
  assert.match(html,/class="surprise-host-legend"/);
- assert.match(html,/2 · 4 · 6/);
- assert.match(html,/1 · 3 · 5/);
+ assert.match(html,/data-dice-preview="true"/);
+ assert.match(html,/data-dice-markers="pips"/);
+ assert.doesNotMatch(html,/data-dice-unrolled="true"/);
+ assert.doesNotMatch(html,/2 · 4 · 6/);
+ assert.doesNotMatch(html,/1 · 3 · 5/);
  assert.match(html,/Camille/);assert.match(html,/Noémie/);
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,1);
  assert.equal((html.match(/data-dice-sides="20"/g)||[]).length,0);
