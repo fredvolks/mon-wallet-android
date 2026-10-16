@@ -311,3 +311,27 @@ main#app.loveroll-real-home{
 @media (max-width:650px) and (max-height:740px){
  .loveroll-real-home .home-die-platform{transform:translate3d(0,-13%,0)}
 }
+
+/* LoveRoll v92 — simpler connected Home, unchanged weekly CTA dimensions. */
+/* The global header is no longer rendered on Home. Keep the weekly content
+   naturally at the top; no placeholder height or additional scroll region. */
+main#app.loveroll-real-home .real-home-shell{min-width:0!important}
+/* Text-only label: same 85% wide, same flexible row and max 55px height. */
+main#app.loveroll-real-home .home-roll-button.is-used{
+ font-size:clamp(.69rem,2.45vw,.89rem)!important;
+ line-height:1.15!important;white-space:normal!important;
+ text-wrap:balance;overflow-wrap:normal;
+ padding:5px clamp(8px,2vw,14px)!important;
+}
+/* Center the gift on its real SVG box, not the text line baseline.
+   A tiny downward optical correction balances the calendar icon at left. */
+main#app.loveroll-real-home .home-next-month .home-gift-icon{
+ display:grid!important;place-items:center!important;
+ align-self:stretch!important;justify-self:stretch!important;
+ min-width:0!important;min-height:0!important;line-height:0!important;
+ text-align:center!important;
+}
+main#app.loveroll-real-home .home-next-month .home-gift-icon svg{
+ display:block!important;justify-self:center!important;align-self:center!important;
+ transform:translateY(3px);
+}
