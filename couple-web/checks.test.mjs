@@ -616,7 +616,8 @@ test('Prepare cards privately before inviting a partner with future partner role
  assert.ok(app.includes("create_love_match',{p_anniversary_md:null}"));
  assert.ok(app.includes("state.tab='library'"));
  assert.ok(app.includes('Créer mes défis avant l’invitation'));
- assert.ok(app.includes('Ma conjointe (à inviter)'));
+ assert.ok(app.includes("him:'Homme'"));
+  assert.ok(app.includes("her:'Femme'"));
  assert.ok(app.includes('save_love_card_with_roles'));
  assert.ok(app.includes('p_recipient_role:recipient'));
  assert.ok(app.includes('p_drawer_role:drawer'));
