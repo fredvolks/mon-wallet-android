@@ -8,8 +8,8 @@ test('Soirée tolerates an absent review and no longer opens legacy feedback',()
  assert.match(app,/const recentReviews=last\?\(state.eveningReviews\|\|\[\]\)/);
  assert.match(app,/reviewModalSessionId/);
  assert.doesNotMatch(app,/feedbackItemsFor|my_love_feedback_status|choose-feedback|save-feedback/);
- assert.match(app,/loveroll-aftercare-auto-recover-/);
- assert.match(app,/reloadWebAssets\(true\)/);
+ assert.doesNotMatch(app,/loveroll-aftercare-auto-recover-/);
+ assert.match(app,/reviewModalSessionId/);
 });
 test('Surprise monthly D20 and host D6 own separate centered 3D stages and never escape scene',()=>{
  assert.match(style,/surprise-d20-scene/);
