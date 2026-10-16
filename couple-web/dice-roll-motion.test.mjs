@@ -48,6 +48,20 @@ test('All three axes move FORWARD continuously, never reverse or snap at the end
   }
  }
 });
+test('D100 live reroll starts from the existing visible face and stops exactly on the official value',()=>{
+ const original=[.17,-.36,.29],dest=[-.41,.23,-.78];
+ const trajectory=makeForwardRoll(dest,[.1,.2,.3,.4,.5,.6,.7,.8,.9],original);
+ assert.deepEqual(rollAngles(trajectory,0),original);
+ const settled=rollAngles(trajectory,ROLL_TOTAL_MS);
+ for(let axis=0;axis<3;axis++){
+  assert.ok(Math.abs(Math.sin((settled[axis]-dest[axis])/2))<1e-8);
+ }
+ const diceSource=readFileSync(new URL('./dice3d.js',import.meta.url),'utf8');
+ assert.match(diceSource,/canvas\.loveRollDie=\{rollTo\}/);
+ assert.match(diceSource,/target=selected/);
+ assert.match(diceSource,/built\.group\.quaternion\.copy\(target\)/);
+});
+
 test('No end-of-roll quaternion interpolation nor result-number overlay',()=>{
  assert.match(diceSource,/rollAngles\(trajectory,elapsed\)/);
  assert.match(diceSource,/built\.group\.quaternion\.setFromEuler\(euler\)/);
