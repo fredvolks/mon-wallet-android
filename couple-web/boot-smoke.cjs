@@ -9,8 +9,8 @@ export function createClient(){
  const mode=new URL(location.href).searchParams.get('boot_case')||'anonymous';
  window.__loveOauthArgs=null;
  const authenticated=mode!=='anonymous';
- const paired=mode==='paired'||mode==='paired-active';
- const active=mode==='paired-active';
+ const paired=['paired','paired-active','paired-pending','paired-partner-result'].includes(mode);
+ const active=['paired-active','paired-pending','paired-partner-result'].includes(mode);
  const localDay=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const monday=new Date(localDay+'T12:00:00Z');
  monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
@@ -28,8 +28,11 @@ export function createClient(){
   couples:paired?[{id:'couple-test',owner_user_id:user.id,journal_salt:'test-journal-salt'}]:[],
   couple_rolls:active?[{id:'weekly-synthetic',couple_id:'couple-test',kind:'weekly',key:weeklyKey,face:2,created_at:earlier}]:[],
   couple_sessions:active?[{id:'active-session-synthetic',couple_id:'couple-test',started_at:later,finished_at:null,paired_turns:true,self_draws:true}]:[],
-  couple_personal_rolls:active?[{id:'d6-user',session_id:'active-session-synthetic',user_id:user.id,face:2},
-   {id:'d6-second',session_id:'active-session-synthetic',user_id:second.id,face:3}]:[]
+  couple_personal_rolls:mode==='paired-pending'?[]:
+   mode==='paired-partner-result'?
+    [{id:'d6-partner',session_id:'active-session-synthetic',user_id:second.id,face:4}]:
+   active?[{id:'d6-user',session_id:'active-session-synthetic',user_id:user.id,face:2},
+    {id:'d6-second',session_id:'active-session-synthetic',user_id:second.id,face:3}]:[]
  };
  return {
   auth:{
@@ -45,7 +48,8 @@ export function createClient(){
   rpc:async(name)=>({data:name==='get_love_guidance'?'gentle':
    name==='love_advent_server_date'?'2026-10-15':
    name==='my_love_evening_card_totals'?[{sensual:35,sexual:35,total:70}]:
-   name==='my_love_roll_status'&&active?[{my_rolled:true,partner_rolled:true,both_ready:true}]:
+   name==='my_love_roll_status'&&active?[{my_rolled:mode==='paired-active',
+    partner_rolled:mode!=='paired-pending',both_ready:mode==='paired-active'}]:
    name==='my_love_evening_board'&&active?{
     ready:true,first:user.id,next:user.id,
     targets:{[user.id]:2,[second.id]:3},remaining:{[user.id]:2,[second.id]:3},
@@ -65,7 +69,9 @@ export function createClient(){
   ['anonymous','?boot_case=anonymous','.love-discover'],
   ['google-return','?boot_case=existing&code=simulated-oauth-code','.auth-panel'],
   ['existing-paired','?boot_case=paired','.loveroll-real-home'],
-  ['active-evening','?boot_case=paired-active','.loveroll-real-home']
+  ['active-evening','?boot_case=paired-active','.loveroll-real-home'],
+  ['step1-partner-pending','?boot_case=paired-pending','.loveroll-real-home'],
+  ['step1-partner-result','?boot_case=paired-partner-result','.loveroll-real-home']
  ]){
   const page=await browser.newPage({viewport:{width:412,height:824},serviceWorkers:'block'});
   const errors=[];
@@ -128,6 +134,27 @@ export function createClient(){
    await page.locator('[data-action="tab:home"]').last().click();
    await page.locator('.real-home-shell').waitFor({timeout:10000});
    console.log('SOIREE_ONE_PAGE_OK','Samsung viewport: shared premium page, disabled weekly start, no old screen');
+  }
+  if(name==='step1-partner-pending'||name==='step1-partner-result'){
+   await page.locator('.nav [data-action="tab:session"]').click();
+   await page.locator('.evening-step.one.is-incomplete').waitFor({timeout:10000});
+   const layout=await page.evaluate(()=>{
+    const own=document.querySelector('.evening-step.one.is-incomplete .evening-user-die');
+    const partner=document.querySelector('.evening-step.one.is-incomplete .evening-partner-card');
+    const die=own?.querySelector('.love3d');
+    const status=partner?.querySelector('.evening-partner-mobile-status');
+    const a=own?.getBoundingClientRect(),b=partner?.getBoundingClientRect();
+    return {ownWidth:a?.width,partnerWidth:b?.width,partnerBelow:!!(a&&b&&b.top>=a.bottom-2),
+     dieWidth:die?.getBoundingClientRect().width,
+     status:status?.textContent.trim(),
+     statusVisible:status?getComputedStyle(status).display!=='none':false};
+   });
+   const expected=name==='step1-partner-pending'?'En attente du lancer de Test':'Test a obtenu 4 défis';
+   if(layout.status!==expected||!layout.statusVisible||!layout.partnerBelow||
+     (layout.ownWidth||0)<290||Math.abs(layout.ownWidth-layout.partnerWidth)>4||
+     (layout.dieWidth||0)<170||errors.length)
+    throw Error('S25 STEP1_LARGE_DIE_STATUS regression '+name+' '+JSON.stringify({layout,errors}));
+   console.log('SOIREE_STEP1_MOBILE_OK',name,JSON.stringify(layout));
   }
   if(name==='active-evening'){
    const info=await page.evaluate(()=>{
