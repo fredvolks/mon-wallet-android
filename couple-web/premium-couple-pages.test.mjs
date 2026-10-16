@@ -17,13 +17,14 @@ test('Evening keeps original WebGL dice for partner result, own roll, summary an
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,4);
  assert.match(html,/evening-partner-die/);
  assert.equal((html.match(/data-dice-sides="100"/g)||[]).length,1);
- assert.doesNotMatch(html,/data-action="category:/);
- assert.match(html,/Une seule bibliothèque/);
+ assert.match(html,/data-action="category:SENSUEL"/);
+ assert.match(html,/data-action="category:SEXUEL"/);
  assert.match(html,/data-action="new-challenge"/);
  assert.match(html,/data-action="give-challenge"/);
  assert.match(html,/0 \/ 1/);
  assert.match(html,/1 \/ 2/);
- assert.doesNotMatch(html,/88 %|evening-choice-odds/);
+ assert.match(html,/88 %/);
+ assert.match(html,/class="evening-choice-odds">88 % de chances/);
  assert.doesNotMatch(html,/12 % autre|Défi cadeau : 100 %/);
  assert.doesNotMatch(html,/Fred|Émilie|Player 1/);
 });
@@ -249,13 +250,15 @@ test('Mobile full-height layout with safe area and fixed existing tabs',()=>{
  assert.match(app,/if\(verb==='occasion-back'\)/);
 });
 
-test('Unified challenge die has a single clear draw action and no categories',()=>{
+test('Selected category is visually distinct and reported to assistive technology',()=>{
  const html=premiumEveningHtml({session,members:people,me:'first',
   rolls:[{user_id:'first',face:4},{user_id:'second',face:6}],
-  status:{both_ready:true,my_rolled:true},turn:{...turns,targets:{first:4,second:6}}});
- assert.match(html,/data-action="new-challenge"/);
- assert.doesNotMatch(html,/data-action="category:/);
- assert.match(html,/Une seule bibliothèque/);
+  status:{both_ready:true,my_rolled:true},turn:{...turns,targets:{first:4,second:6}},category:'SENSUEL'});
+ assert.match(html,/data-action="category:SENSUEL" aria-pressed="true"/);
+ assert.match(html,/data-action="category:SEXUEL" aria-pressed="false"/);
+ assert.match(html,/✓ Sensuel/);
+ assert.match(css,/\.evening-choice-btn\.selected/);
+ assert.match(css,/min-height:46px!important/);
 });
 test('After finishing the evening the official feedback pathway remains available',()=>{
  const html=premiumEveningHtml({members:people,me:'first',
