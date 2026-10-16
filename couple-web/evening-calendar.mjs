@@ -1,7 +1,7 @@
 // LoveRoll evening archive. Challenge titles and outcomes are shared ONLY
 // through the member-checked calendar RPC; the live game's RLS stays personal.
 import {resolvedCard} from './evening-challenges.mjs';
-import {eveningCalendarReviewMarkup} from './evening-review.mjs';
+import {eveningPersonReviewMarkup} from './evening-review.mjs';
 const safe=x=>String(x??'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[k]));
 const isoMonth=v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(v||'')?v:null;
 export function eveningLocalDay(iso){
@@ -75,12 +75,11 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
      '<div class="evening-cal-person-content">'+
       (cards.length?'<ul>'+picked+'</ul>':
        '<p class="evening-cal-empty">Aucun défi pigé pour cette personne.</p>')+
-      extras+'</div></details>';
+      extras+(s.finished_at?eveningPersonReviewMarkup({reviews,sessionId:s.id,person:m,me}):'')+'</div></details>';
   }).join('');
   return '<article class="evening-cal-session"><header><strong>♡ Soirée '+(forDay.length>1?(i+1):'')+
    '</strong><span>'+(s.finished_at?'Clôturée':'En cours')+'</span></header>'+
-   '<div class="evening-cal-people">'+personSections+'</div>'+ 
-   (s.finished_at?eveningCalendarReviewMarkup({reviews,sessionId:s.id,members,me}):'')+
+   '<div class="evening-cal-people">'+personSections+'</div>'+
    '</article>';
  }).join(''):'<p class="evening-cal-empty">Aucune soirée enregistrée pour cette journée.</p>';
  return '<div class="evening-calendar-shell">'+
