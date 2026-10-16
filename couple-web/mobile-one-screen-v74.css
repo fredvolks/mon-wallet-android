@@ -178,7 +178,7 @@
      the die geometry sits lower than the canvas center. */
   main#app.loveroll-real-home .home-die-platform{
    justify-self:center!important;align-self:center!important;
-   transform:translate3d(0,-18%,0)!important;
+   transform:translate3d(0,-11%,0)!important;
    transform-origin:50% 50%!important;
   }
  main#app.loveroll-real-home .home-shortcut-icon{height:auto!important}
@@ -195,7 +195,7 @@
 }
 @media (max-width:767px) and (max-height:740px){
  main#app.loveroll-real-home .home-die-platform{
-  transform:translate3d(0,-13%,0)!important;
+  transform:translate3d(0,-8%,0)!important;
  }
 }
 @media (max-width:767px) and (max-height:660px){

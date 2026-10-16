@@ -7,7 +7,7 @@ const read=p=>readFileSync(new URL('./'+p,import.meta.url),'utf8');
 const homeCss=read('premium-home.css'),eveningCss=read('premium-couple-pages.css'),app=read('app.js'),engine=read('dice3d.js');
 test('Home D6 stays centered inside the satin theater, clear of the roll button',()=>{
  const css=homeCss.slice(homeCss.lastIndexOf('/* S25 Ultra: center the real WebGL die'));
- assert.match(css,/\.home-die-platform\{[\s\S]*?transform:translate3d\(0,-18%,0\)/);
+ assert.match(css,/\.home-die-platform\{[\s\S]*?transform:translate3d\(0,-11%,0\)/);
  const page=premiumHomeHtml({weekly:{face:1},members:[{name:'Moi'},{name:'Partenaire'}]});
  const theater=page.indexOf('class="home-die-theater"'),canvas=page.indexOf('canvas class="dice-canvas"',theater);
  const control=page.indexOf('class="home-roll-area"',theater);
