@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 (async()=>{
  const base='http://127.0.0.1:8765';
  const documentHtml=await (await fetch(base+'/index.html')).text();
- const links=[...documentHtml.matchAll(/<link rel="stylesheet" href="\\.\\/([^"]+)"/g)]
+ const links=[...documentHtml.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)"/g)]
   .map(m=>'<link rel="stylesheet" href="'+base+'/'+m[1]+'">').join('');
  const markup='<main id="app" class="loveroll-evening-page">'+
   '<div class="evening-queue-modal"><article class="evening-queue-content">'+
