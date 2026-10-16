@@ -36,6 +36,7 @@ function sharedSignature(state){
   state.weekly?.id,state.weekly?.face,state.session?.id,
   state.rollStatus?.my_rolled,state.rollStatus?.partner_rolled,state.rollStatus?.both_ready,
   pairs(state.personal),pairs(state.challenges),pairs(state.challengesHistory),
+  pairs(state.eveningCalendarChallenges),
   pairs(state.gifts),pairs(state.sessions),pairs(state.events),pairs(state.occasionRolls),
   pairs(state.advent),pairs(state.feedback),
   state.monthly?.monthly_activity?.id,state.monthly?.monthly_host?.id,
