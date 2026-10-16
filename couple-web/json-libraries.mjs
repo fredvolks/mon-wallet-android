@@ -38,9 +38,9 @@ export function validateEveningLibrary(data){
   const empty=card.card_id>25&&card.title===''&&card.description==='';
   if(!empty){text(card.title,3,120,'Titre carte '+card.card_id);
    text(card.description,10,900,'Consigne carte '+card.card_id);}
-  if(!['both','owner','partner'].includes(card.drawer_role)||
-    !['both','owner','partner'].includes(card.recipient_role)||
-    (card.drawer_role===card.recipient_role&&card.drawer_role!=='both'))
+  if(!['both','him','her','owner','partner'].includes(card.drawer_role)||
+    !['both','him','her','owner','partner'].includes(card.recipient_role)||
+    (card.drawer_role===card.recipient_role&&['owner','partner'].includes(card.drawer_role)))
    throw Error('Restrictions de tirage invalides à la carte '+card.card_id);
   duration(card.timer_minutes,'Carte '+card.card_id);
   if(empty&&(card.timer_minutes!==null&&card.timer_minutes!==undefined||
