@@ -58,7 +58,7 @@ test('WebGL dice do not determine official random results',()=>{
  assert.match(webgl,/new THREE\.WebGLRenderer/);
  assert.match(webgl,/IcosahedronGeometry\(1\.16,0\)/);
  assert.match(webgl,/RoundedBoxGeometry/);
- assert.match(webgl,/const target=new THREE\.Quaternion/);
+ assert.match(webgl,/let target=orientationFor/);
  assert.doesNotMatch(webgl,/Math\.random\(/);
  assert.match(app,/roll_couple_once/);
  assert.match(app,/data-dice-sides/);
@@ -313,7 +313,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v113/);
+ assert.match(sw,/loveroll-static-v114/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
