@@ -22,17 +22,14 @@ const {chromium}=require('playwright');
   await page.keyboard.press('Escape');
   if(await page.locator('#test-result').innerText()!=='dissociation annulée')throw Error('Escape should cancel unlink');
   await page.click('#result');
-  const toast=page.locator('#toast.visible');
-  await toast.waitFor();
-  const placement=await toast.evaluate(el=>{
-   const r=el.getBoundingClientRect();
-   return {top:r.top,bottom:r.bottom,right:r.right,width:r.width,height:r.height,innerWidth,innerHeight};
-  });
-  if(placement.top<49||placement.right>width+1||placement.bottom>height+1)
-   throw Error('Toast outside safe area: '+JSON.stringify(placement));
-  await page.screenshot({path:'landing-captures/'+name+'-NOTIFICATION-RESULTAT-v52.png'});
+  // Notifications flottantes supprimées sur demande : même un ancien
+  // conteneur de toast doit rester invisible après une action de jeu.
+  const toast=page.locator('#toast');
+  if(await toast.count()&&await toast.isVisible())
+   throw Error('An obsolete top toast became visible on '+name);
+  await page.screenshot({path:'landing-captures/'+name+'-SANS-BANNIERE-v91.png'});
   if(errors.length)throw Error(name+' JS errors '+errors.join(','));
-  console.log(name+' dialog and toast OK',JSON.stringify({dims,placement}));
+  console.log(name+' confirmation dialogs OK without floating notifications',JSON.stringify({dims}));
   await page.close();
  }
  await browser.close();
