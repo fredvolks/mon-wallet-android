@@ -16,14 +16,14 @@ const {chromium}=require('playwright');
  const slice=source.slice(start,end);
  const accordion=source.slice(accStart,accEnd);
  global.window={LoveRollNativeAuth:{weeklyReminderEnabled:()=>true,appVersion:()=>'0.13.3'}};
- const [{notificationSettingsMarkup},{wellbeingFields,monthDayInputs},{OCCASIONS,TARGETED_OCCASIONS}]=await Promise.all([
+ const [{notificationSettingsMarkup},{wellbeingFields,monthDayInputs,profileGenderSelect},{OCCASIONS,TARGETED_OCCASIONS}]=await Promise.all([
   import(pathToFileURL(path.join(dir,'push-notifications.mjs')).href),
   import(pathToFileURL(path.join(dir,'onboarding.mjs')).href),
   import(pathToFileURL(path.join(dir,'special-occasions.mjs')).href)
  ]);
  const escape=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const state={
-  user:{email:'exemple@loveroll.test'},profile:{display_name:'Partenaire A',birthday_md:'04-12'},
+  user:{email:'exemple@loveroll.test'},profile:{display_name:'Partenaire A',birthday_md:'04-12',gender:'him'},
   members:[{user_id:'a',name:'Partenaire A'},{user_id:'b',name:'Partenaire B'}],
   coupleId:'demo-couple',occasionSettings:{relationship_started_on:'2020-10-14',anniversary_md:'10-14',celebrants:{}},
   weekly:{face:3,actor:'a',created_at:'2026-10-12T12:00:00Z'},
@@ -39,7 +39,7 @@ const {chromium}=require('playwright');
   today:()=>'2026-10-14',nextMonday:()=>'19 octobre',
   formatCoupleDate:date=>date,
   TARGETED_OCCASIONS,OCCASIONS,
-  notificationSettingsMarkup,wellbeingFields,monthDayInputs,
+  notificationSettingsMarkup,wellbeingFields,monthDayInputs,profileGenderSelect,
   frame:(html,title,sub)=>{content='<header class="header"><div><h1>♡ '+escape(title)+'</h1><p>'+escape(sub)+'</p></div></header>'+html;}
  };
  vm.createContext(ctx);vm.runInContext(slice,ctx,{timeout:2000});
@@ -78,6 +78,8 @@ const {chromium}=require('playwright');
   if(item.name==='S25-Ultra')await page.screenshot({path:path.join(captures,'S25-Ultra-REGLAGES-FERMES.png')});
   await page.locator('details.settings-group[data-settings-section="compte"] > summary').click();
   if(await page.locator('details.settings-group[open]').count()!==1)throw Error('Cannot open account');
+  const gender=page.locator('#profile-gender');
+  if(await gender.count()!==1||await gender.inputValue()!=='him')throw Error('Account gender not rendered');
   if(item.name==='S25-Ultra')await page.screenshot({path:path.join(captures,'S25-Ultra-REGLAGES-COMPTE.png')});
   await page.locator('details.settings-group[data-settings-section="couple"] > summary').click();
   if(await page.locator('details.settings-group[open]').count()!==1||
