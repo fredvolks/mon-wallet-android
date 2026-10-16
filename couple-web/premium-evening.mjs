@@ -141,13 +141,13 @@ export function premiumEveningHtml({
     bt('tab:journal','Consulter nos avis précédents','subtle')+'</div>':
     '<p>Un tirage choisit qui commence, puis les défis alternent.</p>')+
    bt('new-session','♡ COMMENCER NOTRE SOIRÉE','evening-primary')+'</section>')+
- (showMore?'<aside class="evening-more-menu"><strong>♡ Options de notre soirée</strong>'+
-  bt('tab:journal','Calendrier partagé','subtle')+
-  bt('tab:personal-journal','Mon calendrier personnel','subtle')+
-  (session?bt('cancel-session','Arrêter sans compter','subtle'):'')+
-  bt('evening-more','Fermer','subtle')+'</aside>':'')+
- (confirmCancel?'<aside class="evening-confirm"><h3>Arrêter sans compter ?</h3><p>Votre soirée ne sera pas comptabilisée.</p>'+
-  bt('confirm-cancel','Oui, arrêter')+bt('dismiss-cancel','Continuer','subtle')+'</aside>':'')+
+ (showMore?'<aside class="evening-more-menu" aria-label="Options de la soirée">'+
+  bt('evening-close-request','♡ Clore la soirée','evening-menu-close',!session)+
+  bt('evening-calendar','▦ Calendrier','evening-menu-calendar')+'</aside>':'')+
+ (confirmCancel?'<aside class="evening-confirm" role="dialog" aria-modal="true" aria-label="Clore la soirée ?">'+
+  '<h3>Clore la soirée ?</h3><p>Les défis réalisés et non réalisés seront conservés dans le calendrier et les statistiques du couple. Aucun résultat ne sera effacé.</p>'+
+  bt('evening-close-confirm','♡ Clore et conserver','evening-primary')+
+  bt('dismiss-cancel','Continuer la soirée','subtle')+'</aside>':'')+
  challengeOverlay+
  '</div>';
 }
