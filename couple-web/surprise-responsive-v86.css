@@ -183,7 +183,7 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
   margin:0 auto!important;padding:0!important;overflow:hidden!important;
   display:grid!important;
   grid-template-columns:minmax(0,1fr) minmax(0,1.06fr)!important;
-  grid-template-rows:clamp(48px,7dvh,70px) minmax(0,1fr) minmax(62px,9dvh,90px)!important;
+  grid-template-rows:clamp(48px,7dvh,70px) minmax(0,1fr) clamp(62px,9dvh,90px)!important;
   gap:clamp(6px,.9dvh,12px)!important;
  }
  main#app.loveroll-evening-page .evening-premium-view>.evening-intro{
