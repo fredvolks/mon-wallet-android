@@ -14,7 +14,7 @@ const origin='http://127.0.0.1:8765';
   partnerName:'Émilie'
  });
  const archive=eveningHistoryMarkup({
-  sessions:[{id:'testing',started_at:'2026-10-16T17:00:00Z',finished_at:'2026-10-16T22:00:00Z'}],
+  sessions:[{id:'testing',started_at:'2026-10-16T17:00:00Z',finished_at:'2026-10-16T22:00:00Z',counted:true}],
   month:'2026-10',selectedDate:'2026-10-16',stats:[],historyChallenges:[],
   members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Émilie'}],me:'a',
   reviews:[{session_id:'testing',author_id:'a',overall:4,connection:5,
