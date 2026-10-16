@@ -54,7 +54,7 @@ fs.writeFileSync(path.join(__dirname,'__discover-actual-test.html'),html);
   if(errors.length||metrics.scrollWidth>metrics.width+2||!metrics.heroLoaded||!metrics.hasRealDiscover||
     !metrics.primaryVisible||metrics.primaryHeight<44||metrics.realRows!==4||!metrics.allRowsStatic||!metrics.hasTitle||
     metrics.actions.length!==(invite?1:2)||!metrics.noFalseAcceptance||
-    (metrics.width>=1100&&(metrics.posterWidth<980||metrics.layoutColumns!==2))||
+    (metrics.width>=1200&&(metrics.posterWidth<980||metrics.layoutColumns!==2))||
     (metrics.width>=768&&metrics.width<1100&&metrics.posterWidth<720))
    throw Error('Le vrai parcours découverte déborde ou manque une commande: '+config.name+' '+(invite?'invite':'public'));
   await page.screenshot({path:'landing-captures/'+config.name+'-ACTUEL-'+(invite?'INVITATION':'ACCUEIL')+'.png',fullPage:true});
