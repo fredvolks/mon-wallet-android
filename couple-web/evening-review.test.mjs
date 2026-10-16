@@ -5,7 +5,7 @@ import {eveningReviewModal,validEveningReview,eveningPersonReviewMarkup,REVIEW_Q
 import {eveningHistoryMarkup} from './evening-calendar.mjs';
 const read=f=>readFileSync(new URL(f,import.meta.url),'utf8');
 const members=[{user_id:'fred',name:'Fred'},{user_id:'partner',name:'Partenaire'}];
-const sessions=[{id:'evening-1',started_at:'2026-10-16T17:00:00Z',finished_at:'2026-10-16T22:00:00Z'}];
+const sessions=[{id:'evening-1',started_at:'2026-10-16T17:00:00Z',finished_at:'2026-10-16T22:00:00Z',counted:true}];
 const reviews=[
  {session_id:'evening-1',author_id:'fred',overall:4,connection:5,appreciation:3,again:4,
   comment:'Une belle soirée',submitted_at:'2026-10-16T18:00:00Z'},
