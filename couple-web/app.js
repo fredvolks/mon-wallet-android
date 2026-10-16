@@ -8,6 +8,7 @@ import {feedbackItemsFor} from './feedback-status.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-no-flicker95';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261015-evening91';
+import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-hearts96';
 import {premiumSurpriseHtml} from './premium-surprise.mjs?v=20261015-no-toast87';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -46,7 +47,7 @@ let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('lovero
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],feedback:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,chosenSession:null,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -236,7 +237,13 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const usualHeader='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user&&state.tab!=='settings'?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+'</header>';
  // The connected Home begins directly with the weekly ritual: no top logo or action buttons.
- root.innerHTML=(realHome?'':usualHeader)+body+(connected?nav():'')+installation;
+ const reviewing=state.reviewModalSessionId&&isCouple&&state.sessions?.some(x=>
+  x.id===state.reviewModalSessionId&&x.finished_at&&x.counted);
+ const reviewPanel=reviewing?eveningReviewModal({
+  sessionId:state.reviewModalSessionId,draft:state.reviewDraft||{},
+  saving:state.reviewSaving,partnerName:other()?.name?.split(' ')[0]||'ton partenaire'
+ }):'';
+ root.innerHTML=(realHome?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
  restoreDraft(draft);
  bindActions();
  focusInlineLoveDialog(root,openerAction);
@@ -300,6 +307,12 @@ function bindActions(){
    notify('Préférence enregistrée.');
   }catch(err){input.checked=!input.checked;fail(err);}
  }));
+ const reviewNote=root.querySelector('#lr-review-comment');
+ reviewNote?.addEventListener('input',()=>{
+  state.reviewDraft={...state.reviewDraft,comment:reviewNote.value.slice(0,500)};
+  const counter=root.querySelector('#lr-review-counter');
+  if(counter)counter.textContent=String(reviewNote.value.length)+'/500';
+ });
  document.querySelector('#invite-auth-form')?.addEventListener('submit',event=>event.preventDefault());
  const passwordField=id('signin-password');
  passwordField?.addEventListener('input',()=>{
@@ -541,9 +554,9 @@ async function reload(){
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;state.gifts=[];
-  state.session=null;state.sessions=[];state.events=[];state.journal=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];
+  state.session=null;state.sessions=[];state.events=[];state.journal=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];state.eveningReviews=[];state.reviewModalSessionId=null;
   state.feedback=[];state.advent=[];state.adventYear=null;state.adventSelected=null;state.adventServerDate=null;state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
-  state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];
+  state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];state.eveningReviews=[];state.reviewModalSessionId=null;state.reviewDraft={};
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
   state.guidance=state.wellbeing?await rpc('get_love_guidance',{}):'gentle';
   render();return;
@@ -580,7 +593,7 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts,adventServerDate,eveningStats,calendarChallenges]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts,adventServerDate,eveningStats,calendarChallenges,eveningReviews]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
@@ -593,10 +606,12 @@ async function refreshShared(){
  query('couple_challenge_gifts',{eq:{couple_id:c}}),
  rpc('love_advent_server_date'),
  rpc('love_evening_session_stats',{p_couple:c}),
- rpc('love_evening_calendar_challenges',{p_couple:c})
+ rpc('love_evening_calendar_challenges',{p_couple:c}),
+ rpc('love_evening_reviews_for_couple',{p_couple:c})
  ]);
  state.eveningHistoryStats=Array.isArray(eveningStats)?eveningStats:[];
  state.eveningCalendarChallenges=Array.isArray(calendarChallenges)?calendarChallenges:[];
+ state.eveningReviews=Array.isArray(eveningReviews)?eveningReviews:[];
  state.gifts=gifts;
  state.challengesHistory=challengeHistory;
  state.occasionSettings=occasionSettings[0]||null;
@@ -607,6 +622,23 @@ async function refreshShared(){
  for(const r of rolls.filter(r=>r.key===month()))state.monthly[r.kind]=r;
  state.session=sessions.find(s=>s.finished_at===null)||null;
  state.sessions=sessions;state.events=events;state.journal=diary;state.advent=advents;state.adventServerDate=adventServerDate;
+ // After manual/automatic closure, both partners see their own review bubble.
+ // A dismissed bubble stays dismissed in this tab; the calendar offers reopening.
+ const latestEnded=[...sessions].filter(row=>row.finished_at&&row.counted)
+  .sort((a,b)=>Date.parse(b.finished_at)-Date.parse(a.finished_at))[0];
+ const existing=latestEnded&&state.eveningReviews.some(r=>
+  r.session_id===latestEnded.id&&r.author_id===state.user?.id);
+ if(!state.session&&latestEnded&&!existing&&
+   state.reviewDismissedSessionId!==latestEnded.id&&!state.reviewModalSessionId){
+  state.reviewModalSessionId=latestEnded.id;
+  state.reviewDraft={comment:''};
+ }
+ if(state.reviewModalSessionId&&state.eveningReviews.some(r=>
+  r.session_id===state.reviewModalSessionId&&r.author_id===state.user?.id)&&
+  !state.reviewDraft?.editing){
+  state.reviewModalSessionId=null;
+  state.reviewDraft={};
+ }
  if(state.session){
   const [personal,challenges,status,board]=await Promise.all([
     query('couple_personal_rolls',{eq:{session_id:state.session.id}}),
@@ -1105,6 +1137,7 @@ function renderEveningCalendar(){
  frame(eveningHistoryMarkup({
   sessions:state.sessions||[],members:state.members||[],
   stats:state.eveningHistoryStats||[],historyChallenges:state.eveningCalendarChallenges||[],
+  reviews:state.eveningReviews||[],
   me:state.user?.id,month:mo,selectedDate:date
  }), 'CALENDRIER DES SOIRÉES', 'Un souvenir de chaque moment à deux');
 }
