@@ -12,8 +12,8 @@ test('LoveRoll build versions agree between endpoint, app, HTML and imported mod
  for(const css of ['styles.css','premium-theme.css','satin-reference.css','discover.css']){
   assert.ok(html.includes(css+'?v='+tag),css);
  }
- assert.match(html,/premium-home\.css\?v=20261016-category93/);
- assert.match(app,/premium-home\.mjs\?v=20261016-category93/);
+ assert.match(html,/premium-home\.css\?v=20261015-home92/);
+ assert.match(app,/premium-home\.mjs\?v=20261015-home92/);
  assert.match(app,new RegExp("dice3d\\.js\\?v="+tag));
 });
 test('PWA bypasses stale Android network caches while preserving offline fallback',()=>{
