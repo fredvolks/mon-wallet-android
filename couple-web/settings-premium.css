@@ -291,3 +291,20 @@ main#app.loveroll-settings-page .settings-couple-invite .settings-couple-cta{
 main#app.loveroll-settings-page .settings-couple-invite .settings-couple-prep{
  padding:9px 12px!important;min-height:40px;font-size:.86rem;font-weight:600;
 }
+
+/* v111 — accessible profile gender field on Galaxy S25 and desktop. */
+main#app.loveroll-settings-page .settings-account-top .loveroll-gender-select{
+ display:block;min-width:0;font-size:.81rem;font-weight:760;color:#ffebf5;line-height:1.35;
+}
+main#app.loveroll-settings-page .settings-account-top .loveroll-gender-select select{
+ display:block;width:100%;min-height:37px;margin:4px 0 0;padding:6px 9px;
+ border:1px solid #9f4d7b;border-radius:10px;background:#230e20;color:#fff0f8;
+ font-size:.85rem;color-scheme:dark;
+}
+main#app.loveroll-settings-page .settings-account-top{align-items:end;}
+main#app.loveroll-settings-page .settings-account-top .settings-inline-name{min-width:0;}
+@media(max-width:600px){
+ main#app.loveroll-settings-page .settings-account-top .loveroll-gender-select{
+  grid-column:1/-1;width:100%;
+ }
+}
