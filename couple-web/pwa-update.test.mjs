@@ -9,10 +9,11 @@ test('LoveRoll build versions agree between endpoint, app, HTML and imported mod
  assert.equal(release.build,build);
  assert.match(app,/const WEB_RELEASE='2026-10-15\.92'/);
  assert.match(html,new RegExp('app\\.js\\?v='+appTag));
- for(const css of ['styles.css','premium-theme.css','premium-home.css','satin-reference.css','discover.css']){
+ for(const css of ['styles.css','premium-theme.css','satin-reference.css','discover.css']){
   assert.ok(html.includes(css+'?v='+tag),css);
  }
- assert.match(app,new RegExp("premium-home\\.mjs\\?v="+tag));
+ assert.match(html,/premium-home\.css\?v=20261015-home92/);
+ assert.match(app,/premium-home\.mjs\?v=20261015-home92/);
  assert.match(app,new RegExp("dice3d\\.js\\?v="+tag));
 });
 test('PWA bypasses stale Android network caches while preserving offline fallback',()=>{
