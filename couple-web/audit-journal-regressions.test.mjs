@@ -36,14 +36,14 @@ test('Database functions require verified author and preserve original personal 
  assert.match(sql,/couple_private\.is_member\(v_couple\)/);
  assert.match(sql,/revoke all on function public\.update_my_love_event\(uuid,date,text\) from public,anon/);
 });
-test('Feedback status query exposes only submission booleans within current relationship',()=>{
- assert.match(sql,/create or replace function public\.my_love_feedback_status/);
- assert.match(sql,/returns table\(user_id uuid,submitted boolean\)/);
- assert.match(sql,/sess\.finished_at is not null and sess\.counted/);
- assert.match(sql,/couple_private\.is_member\(m\.couple_id\)/);
- assert.doesNotMatch(sql.slice(sql.indexOf('create or replace function public.my_love_feedback_status')),
-  /select .*ciphertext/i);
- assert.match(app,/my_love_feedback_status/);
+test('New evening reviews belong to authenticated couple members, with no journal password',()=>{
+ const reviews=read('migrations/20261016_evening_hearts_reviews.sql');
+ assert.match(reviews,/PRIMARY KEY\(session_id,author_id\)/);
+ assert.match(reviews,/couple_private\.is_member\(v_couple\)/);
+ assert.match(reviews,/couple_private\.is_member\(p_couple\)/);
+ assert.match(reviews,/s\.finished_at IS NOT NULL AND s\.counted IS TRUE/);
+ assert.match(app,/rpc\('love_evening_reviews_for_couple'/);
+ assert.doesNotMatch(app,/my_love_feedback_status|save-feedback|choose-feedback/);
 });
 test('Journal creation writes encrypted verifier only once and does not confuse empty with wrong key',()=>{
  assert.match(sql,/add column if not exists journal_verifier text/);
