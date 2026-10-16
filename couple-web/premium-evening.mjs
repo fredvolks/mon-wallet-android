@@ -108,7 +108,7 @@ export function premiumEveningHtml({
  session,members=[],me,rolls=[],status={},turn={},category=null,
  giftCount=0,receivedGifts=0,pending=null,rolling=false,
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
- lastEvening=null,lastD100Face=null,playable=null,ownChallengeCount=0,canStartEvening=true,
+ lastEvening=null,lastD35Face=null,playable=null,ownChallengeCount=0,canStartEvening=true,
  weeklyReady=true,weeklyCount=0,weeklyLimit=1,dailyLocked=false
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
@@ -128,7 +128,7 @@ export function premiumEveningHtml({
  const currentStatus=turn.finished?'♡ Tous les défis sont réalisés':turn.drawsFinished?'♡ Tous les défis sont pigés':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
  // animation face or guess a result while a D100 is being rolled.
- const d35Candidate=pending?.face??turn?.pending?.face??lastD100Face;
+ const d35Candidate=pending?.face??turn?.pending?.face??lastD35Face;
  const d35Number=Number(d35Candidate);
  const officialD100=ready&&!rolling&&d35Candidate!=null&&
   Number.isInteger(d35Number)&&d35Number>=1&&d35Number<=100?d35Number:null;
