@@ -32,16 +32,16 @@ main#app.loveroll-real-home{
 #app .home-die-platform .dice-fallback{font:70px Georgia,serif;color:#f4bbcd;}
 #app .home-die-platform.webgl-ready .dice-fallback,#app .home-die-platform:has(canvas[data-spinning="true"]) .dice-fallback{visibility:hidden;opacity:0;}
 #app .home-roll-area{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
-#app .home-roll-button{width:92%;min-height:48px;border-radius:999px;border:1px solid #efc3cb;background:linear-gradient(155deg,#efa4b7,#b73863 55%,#6b183d);box-shadow:inset 0 1px 2px #ffe4e888,0 5px 22px #c54e7029;color:#fff2f2;font-size:15px;font-weight:650;letter-spacing:.10em;padding:12px 22px;}
-#app .home-roll-button:not(:disabled)::after{content:"›";position:absolute;right:11%;font-size:24px;line-height:20px;font-weight:300;}
+#app .home-roll-button{position:relative;display:grid;place-items:center;text-align:center;line-height:1.25;width:92%;min-height:48px;border-radius:999px;border:1px solid #efc3cb;background:linear-gradient(155deg,#efa4b7,#b73863 55%,#6b183d);box-shadow:inset 0 1px 2px #ffe4e888,0 5px 22px #c54e7029;color:#fff2f2;font-size:15px;font-weight:650;letter-spacing:.10em;padding:12px 22px;}
+#app .home-roll-button:not(:disabled)::after{content:"›";position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:24px;line-height:20px;font-weight:300;}
 #app .home-roll-button.is-used{opacity:1;font-size:12px;letter-spacing:0;color:#dec5cf;background:linear-gradient(145deg,#44202e,#24121c);border-color:#b77b8d60;}
 #app .home-roll-area p{font-size:11px;line-height:1.35;color:#c6aab4;max-width:365px;text-align:center;margin:0;}
 #app .home-challenge-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:12px 4px;border:1px solid #ba7e9145;border-radius:20px;background:linear-gradient(120deg,#29111bce,#170d14df);}
-#app .home-challenge-stats>div{display:grid;grid-template-columns:24px 1fr;gap:2px 4px;padding:0 7px;align-items:start;min-width:0;border-right:1px solid #a870843d;}
+#app .home-challenge-stats>div{display:grid;grid-template-columns:auto auto;grid-template-rows:26px auto;gap:5px 6px;padding:0 7px;justify-content:center;align-content:center;align-items:center;text-align:center;min-width:0;border-right:1px solid #a870843d;}
 #app .home-challenge-stats>div:last-child{border:0;}
-#app .home-challenge-stats span{grid-row:1/3;color:#d786a1;font:26px Georgia,serif;}
+#app .home-challenge-stats span{color:#d786a1;font:26px/1 Georgia,serif;justify-self:end;}
 #app .home-challenge-stats strong{color:#f5d8dc;font-size:20px;font-weight:600;line-height:1.1;}
-#app .home-challenge-stats small{grid-column:2;font-size:11px;line-height:1.3;color:#ccb3bf;overflow-wrap:anywhere;}
+#app .home-challenge-stats small{grid-column:1/-1;font-size:11px;line-height:1.3;color:#ccb3bf;overflow-wrap:anywhere;text-align:center;}
 #app .home-next-month{display:grid;grid-template-columns:65px 1fr 31px;gap:9px;align-items:center;min-height:79px;padding:9px 12px;border:1px solid #c67f955c;border-radius:20px;background:radial-gradient(ellipse at 10% 80%,#8d284d60,transparent 55%),linear-gradient(110deg,#34121f,#1c0d15 66%,#571b32);box-shadow:inset 0 1px #f7ccd320;text-align:left;}
 #app .home-next-month>span:nth-child(2){display:flex;flex-direction:column;gap:3px;min-width:0;}
 #app .home-next-month small{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#e1b0bf;font-weight:500;}
@@ -49,13 +49,13 @@ main#app.loveroll-real-home{
 #app .home-next-month em{font:normal 11px/1.25 system-ui;color:#cfb0bf;}
 #app .home-calendar-icon{display:grid;place-items:center;filter:drop-shadow(0 7px 7px #0008);}
 #app .home-calendar-icon svg{width:62px;height:62px;transform:rotate(-9deg);}
-#app .home-gift-icon{display:grid;place-items:center;border:1px solid #d998ac80;border-radius:50%;width:31px;height:38px;color:#f4cbd8;font:30px Georgia,serif;background:linear-gradient(130deg,#ac4765,#58152e);}
-#app .home-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
-#app .home-stat-card{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;min-width:0;padding:10px 4px;border:1px solid #b47b8a40;border-radius:18px;background:linear-gradient(140deg,#2b151cba,#190e13ed);text-align:center;}
+#app .home-gift-icon{display:grid;place-items:center;border:1px solid #d998ac80;border-radius:50%;width:34px;height:34px;color:#f4cbd8;font:30px/1 Georgia,serif;background:linear-gradient(130deg,#ac4765,#58152e);}
+#app .home-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:22px 22px minmax(26px,auto) minmax(26px,auto);gap:4px 6px;}
+#app .home-stat-card{display:grid;grid-row:1/span 4;grid-template-rows:subgrid;align-items:center;justify-items:center;row-gap:4px;min-width:0;padding:10px 4px;border:1px solid #b47b8a40;border-radius:18px;background:linear-gradient(140deg,#2b151cba,#190e13ed);text-align:center;}
 #app .home-stat-card i{font:21px/22px Georgia,serif;color:#d98ba6;font-style:normal;}
 #app .home-stat-card strong{font-size:18px;line-height:1.1;color:#efb4c6;font-weight:650;overflow-wrap:anywhere;}
-#app .home-stat-card span{font-size:11px;line-height:1.2;color:#f0dce3;}
-#app .home-stat-card small{font-size:10px;line-height:1.2;color:#bfa0ae;overflow-wrap:anywhere;}
+#app .home-stat-card span{display:grid;place-items:center;align-self:stretch;font-size:11px;line-height:1.2;color:#f0dce3;}
+#app .home-stat-card small{display:grid;place-items:center;align-self:stretch;font-size:10px;line-height:1.2;color:#bfa0ae;overflow-wrap:anywhere;}
 .weekly-admin-status{padding:12px;border:1px solid var(--love-border);border-radius:16px;}
 @media(min-height:880px) and (max-width:767px){#app .real-home-shell{gap:12px;}#app .home-die-theater{min-height:210px;}#app .home-stat-card{padding:14px 5px;}}
 @media(min-width:900px){
@@ -76,14 +76,15 @@ main#app.loveroll-real-home{
 /* The phone dashboard reserves room for Android/Safari controls and its fixed tab bar. */
 @media(max-width:767px){
  main#app.loveroll-real-home{padding:6px 12px calc(80px + env(safe-area-inset-bottom))}
- #app .real-home-shell{min-height:0;height:calc(100dvh - 92px - env(safe-area-inset-top) - env(safe-area-inset-bottom));grid-template-rows:auto 38px minmax(150px,220px) auto auto 76px 100px;gap:6px;align-content:space-between}
+ #app .real-home-shell{min-height:0;height:calc(100dvh - 72px - env(safe-area-inset-top) - env(safe-area-inset-bottom));grid-template-rows:auto 38px minmax(150px,220px) auto auto 76px auto;gap:6px;align-content:space-between}
  #app .ritual-brand{margin-bottom:6px}#app .home-ritual h2{margin:3px auto;font-size:clamp(26px,7.2vw,33px)}
  #app .home-die-theater{min-height:150px;margin:-2px -12px}
  #app .home-die-platform{width:clamp(175px,46vw,205px);height:clamp(175px,46vw,205px)}
  #app .home-challenge-stats{padding:8px 2px}
- #app .home-challenge-stats>div{grid-template-columns:21px 1fr;padding:0 5px}
+ #app .home-challenge-stats>div{padding:0 5px;gap:4px}
  #app .home-challenge-stats span{font-size:21px;line-height:1}
- #app .home-stat-card{padding:6px 2px;gap:3px}#app .home-stat-card i{font-size:17px;line-height:17px}
+ #app .home-stats-grid{grid-template-rows:24px 20px minmax(26px,auto) minmax(32px,auto);row-gap:3px}
+ #app .home-stat-card{padding:6px 3px;row-gap:3px}#app .home-stat-card i{font-size:17px;line-height:17px}
  #app .home-stat-card strong{font-size:16px}#app .home-next-month{min-height:76px}
 }
 @media(max-width:767px) and (max-height:800px){
@@ -106,14 +107,14 @@ main#app.loveroll-real-home{
  #app .home-stat-card span{font-size:10px}#app .home-stat-card small{font-size:9px}
 }
 @media(max-width:767px) and (max-height:860px){
- #app .real-home-shell{display:flex;flex-direction:column;justify-content:space-between;height:calc(100dvh - 90px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0;gap:3px;overflow:visible}
+ #app .real-home-shell{display:flex;flex-direction:column;justify-content:space-between;height:calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0;gap:3px;overflow:visible}
  #app .home-ritual{flex:0 0 106px;min-height:0}
  #app .home-weights{flex:0 0 36px;min-height:0}
  #app .home-die-theater{flex:0 1 170px;min-height:145px}
  #app .home-roll-area{flex:0 0 76px;min-height:0;justify-content:center}
  #app .home-challenge-stats{flex:0 0 78px;min-height:0}
  #app .home-next-month{flex:0 0 74px;min-height:0}
- #app .home-stats-grid{flex:0 0 88px;min-height:0}
+ #app .home-stats-grid{flex:0 0 auto;min-height:108px}
 }
 @media(max-width:767px) and (max-height:860px){
  #app .home-stat-card span,#app .home-stat-card small,#app .home-challenge-stats small{font-size:11px;line-height:1.13}

@@ -21,7 +21,8 @@ test('Home owns its responsive layout and retains a real canvas',()=>{
  assert.match(home,/height:100dvh/);
  assert.match(home,/transform:translateY\(-8%\)/);
  assert.match(home,/safe-area-inset-bottom/);
- assert.doesNotMatch(css,/loveroll-real-home/);
+ // Navigation is shared; the Home content layout stays in premium-home.css.
+ assert.doesNotMatch(css,/loveroll-real-home\s*(?:,|\{)/);
 });
 test('Step 2 and all private-queue controls fit into the same mobile grid',()=>{
  assert.match(css,/grid-template-rows:minmax\(36px,\.48fr\)/);
@@ -58,10 +59,10 @@ test('Advent 25 squares keep their screen space',()=>{
 });
 test('v74 loaded LAST in HTML and cached with updated worker; server version updated',()=>{
  const index=read('index.html'),sw=read('service-worker.js'),v=JSON.parse(read('web-version.json'));
- assert.equal(v.build,'2026-10-16.115');
- assert.match(index,/mobile-one-screen-v74\.css\?v=20261016-center98/);
+ assert.equal(v.build,'2026-10-17.116');
+ assert.match(index,/mobile-one-screen-v74\.css\?v=20261017-align116/);
  assert.ok(index.lastIndexOf('mobile-one-screen-v74.css')>index.lastIndexOf('surprise-dice-layout-v73.css'));
- assert.match(sw,/loveroll-static-v115/);
+ assert.match(sw,/loveroll-static-v116/);
  assert.match(sw,/\.\/mobile-one-screen-v74\.css/);
 });
 
