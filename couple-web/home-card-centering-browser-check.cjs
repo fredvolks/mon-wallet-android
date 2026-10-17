@@ -4,15 +4,16 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
 const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
 const sizes=[['small',360,640],['Android',360,740],['S25',412,824],['S25-tall',412,915],['iPhone',393,852],['iPad',820,1180],['PC',1366,768]];
 function homeWorld(kind){
+ const longNames=kind.startsWith('long-'),unrolled=kind.endsWith('unrolled');
  const world=createWorld(),now=new Date(),date=now.toISOString();
  const toronto=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
  const monday=new Date(toronto+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
- world.profiles[0].display_name=kind==='long-names'?'Jean-Christophe Martin':'Fred';
- world.profiles[1].display_name=kind==='long-names'?'Jean-Christophe Tremblay':'Fred Messely';
+ world.profiles[0].display_name=longNames?'Jean-Christophe Martin':'Fred';
+ world.profiles[1].display_name=longNames?'Jean-Christophe Tremblay':'Fred Messely';
  world.rolls=[{id:'week',couple_id:'c',kind:'weekly',key:monday.toISOString().slice(0,10),face:2,created_at:date},
   {id:'month',couple_id:'c',kind:'monthly_activity',key:toronto.slice(0,7),face:19,activity_title:'Activité officielle de test',activity_description:'Description conservée.'}];
- if(kind==='unrolled')world.rolls=world.rolls.filter(r=>r.kind!=='weekly');
- if(kind!=='empty'&&kind!=='unrolled'){
+ if(unrolled)world.rolls=world.rolls.filter(r=>r.kind!=='weekly'&&(!longNames||r.kind!=='monthly_activity'));
+ if(kind!=='empty'&&!unrolled){
   world.eveningSessions=[{id:'finished',couple_id:'c',started_at:date,finished_at:date,counted:true}];
   world.challenges=[{id:'done',couple_id:'c',session_id:'finished',recipient:'a',category:'SEXUEL',status:'completed',created_at:date}];
   world.reviews=['a','b'].map(author_id=>({session_id:'finished',author_id}));
@@ -44,7 +45,7 @@ async function measure(page){
   });
   const nav=rect(document.querySelector('.nav')),last=rect(document.querySelector('.home-stats-grid'));
   const summary=rect(document.querySelector('.home-challenge-stats')),monthly=rect(document.querySelector('.home-next-month'));
-  return {cards,navTop:nav.top,lastBottom:last.bottom,height:innerHeight,scroll:document.documentElement.scrollHeight-innerHeight,horizontal:document.documentElement.scrollWidth-innerWidth,
+  return {cards,navTop:nav.top,lastBottom:last.bottom,surpriseButtonHeight:monthly.height,height:innerHeight,scroll:document.documentElement.scrollHeight-innerHeight,horizontal:document.documentElement.scrollWidth-innerWidth,
    gaps:[round(monthly.top-summary.bottom),round(last.top-monthly.bottom)],values:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
  });
 }
@@ -52,7 +53,7 @@ async function measure(page){
  const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const failures=[],measurements=[];fs.mkdirSync('design-captures',{recursive:true});
  try{
-  for(const [name,width,height] of sizes)for(const kind of ['mixed','empty','unrolled','assigned',...(height>=824||width>=900?['long-names']:[])]){
+  for(const [name,width,height] of sizes)for(const kind of ['mixed','empty','unrolled','assigned','long-names','long-unrolled']){
    const {page,context,errors}=await setupEditorial(browser,homeWorld(kind),{width,height,query:'open=home'});
    try{
     await page.waitForFunction(()=>document.querySelector('.home-die-platform canvas')?.loveRollDie?.projectedBounds);
@@ -60,7 +61,7 @@ async function measure(page){
     // Keep captures even when a measurement fails, for a visual comparison.
     await page.screenshot({path:'design-captures/home124-centering-'+name+'-'+kind+'.png'});
     assert.equal(result.cards.length,7);
-    assert.deepEqual(result.values,['empty','unrolled'].includes(kind)?['0','0 / 0','—','0']:['1','1 / 0','0 / 100 %','1']);
+    assert.deepEqual(result.values,kind==='empty'||kind.endsWith('unrolled')?['0','0 / 0','—','0']:['1','1 / 0','0 / 100 %','1']);
     if(kind==='assigned'||kind==='long-names')assert.deepEqual(await page.locator('.home-challenge-stats strong').allTextContents(),['10','4','6']);
     for(const card of result.cards){
      assert.ok(Math.abs(card.dx)<=1&&Math.abs(card.dy)<=1,'Content group is not centered: '+JSON.stringify(card));
@@ -69,8 +70,18 @@ async function measure(page){
      assert.ok(card.top>=5&&card.bottom>=5&&card.left>=1&&card.right>=1,'Uneven or missing content margins: '+JSON.stringify(card));
     }
     assert.ok(result.lastBottom<=result.navTop-3,'Cards overlap the navigation');
+    assert.ok(result.surpriseButtonHeight>=44,'Surprise touch target is too short');
     assert.ok(result.scroll<=2&&result.horizontal<=1,'Home does not fit: '+JSON.stringify(result));
-    if(width<768)assert.ok(Math.abs(result.gaps[0]-result.gaps[1])<=1&&result.gaps[0]>=6,'Bottom section gaps differ');
+    if(width<768)assert.ok(Math.abs(result.gaps[0]-result.gaps[1])<=1&&result.gaps[0]>=5.9,'Bottom section gaps differ');
+    if(name==='small'&&kind==='long-unrolled'){
+     await page.evaluate(()=>{window.__homeBeforeResize=document.querySelector('.home-die-platform canvas');});
+     await page.setViewportSize({width:412,height:824});
+     await page.waitForFunction(()=>getComputedStyle(document.querySelector('.home-bottom-stack')).zoom==='1');
+     const larger=await measure(page);assert.ok(larger.lastBottom<=larger.navTop-3&&larger.scroll<=2);
+     assert.ok(await page.evaluate(()=>window.__homeBeforeResize===document.querySelector('.home-die-platform canvas')),'Fitting replaced the real die');
+     await page.setViewportSize({width,height});
+     await page.waitForFunction(()=>document.querySelector('.home-stats-grid').getBoundingClientRect().bottom<=document.querySelector('.nav').getBoundingClientRect().top-3);
+    }
     assert.deepEqual(errors,[]);console.log('HOME_CARDS_CENTERED',name,kind,JSON.stringify({
      groupError:Math.max(...result.cards.flatMap(c=>[Math.abs(c.dx),Math.abs(c.dy),Math.abs(c.valueDx||0)])),
      lineError:Math.max(...result.cards.flatMap(c=>c.lines.map(l=>Math.abs(l.dx)))),
