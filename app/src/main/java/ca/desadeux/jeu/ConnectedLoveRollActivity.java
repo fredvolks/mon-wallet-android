@@ -15,8 +15,11 @@ import android.webkit.WebChromeClient;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient.FileChooserParams;
 import androidx.core.content.FileProvider;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -56,10 +59,17 @@ public final class ConnectedLoveRollActivity extends Activity {
  private View nativeLoadError;
  private boolean pageLoadFailed;
  private long navigationSerial;
+ private long splashCommittedSerial=-1;
+ private long splashReadySerial=-1;
+ private String startedNavigationUrl;
  private String retryDestination;
+ private boolean splashPending=true;
+ private boolean splashHandoffRequested;
+ private String nativeStartupScript;
  private void showNativeLoadFailure(){
-  if(pageLoadFailed||splashHost==null)return;
+  if(pageLoadFailed||splashHost==null||web==null||isFinishing()||isDestroyed())return;
   pageLoadFailed=true;pageReady=false;
+  splashPending=false;splashHandoffRequested=false;
   web.setVisibility(View.INVISIBLE);
   web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
   if(nativeSplash!=null){nativeSplash.animate().cancel();nativeSplash.pauseHeart();nativeSplash.setVisibility(View.GONE);}
@@ -79,11 +89,62 @@ public final class ConnectedLoveRollActivity extends Activity {
   button.setCornerRadius(28*d);retry.setBackground(button);
   panel.addView(retry,new LinearLayout.LayoutParams(-1,(int)(56*d)));
   retry.setOnClickListener(v->{splashHost.removeView(panel);nativeLoadError=null;pageLoadFailed=false;
-   if(nativeSplash!=null)nativeSplash.resumeHeart();
-   web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+   if(nativeSplash!=null){
+    nativeSplash.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+    nativeSplash.resumeHeart();
+   }
+   web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
    web.loadUrl(retryDestination==null?SITE:retryDestination);});
   panel.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE);
   nativeLoadError=panel;splashHost.addView(panel,new android.widget.FrameLayout.LayoutParams(-1,-1));
+ }
+ private boolean isCurrentSplashNavigation(long serial){
+  if(serial!=navigationSerial||serial!=splashCommittedSerial||pageLoadFailed||web==null||nativeSplash==null||
+    isFinishing()||isDestroyed())return false;
+  String url=web.getUrl();
+  return url!=null&&isTrusted(Uri.parse(url));
+ }
+ private void observeNativeStartup(WebView view,long serial){
+  if(view!=web||!splashPending||!isCurrentSplashNavigation(serial))return;
+  try{
+   if(nativeStartupScript==null){
+    try(InputStream input=getAssets().open("loveroll-native-startup.js");
+        ByteArrayOutputStream output=new ByteArrayOutputStream()){
+     byte[] buffer=new byte[4096];int count;
+     while((count=input.read(buffer))!=-1)output.write(buffer,0,count);
+     nativeStartupScript=new String(output.toByteArray(),StandardCharsets.UTF_8);
+    }
+   }
+   view.evaluateJavascript("("+nativeStartupScript+"\n)("+serial+");",null);
+  }catch(IOException error){
+   android.util.Log.e("LoveRollStartup","Native startup observer could not load",error);
+   showNativeLoadFailure();
+  }
+ }
+ private void finishNativeStartup(long serial){
+  if(!splashPending||!isCurrentSplashNavigation(serial))return;
+  splashReadySerial=serial;
+  // DOM readiness can arrive before onPageFinished. Remember it without
+  // changing the existing document/auth readiness used by other native actions.
+  if(!pageReady||splashHandoffRequested)return;
+  splashHandoffRequested=true;
+  final WebView destination=web;
+  // The observer reports the real DOM, then this callback guarantees that
+  // destination is painted. A document-finished event alone may still be a loader.
+  destination.postVisualStateCallback(serial,new WebView.VisualStateCallback(){
+   @Override public void onComplete(long requestId){
+    if(destination!=web||!pageReady||!splashPending||!isCurrentSplashNavigation(serial))return;
+    splashPending=false;
+    web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+    nativeSplash.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+    nativeSplash.animate().cancel();
+    nativeSplash.animate().alpha(0f).setDuration(200).withEndAction(()->{
+     if(!pageReady||splashPending||!isCurrentSplashNavigation(serial))return;
+     nativeSplash.pauseHeart();nativeSplash.setVisibility(View.GONE);
+     nativeSplash.setAlpha(1f);
+    }).start();
+   }
+  });
  }
  private static final String TRUSTED_HOST = "fredvolks.github.io";
  private static final String TRUSTED_PATH = "/mon-wallet-android/";
@@ -133,6 +194,10 @@ public final class ConnectedLoveRollActivity extends Activity {
   });
  }
  private final class NativeAuthBridge {
+  // This is presentation readiness only; document/auth readiness stays separate.
+  @JavascriptInterface public void splashReady(long serial){
+   runOnUiThread(()->finishNativeStartup(serial));
+  }
   @JavascriptInterface public void googleSignIn() {
    runOnUiThread(() -> beginGoogleSignIn());
   }
@@ -292,6 +357,8 @@ public final class ConnectedLoveRollActivity extends Activity {
   }else layout.setFitsSystemWindows(true);
   // Shared LoveRoll web app is the only visible UI; no duplicate native header or tabs.
   web = new WebView(this);
+  if(BuildConfig.DEBUG)WebView.setWebContentsDebuggingEnabled(true);
+  web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
   web.setBackgroundColor(Color.rgb(16,7,12));
   web.setOverScrollMode(View.OVER_SCROLL_NEVER);
   WebSettings settings = web.getSettings();
@@ -353,36 +420,38 @@ public final class ConnectedLoveRollActivity extends Activity {
    }
    @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon) {
     pageReady=false;
-    web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+    splashPending=true;splashHandoffRequested=false;
+    splashCommittedSerial=-1;splashReadySerial=-1;startedNavigationUrl=url;
+    web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
     pageLoadFailed=false;
     if(nativeLoadError!=null){splashHost.removeView(nativeLoadError);nativeLoadError=null;}
     if(isTrusted(Uri.parse(url)))retryDestination=url;
     long serial=++navigationSerial;
-    view.postDelayed(()->{if(serial==navigationSerial&&!pageReady&&!isFinishing())showNativeLoadFailure();},18000);
+    view.postDelayed(()->{
+     if(serial==navigationSerial&&splashPending&&!isFinishing()&&!isDestroyed())showNativeLoadFailure();
+    },18000);
     if(nativeSplash!=null){
      nativeSplash.animate().cancel();
+     nativeSplash.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
      nativeSplash.resumeHeart();
     }
+   }
+   @Override public void onPageCommitVisible(WebView view,String url){
+    if(view!=web||pageLoadFailed||url==null||!url.equals(startedNavigationUrl)||
+      !isTrusted(Uri.parse(url)))return;
+    // A cancelled load can still receive onPageFinished. Only an actual
+    // document commit may install the observer, whose document binding is fixed.
+    // Compare the started URL: history.replaceState may already have cleaned
+    // invitation/auth parameters from getUrl() without changing the document.
+    splashCommittedSerial=navigationSerial;
+    observeNativeStartup(view,navigationSerial);
    }
    @Override public void onPageFinished(WebView view,String url) {
     if(pageLoadFailed)return;
     pageReady=isTrusted(Uri.parse(url));
-    // onPageFinished does not guarantee a painted WebView frame.
-    // Keep the matching native heart until the first web frame is ready.
-    if(pageReady&&nativeSplash!=null) {
-     view.postVisualStateCallback(android.os.SystemClock.uptimeMillis(),
-      new WebView.VisualStateCallback() {
-       @Override public void onComplete(long requestId) {
-        if(nativeSplash==null||!pageReady||!isTrusted(Uri.parse(view.getUrl())))return;
-        nativeSplash.animate().cancel();
-        nativeSplash.animate().alpha(0f).setDuration(200).withEndAction(() -> {
-         if(nativeSplash==null)return;
-         if(pageReady){nativeSplash.pauseHeart();nativeSplash.setVisibility(View.GONE);}
-         nativeSplash.setAlpha(1f);
-        }).start();
-       }
-      });
-    }
+    // Never stamp this callback's current serial onto a possibly outgoing DOM.
+    // Finish only a destination already reported by the committed document.
+    if(pageReady&&splashReadySerial==navigationSerial)finishNativeStartup(navigationSerial);
     if(pageReady&&pendingGoogleResult!=null) {
      String result=pendingGoogleResult;pendingGoogleResult=null;
      sendGoogleResult(result);

@@ -36,5 +36,5 @@ test('Native document/network failure stops animation and offers retry without d
  assert.match(activity,/retry\.setText\("Réessayer"\)/);
  assert.match(activity,/web\.loadUrl\(retryDestination==null\?SITE:retryDestination\)/);
  assert.doesNotMatch(activity,/removeAllCookies|deleteDatabase|clearData/);
- assert.match(read('../app/build.gradle'),/versionCode 130010; versionName '0\.13\.10'/);
+ assert.match(read('../app/build.gradle'),/versionCode 130011; versionName '0\.13\.11'/);
 });

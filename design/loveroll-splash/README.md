@@ -24,3 +24,11 @@ Le chargement se ferme au rendu de la vraie destination, sans durée minimale. L
 `node couple-web/loveroll-splash-browser-check.cjs` (serveur local `couple-web/` sur 8765 et Playwright Chromium) : huit formats, images décodées, contenu dans l’écran, animations réduites, chargements concurrents, destinations réelles sans/avec session et invitation, erreur de syntaxe et réseau, réessai préservant l’invitation.
 
 `node couple-web/home-podium-browser-check.cjs` et `node couple-web/dice-podium-browser-check.cjs` : géométrie réelle, contact sur le marbre, orientation/canvas conservés après actualisation des données et redimensionnement.
+
+## Démarrage continu — Web 126 / Android 0.13.11
+
+Le chargement natif restait auparavant visible jusqu’au premier rendu WebView, qui pouvait encore être le chargement HTML. Les illustrations étaient identiques, mais les métriques de police et la phase du battement changeaient à ce passage. Android conserve désormais sa composition initiale jusqu’au rendu de la destination réelle. Le HTML ne réinsère pas son propre cœur sortant lorsque le nouveau bridge natif est présent ; le navigateur et les anciens APK conservent leur fondu Web.
+
+L’observateur `app/src/main/assets/loveroll-native-startup.js` est livré dans l’APK. Il attend un contenu réel dans `#app` et la disparition de tous les calques de chargement, puis Android attend le rendu correspondant avant le fondu. Le délai de secours natif reste de 18 secondes et propose Réessayer si l’initialisation ne termine pas. Les événements de document et la disponibilité des fonctions de connexion restent distincts de cet état visuel.
+
+Le contrôle navigateur exécute cet observateur exact sur les destinations sans compte, avec session simulée et avec invitation, ainsi que sur les erreurs et les navigations successives. `.github/scripts/loveroll-startup-handoff.cjs` vérifie en plus le vrai APK de débogage dans l’émulateur : une page locale contrôlée termine son chargement HTML tout en conservant le cœur Web ; la capture doit toujours montrer le cœur natif. Après l’apparition du contenu ou de l’erreur récupérable, la WebView devient accessible et aucun second chargement ne doit apparaître. Ce contrôle ne contacte aucun compte et conserve ses captures dans l’artifact Android.
