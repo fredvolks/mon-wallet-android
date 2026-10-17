@@ -75,7 +75,7 @@ main#app.loveroll-real-home{
 
 /* The phone dashboard reserves room for Android/Safari controls and its fixed tab bar. */
 @media(max-width:767px){
- main#app.loveroll-real-home{padding:6px 12px calc(80px + env(safe-area-inset-bottom))}
+ main#app.loveroll-real-home{padding:6px 12px calc(58px + env(safe-area-inset-bottom))}
  #app .real-home-shell{min-height:0;height:calc(100dvh - 72px - env(safe-area-inset-top) - env(safe-area-inset-bottom));grid-template-rows:auto 38px minmax(150px,220px) auto auto 76px auto;gap:6px;align-content:space-between}
  #app .ritual-brand{margin-bottom:6px}#app .home-ritual h2{margin:3px auto;font-size:clamp(26px,7.2vw,33px)}
  #app .home-die-theater{min-height:150px;margin:-2px -12px}
