@@ -27,7 +27,7 @@ final class LoveRollHeartSplashView extends View {
  private final Typeface text=Typeface.create("sans-serif",Typeface.NORMAL);
  private boolean visibleAnimation=true;
  private RadialGradient glow;
- private LinearGradient decorFade;
+ private LinearGradient decorFade,marbleFade;
  private final Paint.FontMetrics fontMetrics=new Paint.FontMetrics();
 
  LoveRollHeartSplashView(Context context){
@@ -39,11 +39,11 @@ final class LoveRollHeartSplashView extends View {
   setContentDescription(CAPTION);
   setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
  }
- private void cover(Canvas canvas,Bitmap image,float left,float top,float width,float height,int alpha){
+ private void cover(Canvas canvas,Bitmap image,float left,float top,float width,float height,int alpha,float positionY){
   float scale=Math.max(width/image.getWidth(),height/image.getHeight());
   float bw=image.getWidth()*scale,bh=image.getHeight()*scale;
   canvas.save();canvas.clipRect(left,top,left+width,top+height);
-  frame.set(left+(width-bw)/2f,top+height-bh,left+(width+bw)/2f,top+height);
+  frame.set(left+(width-bw)/2f,top+(height-bh)*positionY,left+(width+bw)/2f,top+(height-bh)*positionY+bh);
   brush.setShader(null);brush.setAlpha(alpha);canvas.drawBitmap(image,null,frame,brush);canvas.restore();brush.setAlpha(255);
  }
  @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){
@@ -51,13 +51,15 @@ final class LoveRollHeartSplashView extends View {
   glow=new RadialGradient(w*.5f,h*.43f,Math.min(w*.4f,h*.24f),
    new int[]{0x4d7b1d35,0x007b1d35},null,Shader.TileMode.CLAMP);
   decorFade=new LinearGradient(0,h*.6f,0,h*.72f,0xff10070c,0x0010070c,Shader.TileMode.CLAMP);
+  marbleFade=new LinearGradient(0,h*.9f,0,h*.94f,0xff10070c,0x0010070c,Shader.TileMode.CLAMP);
  }
  @Override protected void onDraw(Canvas canvas){
   super.onDraw(canvas);
   float w=getWidth(),h=getHeight();if(w<=0||h<=0)return;
   canvas.drawColor(0xff10070c);
   boolean landscape=w>=h;
-  cover(canvas,decor,0,landscape?h*.6f:0,w,landscape?h*.4f:h,landscape?184:255);
+  cover(canvas,decor,0,landscape?h*.6f:0,w,landscape?h*.4f:h,landscape?184:255,landscape?.76f:1f);
+  if(landscape){cover(canvas,decor,0,h*.9f,w,h*.1f,184,1f);brush.setShader(marbleFade);canvas.drawRect(0,h*.9f,w,h*.94f,brush);brush.setShader(null);}
   if(landscape){brush.setShader(decorFade);canvas.drawRect(0,h*.6f,w,h*.72f,brush);brush.setShader(null);}
   brush.setAlpha(255);brush.setShader(glow);canvas.drawRect(0,0,w,h,brush);brush.setShader(null);
   boolean animate=visibleAnimation&&ValueAnimator.areAnimatorsEnabled();
