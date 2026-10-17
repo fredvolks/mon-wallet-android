@@ -284,13 +284,22 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
    validated personal-die geometry. */
 @media(min-width:768px) and (max-width:899px){
  html:has(main#app.loveroll-surprise-page),
- body:has(main#app.loveroll-surprise-page){
+ body:has(main#app.loveroll-surprise-page),
+ html:has(main#app.loveroll-evening-page),
+ body:has(main#app.loveroll-evening-page){
   height:auto!important;max-height:none!important;
   overflow-x:clip!important;overflow-y:auto!important;
  }
  main#app.loveroll-surprise-page:has(> nav.nav){
   height:auto!important;min-height:100dvh!important;max-height:none!important;
   padding-bottom:112px!important;display:block!important;overflow:visible!important;
+ }
+ main#app.loveroll-evening-page:has(> nav.nav){
+  height:auto!important;min-height:100dvh!important;max-height:none!important;
+  padding-bottom:112px!important;overflow:visible!important;
+ }
+ main#app.loveroll-evening-page:has(> nav.nav) .evening-premium-view:is(.is-ready,.is-waiting){
+  flex:none!important;height:calc(100dvh - 99px)!important;max-height:none!important;
  }
  main#app.loveroll-surprise-page:has(> nav.nav) .surprise-premium-view{
   flex:none!important;height:auto!important;max-height:none!important;
