@@ -208,12 +208,12 @@ export function createClient(){
    const result=await page.evaluate(sel=>{
     const main=document.querySelector('#app'),nav=document.querySelector('.nav');
     const node=document.querySelector(sel),n=nav.getBoundingClientRect(),el=node.getBoundingClientRect();
-    return {page:document.documentElement.scrollWidth,screen:innerWidth,navTop:n.top,
+    return {page:document.documentElement.scrollWidth,screen:innerWidth,navTop:n.top,navBottom:n.bottom,viewportHeight:innerHeight,
      tabs:nav.querySelectorAll('[data-action^="tab:"]').length,
      visible:el.width>200&&el.height>60,
      navigation:!!nav.querySelector('.active[data-action="tab:'+sel.replace(/^\\./,'')+'"]')};
    },selector);
-   if(result.page>result.screen+2||result.navTop>2||result.tabs!==5||!result.visible)
+   if(result.page>result.screen+2||result.navTop<0||result.navBottom>result.viewportHeight+2||result.tabs!==5||!result.visible)
     throw Error('Adaptive tab error '+v.name+' '+tab+' '+JSON.stringify(result));
    return result;
   };

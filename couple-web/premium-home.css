@@ -120,3 +120,7 @@ main#app.loveroll-real-home{
  #app .home-roll-area p{font-size:11px}
  #app .home-stat-card strong{font-size:16px}
 }
+@media(min-width:768px) and (max-width:899px){
+ #app .real-home-shell{width:min(100%,820px)}
+ #app .home-die-theater{min-height:240px}
+}
