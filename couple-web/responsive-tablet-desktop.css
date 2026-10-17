@@ -67,9 +67,9 @@
   box-sizing:border-box;display:flex;justify-content:center;
   padding:8px clamp(16px,3vw,40px)!important;
   min-height:68px;z-index:5000!important;
-  background:linear-gradient(180deg,#2a081ef7,#110612f5);
+  background:#130b11ee;
   border-top:1px solid #bd82984a!important;border-bottom:0!important;
-  box-shadow:0 -9px 24px #0a0314ae;
+  box-shadow:0 -5px 24px #06020566;
  }
  main#app:not(.loveroll-editorial):not(.loveroll-advent-letters):not(.loveroll-surprise-ecrin):not(.loveroll-settings-page):has(> nav.nav) .nav-inner{
   display:grid!important;align-items:center;
