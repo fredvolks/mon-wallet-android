@@ -115,3 +115,8 @@ main#app.loveroll-real-home{
  #app .home-next-month{flex:0 0 74px;min-height:0}
  #app .home-stats-grid{flex:0 0 88px;min-height:0}
 }
+@media(max-width:767px) and (max-height:860px){
+ #app .home-stat-card span,#app .home-stat-card small,#app .home-challenge-stats small{font-size:11px;line-height:1.13}
+ #app .home-roll-area p{font-size:11px}
+ #app .home-stat-card strong{font-size:16px}
+}
