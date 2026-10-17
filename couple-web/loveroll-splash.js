@@ -25,7 +25,11 @@
   const observer=new MutationObserver(()=>{
    if(boot.isConnected)return;
    observer.disconnect();
-   if(failed||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+   // The APK keeps its original local heart until this real destination paints.
+   // Reattaching an HTML heart here would expose a second logo/animation beneath
+   // the native fade. Browsers and older APKs still use their usual Web fade.
+   if(failed||typeof window.LoveRollNativeAuth?.splashReady==='function'||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
    boot.removeAttribute('data-lr-boot');boot.classList.remove('lr-splash--boot');
    document.body.appendChild(boot);removeAfterFade(boot);
   });

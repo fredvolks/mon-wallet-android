@@ -4,7 +4,7 @@ on:
     branches: [des-a-deux-apk-20261013]
   pull_request:
     branches: [des-a-deux-apk-20261013]
-    paths: ['app/**', '.github/workflows/emulator-smoke.yml', '.github/scripts/loveroll-emulator-smoke.sh']
+    paths: ['app/**', '.github/workflows/emulator-smoke.yml', '.github/scripts/loveroll-emulator-smoke.sh', '.github/scripts/loveroll-startup-handoff.cjs']
   workflow_dispatch:
 concurrency:
   group: loveroll-responsive-emulator-${{ github.ref }}
@@ -28,6 +28,8 @@ jobs:
           "$SDKMGR" --install 'platforms;android-35' 'build-tools;35.0.0'
       - name: Build debug APK for emulator
         run: gradle :app:assembleDebug --no-daemon
+      - name: Install WebView startup verification client
+        run: npm install --no-save playwright@1.56.0
       - name: Enable KVM access on the hosted Linux runner
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

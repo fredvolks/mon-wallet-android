@@ -75,6 +75,11 @@ _,top,_,bottom=map(int,re.findall(r'\d+',web.get('bounds')))
 assert 0<top<bottom<2340,('System bars overlap the WebView',top,bottom)
 print('LOVEROLL_NATIVE_RETRY_OK no native error overlay remains')
 PY_NATIVE
+# Deliberately hold the HTML loader AFTER onPageFinished in the actual WebView,
+# then reveal its real destination. The native composition must own that whole
+# interval; a second HTML splash is never a valid destination.
+node .github/scripts/loveroll-startup-handoff.cjs
+adb shell am force-stop ca.desadeux.jeu
 # Non-blocking launch: am start -W may time out waiting for remote WebView.
 adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity
 sleep 10
