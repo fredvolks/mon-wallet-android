@@ -257,11 +257,13 @@ export function dieOn(canvas,sides,value,rolling){
   previousWidth=width;previousHeight=height;
   renderer.setSize(width,height,false);
   camera.aspect=width/height;camera.updateProjectionMatrix();
+  if(typeof alignPodium==='function')alignPodium();
   if(typeof request==='function')request();
  };
  const resizeObserver=typeof ResizeObserver==='function'?
   new ResizeObserver(resizeDie):null;
  resizeObserver?.observe(canvas);
+ const podiumObserver=typeof ResizeObserver==='function'?new ResizeObserver(()=>{alignPodium();request();}):null;
  window.addEventListener('resize',resizeDie);
  scene.add(new THREE.AmbientLight(0xffb7df,1.25));
  const key=new THREE.PointLight(0xff3e99,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
@@ -279,6 +281,7 @@ export function dieOn(canvas,sides,value,rolling){
  // the initial mesh rotation after a live D100 throw.
  const tilt=new THREE.Quaternion().setFromEuler(sides===6?
   new THREE.Euler(.16,-.18,-.02):new THREE.Euler(.075,-.09,0));
+ const podium=canvas.closest('.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero');
  const orientationFor=face=>{
   const normal=built.normals.get(Number(face));
   return normal?new THREE.Quaternion().setFromUnitVectors(normal,
@@ -286,6 +289,42 @@ export function dieOn(canvas,sides,value,rolling){
  };
  let target=orientationFor(value)||orientationFor(1);
  built.group.quaternion.copy(target);
+ function projectedBounds(){
+  built.group.updateMatrixWorld(true);camera.updateMatrixWorld(true);
+  let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;
+  built.group.traverse(object=>{
+   const vertices=object.geometry?.getAttribute('position');
+   if(!vertices||!object.isMesh)return;
+   const point=new THREE.Vector3();
+   for(let i=0;i<vertices.count;i++){
+    point.fromBufferAttribute(vertices,i).applyMatrix4(object.matrixWorld).project(camera);
+    left=Math.min(left,(point.x+1)/2);right=Math.max(right,(point.x+1)/2);
+    top=Math.min(top,(1-point.y)/2);bottom=Math.max(bottom,(1-point.y)/2);
+   }
+  });
+  return {left,right,top,bottom};
+ }
+ function alignPodium(){
+  if(!podium)return;
+  const stage=canvas.parentElement,pose=built.group.quaternion.clone(),position=built.group.position.clone();
+  built.group.quaternion.copy(target);built.group.position.set(0,0,0);
+  stage.style.transform='none';camera.zoom=1;camera.updateProjectionMatrix();
+  const sceneRect=podium.getBoundingClientRect(),rect=canvas.getBoundingClientRect();
+  if(sceneRect.height<1||rect.height<1||rect.width<1){built.group.quaternion.copy(pose);built.group.position.copy(position);return;}
+  const scale=Math.max(sceneRect.width/1536,sceneRect.height/1024);
+  const percent=parseFloat(getComputedStyle(podium).backgroundPositionY)/100||.62;
+  // The center of the marble top is at y=678 in the existing 1536x1024 artwork.
+  const contact=sceneRect.top+(sceneRect.height-1024*scale)*percent+678*scale;
+  let bounds=projectedBounds();
+  // Keep the entire real mesh above the marble, including short phone scenes.
+  camera.zoom=Math.min(1,(contact-sceneRect.top-4)/((bounds.bottom-bounds.top)*rect.height),
+   (sceneRect.width-12)/((bounds.right-bounds.left)*rect.width));
+  camera.updateProjectionMatrix();bounds=projectedBounds();
+  built.group.quaternion.copy(pose);built.group.position.copy(position);built.group.updateMatrixWorld(true);
+  const delta=contact-(rect.top+bounds.bottom*rect.height);
+  stage.style.transform='translateY('+delta.toFixed(2)+'px)';
+  canvas.dataset.podiumContact=String(contact-sceneRect.top);
+ }
  let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true,lastFrame=0,renderedFrames=0;
  let returnStart=null,returnTime=0;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
@@ -310,6 +349,7 @@ export function dieOn(canvas,sides,value,rolling){
   built.group.quaternion.setFromEuler(euler);
   built.group.position.set(0,0,0);
  }
+ alignPodium();podiumObserver?.observe(podium||canvas);
  if(duration)prepareMotion();
  function step(now){
   frame=0;if(!shown||document.hidden)return;
@@ -335,8 +375,7 @@ export function dieOn(canvas,sides,value,rolling){
    built.group.quaternion.slerpQuaternions(returnStart,target,1-Math.pow(1-tReturn,3));
    if(tReturn>=1){built.group.quaternion.copy(target);returnStart=null;}
   }else if(!drag){
-   // Gently turn the decorative D6 until the server confirms a real throw.
-   if(preview&&!reduceMotion){built.group.rotateY(dt*.43);built.group.rotateX(dt*.18);}
+   // Previews stay fixed. Only a confirmed roll or an explicit drag moves a die.
    built.group.rotateY(vx);built.group.rotateX(vy);
    const dragFactor=Math.exp(-5*dt);vx*=dragFactor;vy*=dragFactor;
   }
@@ -347,7 +386,7 @@ export function dieOn(canvas,sides,value,rolling){
   shadow.position.x=built.group.position.x;
   renderer.render(scene,camera);
   renderedFrames++;
-  if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003||(preview&&!reduceMotion))request();
+  if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003)request();
  }
  const request=()=>{if(!frame)frame=requestAnimationFrame(step);};
  const rollTo=face=>{
@@ -360,7 +399,7 @@ export function dieOn(canvas,sides,value,rolling){
   duration=reduceMotion?0:ROLL_TOTAL_MS;
   start=performance.now();
   drag=false;returnStart=null;vx=vy=0;lastFrame=0;
-  prepareMotion(true);
+  alignPodium();prepareMotion(true);
   request();
   return true;
  };
@@ -375,7 +414,7 @@ export function dieOn(canvas,sides,value,rolling){
   }
   return {face:Number(canvas.dataset.face),frontFace,quaternion:built.group.quaternion.toArray(),renderedFrames,
    spinning:canvas.dataset.spinning==='true'};
- },refresh:()=>{resizeDie();renderer.render(scene,camera);renderedFrames++;request();}};
+ },projectedBounds,refresh:()=>{resizeDie();renderer.render(scene,camera);renderedFrames++;request();}};
  const down=e=>{
   if(duration&&performance.now()-start<duration)return;
   drag=true;returnStart=null;x=e.clientX;y=e.clientY;vx=vy=0;
@@ -401,7 +440,7 @@ export function dieOn(canvas,sides,value,rolling){
  document.addEventListener('visibilitychange',onVisible);request();
  const clean=()=>{if(frame)cancelAnimationFrame(frame);obs.disconnect();
   if(canvas.loveRollDie?.rollTo===rollTo)delete canvas.loveRollDie;
-  resizeObserver?.disconnect();window.removeEventListener('resize',resizeDie);
+  resizeObserver?.disconnect();podiumObserver?.disconnect();window.removeEventListener('resize',resizeDie);
   document.removeEventListener('visibilitychange',onVisible);
   canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);
   canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);

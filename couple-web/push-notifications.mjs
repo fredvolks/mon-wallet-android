@@ -1,3 +1,4 @@
+import {editorialIcon} from './editorial-ui.mjs';
 // LoveRoll Web Push registration (Safari home-screen iOS/iPadOS and PWA browsers).
 // Android 0.13.4 exposed a bridge getter that accessed WebView off the UI
 // thread. A Java exception must NEVER prevent account sign-in or profile loads.
@@ -105,50 +106,45 @@ export async function sendTestPush(client){
  if(error)throw error;
  return data;
 }
-export function notificationSettingsMarkup(prefs={}){
+// A preference is shared by the account; a subscription belongs to this device.
+export async function currentPushDevice(client=null,userId=null){
+ const e=pushEnvironment();
+ try{
+  if(e.native){
+   const token=safeNativePushToken();let registered=safeNativePushConfigured()&&!!token;
+   if(registered&&client&&userId){const {data,error}=await client.from('love_push_native_devices').select('device_token').eq('user_id',userId).eq('device_token',token);registered=!error&&data?.length>0;}
+   return {registered,permission:'native',native:true};
+  }
+  if(!e.supported||e.permission!=='granted')return {registered:false,permission:e.permission,native:false};
+  const registration=await navigator.serviceWorker.getRegistration();
+  const subscription=await registration?.pushManager?.getSubscription();let registered=!!subscription;
+  if(registered&&client&&userId){const {data,error}=await client.from('love_push_subscriptions').select('endpoint').eq('user_id',userId).eq('endpoint',subscription.endpoint);registered=!error&&data?.length>0;}
+  return {registered,permission:e.permission,native:false};
+ }catch{return {registered:false,permission:e.native?'native':e.permission,native:e.native};}
+}
+export function notificationSettingsMarkup(prefs={},device=null){
  const e=pushEnvironment(),enabled=!!prefs.enabled;
- const categories=[
-  ['weekly','🎲 Dé hebdomadaire','Quand le dé est prêt à être brassé.'],
-  ['invitation','♥ Invitation acceptée','Lorsque votre partenaire rejoint votre couple.'],
-  ['monthly','✦ Activité du mois','Quand le nouveau mois commence.'],
-  ['special','🎁 Événement spécial','Lorsqu’un événement de votre calendrier arrive.']
- ];
- let status='',actions='';
+ const active=enabled&&device?.registered===true&&(e.native?safeNativePushConfigured()&&!!safeNativePushToken():e.permission==='granted');
+ const categories=[['weekly','Dé hebdomadaire','Quand le dé est prêt','dice'],['invitation','Invitation acceptée','Lorsque votre partenaire vous rejoint','heart'],['monthly','Activité du mois','Au début du mois','star'],['special','Événement spécial','À l’approche de vos dates','calendar']];
+ let status='',detail='',actions='';
  if(e.native){
-  const local=!!window.LoveRollNativeAuth?.weeklyReminderEnabled?.();
-  const configured=!!safeNativePushConfigured();
-  const token=safeNativePushToken()||'';
-  const active=configured&&!!token&&enabled;
-  status='<strong>'+(active?'✓ Notifications Android enregistrées':
-   configured?'Autorisation ou inscription nécessaire':'Notifications distantes non disponibles')+'</strong>'+
-   '<p>'+(configured?'Service de notifications disponible sur cet appareil. ':
-   'Les notifications à distance nécessitent une mise à jour de LoveRoll. ')+
-   (local?'Rappel local du lundi 9 h actif.':'Rappel local du lundi 9 h inactif.')+'</p>';
-  actions=(configured?(active?
-   '<button class="subtle" data-action="push-disable">Désactiver les notifications</button>'+
-   '<button data-action="push-test">Envoyer une notification de test</button>':
-   '<button data-action="push-enable">Activer les notifications</button>'):'')+
-   (local?'<button class="subtle" data-action="native-notify-disable">Désactiver le rappel local</button>':
-   '<button data-action="native-notify-enable">Activer le rappel local</button>');
+  const local=!!window.LoveRollNativeAuth?.weeklyReminderEnabled?.(),configured=safeNativePushConfigured();
+  status=active?'Inscription Android enregistrée':configured?'Autorisation ou inscription nécessaire':'Notifications distantes non disponibles';
+  detail=(configured?'Autorisations gérées par les réglages Android. ':'Une mise à jour de l’APK est nécessaire. ')+(local?'Rappel local du lundi 9 h actif.':'Rappel local inactif.');
+  actions=(configured?(active?'<button class="settings-primary" data-action="push-test">M’envoyer un test</button><button class="settings-signout" data-action="push-disable">Désactiver les notifications</button>':'<button class="settings-primary" data-action="push-enable">Activer les notifications</button>'):'')+
+   '<button class="settings-secondary" data-action="'+(local?'native-notify-disable':'native-notify-enable')+'">'+(local?'Désactiver':'Activer')+' le rappel local</button>';
  }else if(e.apple&&!e.standalone){
-  status='<strong>Installer LoveRoll pour les push iPhone/iPad</strong><p>Ouvrez le site dans Safari, puis Partager → Sur l’écran d’accueil. Rouvrez LoveRoll pour activer les notifications.</p>';
-  actions='<button data-action="show-install-guide">Voir comment ajouter LoveRoll</button>';
- }else if(!e.supported){
-  status='<strong>Push non pris en charge par ce navigateur</strong><p>Utilisez Safari installé sur l’écran d’accueil (iPhone/iPad) ou une PWA prise en charge.</p>';
- }else{
-  status='<strong>'+(enabled&&e.permission==='granted'?'✓ Notifications activées':e.permission==='denied'?'Accès refusé dans les réglages de l’appareil':'Notifications désactivées')+'</strong>'+
-   '<p>Sur cet appareil · '+(e.permission==='granted'?'Autorisation accordée':'Autorisation non accordée')+'</p>';
-  actions=enabled?'<button class="subtle" data-action="push-disable">Désactiver les notifications</button>'+
-    '<button data-action="push-test">M’envoyer une notification de test</button>':
-    '<button data-action="push-enable">Activer gratuitement les notifications</button>';
+  status='Installation nécessaire sur iPhone / iPad';detail='Dans Safari : Partager → Sur l’écran d’accueil. Rouvrez LoveRoll pour activer les notifications.';
+  actions='<button class="settings-primary" data-action="show-install-guide">Voir les instructions</button>';
+ }else if(!e.supported){status='Notifications indisponibles dans ce navigateur';detail='Utilisez un navigateur compatible ou LoveRoll installé sur l’écran d’accueil.';}
+ else{
+  status=active?'Activées sur cet appareil':e.permission==='denied'?'Autorisation refusée':enabled?'Cet appareil n’est pas inscrit':'Notifications désactivées';
+  detail=(e.standalone?'Application installée':'Navigateur')+' · '+(e.permission==='granted'?'autorisation accordée':e.permission==='denied'?'à modifier dans les réglages du navigateur':'autorisation non accordée');
+  actions=(active?'<button class="settings-primary" data-action="push-test">M’envoyer un test</button>':'<button class="settings-primary" data-action="push-enable">Activer sur cet appareil</button>')+
+   (enabled?'<button class="settings-signout" data-action="push-disable">Désactiver les notifications</button>':'');
  }
- return '<div class="invite-status push-status">'+status+'</div>'+
- '<div class="push-actions">'+actions+'</div>'+
- '<div class="push-options">'+categories.map(([key,title,desc])=>{
- const available=e.native?e.native&&!!safeNativePushConfigured()&&enabled&&!!safeNativePushToken():e.supported&&enabled&&e.permission==='granted';
- return '<label class="push-option"><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
- '<input type="checkbox" data-push-option="'+key+'"'+(available&&prefs[key]!==false?' checked':'')+
- (!available?' disabled':'')+' aria-label="'+title+'"></label>';
- }).join('')+'</div>'+
- '<p class="tiny-note">Les alertes ne dévoilent aucun contenu intime. Une demande de test acceptée ne garantit pas la réception sur votre appareil.</p>';
+ return '<div class="push-status" role="status"><span class="editorial-row-icon">'+editorialIcon('bell')+'</span><div><strong>'+status+'</strong><p>'+detail+'</p></div></div>'+
+ '<div class="push-options">'+categories.map(([key,title,desc,icon])=>'<label class="push-option"><span class="editorial-row-icon">'+editorialIcon(icon)+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
+ '<input type="checkbox" role="switch" data-push-option="'+key+'"'+(prefs[key]!==false?' checked':'')+(!active?' disabled':'')+' aria-label="'+title+'"></label>').join('')+'</div>'+
+ '<div class="push-actions">'+actions+'</div><p class="tiny-note">Les alertes ne dévoilent pas les surprises. Une demande de test acceptée ne garantit pas sa réception.</p>';
 }

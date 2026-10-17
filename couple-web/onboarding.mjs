@@ -1,4 +1,5 @@
-import {RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
+import {ritualBrandHtml} from './brand.mjs';
+import {editorialIcon} from './editorial-ui.mjs';
 // LoveRoll — public onboarding UI. Profile name and personal anniversary come from registration.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(id,label,cls='')=>'<button class="'+cls+'" data-action="'+esc(id)+'">'+label+'</button>';
@@ -78,107 +79,46 @@ export function marketingHtml(){
  '</footer>'+
  '</div>';
 }
-export function authHtml(invitation=false,mode='signup',notice='',emailValue='',confirmNeeded=false){
- const recovering=mode==='recover',requestingReset=mode==='request-reset',signingIn=mode==='signin';
- const title=recovering?'Nouveau mot de passe':requestingReset?'Retrouver mon compte':signingIn?'Connectez-vous':'Créez votre compte';
- const helper=recovering?'Choisissez un nouveau mot de passe pour retrouver votre compte.':
-  requestingReset?'Indiquez votre courriel. Nous demanderons un lien de récupération sécurisé.':
-  signingIn?'Retrouvez votre espace privé et vos surprises.':
-  'Utilisez votre courriel et un mot de passe, ou connectez-vous avec Google.';
- const icon=kind=>kind==='mail'?'✉':kind==='lock'?'♙':'♡';
- const progress=invitation?'<div class="invite-account-progress" aria-label="Invitation reçue · connexion requise">'+
-  '<div class="invite-progress-item is-done"><b>✓</b><span>Invitation<br>reçue</span></div>'+
-  '<div class="invite-progress-line"><i></i></div>'+
-  '<div class="invite-progress-item is-current"><b>2</b><span>Votre compte</span></div></div>':'';
- const segment=recovering||requestingReset?'':'<div class="invite-auth-segments" role="group" aria-label="Choisir un mode">'+
-  '<button type="button" data-action="auth-mode:signup" class="'+(!signingIn?'is-active':'')+'" aria-pressed="'+(!signingIn)+'">Créer un compte</button>'+
-  '<button type="button" data-action="auth-mode:signin" class="'+(signingIn?'is-active':'')+'" aria-pressed="'+signingIn+'">Se connecter</button></div>';
- const email='<label class="invite-auth-field"><span class="invite-field-icon" aria-hidden="true">✉</span>'+
-  '<span class="invite-field-body"><span>Votre courriel</span><input id="signin-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" placeholder="exemple@courriel.com" maxlength="254" value="'+esc(emailValue)+'" required></span></label>';
- const pass='<label class="invite-auth-field"><span class="invite-field-icon" aria-hidden="true">♙</span>'+
-  '<span class="invite-field-body"><span>'+(recovering?'Nouveau mot de passe':signingIn?'Votre mot de passe':'Choisissez un mot de passe')+'</span>'+
-  '<input id="signin-password" name="password" type="password" autocomplete="'+(signingIn?'current-password':'new-password')+'" placeholder="••••••••" minlength="8" required></span>'+
-  '<button type="button" class="invite-password-eye" data-action="auth-eye" aria-label="Afficher le mot de passe" aria-pressed="false">'+
-  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></label>';
- const meter=!signingIn&&!requestingReset?'<div class="invite-password-meter" aria-label="Robustesse du mot de passe">'+
-  '<div class="invite-meter-bars"><i></i><i></i><i></i><i></i></div>'+
-  '<p id="auth-password-hint">'+(recovering?'Créez un nouveau mot de passe robuste.':'Au moins 8 caractères, avec une majuscule, une minuscule et un chiffre.')+'</p></div>':'';
- const actions=recovering?button('auth-update-password','Enregistrer mon nouveau mot de passe ♡','invite-auth-submit'):
-  requestingReset?button('auth-send-reset','Envoyer le lien de récupération','invite-auth-submit'):
-  button(signingIn?'auth-signin-password':'auth-signup-password',
-   signingIn?'Se connecter ♡':'Créer mon compte <small>et rejoindre notre univers ♡</small><span aria-hidden="true">›</span>',
-   'invite-auth-submit');
- const misc=recovering||requestingReset?button('auth-mode:signin','← Retour à la connexion','invite-auth-link'):
-  (signingIn?button('auth-reset-request','Mot de passe oublié ?','invite-auth-link'):'')+
-  '<div class="invite-or"><span>ou</span></div>'+
-  '<button type="button" data-action="google" class="invite-google"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true">'+
- '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/>'+
- '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.28 5.48-4.81 7.18l7.75 6.01C44.4 38.03 46.98 31.84 46.98 24.55Z"/>'+
- '<path fill="#FBBC05" d="M10.53 28.59A14.3 14.3 0 0 1 9.75 24c0-1.59.27-3.13.77-4.59l-7.98-6.2A23.84 23.84 0 0 0 0 24c0 3.87.93 7.52 2.56 10.78l7.97-6.19Z"/>'+
- '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.79l-7.75-6.01c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.97 6.19C6.51 42.62 14.62 48 24 48Z"/></svg> Continuer avec Google</button>';
- return '<div class="invite-account-screen'+(recovering?' invite-recover':'')+'" aria-label="Compte LoveRoll">'+
-  '<header class="invite-account-hero"><div class="invite-decor-heart" aria-hidden="true">♡</div>'+
-  '<div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
-  '<p>LA COMPLICITÉ SE JOUE À DEUX</p>'+progress+'</header>'+
-  '<section class="invite-auth-card"><div class="invite-auth-title">'+
-  '<div><h1>'+title+'</h1>'+
-  '<h2>'+(invitation?'et rejoignez votre partenaire ♡':'Votre espace privé ♡')+'</h2></div></div>'+
-  '<p class="invite-auth-lead">'+helper+'</p>'+segment+
-  '<form id="invite-auth-form" autocomplete="on"><div class="invite-auth-fields">'+(recovering?'':email)+(requestingReset?'':pass)+'</div>'+
-  meter+'<div class="invite-auth-feedback" id="auth-form-feedback" role="status" aria-live="polite">'+esc(notice)+'</div>'+
-  actions+'</form>'+
-  (confirmNeeded&&signingIn?'<section class="invite-confirm-resend" role="region" aria-label="Confirmation du courriel"><strong>Adresse non confirmée</strong><p>Vérifiez le courriel lié à votre compte. Vous pouvez demander un nouveau lien sans perdre votre invitation.</p>'+
-   button('auth-resend-confirmation','Renvoyer le courriel de confirmation','invite-auth-resend')+
-   '<p id="auth-resend-status" role="status" aria-live="polite"></p></section>':'')+
-  misc+
-  '<div class="invite-auth-trust"><span aria-hidden="true">♢</span><p>Vos données restent privées. Chaque personne utilise son propre compte.</p></div>'+
-  (invitation?button('invite-return','← Revenir à l’invitation','invite-auth-back'):
-   button('show-landing','← Retour à l’accueil','invite-auth-back'))+
-  '</section></div>';
+const entryHeader=(invitation=false,progress=false)=>'<header class="entry-account-hero">'+ritualBrandHtml()+'<p>'+(invitation?'INVITATION PRIVÉE':'VOTRE ESPACE PRIVÉ')+'</p>'+
+ (progress?'<div class="entry-account-progress"><span><b>✓</b> Invitation reçue</span><i></i><span><b>2</b> Votre compte</span></div>':'')+'</header>';
+const eye='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const googleButton=()=>'<button type="button" data-action="google" class="entry-google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.28 5.48-4.81 7.18l7.75 6.01C44.4 38.03 46.98 31.84 46.98 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59A14.3 14.3 0 0 1 9.75 24c0-1.59.27-3.13.77-4.59l-7.98-6.2A23.84 23.84 0 0 0 0 24c0 3.87.93 7.52 2.56 10.78l7.97-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.79l-7.75-6.01c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.97 6.19C6.51 42.62 14.62 48 24 48Z"/></svg>Continuer avec Google</button>';
+export function authHtml(invitation=false,mode='signup',notice='',emailValue='',confirmNeeded=false,providers={google:true}){
+ const recovering=mode==='recover',requestingReset=mode==='request-reset',signingIn=mode==='signin',access=recovering||requestingReset;
+ const title=recovering?'Nouveau<br>mot de <em>passe.</em>':requestingReset?'Retrouver<br>mon <em>compte.</em>':signingIn?'Retrouvez votre espace.':'Créez votre compte.';
+ const helper=recovering?'Choisissez un mot de passe pour votre compte.':requestingReset?'Recevez un lien pour choisir un nouveau mot de passe.':'Votre espace LoveRoll.';
+ const segment=access?'':'<div class="entry-auth-segments" role="group" aria-label="Choisir un mode"><button type="button" data-action="auth-mode:signup" class="'+(!signingIn?'is-active':'')+'" aria-pressed="'+!signingIn+'">Créer un compte</button><button type="button" data-action="auth-mode:signin" class="'+(signingIn?'is-active':'')+'" aria-pressed="'+signingIn+'">Se connecter</button></div>';
+ const email='<label class="entry-auth-field"><span>Votre courriel</span><span class="entry-input">'+editorialIcon('mail')+'<input id="signin-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" placeholder="Votre adresse courriel" maxlength="254" value="'+esc(emailValue)+'" required></span></label>';
+ const pass='<label class="entry-auth-field"><span>'+(recovering?'Nouveau mot de passe':signingIn?'Votre mot de passe':'Choisissez un mot de passe')+'</span><span class="entry-input">'+editorialIcon('lock')+'<input id="signin-password" name="password" type="password" autocomplete="'+(signingIn?'current-password':'new-password')+'" placeholder="••••••••" minlength="8" required><button type="button" class="entry-password-eye" data-action="auth-eye" aria-label="Afficher le mot de passe" aria-pressed="false">'+eye+'</button></span></label>';
+ const meter=!signingIn&&!requestingReset?'<div class="entry-password-meter" aria-label="Robustesse du mot de passe"><div class="entry-meter-bars"><i></i><i></i><i></i><i></i></div><p id="auth-password-hint">8 caractères, une majuscule, une minuscule et un chiffre.</p></div>':'';
+ const action=recovering?'auth-update-password':requestingReset?'auth-send-reset':signingIn?'auth-signin-password':'auth-signup-password';
+ return '<div class="entry-account-screen auth-editorial'+(recovering?' entry-recover':'')+'" aria-label="Compte LoveRoll">'+entryHeader(invitation,!access&&invitation)+
+ '<section class="entry-auth-card">'+(access?'<div class="entry-symbol">'+editorialIcon(recovering?'lock':'mail')+'</div>':'')+
+ '<div class="entry-auth-title"><h1>'+title+'</h1></div><p class="entry-auth-lead">'+helper+'</p>'+segment+
+ '<form id="invite-auth-form" autocomplete="on"><div class="entry-auth-fields">'+(recovering?'':email)+(requestingReset?'':pass)+'</div>'+meter+
+ '<div class="entry-auth-feedback" id="auth-form-feedback" role="status" aria-live="polite">'+esc(notice)+'</div>'+button(action,recovering?'Enregistrer mon mot de passe':requestingReset?'Envoyer le lien':signingIn?'Se connecter':'Créer mon compte','entry-auth-submit')+'</form>'+
+ (confirmNeeded&&signingIn?'<section class="entry-confirm-resend"><strong>Adresse non confirmée</strong><p>Ouvrez le lien reçu pour activer votre compte.</p>'+button('auth-resend-confirmation','Renvoyer le courriel','entry-auth-resend')+'<p id="auth-resend-status" role="status"></p></section>':'')+
+ (access?button('auth-mode:signin','‹ Retour à la connexion','entry-auth-back'):(signingIn?button('auth-reset-request','Mot de passe oublié ?','entry-auth-link'):'')+(providers.google?'<div class="entry-or"><span>ou</span></div>'+googleButton():'')+
+ '<footer class="entry-footer">'+button(invitation?'invite-return':'show-landing',invitation?'‹ Revenir à l’invitation':'‹ Retour à l’accueil','entry-auth-back')+'<p>Chaque personne utilise son propre compte.</p></footer>')+'</section></div>';
 }
-// Custom in-app chooser: Android WebView's native <select> popup uses the OS
-// light theme and ignores CSS. Use a themed modal for both wellbeing questions.
-function wellnessSelect(label,id,options,selected=''){
- const choice=options.find(([value])=>value===selected);
- return '<div class="love-answer-field">'+
- '<span id="label-'+id+'" class="love-answer-label">'+esc(label)+'</span>'+
- '<input type="hidden" id="'+id+'" value="'+esc(choice?.[0]||'')+'">'+
- '<button type="button" class="love-answer-trigger" data-love-answer-open="'+id+
- '" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="label-'+id+' current-'+id+'">'+
- '<span id="current-'+id+'" class="love-answer-current">'+esc(choice?.[1]||'Choisir une réponse')+'</span>'+
- '<span class="love-answer-chevron" aria-hidden="true">⌄</span></button>'+
- '<dialog class="love-answer-dialog" id="dialog-'+id+'" aria-labelledby="title-'+id+'">'+
- '<div class="love-answer-top"><div class="love-answer-kicker">LOVEROLL · MON RESSENTI</div>'+
- '<h3 id="title-'+id+'">'+esc(label)+'</h3>'+
- '<p>Choisissez la réponse qui vous correspond. Vous pourrez la modifier plus tard.</p></div>'+
- '<div class="love-answer-choices" role="radiogroup" aria-labelledby="title-'+id+'">'+
- options.map(([value,text])=>'<button type="button" role="radio" class="love-answer-option"'+
- ' data-love-answer-value="'+esc(value)+'" aria-checked="'+(value===selected?'true':'false')+'">'+
- '<span class="love-answer-option-label">'+esc(text)+'</span>'+
- '<span class="love-answer-radio" aria-hidden="true"></span></button>').join('')+
- '</div><button type="button" class="love-answer-dismiss" data-love-answer-close>Annuler</button>'+
- '</dialog></div>';
-}
-export function wellbeingFields(current=null){
- return '<h3>♡ Comment vivez-vous votre relation ?</h3>'+
- '<p class="tiny-note">Deux réponses personnelles et privées pour proposer des soirées adaptées. Le partenaire ne verra pas vos réponses.</p>'+
- wellnessSelect('Comment va votre couple en ce moment ?','wellbeing-relationship',RELATIONSHIP_OPTIONS,current?.relationship_state)+
- wellnessSelect('Comment va votre sexualité dans votre couple ?','wellbeing-intimacy',INTIMACY_OPTIONS,current?.intimacy_state);
-}
-export function wellbeingHtml(current=null,user=null){
- return '<div class="auth-panel"><div class="eyebrow">MON RESSENTI · CONFIDENTIEL</div>'+
- '<h2>Des soirées à votre rythme ♡</h2>'+profileAccountChoiceHtml(user)+wellbeingFields(current)+
- button('save-wellbeing','Enregistrer mes réponses')+
- '<p class="tiny-note">Vos réponses sont modifiables à tout moment dans Réglages.</p></div>';
+export function emailConfirmationHtml(email,{needsSignIn=false,invitation=false,google=true}={}){
+ return '<div class="entry-account-screen auth-editorial email-confirm-screen">'+entryHeader(invitation)+'<section class="entry-auth-card"><div class="entry-symbol">'+editorialIcon('mail')+'</div>'+
+ '<h1>Confirmez<br>votre <em>courriel.</em></h1><p>Ouvrez le lien reçu pour activer votre compte.</p>'+
+ '<label>Votre adresse courriel<span class="entry-input">'+editorialIcon('mail')+'<input type="email" readonly aria-readonly="true" value="'+esc(email||'')+'"></span></label>'+
+ '<div id="email-confirm-status" role="status" aria-live="polite"></div>'+
+ button(needsSignIn?'email-confirm-login':'email-confirm-recheck',needsSignIn?'J’ai confirmé · me connecter':'J’ai confirmé mon courriel','entry-auth-submit')+
+ '<div class="entry-footer">'+button('email-confirm-resend','Renvoyer le courriel','entry-auth-resend')+button('email-confirm-edit','Modifier mon adresse','entry-auth-resend')+'</div>'+
+ (needsSignIn?'<p class="entry-small-note">Si ce compte existe déjà, connectez-vous avec sa méthode habituelle. Un renvoi accepté ne garantit pas la livraison.</p>'+(google?googleButton():''):'')+
+ '<p class="entry-small-note">Vérifiez aussi les indésirables.'+(invitation?' Votre invitation reste conservée.':'')+'</p></section></div>';
 }
 
 export function profileAccountChoiceHtml(user){
  // These screens are rendered for an already authenticated Supabase session.
  // Show which identity is active and offer a way back to sign-in without deleting a profile.
  const email=user?.email?esc(user.email):'un compte connecté';
- return '<div class="profile-account-choice" role="group" aria-label="Compte LoveRoll">'+
+ return '<div class="entry-account-choice" role="group" aria-label="Compte LoveRoll">'+
  '<p>Compte actuellement connecté : <strong>'+email+'</strong></p>'+
- '<button type="button" class="profile-switch-account" data-action="use-existing-account">'+
+ '<button type="button" class="entry-switch-account" data-action="use-existing-account">'+
  '↗ Se connecter à mon compte existant</button>'+
  '<small>Si c’est bien votre compte, complétez seulement les informations manquantes. Aucune donnée ne sera supprimée.</small>'+
  '</div>';
@@ -192,51 +132,17 @@ export function profileGenderSelect(gender='',id='profile-gender'){
    '<option value="her"'+(chosen==='her'?' selected':'')+'>Femme</option>'+
   '</select></label>';
 }
-export function inviteProfileHtml(user,profile){
- const name=profile?.display_name||user?.user_metadata?.given_name||
-  user?.user_metadata?.full_name||user?.user_metadata?.name||'';
- return '<div class="invite-account-screen invite-profile-screen">'+
-  '<header class="invite-account-hero"><div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
-  '<p>LA COMPLICITÉ SE JOUE À DEUX</p>'+
-  '<div class="invite-account-progress"><div class="invite-progress-item is-done"><b>✓</b><span>Invitation acceptée</span></div>'+
-  '<div class="invite-progress-line"><i></i></div><div class="invite-progress-item is-current"><b>2</b><span>Votre profil</span></div></div></header>'+
-  '<section class="invite-auth-card invite-profile-card"><h1>Un peu plus sur vous ♡</h1>'+
-  '<p>Ces informations terminent votre inscription personnelle avant de rejoindre votre partenaire.</p>'+
-  profileAccountChoiceHtml(user)+
-  '<label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+
-  '<h3>Votre anniversaire</h3>'+monthDayInputs('signup-birth',profile?.birthday_md||'')+
-  wellbeingFields()+
-  '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+
-  button('complete-registration','Terminer et rejoindre LoveRoll ♡','invite-auth-submit')+
-  '<p class="invite-small-note">Le mot de passe du compte et la phrase secrète du journal sont distincts.</p>'+
-  '</section></div>';
+function profileScreen(user,profile,invitation){
+ const name=profile?.display_name||user?.user_metadata?.given_name||user?.user_metadata?.full_name||user?.user_metadata?.name||'';
+ return '<div class="entry-account-screen auth-editorial entry-profile-screen">'+entryHeader(invitation,invitation)+
+ '<section class="entry-auth-card entry-profile-card"><h1>Votre profil.</h1><p>Quelques informations pour personnaliser LoveRoll.</p>'+profileAccountChoiceHtml(user)+
+ '<form class="editorial-form" onsubmit="return false"><label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+
+ '<div class="entry-birthday"><span>Votre anniversaire</span>'+monthDayInputs('signup-birth',profile?.birthday_md||'')+'</div>'+
+ '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+button('complete-registration','Terminer mon inscription','entry-auth-submit')+'</form>'+
+ '<p class="entry-small-note">Seuls le mois et le jour sont conservés.</p>'+button('use-existing-account','‹ Retour à la connexion','entry-auth-back')+'</section></div>';
 }
-export function inviteWellbeingHtml(current=null,user=null){
- return '<div class="invite-account-screen invite-profile-screen"><header class="invite-account-hero">'+
-  '<div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
-  '<p>LA COMPLICITÉ SE JOUE À DEUX</p></header>'+
-  '<section class="invite-auth-card invite-profile-card"><h1>Votre ressenti ♡</h1>'+
-  profileAccountChoiceHtml(user)+
-  wellbeingFields(current)+button('save-wellbeing','Continuer vers LoveRoll ♡','invite-auth-submit')+
-  '</section></div>';
-}
-export function profileHtml(user,profile){
- const name=profile?.display_name||user?.user_metadata?.full_name||
- user?.user_metadata?.name||'';
- return '<div class="auth-panel"><div class="eyebrow">ÉTAPE 1 SUR 2 · MON PROFIL</div>'+
- '<h2>Enchanté·e ♡</h2>'+
- profileAccountChoiceHtml(user)+
- '<p>Ton nom peut venir de Google ou Apple. Tu peux le corriger avant de continuer.</p>'+
- '<label>Mon nom à afficher<input id="profile-name" maxlength="80" autocomplete="given-name" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+
- '<h3>🎂 Mon anniversaire</h3>'+
- '<p>Il est renseigné une seule fois, à l’inscription, pour les événements spéciaux. Nous ne conservons que le mois et le jour.</p>'+
- monthDayInputs('signup-birth',profile?.birthday_md||'')+
- wellbeingFields()+
- '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+
- button('complete-registration','♡ Créer mon profil')+
- '<p class="tiny-note">Ton partenaire entrera lui-même son propre nom et son anniversaire.</p>'+
- '</div>';
-}
+export function inviteProfileHtml(user,profile){return profileScreen(user,profile,true);}
+export function profileHtml(user,profile){return profileScreen(user,profile,false);}
 export function matchHtml(name,invitation){
  return '<div class="auth-panel"><div class="eyebrow">ÉTAPE 2 SUR 2 · NOTRE MATCH</div>'+
  '<h2>Bienvenue '+esc(name)+' ♡</h2>'+
@@ -248,39 +154,4 @@ export function matchHtml(name,invitation){
  button('prepare-cards','♡ Préparer mes défis avant l’invitation')+
  button('create-couple','♡ Créer notre espace à deux'))+
  '</div>';
-}
-
-export function bindWellbeingMenus(container=document){
- container.querySelectorAll('.love-answer-field').forEach(field=>{
-  const trigger=field.querySelector('[data-love-answer-open]');
-  const dialog=field.querySelector('.love-answer-dialog');
-  const valueField=field.querySelector('input[type="hidden"]');
-  if(!trigger||!dialog||!valueField)return;
-  const close=()=>{if(dialog.open)dialog.close();trigger.setAttribute('aria-expanded','false');trigger.focus();};
-  trigger.addEventListener('click',()=>{
-   if(dialog.open)return;
-   dialog.showModal();
-   trigger.setAttribute('aria-expanded','true');
-   const selected=dialog.querySelector('[aria-checked="true"]');
-   (selected||dialog.querySelector('.love-answer-option'))?.focus();
-  });
-  dialog.querySelectorAll('.love-answer-option').forEach(option=>{
-   option.addEventListener('click',()=>{
-    valueField.value=option.dataset.loveAnswerValue;
-    trigger.querySelector('.love-answer-current').textContent=
-     option.querySelector('.love-answer-option-label').textContent;
-    dialog.querySelectorAll('.love-answer-option').forEach(item=>
-     item.setAttribute('aria-checked',item===option?'true':'false'));
-    close();
-   });
-  });
-  dialog.querySelector('[data-love-answer-close]')?.addEventListener('click',close);
-  dialog.addEventListener('cancel',()=>trigger.setAttribute('aria-expanded','false'));
-  dialog.addEventListener('click',event=>{
-   if(event.target!==dialog)return;
-   const rect=dialog.getBoundingClientRect();
-   if(event.clientX<rect.left||event.clientX>rect.right||
-      event.clientY<rect.top||event.clientY>rect.bottom)close();
-  });
- });
 }

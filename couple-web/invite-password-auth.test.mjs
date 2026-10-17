@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loginEmail,requireLovePassword,passwordQuality,verifiedLoveEmail,
  passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
-import {authHtml,inviteProfileHtml,inviteWellbeingHtml,matchHtml} from './onboarding.mjs';
+import {authHtml,inviteProfileHtml,matchHtml} from './onboarding.mjs';
 import {discoverHtml} from './discover.mjs';
 import {inviteLinkForId,parseInvitationFromUrl} from './invite-links.mjs';
 const read=name=>readFileSync(new URL('./'+name,import.meta.url),'utf8');
@@ -60,16 +60,12 @@ test('Supabase password and recovery methods are actually used',()=>{
  assert.doesNotMatch(app,/localStorage\.setItem\([^)]*password/i);
  assert.match(app,/data\?\.session\?\.user/);
 });
-test('Profile completion stays personal and auto matching waits for wellbeing',()=>{
+test('Profile completion and matching require a personal profile, never wellbeing answers',()=>{
  const profile=inviteProfileHtml({user_metadata:{given_name:'Alex'}},null);
- assert.match(profile,/profile-name/);
- assert.match(profile,/signup-birth/);
- assert.match(profile,/wellbeing-relationship/);
- assert.match(profile,/wellbeing-intimacy/);
- assert.match(profile,/age-confirm/);
- assert.match(profile,/complete-registration/);
- assert.match(inviteWellbeingHtml(),/save-wellbeing/);
- assert.match(app,/!state\.profile\?\.birthday_md\|\|!state\.wellbeing/);
+ for(const field of ['profile-name','signup-birth','profile-gender','age-confirm','complete-registration'])assert.ok(profile.includes(field));
+ assert.doesNotMatch(profile,/wellbeing-|save-wellbeing|Mon ressenti/);
+ assert.doesNotMatch(app,/birthday_md\|\|!state\.wellbeing/);
+ assert.doesNotMatch(app,/rpc\('save_my_wellbeing'/);
 });
 test('Invitation UUID survives browser handoff and server validates email atomically',()=>{
  const link=inviteLinkForId('https://fredvolks.github.io/mon-wallet-android/',inviteId);

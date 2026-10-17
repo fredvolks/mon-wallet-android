@@ -19,14 +19,14 @@ test('Profile is separate from exactly five editorial settings routes',()=>{
 test('Detail navigation retains creator guard, back route and dirty-form confirmation',()=>{
  assert.match(app,/function openSettingsPage/);
  assert.match(app,/section==='admin'&&!isLoveAdmin\(\)/);
- assert.match(app,/button\('settings-page:','<span/);
+ assert.match(app,/editorialHeader\(page\?'settings-page:'/);
  assert.match(app,/verb==='settings-page'[\s\S]*?hasUnsavedForm\(\)/);
  assert.match(app,/settingsOpenSection=section;state.tab='settings'/);
 });
 
 test('All existing settings actions are still wired',()=>{
  for(const name of ['profile','signout','save-couple-date','end-couple',
-  'admin-reset-all-dice','native-update','reload-web','save-wellbeing']){
+  'admin-reset-all-dice','native-update','reload-web']){
   assert.ok(app.includes("if(verb==='"+name+"')"),name);
  }
  for(const name of ['tab:library','tab:monthly-library','tab:advent-editor',
@@ -36,8 +36,8 @@ test('All existing settings actions are still wired',()=>{
 });
 
 test('Settings theme is scoped and loaded last with cache revision',()=>{
- assert.match(index,/settings-premium\.css\?v=20261017-ecrin120/);
- assert.match(index,/app\.js\?v=20261017-ecrin120/);
+ assert.match(index,/settings-premium\.css\?v=20261017-editorial121/);
+ assert.match(index,/app\.js\?v=20261017-editorial121/);
  assert.match(css,/main#app\.loveroll-settings-page/);
  assert.match(css,/grid-template-rows:repeat\(5,minmax\(58px,1fr\)\)/);
  assert.match(css,/\.settings-row-icon/);
@@ -49,9 +49,9 @@ test('Settings theme is scoped and loaded last with cache revision',()=>{
 test('Native version is real and unavailable notifications are not marked as on',()=>{
  assert.match(native,/getPackageManager\(\)\.getPackageInfo\(getPackageName\(\),0\)/);
  assert.match(app,/window\.LoveRollNativeAuth\.appVersion\(\)/);
- assert.match(push,/available&&prefs\[key\]!==false/);
- assert.match(push,/\(!available\?' disabled':''\)/);
- assert.match(push,/weeklyReminderEnabled/);
+ assert.match(push,/prefs\[key\]!==false/);
+ assert.match(push,/\(!active\?' disabled':''\)/);
+ assert.match(push,/weeklyReminderEnabled/);assert.match(push,/device\?\.registered===true/);
 });
 
 test('Couple menu removes fictional preview and directs the invitation CTA to the real invite screen',()=>{

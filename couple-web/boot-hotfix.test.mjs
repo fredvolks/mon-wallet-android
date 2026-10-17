@@ -5,8 +5,10 @@ const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const app=read('app.js'),html=read('index.html'),sw=read('service-worker.js');
 const boot=read('boot-recovery.js'),preflight=read('check-shipped-js.cjs');
 const workflow=read('../.github/workflows/deploy-couple-web.yml');
-test('Avent cancel editor button cannot terminate a JS string and poison the full module',()=>{
- assert.ok(app.includes(`button('close-advent-day','Annuler','class="subtle"')+'</section>'`));
+test('Advent editor uses the shared form without the obsolete malformed inline cancel string',()=>{
+ const editors=read('editorial-editors.mjs');
+ assert.match(editors,/export function adventEditorHtml/);
+ assert.match(editors,/editorButton\('save-advent-day'/);
  assert.ok(!app.includes(`button('close-advent-day','Annuler','class="subtle")+'</section>'`));
 });
 test('Google OAuth explicitly uses official Google account chooser',()=>{
@@ -24,7 +26,7 @@ test('Reliable PWA boot has a standalone module failure fallback and user-visibl
  assert.match(boot,/serviceWorker\.getRegistration\(\)/);
  assert.match(boot,/location\.replace\(url\.href\)/);
  assert.doesNotMatch(boot,/localStorage\.clear|sessionStorage\.clear|caches\.delete/);
- assert.match(sw,/loveroll-static-v120/);
+ assert.match(sw,/loveroll-static-v121/);
  assert.match(sw,/\.\/boot-recovery\.js/);
 });
 test('Pages publishing refuses any JS syntax error and a failed real Chromium boot',()=>{

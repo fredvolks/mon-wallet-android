@@ -22,8 +22,7 @@ test('100 Sensuel and 100 Sexuel card slots, without an editor split',()=>{
   assert.equal(a[99].cardId,100);
  }
  const app=read('app.js');
- assert.ok(app.includes("'<h3>100 cartes · '+safe(names[category])"));
- assert.ok(app.includes('table(slots)'));
+ const editor=read('editorial-editors.mjs');assert.ok(editor.includes('editableCardSlots(category,state.customCards)'));assert.ok(editor.includes('slots.map(slot=>'));assert.ok(editor.includes('100 emplacements par catégorie'));
  assert.ok(!app.includes('25 cartes prêtes'));
  assert.ok(!app.includes('75 emplacements personnalisables'));
  assert.deepEqual(playableEveningCount(),{sensual:25,sexual:25,total:50});

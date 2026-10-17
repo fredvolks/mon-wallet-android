@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import { marketingHtml,authHtml,profileHtml,wellbeingFields,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
+import { marketingHtml,authHtml,profileHtml,matchHtml,monthDayInputs,parseMonthDay } from './onboarding.mjs';
 import { EVENING_CATEGORIES,EVENING_CHALLENGES,eveningCard,availableEveningCategories,formatCountdown,customCardSlots,editableCardSlots,resolvedCard } from './evening-challenges.mjs';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
 import {ADVENT_YEAR,validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {validateSpecialEventsJson,privateSpecialKey,SPECIAL_EVENT_KEYS} from './private-special-events.mjs';
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,nthSunday,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
+const editorSource=['editorial-editors.mjs','editorial-ui.mjs'].map(p=>readFileSync(new URL('./'+p,import.meta.url),'utf8')).join('\n');
 const sql=readFileSync(new URL('./schema.sql',import.meta.url),'utf8');
 test('User names originate from the authenticated profile',()=>{
  assert.match(app,/state\.profile\.display_name/);
@@ -313,7 +314,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v120/);
+ assert.match(sw,/loveroll-static-v121/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -333,7 +334,7 @@ test('Compact v2 keeps exactly six zones and all essential content',()=>{
 });
 
 
-test('Two per-person wellbeing questions offer non-disclosing responses',async()=>{
+test('Historical wellbeing guidance is preserved without asking or fabricating new answers',async()=>{
  const {RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS,guidanceFor,guidedIdeas}=await import('./wellbeing.mjs');
  assert.equal(RELATIONSHIP_OPTIONS.length,5);
  assert.equal(INTIMACY_OPTIONS.length,6);
@@ -345,9 +346,8 @@ test('Two per-person wellbeing questions offer non-disclosing responses',async()
  assert.equal(guidanceFor('good','fulfilled'),'quality');
  assert.equal(guidanceFor('great','fulfilled'),'playful');
  assert.equal(guidedIdeas('gentle').ideas.length,3);
- assert.match(profileHtml({user_metadata:{name:'Camille'}},null),/wellbeing-relationship/);
- assert.match(profileHtml({user_metadata:{name:'Camille'}},null),/wellbeing-intimacy/);
- assert.match(app,/save_my_wellbeing/);
+ assert.doesNotMatch(profileHtml({user_metadata:{name:'Camille'}},null),/wellbeing-relationship|wellbeing-intimacy/);
+ assert.doesNotMatch(app,/rpc\('save_my_wellbeing'/);
  assert.match(app,/get_love_guidance/);
 });
 test('Removing a partner retains their own diary and removes access at the server',()=>{
@@ -388,22 +388,12 @@ test('Embedded Android account screen uses Google native bridge and secure passw
  assert.match(app,/launchParams\.has\('settings'\)/);
 });
 
-test('Wellbeing selectors use dark custom dialogs, not white Android select popups',()=>{
- const html=wellbeingFields();
- const css=readFileSync(new URL('./styles.css',import.meta.url),'utf8');
- const manifest=readFileSync(new URL('../app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
- const theme=readFileSync(new URL('../app/src/main/res/values/styles.xml',import.meta.url),'utf8');
- assert.equal(html.split('class="love-answer-dialog"').length-1,2);
- assert.equal(html.split('class="love-answer-trigger"').length-1,2);
- assert.equal(html.split('type="hidden" id="wellbeing-').length-1,2);
- assert.equal(html.includes('<select id="wellbeing-'),false);
- assert.ok(html.includes('role="radiogroup"'));
- assert.ok(css.includes('dialog.love-answer-dialog::backdrop'));
- assert.ok(css.includes('button.love-answer-option[aria-checked="true"]'));
- assert.ok(app.includes('bindWellbeingMenus()'));
- assert.ok(theme.includes('name="LoveRollConnectedTheme"'));
- assert.ok(theme.includes('parent="android:style/Theme.Material.NoActionBar"'));
- assert.ok(manifest.includes('android:theme="@style/LoveRollConnectedTheme"'));
+test('Registration needs an explicit age confirmation and has no wellbeing controls',()=>{
+ const html=profileHtml({email:'test@example.com'},null);
+ assert.match(html,/id="age-confirm"/);
+ assert.doesNotMatch(html,/id="age-confirm"[^>]*checked|wellbeing-|save-wellbeing|Mon ressenti/);
+ assert.doesNotMatch(app,/if\(!state\.wellbeing\)/);
+ assert.match(app,/id\('age-confirm'\)\?\.checked/);
 });
 
 test('Unpaired members only see invitation, personal account, calendar and private card editing',()=>{
@@ -575,15 +565,15 @@ test('All card draws respect drawer eligibility and persistent no-repeat cycles'
   'case when chosen.card_id is not null'
  ])assert.ok(sql.includes(fragment),'Missing draw or permission rule: '+fragment);
  assert.ok(app.includes("function isLoveAdmin()"));
- assert.ok(app.includes("button('save-draw-rule'"));
- assert.ok(app.includes("id=\"no-repeat-cards\""));
+ assert.ok(editorSource.includes("editorButton('save-draw-rule'"));
+ assert.ok(editorSource.includes("id=\"no-repeat-cards\""));
  assert.ok(app.includes("rpc('set_love_draw_rule'"));
  assert.ok(app.includes("p_drawer_role:drawer"));
  assert.ok(app.includes("custom-drawer"));
  assert.ok(app.includes("custom-recipient"));
  assert.ok(app.includes("state.customSlot=slot"));
  assert.ok(app.includes("slot<1||slot>100"));
- assert.ok(app.includes("Restaurer cette carte d’origine"));
+ assert.ok(editorSource.includes("Restaurer l’original"));
  assert.ok(!app.includes("CARTE '+safe(challenge.cardId"));
 });
 
@@ -616,8 +606,8 @@ test('Prepare cards privately before inviting a partner with future partner role
  assert.ok(app.includes("create_love_match',{p_anniversary_md:null}"));
  assert.ok(app.includes("state.tab='library'"));
  assert.ok(app.includes('Créer mes défis avant l’invitation'));
- assert.ok(app.includes("him:'Homme'"));
-  assert.ok(app.includes("her:'Femme'"));
+ assert.ok(editorSource.includes("him:'Homme'"));
+  assert.ok(editorSource.includes("her:'Femme'"));
  assert.ok(app.includes('save_love_card_with_roles'));
  assert.ok(app.includes('p_recipient_role:recipient'));
  assert.ok(app.includes('p_drawer_role:drawer'));
@@ -963,5 +953,5 @@ test('Premium screens share a responsive dice and invitation layout on mobile an
  assert.match(app,/premiumHomeHtml\(\{/);
  assert.match(app,/heroDice\(null,100/);
  assert.match(app,/heroDice\(null,20/);
- assert.match(onboarding,/invite-auth-segments/);
+ assert.match(onboarding,/entry-auth-segments/);
 });

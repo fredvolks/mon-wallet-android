@@ -40,7 +40,7 @@ const {chromium}=require('playwright');
     eventVisible:([...panel.querySelectorAll('.surprise-event-card')].every(el=>{const r=el.getBoundingClientRect();return r.width>70&&r.height>34&&r.bottom<=nav.top+2})),
     eventColumns:panel.querySelector('.surprise-special-grid')?getComputedStyle(panel.querySelector('.surprise-special-grid')).gridTemplateColumns.split(' ').length:0,
     surpriseDice:[...panel.querySelectorAll('.surprise-d20-scene,.surprise-invite-die')].map(zone=>{
-      const c=zone.querySelector('.dice-canvas'),r=zone.getBoundingClientRect(),d=c?.getBoundingClientRect();
+      const c=zone.querySelector('.dice-canvas'),r=zone.getBoundingClientRect(),raw=c?.getBoundingClientRect(),mesh=c?.loveRollDie?.projectedBounds?.(),d=mesh?{left:raw.left+mesh.left*raw.width,right:raw.left+mesh.right*raw.width,top:raw.top+mesh.top*raw.height,bottom:raw.top+mesh.bottom*raw.height,width:(mesh.right-mesh.left)*raw.width,height:(mesh.bottom-mesh.top)*raw.height}:raw;
       const btn=zone.classList.contains('surprise-invite-die')?
        zone.closest('.surprise-invite-inside')?.querySelector('.surprise-invite-button'):
        zone.closest('section')?.querySelector(':scope > .surprise-primary');
@@ -54,7 +54,7 @@ const {chromium}=require('playwright');
     partnerCard:panel.querySelector('.evening-partner-card')?.getBoundingClientRect().width||0,
     d35:panel.querySelector('.evening-d35-col .love3d-stage')?.getBoundingClientRect().height||0,
     d35Visible:(()=>{const e=panel.querySelector('.evening-d35-col .love3d-stage');
-      if(!e)return false;const r=e.getBoundingClientRect(),p=panel.querySelector('.evening-die-row')?.getBoundingClientRect();
+      if(!e)return false;const canvas=e.querySelector('canvas'),raw=canvas.getBoundingClientRect(),mesh=canvas.loveRollDie?.projectedBounds?.(),r=mesh?{left:raw.left+mesh.left*raw.width,right:raw.left+mesh.right*raw.width,top:raw.top+mesh.top*raw.height,bottom:raw.top+mesh.bottom*raw.height,width:(mesh.right-mesh.left)*raw.width,height:(mesh.bottom-mesh.top)*raw.height}:raw,p=panel.querySelector('.evening-die-row')?.getBoundingClientRect();
       return !!p&&r.height>90&&r.width>90&&r.left>=p.left-2&&r.right<=p.right+2&&r.top>=p.top-2&&r.bottom<=p.bottom+2;})(),
     managePresent:!!panel.querySelector('.evening-manage[data-action="evening-more"]'),
     parityLegend:!!panel.querySelector('.surprise-host-legend'),
@@ -114,7 +114,7 @@ const {chromium}=require('playwright');
     targetBottom:Math.round(rect.bottom),navTop:Math.round(document.querySelector('.nav').getBoundingClientRect().top),
     navCount:document.querySelectorAll('.nav button').length,
     surpriseDice:[...document.querySelectorAll('.surprise-d20-scene,.surprise-invite-die')].map(zone=>{
-      const canvas=zone.querySelector('canvas'),r=zone.getBoundingClientRect(),d=canvas?.getBoundingClientRect();
+      const canvas=zone.querySelector('canvas'),r=zone.getBoundingClientRect(),raw=canvas?.getBoundingClientRect(),mesh=canvas?.loveRollDie?.projectedBounds?.(),d=mesh?{left:raw.left+mesh.left*raw.width,right:raw.left+mesh.right*raw.width,top:raw.top+mesh.top*raw.height,bottom:raw.top+mesh.bottom*raw.height}:raw;
       const b=(zone.classList.contains('surprise-invite-die')?
         zone.closest('.surprise-invite-inside')?.querySelector('.surprise-invite-button'):
         zone.closest('section')?.querySelector(':scope > .surprise-primary'))?.getBoundingClientRect();

@@ -30,7 +30,7 @@ test('Activity modal shows the server-confirmed title, description and timer and
 });
 test('Ecrin has one stylesheet owner with Home tokens, visible overflow and a 3 by 2 grid',()=>{
  const sw=read('service-worker.js'),ver=JSON.parse(read('web-version.json'));
- assert.equal(ver.build,'2026-10-17.120');assert.match(sw,/loveroll-static-v120/);
+ assert.equal(ver.build,'2026-10-17.121');assert.match(sw,/loveroll-static-v121/);
  assert.doesNotMatch(index,/href=".\/surprise-responsive-v86|href=".\/surprise-dice-layout-v73/);
  assert.ok(index.lastIndexOf('surprise-refined-v104.css')>index.lastIndexOf('premium-theme.css'));
  assert.match(css,/height:100dvh/);assert.doesNotMatch(css,/overflow:hidden|!important/);

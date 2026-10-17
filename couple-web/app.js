@@ -1,15 +1,17 @@
-import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,profileGenderSelect,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261016-gender111';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-editorial121';
+import {editorialHeader,editorialRow,editorialIcon} from './editorial-ui.mjs?v=20261017-editorial121';
+import {cardLibraryHtml,monthlyEditorHtml,adventEditorHtml,specialEditorHtml,importEditorHtml} from './editorial-editors.mjs?v=20261017-editorial121';
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261017-advent119';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261017-entry118';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261017-editorial121';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-editorial117';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-editorial117';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-ecrin120';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-editorial121';
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -22,21 +24,21 @@ import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261017-advent119';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-restore113';
-import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
-import {guidedIdeas,guidanceFor,RELATIONSHIP_OPTIONS,INTIMACY_OPTIONS} from './wellbeing.mjs';
+import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs?v=20261017-editorial121';
+import {guidedIdeas,guidanceFor} from './wellbeing.mjs';
 
 import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,occasionRoles,TARGETED_OCCASIONS } from './special-occasions.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
-import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken} from './push-notifications.mjs';
+import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken,currentPushDevice} from './push-notifications.mjs?v=20261017-editorial121';
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-17.120';
+const WEB_RELEASE='2026-10-17.121';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -47,7 +49,7 @@ const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
 let settingsOpenSection=requestedSettingsSection||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
- tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
+ tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,customSearch:'',customFilter:'all',monthlyActivities:[],monthlySlot:1,libraryScreen:'list',libraryImportKind:null,specialEditorKey:null,specialEditorStage:'D6_activite',specialEditorFace:1,adventEditorDay:1,pushDevice:null,
  events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventRevealing:false,adventServerDate:null,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
@@ -136,7 +138,7 @@ let lastFormTab=null;
 let allowBackExit=false;
 function snapshotDraft(){
  const inputs=[...root.querySelectorAll('input[id],select[id],textarea[id]')].filter(el=>
-  !el.disabled&&!el.readOnly&&!['password','file','hidden'].includes(el.type));
+  !el.disabled&&!el.readOnly&&!el.hasAttribute('data-draft-ignore')&&!['password','file','hidden'].includes(el.type));
  return inputs.filter(el=>{
   if(el.type==='checkbox'||el.type==='radio')return el.checked!==el.defaultChecked;
   if(el.tagName==='SELECT'){
@@ -148,6 +150,7 @@ function snapshotDraft(){
     id:el.id,value:el.value,checked:el.checked,type:el.type
  }));
 }
+function formRouteKey(){return [state.tab,settingsOpenSection,state.libraryScreen,state.libraryImportKind,state.customCategory,state.customSlot,state.monthlySlot,state.adventEditorDay,state.specialEditorKey,state.specialEditorStage,state.specialEditorFace].join('|');}
 function hasUnsavedForm(){return snapshotDraft().length>0;}
 function restoreDraft(draft){
  for(const field of draft||[]){
@@ -173,6 +176,8 @@ function backFromLoveRoll(){
  if(state.homeNotices){state.homeNotices=false;render();return true;}
  if(state.confirmCancel){state.confirmCancel=false;render();return true;}
  if(state.specialFocus){state.specialFocus=null;state.tab='special';render();return true;}
+ if(state.tab==='settings'&&settingsOpenSection){handle('settings-page:'+(['admin'].includes(settingsOpenSection)?'jeu':settingsOpenSection.startsWith('aide')?'application':'')).catch(fail);return true;}
+ if(['library','monthly-library','advent-editor','special-editor'].includes(state.tab)){handle(state.libraryImportKind?'editor-import-back':state.tab==='library'&&state.libraryScreen==='edit'?'editor-back':state.specialEditorKey?'special-editor-back':'settings-page:jeu').catch(fail);return true;}
  const parent={
   library:'settings','monthly-library':'settings','advent-editor':'settings',
   'special-editor':'settings','personal-journal':'settings',journal:'session','evening-calendar':'session',
@@ -201,15 +206,16 @@ document.addEventListener('keydown',event=>{
 let diceView=null;
 function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
  const openerAction=document.activeElement?.dataset?.action||null;
- const draft=lastFormTab===state.tab?snapshotDraft():[];
- lastFormTab=state.tab;
- const connected=!!(state.user&&state.profile?.birthday_md&&state.wellbeing);
+ const draft=lastFormTab===formRouteKey()?snapshotDraft():[];
+ lastFormTab=formRouteKey();
+ const connected=!!(state.user&&state.profile?.birthday_md);
  const isCouple=connected&&isSharedCoupleReady(state.coupleId,state.members);
  const realHome=isCouple&&state.tab==='home';
  const realEvening=isCouple&&state.tab==='session'&&(!state.session||(state.session.paired_turns&&state.session.self_draws));
  const eveningArchive=isCouple&&state.tab==='evening-calendar';
  const realSurprise=isCouple&&state.tab==='special';
  const realSettings=connected&&state.tab==='settings';
+ const realEditor=connected&&['library','monthly-library','advent-editor','special-editor'].includes(state.tab);
  root.classList.toggle('loveroll-advent-page',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-advent-letters',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-real-home',realHome);
@@ -220,7 +226,9 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.classList.toggle('loveroll-surprise-ecrin',realSurprise);
  root.classList.toggle('loveroll-settings-menu',realSettings&&!settingsOpenSection);
  root.classList.toggle('loveroll-settings-detail',realSettings&&!!settingsOpenSection);
- root.classList.toggle('loveroll-settings-page',connected&&state.tab==='settings');
+ root.classList.toggle('loveroll-settings-page',realSettings||realEditor);
+ root.classList.toggle('loveroll-library-page',realEditor);
+ root.classList.toggle('loveroll-library-list',realEditor&&state.tab==='library'&&state.libraryScreen!=='edit'&&!state.libraryImportKind);
  // Preserve the SAME D100 canvas through UI refreshes with an unchanged face.
  const oldD100=realEvening?root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]'):null;
  const savedStage=oldD100?.loveRollDie&&oldD100?.loveRollCleanup?
@@ -255,7 +263,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   sessionId:state.reviewModalSessionId,draft:state.reviewDraft||{},
   saving:state.reviewSaving,partnerName:other()?.name?.split(' ')[0]||'ton partenaire'
  }):'';
- root.innerHTML=(realHome||realEvening||realSurprise||realSettings||eveningArchive||(isCouple&&state.tab==='advent')?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
+ root.innerHTML=(realHome||realEvening||realSurprise||realSettings||realEditor||eveningArchive||(isCouple&&state.tab==='advent')?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
  if(savedStage){
   const freshD100=root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]');
   const freshStage=freshD100?.closest('.love3d-stage');
@@ -284,7 +292,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261017-ecrin120').then(({dieOn})=>{
+  import('./dice3d.js?v=20261017-editorial121').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected||canvas.loveRollDie)continue;
@@ -317,10 +325,11 @@ function bindActions(){
  const librarySearch=root.querySelector('#custom-card-search');
  const libraryFilter=root.querySelector('#custom-card-filter');
  const updateLibraryFilter=()=>{
-  const term=(librarySearch?.value||'').trim().toLocaleLowerCase('fr-CA');
-  const choice=libraryFilter?.value||'all';
+  state.customSearch=librarySearch?.value||'';state.customFilter=libraryFilter?.value||'all';
+  const term=state.customSearch.trim().toLocaleLowerCase('fr-CA');
+  const choice=state.customFilter;
   root.querySelectorAll('.custom-card-tiles button[data-card-id]').forEach(card=>{
-   const matchesText=(card.textContent||'').toLocaleLowerCase('fr-CA').includes(term);
+   const matchesText=((card.textContent||'')+' '+(card.dataset.keywords||'')).toLocaleLowerCase('fr-CA').includes(term);
    const matchesKind=choice==='all'||choice==='edited'&&card.dataset.saved==='true'||
     choice==='empty'&&card.dataset.empty==='true';
    card.hidden=!(matchesText&&matchesKind);
@@ -328,11 +337,16 @@ function bindActions(){
  };
  librarySearch?.addEventListener('input',updateLibraryFilter);
  libraryFilter?.addEventListener('change',updateLibraryFilter);
+ if(librarySearch)updateLibraryFilter();
  document.querySelectorAll('[data-action]').forEach(el=>{
-  el.addEventListener('click',()=>handle(el.dataset.action,el).catch(fail));
+  el.addEventListener('click',()=>{
+   if(el.disabled||el.dataset.busy==='true')return;
+   el.dataset.busy='true';el.setAttribute('aria-busy','true');
+   handle(el.dataset.action,el).catch(fail).finally(()=>{delete el.dataset.busy;el.removeAttribute('aria-busy');});
+  });
  });
  // Numeric keyboard: convert typed digits into JJ/MM/AAAA without opening a date picker.
- const surpriseDate=id('surprise-event-date');
+ const surpriseDate=id('surprise-event-date')||id('editor-event-date');
  surpriseDate?.addEventListener('input',()=>{
   const raw=surpriseDate.value,at=surpriseDate.selectionStart??raw.length;
   const digitsBefore=raw.slice(0,at).replace(/\D/g,'').length;
@@ -346,11 +360,21 @@ function bindActions(){
   }
   surpriseDate.setSelectionRange(caret,caret);
  });
+ root.querySelectorAll('[data-editor-select]').forEach(select=>select.addEventListener('change',()=>{
+  const value=select.value;select.value=[...select.options].find(o=>o.defaultSelected)?.value||select.options[0].value;
+  handle(select.dataset.editorSelect+':'+value).catch(fail);
+ }));
+ root.querySelectorAll('.editorial-timer input[type=checkbox]').forEach(input=>{
+  const sync=()=>{input.closest('.editorial-timer').querySelector('.editorial-timer-duration').hidden=!input.checked;};
+  input.addEventListener('change',sync);sync();
+ });
+ root.querySelectorAll('.json-tools textarea').forEach(input=>input.addEventListener('input',()=>{state.jsonPending=null;root.querySelector('.json-preview')?.remove();const name=id('json-file-name');if(name)name.textContent='';}));
  document.querySelectorAll('input[data-json-file]').forEach(input=>input.addEventListener('change',async()=>{
-  const file=input.files?.[0];if(!file)return;
+  const file=input.files?.[0];if(!file)return;state.jsonPending=null;root.querySelector('.json-preview')?.remove();
+  const filename=id('json-file-name');if(filename)filename.textContent='';
   if(file.size>MAX_IMPORT_BYTES){fail(Error('Fichier trop volumineux : 250 Ko maximum.'));return;}
   const output=id(jsonInputId(input.dataset.jsonFile));if(!output)return;
-  try{output.value=await file.text();state.jsonPending=null;notify('Fichier chargé. Vérifiez son aperçu.');}catch(e){fail(e);}
+  try{const text=await file.text();if(!output.isConnected)return;output.value=text;state.jsonPending=null;root.querySelector('.json-preview')?.remove();const status=id('json-file-name');if(status)status.textContent=file.name;notify('Fichier chargé. Vérifiez son aperçu.');}catch(e){fail(e);}
  }));
  document.querySelectorAll('[data-push-option]').forEach(input=>input.addEventListener('change',async()=>{
   const type=input.dataset.pushOption;
@@ -369,13 +393,13 @@ function bindActions(){
  document.querySelector('#invite-auth-form')?.addEventListener('submit',event=>event.preventDefault());
  const passwordField=id('signin-password');
  passwordField?.addEventListener('input',()=>{
-  const quality=passwordQuality(passwordField.value),meter=document.querySelector('.invite-password-meter');
+  const quality=passwordQuality(passwordField.value),meter=document.querySelector('.entry-password-meter');
   if(!meter)return;
   meter.dataset.level=String(quality.met);
   const hint=id('auth-password-hint');
   if(hint)hint.textContent=quality.valid?'✓ Mot de passe prêt':'Au moins 8 caractères, avec une majuscule, une minuscule et un chiffre.';
  });
- bindWellbeingMenus();
+
 }
 
 let inviteAcceptanceBusy=false;
@@ -400,7 +424,7 @@ function finishInviteReference(){
 async function autoAcceptPendingInvite(){
  const invite=pendingInviteReference(sessionStorage);
  if(!invite||!state.inviteAccepted||!state.user||state.passwordRecovery||
-    !state.profile?.birthday_md||!state.wellbeing)return;
+    !state.profile?.birthday_md)return;
  if(!verifiedLoveEmail(state.user)){
   state.inviteError='Confirmez votre adresse courriel pour terminer l’invitation.';return;
  }
@@ -416,28 +440,7 @@ async function autoAcceptPendingInvite(){
  finally{inviteAcceptanceBusy=false;}
 }
 function verificationPendingHtml(email){
- // A successful signUp/resend request does not prove delivery. Supabase may
- // deliberately return success for an address already registered with Google.
- const needsSignIn=!state.user;
- return '<div class="invite-account-screen email-confirm-screen">'+
- '<header class="invite-account-hero"><div class="invite-auth-brand"><span>Love</span><strong>Roll</strong><i>♡</i></div>'+
- '<p>LA COMPLICITÉ SE JOUE À DEUX</p></header>'+
- '<section class="invite-auth-card"><div class="email-confirm-envelope" aria-hidden="true">✉ ♡</div>'+
- '<h1>♡ Encore une petite étape !</h1>'+
- '<p>'+(needsSignIn?'Vérifiez votre adresse ou connectez-vous à votre compte existant.':
-   'Votre courriel doit être confirmé pour entrer dans LoveRoll.')+'</p>'+
- '<p class="email-confirm-recipient">'+safe(email||'Votre adresse courriel')+'</p>'+
- '<p>'+(needsSignIn?
-   'Si vous avez déjà utilisé Google avec cette adresse, aucun nouveau courriel ne sera nécessaire.':
-   'Ouvrez le lien de confirmation reçu dans votre boîte courriel.')+'</p>'+
- '<p class="invite-small-note">Pour un nouveau compte, vérifiez aussi les indésirables. Un renvoi accepté ne garantit pas la livraison.</p>'+
- '<div id="email-confirm-status" role="status" aria-live="polite"></div>'+
- (needsSignIn?'<button type="button" data-action="google" class="invite-google"><span class="invite-google-mark" aria-hidden="true">G</span> Continuer avec Google</button>'+
-  button('email-confirm-login','Se connecter avec un compte existant','class="subtle"'):
-  button('email-confirm-recheck','J’ai confirmé mon courriel'))+
- button('email-confirm-resend','Renvoyer le courriel','class="subtle"')+
- button('email-confirm-edit','Modifier mon adresse','class="subtle"')+
- '</section></div>';
+ return emailConfirmationHtml(email,{needsSignIn:!state.user,invitation:!!pendingInviteReference(sessionStorage),google:CONFIG.oauthProviders?.includes('google')===true});
 }
 async function refreshVerifiedIdentity(){
  if(!state.user)return false;
@@ -452,6 +455,7 @@ function authMessage(message){
  else{state.authNotice=message;showInlineError(message);}
 }
 function render(){
+ if(!state.user||state.passwordRecovery||!verifiedLoveEmail(state.user)||!state.profile?.birthday_md){for(const dispose of diceCleanup)dispose();diceCleanup=[];diceView=null;renderToken++;root.className='';}
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
  const pendingInvite=pendingInviteReference(sessionStorage);
@@ -470,7 +474,7 @@ function render(){
   if(!state.user&&!state.showAuth){root.innerHTML=discoverHtml(false);bindActions();}
   else{
    root.innerHTML=authHtml(!!pendingInvite,state.passwordRecovery?'recover':state.authMode,
-    state.authNotice||'',state.authDraftEmail,state.authNeedsEmailConfirmation)+inviteBrowserHelp();
+    state.authNotice||'',state.authDraftEmail,state.authNeedsEmailConfirmation,{google:CONFIG.oauthProviders?.includes('google')===true})+inviteBrowserHelp();
    bindActions();
   }
   return;
@@ -497,12 +501,7 @@ function render(){
  }
  if(!state.profile||!state.profile.birthday_md){
   if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteProfileHtml(state.user,state.profile);bindActions();}
-  else frame(profileHtml(state.user,state.profile),'♡ MON PROFIL','Première connexion : inscription');
-  return;
- }
- if(!state.wellbeing){
-  if(pendingInvite&&state.inviteAccepted){root.innerHTML=inviteWellbeingHtml(null,state.user);bindActions();}
-  else frame(wellbeingHtml(null,state.user),'♡ MON RESSENTI','Vos réponses sont personnelles');
+  else{root.innerHTML=profileHtml(state.user,state.profile);bindActions();}
   return;
  }
  if(state.inviteWelcome){
@@ -592,9 +591,10 @@ async function reload(){
  state.pushPrefs=pushSettings[0]||{enabled:false,weekly:true,invitation:true,monthly:true,special:true};
  const nativeToken=safeNativePushToken();
  if(state.pushPrefs.enabled&&nativeToken){
-  client.rpc('love_claim_native_push_token',{p_token:nativeToken})
-   .then(({error})=>{if(error)console.warn('Enregistrement FCM impossible',error.code||'');});
+  const {error}=await client.rpc('love_claim_native_push_token',{p_token:nativeToken});
+  if(error)console.warn('Enregistrement FCM impossible',error.code||'');
  }
+ state.pushDevice=await currentPushDevice(client,state.user?.id);
 
  state.profile=profiles[0]||null;
  state.wellbeing=assessments[0]||null;
@@ -1322,6 +1322,7 @@ function exportLibraryFile(kind){
  return exportJsonFile('loveroll-'+label+'.json',JSON.stringify(data,null,2));
 }
 function previewPortableJson(kind){
+ state.jsonPending=null;
  const text=id(jsonInputId(kind))?.value||'';
  if(!text.trim())throw Error('Choisissez un fichier JSON ou collez son contenu.');
  if(new Blob([text]).size>MAX_IMPORT_BYTES)throw Error('Le JSON ne doit pas dépasser 250 Ko.');
@@ -1330,34 +1331,12 @@ function previewPortableJson(kind){
  data=normalizeLibraryData(data,kind);
  if(kind==='evening'&&data.category!==state.customCategory)
   throw Error('Choisissez la catégorie '+data.category+' avant cet import.');
- state.jsonPending={kind,data,summary:librarySummary(data,kind)};
+ state.jsonPending={kind,data,summary:librarySummary(data,kind),fileName:id('json-file-name')?.textContent||''};
 }
 function renderSpecialEventsEditor(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
- const current=state.specialEventsConfig;
- let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>Mes 6 événements spéciaux</h2>'+
-  '<p>Collez ici votre fichier JSON complet pour enregistrer les 6 fêtes, leurs 6 activités et leurs 6 variantes surprises pour chaque fête. Les descriptions seront conservées comme vous les avez écrites.</p>'+
-  '<p class="tiny-note">Votre partenaire ne voit pas cette bibliothèque. Il découvre une activité au premier lancer, puis une variation au deuxième.</p>'+
-  (current?'<p>✓ Vos 6 événements sont enregistrés.</p>':
-    '<p>Aucun calendrier spécial personnalisé enregistré.</p>')+
-  '<label>JSON de mes événements spéciaux<textarea id="special-events-json" rows="11"'+
-   ' spellcheck="false" placeholder="{ &quot;evenements_speciaux&quot;: { ... } }">'+
-   safe(current?JSON.stringify(current,null,2):'')+'</textarea></label>'+
-  button('import-special-events','♡ Prévisualiser avant remplacement')+
-  '</section>'+jsonToolsPanel('special','6 événements spéciaux',state.jsonPending);
- if(current){
-  body+='<section class="card"><h3>Mes surprises préparées</h3>'+
-   '<p class="tiny-note">Aperçu réservé à l’administrateur.</p>'+
-   '<div class="custom-card-tiles">'+SPECIAL_EVENT_KEYS.map(key=>{
-    const item=current.evenements_speciaux[key];
-    return '<div class="custom-card-tile"><span class="custom-tile-number">'+
-      safe(item.evenement)+'</span><span class="custom-tile-name">'+
-      safe('6 activités + 6 règles')+'</span></div>';
-   }).join('')+'</div></section>';
- }
- body+='<section class="card">'+button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
- frame(body,'MES FÊTES','6 fêtes · deux surprises à révéler');
+ frame(state.libraryImportKind?importEditorHtml(state):specialEditorHtml(state,
+  sixSpecialEvents(new Date(),state.occasionSettings||{},state.members)),'Événements spéciaux','');
 }
 function renderAdvent(){
  // The database's Toronto clock determines the UI's active day; only the
@@ -1377,41 +1356,7 @@ function renderAdvent(){
 
 function renderAdventEditor(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
- const calendar=calendarFromSaved(state.advent2026Config,state.advent2026Days);
- const title='Calendrier de l’Avent 2026';
- let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>Préparer les 25 cases de décembre</h2>'+
-  '<p>Collez ici votre JSON complet (jours 1 à 25) pour remplacer le contenu du calendrier 2026. Le texte de chaque case est conservé exactement, sans reformulation.</p>'+
-  '<p class="tiny-note">Vous pouvez importer les cases avant d’inviter votre partenaire. Les défis restent privés, et seul le jour déverrouillé est révélé aux deux comptes.</p>'+
-  (calendar?'<p>✓ '+safe(calendar.calendar_title)+' · 25/25 cases enregistrées.</p>':
-    '<p>Les 25 cases personnalisées ne sont pas encore enregistrées.</p>')+
-  '<label>Votre calendrier JSON<textarea id="advent-2026-json" spellcheck="false" rows="10"'+
-  ' placeholder="{ &quot;calendar_title&quot;: &quot;...&quot;, &quot;year&quot;: 2026, &quot;days&quot;: [...] }">'+
-   safe(calendar?JSON.stringify(calendar,null,2):'')+'</textarea></label>'+
-   button('import-advent-2026','♡ Prévisualiser avant remplacement')+
-  '</section>'+jsonToolsPanel('advent','25 cases de l’Avent',state.jsonPending);
- if(calendar){
-  const editing=calendar.days.find(x=>x.day===state.adventEditorDay);
-  if(editing)body+='<section class="card advent-day-edit" id="advent-day-editor">'+
-   '<h3>Modifier le '+editing.day+' décembre</h3>'+
-   '<p>Cette modification concerne uniquement le contenu à découvrir. Les cases déjà ouvertes conservent leur surprise officielle.</p>'+
-   '<label>Catégorie<input id="advent-day-type" maxlength="90" value="'+safe(editing.type)+'"></label>'+
-   '<label>Titre<input id="advent-day-title" maxlength="200" value="'+safe(editing.title)+'"></label>'+
-   '<label>Description<textarea id="advent-day-description" maxlength="1500" rows="5">'+safe(editing.description)+'</textarea></label>'+
-   '<label>Minuterie facultative (minutes, de 1 à 60)<input id="advent-day-minutes" type="number" min="1" max="60" placeholder="Aucune minuterie" value="'+
-    (editing.timer_minutes??'')+'"></label>'+
-   button('save-advent-day','♡ Enregistrer uniquement cette journée')+
-   button('close-advent-day','Annuler','class="subtle"')+'</section>';
-  body+='<section class="card"><h3>Mes 25 journées enregistrées</h3>'+
-   '<p class="tiny-note">Ce récapitulatif est privé. Votre partenaire ne voit les consignes qu’en ouvrant les cases autorisées.</p>'+
-   '<div class="custom-card-tiles">'+calendar.days.map(entry=>
-    '<button type="button" class="custom-card-tile" data-action="advent-editor-day:'+entry.day+'">'+
-    '<span class="custom-tile-number">'+String(entry.day).padStart(2,'0')+'</span>'+
-    '<span class="custom-tile-name">'+safe(entry.title)+'</span></button>').join('')+
-   '</div></section>';
- }
- body+='<section class="card">'+button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
- frame(body,title,'Éditeur privé, année 2026');
+ frame(state.libraryImportKind?importEditorHtml(state):adventEditorHtml(state),'Calendrier de l’Avent','');
 }
 function isoDate(d){return new Date(d).toISOString().slice(0,10);}
 const weekStart=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()-(x.getUTCDay()+6)%7);return isoDate(x);};
@@ -1573,114 +1518,11 @@ async function renderJournal(){
 function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
 function renderCardLibrary(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
- const category=state.customCategory;
- const slots=editableCardSlots(category,state.customCards);
- const slot=slots.find(x=>x.cardId===state.customSlot)||slots[0];
- const roleNames={both:'Les deux partenaires',him:'Homme',her:'Femme'};
- const legacyRole=(role)=>{
-  if(['both','him','her'].includes(role))return role;
-  const owner=state.members.find(m=>m.user_id===state.couple?.owner_user_id);
-  const other=state.members.find(m=>m.user_id!==owner?.user_id);
-  return (role==='owner'?owner:other)?.gender||'both';
- };
- const chooser=(name,current)=>'<div class="custom-receiver">'+
-   ['both','him','her'].map(role=>'<label class="custom-person-option">'+
-     '<input type="radio" name="'+name+'" value="'+role+'"'+
-     (legacyRole(current)===role?' checked':'')+'> '+safe(roleNames[role])+'</label>').join('')+'</div>';
- const table=(range)=>range.map(card=>{
-  const title=card.title||'Emplacement vide';
-  return '<button type="button" class="custom-card-tile '+
-   (card.saved?'custom-filled ':'')+
-   (slot.cardId===card.cardId?'custom-active':'')+
-   '" data-action="custom-slot:'+card.cardId+
-   '" data-card-id="'+card.cardId+'" data-saved="'+card.saved+
-   '" data-empty="'+(!card.filled)+'" aria-label="Modifier carte '+card.cardId+' : '+safe(title)+'">'+
-   '<span class="custom-tile-number">'+String(card.cardId).padStart(2,'0')+'</span>'+
-   '<span class="custom-tile-name">'+safe(title)+'</span></button>';
- }).join('');
- let body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>'+playableEveningCount(state.customCards).total+' cartes jouables</h2>'+
-  '<p>'+playableEveningCount(state.customCards).sensual+' Sensuel · '+
-   playableEveningCount(state.customCards).sexual+' Sexuel. Les emplacements vides ne sont jamais tirés.</p>'+
-  '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
-    '<button class="pill '+(category===c?'selected':'')+
-    '" data-action="custom-category:'+c+'">'+safe(names[c])+'</button>').join('')+'</div>'+
-  '</section>'+
-  '<details class="card library-technical"'+(state.jsonPending?.kind==='evening'?' open':'')+
-  '><summary>Importer / exporter les défis</summary>'+
-  jsonToolsPanel('evening',names[category],state.jsonPending)+'</details>'+
-  '<section class="card"><div class="eyebrow">RÈGLE DE PIGE</div>'+
-  '<h3>Éviter les répétitions</h3>'+
-  '<label class="custom-draw-setting"><input type="checkbox" id="no-repeat-cards"'+
-    (state.couple?.no_repeat_challenges!==false?' checked':'')+'>'+
-    '<span>Ne pas ressortir une carte tant que toutes les cartes admissibles n’ont pas été pigées</span></label>'+
-  '<p class="tiny-note">Activé par défaut. Le cycle est conservé entre les soirées, séparément pour chaque personne qui reçoit, en tenant compte de qui est autorisé à piger et recevoir. Après épuisement, un nouveau cycle commence automatiquement.</p>'+
-  button('save-draw-rule','Enregistrer cette règle','class="subtle"')+
-  '</section>'+
-  '<section class="card"><div class="eyebrow">CHOISIR UNE CARTE À MODIFIER</div>'+
-  '<label>Rechercher une carte<input id="custom-card-search" type="search" placeholder="Titre, mot-clé ou numéro"></label>'+
-  '<label>Afficher<select id="custom-card-filter"><option value="all">Toutes les cartes</option><option value="edited">Cartes personnalisées</option><option value="empty">Emplacements libres</option></select></label>'+
-  '<h3>100 cartes · '+safe(names[category])+'</h3><div class="custom-card-tiles">'+table(slots)+'</div>'+
-  '<p class="tiny-note">Les emplacements vides ne sont jamais pigés. Les cartes modifiées et les cartes officielles restent indiscernables pendant le jeu.</p></section>'+
-  '<section class="card"><div class="eyebrow">ÉDITEUR PRIVÉ · CARTE '+String(slot.cardId).padStart(2,'0')+'</div>'+
-  '<h2>'+safe(slot.title||'Nouvelle carte')+'</h2>'+
-  '<label>Titre de la carte<input id="custom-title" maxlength="120" value="'+
-   safe(slot.title)+'" placeholder="Titre du défi"></label>'+
-  '<label>Consigne<textarea id="custom-description" maxlength="900" rows="4"'+
-   ' placeholder="Décrivez librement le défi proposé">'+safe(slot.description)+'</textarea></label>'+
-  '<strong>Qui peut piger cette carte ?</strong>'+
-  chooser('custom-drawer',slot.drawerRole)+
-  '<strong>Qui peut recevoir ce défi ?</strong>'+
-  chooser('custom-recipient',slot.recipientRole)+
-  '<p class="tiny-note">En Soirée actuelle, la personne désignée pige et réalise son propre défi. Les cadeaux transfèrent un défi disponible à l’autre partenaire. Qui peut piger et qui peut recevoir sont vérifiés par le serveur.</p>'+
-  '<label class="custom-draw-setting"><input type="checkbox" id="custom-timer-enabled"'+
-   (slot.minutes?' checked':'')+'> Ajouter un minuteur (facultatif)</label>'+
-  '<label>Durée (minutes)<input id="custom-minutes" type="number" min="1" max="60" value="'+
-   (slot.minutes||5)+'"></label>'+
-  '<p class="tiny-note">Sans minuteur, aucun compte à rebours n’est affiché.</p>'+
-  button('save-custom-card','♡ Enregistrer les modifications')+
-  (slot.saved?button('delete-custom-card',
-    slot.isOriginal?'Restaurer cette carte d’origine':'Vider cet emplacement',
-    'class="subtle"'):'')+
-  '</section><section class="card">'+
-  button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
- frame(body,'MES CARTES','Gestion confidentielle, réservée à l’admin');
+ frame(state.libraryImportKind?importEditorHtml(state):cardLibraryHtml(state),'Mes cartes','');
 }
 function renderMonthlyLibrary(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
- const items=editableMonthlyActivities(state.monthlyActivities);
- const entry=items.find(x=>x.face===state.monthlySlot)||items[0];
- const tiles=items.map(x=>'<button type="button" class="custom-card-tile '+
-  (x.edited?'custom-filled ':'')+
-  (x.face===entry.face?'custom-active':'')+
-  '" data-action="monthly-slot:'+x.face+'">'+
-  '<span class="custom-tile-number">'+String(x.face).padStart(2,'0')+'</span>'+
-  '<span class="custom-tile-name">'+safe(x.title)+'</span></button>').join('');
- const body='<section class="card"><div class="eyebrow">ADMINISTRATEUR UNIQUEMENT</div>'+
-  '<h2>Mes 20 activités du mois</h2>'+
-  '<p>Changez les 20 idées de sortie, même avant d’inviter votre partenaire. Vous pouvez remplacer complètement une idée de sortie et sa description.</p>'+
-  '<div class="custom-card-tiles">'+tiles+'</div>'+
-  '<p class="tiny-note">Les changements seront utilisés aux prochains tirages. Le résultat déjà obtenu ce mois-ci reste inchangé pour les deux partenaires.</p>'+
-  '</section>'+
-  '<details class="card library-technical"'+(state.jsonPending?.kind==='monthly'?' open':'')+
-  '><summary>Importer / exporter les activités</summary>'+
-  jsonToolsPanel('monthly','20 activités du mois',state.jsonPending)+'</details>'+
-  '<section class="card"><div class="eyebrow">MODIFIER L’ACTIVITÉ '+String(entry.face).padStart(2,'0')+'</div>'+
-  '<h3>'+safe(entry.title)+'</h3>'+
-  '<label>Nom de l’activité<input id="monthly-title" maxlength="120" value="'+
-    safe(entry.title)+'" placeholder="Ex. Soirée au chalet"></label>'+
-  '<label>Description et consignes<textarea id="monthly-description" maxlength="900" rows="4"'+
-    ' placeholder="Décrivez la sortie prévue">'+safe(entry.description)+'</textarea></label>'+
-  '<label class="custom-draw-setting"><input id="monthly-restaurant" type="checkbox"'+
-    (entry.is_restaurant?' checked':'')+'> Activité de restaurant / repas à réserver</label>'+
-  '<p class="tiny-note">Si cette option est activée, LoveRoll propose également le dé « restaurant connu ou nouveau » après le tirage de cette activité.</p>'+
-  '<label class="custom-draw-setting"><input type="checkbox" id="monthly-timer-enabled"'+(entry.timer_minutes?' checked':'')+'> Minuteur facultatif</label>'+
-  '<label>Durée (minutes)<input id="monthly-minutes" type="number" min="1" max="60" value="'+(entry.timer_minutes||5)+'"></label>'+
-  button('save-monthly-activity','♡ Enregistrer l’activité')+
-  (entry.edited?button('reset-monthly-activity','Restaurer l’activité d’origine','class="subtle"'):'')+
-  '</section><section class="card">'+
-  button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>';
- frame(body,'MES ACTIVITÉS','20 sorties personnalisables et privées');
+ frame(state.libraryImportKind?importEditorHtml(state):monthlyEditorHtml(state),'Activités du mois','');
 }
 function settingsIcon(key){
  if(key==='application')return navIcon('settings');
@@ -1716,11 +1558,12 @@ function renderCoupleDateSetting(){
   '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(frenchMonthDay(state.occasionSettings?.anniversary_md))+'</p>';
 }
 function openSettingsPage(section=''){
- const allowed=['','compte','couple','notifications','jeu','confidentialite','application','aide','admin'];
+ const allowed=['','compte','couple','notifications','jeu','confidentialite','application','aide','aide-connexion','aide-des','aide-sync','admin'];
  if(!allowed.includes(section))return;
  if(section==='admin'&&!isLoveAdmin())throw Error('Options réservées au créateur du couple.');
  settingsOpenSection=section;state.tab='settings';render();
  window.scrollTo({top:0,behavior:'instant'});
+ if(section==='notifications')currentPushDevice(client,state.user?.id).then(device=>{state.pushDevice=device;if(state.tab==='settings'&&settingsOpenSection==='notifications')render();}).catch(()=>{});
 }
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
@@ -1735,15 +1578,14 @@ function renderSettings(){
   '<div class="settings-danger-zone">'+button('signout','Se déconnecter','class="settings-signout"')+'</div></div>';
  let partner='';
  if(hasPartner){
-  partner='<div class="settings-split settings-couple-top"><div class="settings-couple-status">'+
-   '<strong>♡ Couple connecté</strong><p>'+safe(state.profile.display_name)+' et '+safe(other()?.name||'Votre partenaire')+'</p>'+
-   '<span class="settings-confirmation">✓ Invitation acceptée</span></div>'+
-   '<div class="settings-date-outer">'+renderCoupleDateSetting()+'</div></div>'+
-   '<div class="settings-actions">'+
-   (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+'</div>'+
-   '<div class="settings-danger-zone"><p>Gestion du couple · action sensible</p>'+
-   button('end-couple','Dissocier mon partenaire','class="subtle danger-action settings-secondary"')+'</div>'+
-   '<p class="tiny-note settings-footer-hint">La dissociation conserve les comptes et les défis.</p>';
+  const initials=[state.profile.display_name,other()?.name||'Partenaire'].map(n=>safe(Array.from(n||'♡')[0]));
+  partner='<div class="settings-duo-card"><div class="settings-duo-initials"><span>'+initials[0]+'</span><i>'+editorialIcon('heart')+'</i><span>'+initials[1]+'</span></div>'+
+   '<strong>'+safe(state.profile.display_name)+' &amp; '+safe(other()?.name||'Votre partenaire')+'</strong><small>● Connectés</small></div>'+
+   editorialRow('Invitation acceptée','','','check')+
+   '<div class="settings-date-outer"><h3>Notre anniversaire</h3>'+renderCoupleDateSetting()+'</div>'+
+   (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
+   '<div class="settings-danger-zone">'+button('end-couple',editorialIcon('unlink')+' Dissocier mon partenaire','class="settings-signout"')+
+   '<p class="tiny-note">Les comptes et les cartes restent conservés.</p></div>';
  }else if(linked){
   partner=renderInvitePanel()+
    '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
@@ -1778,45 +1620,35 @@ function renderSettings(){
   settingRow('Événements spéciaux','Événements, activités et variantes','tab:special-editor',''):
   '<p>Les éditeurs sont réservés au créateur du couple.</p>')+eveningButtons+
   (canEdit?'<div class="settings-advanced">'+settingRow('Options avancées','Créateur','settings-page:admin','')+'</div>':'');
- const resettableDice=!!(state.weekly||state.session||
-  Object.keys(state.monthly||{}).length||state.occasionRolls?.length);
+ const resetYear=Number(today().slice(0,4));
+ const currentOccasionRolls=(state.occasionRolls||[]).filter(r=>Number(r.event_year)>=resetYear&&Number(r.event_year)<=resetYear+1);
+ const resettableDice=!!(state.weekly||state.session||Object.keys(state.monthly||{}).length||currentOccasionRolls.length);
  const adminWeekly=isLoveAdmin()&&hasPartner?
-  '<div class="settings-item"><div><strong>🎲 Administration — tous les dés</strong>'+
-  '<p>Recommencer tous les tirages du cycle actuel pour les deux partenaires : dé hebdomadaire, Soirée, Surprise et événements spéciaux.</p></div></div>'+
-  '<div class="weekly-admin-status">'+
-  '<p>Dé hebdomadaire : <strong>'+(state.weekly?state.weekly.face+' soirée(s)':'Non brassé')+'</strong></p>'+
-  '<p>Surprise du mois : <strong>'+Object.keys(state.monthly||{}).length+' tirage(s)</strong></p>'+
-  '<p>Événements spéciaux : <strong>'+(state.occasionRolls?.length||0)+' tirage(s)</strong></p>'+
-  '<p>Soirée en cours : <strong>'+(state.session?'Oui':'Non')+'</strong></p></div>'+
-  '<p class="tiny-note">La soirée en cours sera clôturée sans être comptée. Les anciens défis, cartes, calendriers et soirées terminées restent conservés. Seuls les tirages actifs seront remis à zéro.</p>'+
-  button('admin-reset-all-dice','↺ Réinitialiser tous les dés',
-   'class="subtle danger-action" '+(!resettableDice?'disabled':'')):'';
- const notifications=notificationSettingsMarkup(state.pushPrefs||{});
+  '<h3>Tirages du cycle actuel</h3><div class="editorial-status-list">'+
+  editorialRow('Dé hebdomadaire',state.weekly?state.weekly.face+' soirée(s) · déjà brassé':'Non brassé','','dice')+
+  editorialRow('Surprise du mois',state.monthly?.monthly_activity?'Activité choisie · '+state.monthly.monthly_activity.face:'Aucun tirage','','star')+
+  editorialRow('Événements spéciaux',currentOccasionRolls.length+' tirage(s) · '+resetYear+'–'+(resetYear+1),'','calendar')+
+  editorialRow('Soirée en cours',state.session?'Oui':'Non','','moon')+'</div>'+
+  button('admin-reset-all-dice',editorialIcon('reset')+' Réinitialiser les dés','class="settings-secondary settings-reset" '+(!resettableDice?'disabled':''))+
+  '<p class="tiny-note">Une confirmation sera demandée. La soirée active est clôturée sans être comptée. Cartes, anciennes soirées et historiques restent conservés.</p>':
+  '<p>Aucun tirage actif : associez votre partenaire pour jouer à deux.</p>';
+ const notifications=notificationSettingsMarkup(state.pushPrefs||{},state.pushDevice);
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
   window.LoveRollNativeAuth.appVersion():'';
- const homeInstall=nativeApp?
-  settingRow('Placer LoveRoll sur l’écran d’accueil',
-   'L’APK est déjà installé. Voir comment placer son icône.','show-install-guide','Voir'):
-  installStatus()==='installed'?
-  settingRow('LoveRoll sur l’écran d’accueil',
-   'Déjà installé et prêt à être utilisé.','show-install-guide','Voir'):
-  settingRow('Ajouter LoveRoll à l’écran d’accueil',
-   'Accès rapide sur Android ou iPhone.','install-home','Ajouter');
- const appSettings=(nativeApp?
-  '<div class="settings-item"><div><strong>LoveRoll est installé</strong><p>Version Android : '+
-  safe(nativeVersion||'non fournie par cette version APK')+'</p></div></div>'+
-  settingRow('Vérifier les mises à jour APK','Rechercher une version Android signée plus récente.','native-update','Vérifier'):'')+
-  homeInstall+
-  '<div class="settings-item"><div><strong>Version Web '+WEB_RELEASE+'</strong>'+
-  '<p>Version du contenu Web actuellement chargé.</p></div></div>'+
-  settingRow('Actualiser LoveRoll maintenant',
-   'Force le chargement de la dernière version sans supprimer votre compte ni vos défis.',
-   'reload-web','Actualiser')+
-  '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
- const privacy=(linked?settingRow('Journal partagé','Journal commun et calendrier','tab:journal','Ouvrir'):'<p>Associez votre partenaire pour accéder au journal partagé.</p>')+
-  (nativeApp?settingRow('Mes anciennes données hors ligne','Journal Android local non synchronisé','native-legacy','Ouvrir'):'')+
-  (linked?button('lock','Verrouiller le journal partagé','class="settings-secondary"'):'');
+ const homeInstall=editorialRow('Écran d’accueil',nativeApp?'APK installé · retrouver son icône':installStatus()==='installed'?'LoveRoll est installé':'Ajouter ou retrouver l’icône',nativeApp||installStatus()==='installed'?'show-install-guide':'install-home','home');
+ const appSettings='<section class="settings-app-group"><h3>Application</h3>'+homeInstall+
+  editorialRow('Version Web',WEB_RELEASE,'','globe')+
+  editorialRow('Actualiser LoveRoll','Charger la dernière version Web','reload-web','reset')+
+  (nativeApp?editorialRow('Mises à jour Android',nativeVersion||'Version non fournie par cet APK','native-update','phone'):'')+
+  '</section><section class="settings-app-group"><h3>Aide</h3>'+
+  editorialRow('Connexion et invitation','','settings-page:aide-connexion','help')+
+  editorialRow('Dés et activités','','settings-page:aide-des','dice')+
+  editorialRow('Synchronisation','','settings-page:aide-sync','sync')+'</section>';
+ const privacy=(linked?editorialRow('Notre journal partagé','Consulter le calendrier et les notes','tab:journal','book'):'<p>Associez votre partenaire pour accéder au journal partagé.</p>')+
+  (linked?editorialRow(state.unlockKey?'Verrouiller le journal':'Journal verrouillé',state.unlockKey?'Protéger son accès sur cet appareil':'Votre phrase secrète protège les notes',state.unlockKey?'lock':'','lock'):'')+
+  (nativeApp&&typeof window.LoveRollNativeAuth.openLegacyOffline==='function'?editorialRow('Anciennes données hors ligne','Sur cet appareil Android','native-legacy','phone'):'')+
+  '<p class="tiny-note editorial-separated">Votre espace privé, à votre rythme. Le chiffrement et les notes existantes sont conservés.</p>';
  const helpEntries=[
   ['Association des comptes','Une invitation privée relie deux comptes distincts après acceptation.'],
   ['Dé hebdomadaire','Un seul tirage officiel par couple et par semaine, renouvelé le lundi.'],
@@ -1835,8 +1667,11 @@ function renderSettings(){
  const pages={compte:{title:'Mon compte',body:account},couple:{title:'Notre duo',body:partner},
   notifications:{title:'Notifications',body:notifications},jeu:{title:'Cartes et activités',body:game},
   confidentialite:{title:'Journal et confidentialité',body:privacy},
-  application:{title:'Application et aide',body:appSettings+settingRow('Aide','Comprendre les rituels LoveRoll','settings-page:aide','')},
-  aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+celebrants}};
+  application:{title:'Application et aide',body:appSettings},
+  'aide-connexion':{title:'Connexion et invitation',body:'<p>Chaque personne utilise son propre compte. Confirmez votre courriel avant de rejoindre votre partenaire. L’invitation reste conservée pendant la connexion, Google et la récupération du mot de passe.</p><p>Dans Notre duo, le créateur prépare un lien privé. Le destinataire l’accepte avec le courriel auquel il a été invité.</p>'},
+  'aide-des':{title:'Dés et activités',body:'<p>Le dé hebdomadaire est commun : un tirage par couple et par semaine. En Soirée, chacun brasse son D6 personnel ; les deux résultats déverrouillent les défis.</p><p>Sensuel et Sexuel : 88 % de la catégorie choisie, 12 % de l’autre. Au hasard : 50 / 50. Les emplacements vides sont exclus ; l’option anti-répétition conserve son cycle entre les soirées.</p><p>La Surprise du mois choisit une activité puis qui invite. L’Avent se débloque par date : une lettre oubliée reste ouvrable plus tard. Un défi non commencé peut être offert, jusqu’à trois fois par mois et par personne.</p>'},
+  'aide-sync':{title:'Synchronisation',body:'<p>Les résultats officiels proviennent du serveur et se retrouvent sur les deux comptes associés. Une connexion est nécessaire pour confirmer un lancer ou une ouverture.</p><p>Les listes personnelles de défis restent privées. Les bilans de soirée restent associés à leur auteur dans le calendrier commun. Le journal chiffré se déverrouille avec votre phrase secrète ; sa clé reste sur l’appareil.</p>'},
+  aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+(celebrants?'<details class="settings-help-item"><summary>Destinataires des occasions</summary>'+celebrants+'</details>':'')}};
  if(settingsOpenSection==='admin'&&!canEdit)settingsOpenSection='jeu';
  if(!pages[settingsOpenSection])settingsOpenSection='';
  const name=state.profile.display_name||'Mon profil',initial=Array.from(name)[0]||'♡';
@@ -1847,11 +1682,10 @@ function renderSettings(){
   '<nav class="settings-sections" aria-label="Rubriques des réglages">'+items.map(([key,label,detail])=>
    '<button data-action="settings-page:'+key+'" class="settings-section-row"><span class="settings-row-icon">'+settingsIcon(key)+'</span><span><strong>'+label+'</strong><small>'+safe(detail)+'</small></span><b aria-hidden="true">›</b></button>').join('')+'</nav>';
  const page=pages[settingsOpenSection];
- const heading='<header class="settings-page-header">'+
-  (page?button('settings-page:','<span aria-hidden="true">‹</span> Réglages','class="settings-back"'):'')+
-  ritualBrandHtml()+'</header>';
+ const parent=settingsOpenSection==='admin'?'jeu':settingsOpenSection.startsWith('aide')?'application':'';
+ const heading=editorialHeader(page?'settings-page:'+parent:'',parent==='jeu'?'Cartes et activités':parent==='application'?'Application et aide':'Réglages');
  frame('<section class="settings-editorial">'+heading+'<div class="settings-editorial-content">'+
-  '<h1>'+safe(page?.title||'Réglages')+'</h1>'+
+  '<div class="editorial-title"><h1>'+safe(page?.title||'Réglages')+'</h1>'+(settingsOpenSection==='admin'?'<small class="editorial-badge">Créateur</small>':'')+'</div>'+
   (page?'<article class="settings-detail-body" data-settings-page="'+settingsOpenSection+'">'+page.body+'</article>':menu)+
   '</div></section>','Réglages','');
 }
@@ -1966,6 +1800,47 @@ function keepAuthModeInUrl(mode){
 }
 async function handle(action,element){
  const [verb,...parts]=action.split(':');
+ if(['editor-back','editor-import','editor-import-back','custom-slot','custom-category','monthly-slot','special-editor-event','special-editor-back','special-editor-stage','special-editor-face','set-celebrant'].includes(verb)){
+  if(hasUnsavedForm()&&!(await premiumConfirm('Vos modifications non enregistrées seront perdues. Voulez-vous quitter cette page ?', {kind:'library',title:'Quitter sans enregistrer ?',accept:'Quitter',cancel:'Rester'})))return;
+  lastFormTab=null;
+ }
+ if(verb==='editor-back'){state.libraryScreen='list';render();return;}
+ if(verb==='editor-import'){
+  if(!isLoveAdmin())throw Error('Accès réservé au créateur.');
+  if(!['evening','monthly','advent','special'].includes(parts[0]))throw Error('Bibliothèque inconnue.');
+  state.libraryImportKind=parts[0];state.jsonPending=null;render();return;
+ }
+ if(verb==='editor-import-back'){state.libraryImportKind=null;state.jsonPending=null;render();return;}
+ if(verb==='special-editor-event'){
+  if(!isLoveAdmin()||!SPECIAL_EVENT_KEYS.includes(parts[0]))throw Error('Événement non accessible.');
+  state.specialEditorKey=parts[0];state.specialEditorFace=1;state.specialEditorStage='D6_activite';render();return;
+ }
+ if(verb==='special-editor-back'){state.specialEditorKey=null;render();return;}
+ if(verb==='special-editor-stage'){if(!isLoveAdmin()||!['D6_activite','D6_modificateur'].includes(parts[0]))throw Error('Étape invalide.');state.specialEditorStage=parts[0];render();return;}
+ if(verb==='special-editor-face'){const face=Number(parts[0]);if(!isLoveAdmin()||!Number.isInteger(face)||face<1||face>6)throw Error('Face invalide.');state.specialEditorFace=face;render();return;}
+ if(verb==='save-special-option'){
+  if(!isLoveAdmin())throw Error('Accès réservé au créateur.');
+  const catalogue=structuredClone(state.specialEventsConfig),entry=catalogue?.evenements_speciaux?.[state.specialEditorKey];
+  if(!entry)throw Error('Importez d’abord votre catalogue.');
+  const stage=state.specialEditorStage,face=state.specialEditorFace;
+  if(!['D6_activite','D6_modificateur'].includes(stage)||!Number.isInteger(face)||face<1||face>6)throw Error('Option invalide.');
+  entry.evenement=id('special-option-name').value;entry.date=id('special-option-date').value;
+  entry[stage][face-1]={[face]:id('special-option-description').value};
+  entry.minuteurs={...entry.minuteurs,[stage]:entry.minuteurs?.[stage]||[null,null,null,null,null,null]};
+  entry.minuteurs[stage][face-1]=id('special-option-timer-enabled').checked?Number(id('special-option-minutes').value):null;
+  validateSpecialEventsJson(catalogue);
+  await rpc('import_love_special_events',{p_couple:state.coupleId,p_events:catalogue});await reload();notify('Option enregistrée. Les surprises déjà révélées restent conservées.');return;
+ }
+ if(verb==='save-editor-event-date'){
+  if(!isLoveAdmin())throw Error('Accès réservé au créateur.');
+  const row=sixSpecialEvents(new Date(),state.occasionSettings||{},state.members).find(r=>privateSpecialKey(r.key,r.owner,state.couple?.owner_user_id)===state.specialEditorKey);
+  if(!row)throw Error('Événement introuvable.');
+  const title=id('editor-event-name').value.trim(),text=id('editor-event-date').value.trim(),date=text?parseSurpriseDateInput(text):'';
+  if(title.length<2||title.length>55||text&&!date)throw Error('Nom de 2 à 55 caractères et date valide JJ/MM/AAAA requis.');
+  const prior=surpriseCustom(state.occasionSettings,row.key,row.owner).month_day||null;
+  await rpc('save_love_surprise_event',{p_couple:state.coupleId,p_slot:row.slot,p_title:title,p_month_day:date&&date!==row.date?date.slice(5):prior});
+  await reload();notify('Nom et date enregistrés.');return;
+ }
  if(verb==='home-notices'){
   state.homeNotices=!state.homeNotices;render();return;
  }
@@ -2156,7 +2031,7 @@ async function handle(action,element){
  }
  // All demo actions are local, never database writes or new memberships.
  if(verb==='demo-enter'){
-  if(!state.user||!state.profile?.birthday_md||!state.wellbeing)
+  if(!state.user||!state.profile?.birthday_md)
    throw Error('Complétez votre compte pour accéder à la démo.');
   state.demoMode=true;state.demoTab='home';render();return;
  }
@@ -2186,12 +2061,12 @@ async function handle(action,element){
  }
  if(verb==='push-enable'){
   await enablePush(client,state.user.id);
-  state.pushPrefs={...(state.pushPrefs||{}),enabled:true};
+  state.pushPrefs={...(state.pushPrefs||{}),enabled:true};state.pushDevice=await currentPushDevice(client,state.user?.id);
   render();notify('Notifications activées sur cet appareil ❤️');return;
  }
  if(verb==='push-disable'){
   await disablePush(client,state.user.id);
-  state.pushPrefs={...(state.pushPrefs||{}),enabled:false};
+  state.pushPrefs={...(state.pushPrefs||{}),enabled:false};state.pushDevice=await currentPushDevice(client,state.user?.id);
   render();notify('Notifications désactivées.');return;
  }
  if(verb==='push-test'){
@@ -2351,7 +2226,8 @@ async function handle(action,element){
  }
  if(verb==='json-preview'){
   if(!isLoveAdmin())throw Error('Import réservé à l’administrateur.');
-  previewPortableJson(parts[0]);render();return;
+  try{previewPortableJson(parts[0]);render();}
+  catch(error){state.jsonPending=null;root.querySelector('.json-preview')?.remove();const message=id('json-validation-error');if(message){message.hidden=false;message.textContent=error.message;}else throw error;}return;
  }
  if(verb==='json-cancel'){state.jsonPending=null;render();return;}
  if(verb==='json-apply'){
@@ -2402,7 +2278,7 @@ async function handle(action,element){
   const day=state.adventEditorDay;
   if(!calendar||!Number.isInteger(day)||day<1||day>25)
    throw Error('Aucune journée du calendrier à modifier.');
-  const durationText=id('advent-day-minutes')?.value.trim()||'';
+  const durationText=id('advent-day-timer-enabled')?.checked?id('advent-day-minutes')?.value.trim()||'':'';
   const minutes=durationText===''?null:Number(durationText);
   const entry=calendar.days.find(x=>x.day===day);
   Object.assign(entry,{type:id('advent-day-type')?.value.trim(),
@@ -2413,7 +2289,7 @@ async function handle(action,element){
     ' décembre ? Les autres journées et les résultats déjà ouverts restent identiques.',{
     kind:'library',title:'Enregistrer cette journée ?'})))return;
   await rpc('import_love_advent_2026',{p_couple:state.coupleId,p_calendar:calendar});
-  state.adventEditorDay=null;state.jsonPending=null;
+  state.jsonPending=null;
   await reload();notify('Journée '+day+' enregistrée. Le calendrier partagé reste intact.');return;
  }
  if(verb==='monthly-slot'){
@@ -2427,7 +2303,7 @@ async function handle(action,element){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
   const title=id('monthly-title')?.value.trim();
   const description=id('monthly-description')?.value.trim();
-  const restaurant=!!id('monthly-restaurant')?.checked;
+  const restaurant=editableMonthlyActivities(state.monthlyActivities).find(x=>x.face===state.monthlySlot)?.is_restaurant===true;
   const duration=id('monthly-timer-enabled')?.checked?Number(id('monthly-minutes')?.value):null;
   if(duration!==null&&(!Number.isInteger(duration)||duration<1||duration>60))throw Error('Minuteur de 1 à 60 minutes.');
   if(!title||title.length<3||title.length>120||
@@ -2468,12 +2344,12 @@ async function handle(action,element){
  if(verb==='custom-category'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   if(!EVENING_CATEGORIES.includes(parts[0]))throw Error('Catégorie invalide.');
-  state.customCategory=parts[0];state.customSlot=1;render();return;
+  state.customCategory=parts[0];state.customSlot=1;state.libraryScreen='list';state.jsonPending=null;render();return;
  }
  if(verb==='custom-slot'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
   const slot=Number(parts[0]);if(!Number.isInteger(slot)||slot<1||slot>100)throw Error('Emplacement invalide.');
-  state.customSlot=slot;render();
+  state.customSlot=slot;state.libraryScreen='edit';render();
   id('custom-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;
  }
  if(verb==='save-custom-card'){
@@ -2519,15 +2395,6 @@ async function handle(action,element){
   state.unlockKey=null;state.personalPass=null;
   state.inviteDraft=null;state.invitations=[];
   await reload();notify('Partenaire dissocié. Vos défis personnels sont conservés.');return;
- }
- if(verb==='save-wellbeing'){
-  const relationship=id('wellbeing-relationship')?.value,intimacy=id('wellbeing-intimacy')?.value;
-  if(!RELATIONSHIP_OPTIONS.some(([v])=>v===relationship)||!INTIMACY_OPTIONS.some(([v])=>v===intimacy))
-   throw Error('Répondez aux deux questions ou choisissez « Je préfère ne pas répondre ».');
-  const firstOnboarding=!state.wellbeing&&!!state.profile?.birthday_md;
-  await rpc('save_my_wellbeing',{p_relationship:relationship,p_intimacy:intimacy});
-  if(firstOnboarding)state.installAfterSignup=true;
-  await reload();notify('Réponses enregistrées en privé.');return;
  }
  if(verb==='unlock-personal'){
   const pass=id('personal-pass')?.value||'';
@@ -2779,12 +2646,8 @@ async function handle(action,element){
   const gender=id('profile-gender')?.value;
   if(!['him','her'].includes(gender))throw Error('Choisissez Homme ou Femme pour votre profil.');
   if(!id('age-confirm')?.checked)throw Error('LoveRoll est réservé aux personnes de 18 ans et plus.');
-  const relationship=id('wellbeing-relationship')?.value,intimacy=id('wellbeing-intimacy')?.value;
-  if(!RELATIONSHIP_OPTIONS.some(([v])=>v===relationship)||!INTIMACY_OPTIONS.some(([v])=>v===intimacy))
-   throw Error('Répondez aux deux questions ou choisissez « Je préfère ne pas répondre ».');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
   await rpc('save_my_gender',{p_gender:gender});
-  await rpc('save_my_wellbeing',{p_relationship:relationship,p_intimacy:intimacy});
   state.installAfterSignup=true;
   await reload();return;
  }
@@ -2906,6 +2769,7 @@ async function handle(action,element){
    try{sessionStorage.setItem('loveroll-settings-section','couple');}catch{}
   }
   if(parts[0]==='settings'&&state.tab!=='occasions')settingsOpenSection='';
+  if(state.tab!==parts[0]){state.libraryImportKind=null;state.libraryScreen='list';state.specialEditorKey=null;state.jsonPending=null;lastFormTab=null;}
   allowBackExit=false;state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.showEveningChallenges=false;state.selectedEveningChallengeId=null;state.eveningMore=false;}

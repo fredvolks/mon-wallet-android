@@ -1,13 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {profileHtml,inviteProfileHtml,wellbeingHtml,inviteWellbeingHtml,profileAccountChoiceHtml,authHtml} from './onboarding.mjs';
+import {profileHtml,inviteProfileHtml,profileAccountChoiceHtml,authHtml} from './onboarding.mjs';
 const read=p=>readFileSync(new URL('./'+p,import.meta.url),'utf8');
-const app=read('app.js'),css=read('invite-account.css');
+const app=read('app.js'),css=read('editorial-details.css');
 const currentUser={id:'00000000-0000-4000-8000-000000000001',
  email:'existing-google-user@example.com',user_metadata:{name:'Existing Account'}};
-const all=[['regular',profileHtml(currentUser,null)],['invited',inviteProfileHtml(currentUser,null)],
- ['wellbeing',wellbeingHtml(null,currentUser)],['invite wellbeing',inviteWellbeingHtml(null,currentUser)]];
+const all=[['regular',profileHtml(currentUser,null)],['invited',inviteProfileHtml(currentUser,null)]];
 test('All incomplete-profile variants offer an existing-account login in the first card',()=>{
  for(const [name,html] of all){
   const button=html.indexOf('data-action="use-existing-account"');
@@ -45,7 +44,7 @@ test('Login page provides password, Google and recovery without creating a profi
  assert.doesNotMatch(page,/id="profile-name"/);
 });
 test('Switch interface is compact and touch-accessible',()=>{
- assert.match(css,/\.profile-account-choice/);
- assert.match(css,/\.profile-switch-account/);
- assert.match(css,/min-height:46px/);
+ assert.match(css,/\.entry-account-choice/);
+ assert.match(css,/\.entry-switch-account/);
+ assert.match(css,/min-height:44px/);
 });

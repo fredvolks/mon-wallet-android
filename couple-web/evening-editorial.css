@@ -81,8 +81,8 @@ main#app.loveroll-editorial{--nav-space:58px;box-sizing:border-box;width:100%;ma
 #app .evening-finale-dice{display:flex;align-items:center;justify-content:center;width:100%;height:100%;gap:0;padding-top:5%;}
 #app .evening-finale-dice>.love3d{display:grid;place-items:center;width:44%;height:auto;aspect-ratio:1;max-height:28dvh;}
 #app .evening-finale-dice .love3d-stage{width:100%;height:100%;}
-#app .evening-finale-dice>.love3d:first-child{transform:translateY(-3%) rotate(-8deg);}
-#app .evening-finale-dice>.love3d:last-child{transform:translateY(9%) rotate(9deg);}
+#app .evening-finale-dice>.love3d:first-child{transform:none;}
+#app .evening-finale-dice>.love3d:last-child{transform:none;}
 #app .evening-aftercare{display:grid;gap:8px;padding:12px;text-align:center;}
 #app .evening-finale-ornament{display:none;}
 #app .evening-finale-weekly{font-size:10px;letter-spacing:.08em;color:var(--ritual-rose);}

@@ -19,8 +19,8 @@ test('Login, signup and reset preserve all authentication actions',()=>{
   ['request-reset','auth-send-reset'],['recover','auth-update-password']]){
   const html=authHtml(true,mode);
   assert.match(html,new RegExp('data-action="'+action+'"'));
-  assert.match(html,/invite-auth-card/);
-  assert.match(html,/data-action="invite-return"/);
+  assert.match(html,/entry-auth-card/);
+  assert.match(html,mode==='recover'||mode==='request-reset'?/data-action="auth-mode:signin"/:/data-action="invite-return"/);
   if(mode==='signin'||mode==='signup')assert.match(html,/data-action="google"/);
  }
  assert.match(authHtml(true,'signin','', '',true),/data-action="auth-resend-confirmation"/);
@@ -40,8 +40,8 @@ test('v79 fixes both invitation visual and registration without full-page scalin
  assert.doesNotMatch(html,/entry-viewport-v78\.js/);
  assert.doesNotMatch(html,/mobile-entry-v76\.css|mobile-entry-v77\.css|mobile-entry-v78\.css/);
  assert.doesNotMatch(html,/loveroll-entry-viewport-safety/);
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.120');
- assert.match(sw,/loveroll-static-v120/);
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.121');
+ assert.match(sw,/loveroll-static-v121/);
  assert.match(sw,/\.\/mobile-entry-v79\.css/);
  assert.doesNotMatch(sw,/entry-viewport-v78\.js/);
 });

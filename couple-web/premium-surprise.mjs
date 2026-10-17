@@ -14,7 +14,7 @@ const eventSymbol=key=>{
  const paths={anniversary:'<path d="M12 21S3 16 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 7-9 12-9 12Z"/>',birthday:'<path d="M4 11h16v10H4zM4 15q2 3 4 0t4 0t4 0t4 0M7 11V7m5 4V7m5 4V7M7 3v1m5-1v1m5-1v1"/>',valentine:'<path d="M12 19C-2 11 5 1 12 8c7-7 14 3 0 11ZM3 21 21 3m-5 0h5v5"/>',mothers_day:'<path d="M12 7c-7-12-13 0-6 4-11 1-4 13 3 7 0 11 13 6 9-2 11-2 4-13-3-8 4-10-9-11-7-3"/><circle cx="12" cy="12" r="2"/>',fathers_day:'<path d="m10 10-8-5v14l8-5h4l8 5V5l-8 5zM10 10v4m4-4v4"/>'};
  return '<svg viewBox="0 0 24 24" class="surprise-event-svg" aria-hidden="true" focusable="false">'+paths[key]+'</svg>';
 };
-const pencil='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 4 5 5M3 21l5-1L21 7l-5-5L3 15z"/></svg>';
+
 
 export const SIX_SPECIAL_KEYS=['anniversary','birthday','birthday','valentine','mothers_day','fathers_day'];
 export function sixSpecialEvents(now,settings={},members=[]){
@@ -95,7 +95,7 @@ export function premiumSurpriseHtml({
      '<span class="surprise-event-details"><span class="surprise-event-title">'+esc(e.title)+'</span>'+
       '<span class="surprise-event-days">'+
        (e.daysLeft===null?'Choisir la date':e.availability?'Disponible':e.daysLeft+' jours')+
-      '</span></span><span class="surprise-event-chevron" aria-hidden="true">'+pencil+'</span>',
+      '</span></span>',
      'surprise-event-card '+(i===0?'couple':'')+(e.daysLeft===null?' no-date':''),rolling)).join('')+
    '</div></section>'+
   (editEvent?

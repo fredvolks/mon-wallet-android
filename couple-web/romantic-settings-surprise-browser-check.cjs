@@ -115,7 +115,7 @@ const client=`export function createClient(){
   await a.locator('#show-sensuel-button').uncheck();await a.locator('#show-sexuel-button').uncheck();await a.locator('[data-action="save-evening-buttons"]').click();
   await a.waitForFunction(()=>document.querySelector('#show-sensuel-button')?.defaultChecked===false);
   assert.equal(world.couple.show_sexuel_button,false);await a.locator('[data-action="settings-page:admin"]').click();assert.equal(await a.locator('[data-action="admin-reset-all-dice"]').count(),1);
-  await a.locator('[data-action="settings-page:"]').click();
+  await a.locator('[data-action="settings-page:jeu"]').click();await a.locator('[data-action="settings-page:"]').click();
   for(const key of ['couple','notifications','confidentialite','application']){
    await a.locator('[data-action="settings-page:'+key+'"]').click();assert.equal(await a.locator('.nav button.active').innerText(),'Réglages');
    assert.doesNotMatch(await a.locator('.settings-detail-body').innerText(),/Mon ressenti|Comment va votre sexualité|Comment vivez-vous votre relation/);

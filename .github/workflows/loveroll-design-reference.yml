@@ -51,3 +51,28 @@ jobs:
         with:
           name: LoveRoll-design-2
           path: design-captures/
+
+  editorial-details:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.0
+      - run: npx playwright install --with-deps chromium
+      - name: Six editorial boards, sixteen screens, six viewports and account/import flows
+        run: |
+          python3 -m http.server 8765 -d couple-web > /tmp/loveroll-editorial-http.log 2>&1 &
+          node couple-web/editorial-details-browser-check.cjs
+      - name: Original WebGL dice fixed at rest and aligned with the marble podium
+        run: |
+          python3 -m http.server 8765 -d couple-web > /tmp/loveroll-podium-http.log 2>&1 &
+          node couple-web/dice-podium-browser-check.cjs
+      - name: Preserve editorial and podium evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LoveRoll-editorial-121
+          path: design-captures/
