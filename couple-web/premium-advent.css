@@ -1,173 +1,73 @@
-/* LoveRoll — the REAL couple Advent page, responsive S25 Ultra and iPhone */
-main#app.loveroll-advent-page{
- width:100%;max-width:none!important;height:100dvh;min-height:0;
- padding:max(27px,env(safe-area-inset-top,0px)) clamp(9px,2.7vw,21px) 0!important;
- overflow:hidden;display:flex;flex-direction:column;
- background:
-  radial-gradient(ellipse at 8% 37%,#cc154b45,transparent 36%),
-  radial-gradient(ellipse at 98% 30%,#a9167152,transparent 38%),
-  radial-gradient(ellipse at 45% 60%,#bc115440,transparent 55%),
-  linear-gradient(175deg,#080208,#21030f 50%,#080208);
-}
-.loveroll-advent-page .header{display:none}
-.loveroll-advent-page .nav{background:linear-gradient(180deg,#280a20f7,#11040dfc);
- border-top:1px solid #f356a087;box-shadow:0 -5px 20px #220515}
-.loveroll-advent-page .nav-inner button.active{
- border:1px solid #ff70a8;border-radius:19px;
- background:linear-gradient(145deg,#a91758,#710e3d);
- box-shadow:inset 0 1px #ffb1d5,0 0 16px #ec146687;color:#fff4fa
-}
-.advent-premium-view{
- flex:1;min-height:0;width:min(100%,780px);margin:0 auto;
- display:grid;grid-template-rows:minmax(70px,1.15fr) minmax(116px,1.42fr) minmax(360px,5.1fr);
- gap:clamp(5px,1dvh,12px);
- padding-bottom:calc(83px + env(safe-area-inset-bottom));
- color:#fff3f8;
-}
-.advent-top{display:flex;gap:clamp(6px,2.4vw,15px);align-items:center;min-height:0}
-.advent-top-heart{font:400 clamp(2.7rem,10vw,5rem)/1 Georgia,serif;color:#ff7bba;
- text-shadow:0 0 7px #ff2b8a,0 0 22px #e90565;align-self:flex-start}
-.advent-top h1{margin:0;font:750 clamp(1.45rem,5.5vw,2.6rem)/1.02 Georgia,serif;
- letter-spacing:-.025em;color:#fff7fa;text-shadow:0 2px 9px #ff78ba37}
-.advent-top p{font-size:clamp(.74rem,2.4vw,1.04rem);line-height:1.12;margin:4px 0 0;color:#e7baca}
-.advent-intro{text-align:center;min-height:0;display:flex;flex-direction:column;
- justify-content:center;position:relative;
- background:radial-gradient(ellipse at 4% 60%,#ba0f5b44,transparent 42%),
- radial-gradient(ellipse at 90% 66%,#d3196640,transparent 42%);
-}
-.advent-intro:before,.advent-intro:after{
- content:'♡';font:clamp(2.5rem,8vw,5rem) Georgia,serif;color:#ff4e974f;
- text-shadow:0 0 20px #fe147459;position:absolute;pointer-events:none
-}
-.advent-intro:before{left:-2%;top:8%;transform:rotate(-15deg)}
-.advent-intro:after{right:1%;bottom:10%;transform:rotate(20deg)}
-.advent-overline{font-size:clamp(.72rem,2.65vw,1.05rem);font-weight:800;
- letter-spacing:.2em;color:#ff94bf}
-.advent-intro h2{font:800 clamp(1.64rem,6.4vw,3.18rem)/1.07 Georgia,serif;margin:3px 0;
- letter-spacing:-.03em;color:#fff1f7;white-space:nowrap}
-.advent-intro h2 em{font-style:normal;color:#ff8ebd;text-shadow:0 0 10px #fa3c88}
-.advent-intro p{font-size:clamp(.69rem,2.28vw,.95rem);line-height:1.17;margin:3px 0;color:#f5cedf}
-.advent-shell{position:relative;min-height:0;display:flex;flex-direction:column;
- padding:clamp(9px,2vw,18px) clamp(8px,2.5vw,22px);
- border:1px solid #ff80aec7;border-radius:clamp(18px,5vw,30px);
- background:
- radial-gradient(ellipse at 50% -20%,#ff367562,transparent 65%),
- linear-gradient(130deg,#4b0b28ed,#29051aed 47%,#460823ed);
- box-shadow:0 0 0 3px #bd124b38,inset 0 0 28px #f13b7c28,
-  0 0 18px #fe34817b,inset 0 1px #ffd4ed96;
- overflow:hidden}
-.advent-shell:before{content:'';position:absolute;inset:0;pointer-events:none;
- background:linear-gradient(115deg,transparent 5%,#ffbfdd0c 25%,transparent 45%,#ff8fb50c 65%,transparent 85%);
- border-radius:inherit}
-.advent-shell-head{text-align:center;flex:none;position:relative;z-index:1}
-.advent-shell-head h3{font:750 clamp(1.12rem,4.5vw,2.1rem)/1.02 Georgia,serif;
- margin:0 0 4px;letter-spacing:-.02em;color:#fff2f7}
-.advent-shell-head p{font-size:clamp(.63rem,2.3vw,.92rem);line-height:1.14;
- margin:0;color:#f2c9d8}
-.advent-tiles{
- flex:1;min-height:0;
- display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
- grid-template-rows:repeat(5,minmax(0,1fr));
- gap:clamp(5px,1.6vw,12px);
- margin:clamp(13px,2.25dvh,22px) 1px clamp(4px,.65dvh,8px);
- position:relative;z-index:1;
-}
-.advent-box{
- position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;
- overflow:visible;min-width:0;min-height:0;
- padding:3px 2px 2px!important;
- border:1px solid var(--ritual-border)!important;border-radius:clamp(10px,2.8vw,19px);
- background:linear-gradient(145deg,#bd275b 0%,#8f0a3b 24%,#5a0c2a 68%,#280417);
- box-shadow:inset 0 2px #ffd4e180,inset -3px -5px 12px #08000580,
- 0 4px 8px #080005b0,0 0 6px #ff6f9d28;
- color:#fff5f9;transition:transform .26s ease,box-shadow .26s ease!important;
- cursor:pointer;
-}
-.advent-box:disabled{cursor:not-allowed;opacity:.82}
-.advent-box-shimmer{position:absolute;pointer-events:none;inset:2px;overflow:hidden;border-radius:inherit;
- background:linear-gradient(130deg,#fff1f84d 0%,transparent 33%,#f65d8a08 77%);
- opacity:.65}
-.advent-box-icon{height:56%;display:flex;align-items:center;justify-content:center;
- filter:drop-shadow(0 0 5px #ffb74b5b)}
-.advent-gold-lock,.advent-open-gift{display:block;height:100%;width:auto;max-width:100%}
-.advent-box-number{font:700 clamp(1rem,3.65vw,1.65rem)/1 Georgia,serif;
- text-shadow:0 0 6px #fff3ee60;position:relative}
-.advent-box.available{
- border:2px solid var(--ritual-rose)!important;
- background:linear-gradient(150deg,#ff4e9c,#ba0d59 35%,#640830 90%);
- box-shadow:inset 0 1px #ffedf0,0 0 11px #ff52a3,0 0 22px #f5298bb9;
- animation:advent-pulse 2.6s ease-in-out infinite;
-}
-.advent-today-tag{position:absolute;z-index:3;top:-19px;left:50%;transform:translateX(-50%);
- background:linear-gradient(150deg,#ff61af,#9a0947);color:#fff;border:1px solid #ffb5d7;
- border-radius:30px;padding:2px 7px;white-space:nowrap;line-height:1.05;
- font-size:clamp(.49rem,1.68vw,.75rem);font-weight:750;box-shadow:0 0 8px #ff3698}
-.advent-box.opened{border:1px solid var(--ritual-rose)!important;
- background:linear-gradient(135deg,#9c164e,#50102d);
- box-shadow:0 0 12px #ff9cba52,inset 0 2px #ffc0d980}
-.advent-box.opened .advent-box-icon{filter:drop-shadow(0 0 8px #ff71ab)}
-.advent-opened-mark{position:absolute;right:3px;top:1px;font-size:10px;color:#ffeb9e}
-.advent-box.opening{animation:advent-unlock 1.1s ease forwards!important;
- box-shadow:0 0 27px #ff66b7}
-.advent-box.opening .advent-box-icon{transform-origin:top center;
- animation:advent-lift .85s ease-in-out}
-.advent-box:focus-visible{outline:3px solid #fff3bd;outline-offset:2px}
-.advent-shell-bottom{flex:none;display:flex;align-items:center;gap:3px;justify-content:center;
- color:#d3a1b9;font-size:clamp(.52rem,1.7vw,.72rem);min-height:15px;
- text-align:center;position:relative;z-index:1;line-height:1.1}
-.advent-history-trigger{min-height:25px!important;padding:2px 8px!important;
- white-space:nowrap;font-size:.64rem!important;border:1px solid #c55e8a!important;
- border-radius:12px;background:#43132ee3}
-.advent-dialog-shade{position:fixed;inset:0;background:#0b020cce;z-index:8100;
- display:grid;place-items:center;padding:18px;backdrop-filter:blur(5px)}
-.advent-dialog{width:min(100%,475px);max-height:min(79dvh,680px);
- overflow:auto;border-radius:25px;padding:25px 20px;
- border:1px solid #ff8fbd;box-shadow:0 0 28px #e8207980,inset 0 1px #ffe0ef70;
- background:radial-gradient(ellipse at 50% 0%,#a92b6975,transparent 75%),
- linear-gradient(130deg,#4d0e30,#17051a);
- text-align:center}
-.advent-dialog h2{font:750 clamp(1.35rem,5.4vw,2rem) Georgia,serif;margin:8px 0;color:#ffe0eb}
-.advent-dialog p{line-height:1.4}
-.advent-dialog-action,.advent-dialog-close{display:block;width:100%;padding:11px 15px!important;
- min-height:45px!important;margin:8px auto!important;border-radius:20px;
- background:linear-gradient(125deg,#ff70aa,#d31369);color:#fff;
- border:1px solid #ffb7d6!important}
-.advent-dialog-close{background:#4f1532}
-.advent-reveal-heart{font-size:3rem;color:#ff8cbc;text-shadow:0 0 18px #fa4b94}
-.advent-reveal-heading{letter-spacing:.12em;font-weight:800;color:#ff9ac5;font-size:.75rem}
-.advent-opened-by{font-size:.86rem;color:#e7bfd3}
-.advent-reveal-type{padding:7px 10px;border:1px solid #fd84b25c;
- border-radius:14px;color:#ffd1e4}
-.advent-description{white-space:pre-wrap;text-align:left;line-height:1.5}
-.advent-reveal-timer{color:#ffd792}
-@keyframes advent-pulse{
- 0%,100%{filter:brightness(1);box-shadow:var(--ritual-shadow)}
- 50%{filter:brightness(1.04);box-shadow:var(--ritual-shadow)}
-}
-@keyframes advent-unlock{
- 0%{transform:scale(1)}35%{transform:scale(1.09) rotateY(12deg)}
- 75%{transform:scale(1.03) rotateY(-9deg)}100%{transform:scale(1)}
-}
-@keyframes advent-lift{
- 0%{transform:translateY(0) rotateX(0deg)}55%{transform:translateY(-11px) rotateX(17deg)}
- 100%{transform:translateY(0)}
-}
-@media(max-height:780px){
- .advent-premium-view{
-  grid-template-rows:minmax(62px,1fr) minmax(100px,1.3fr) minmax(300px,4.9fr);
-  padding-bottom:calc(73px + env(safe-area-inset-bottom));gap:4px}
- .advent-shell{padding:7px 8px}
- .advent-tiles{gap:5px;margin:13px 0 3px}
- .advent-intro h2{font-size:clamp(1.58rem,5.9vw,2.8rem)}
- .advent-box-icon{height:54%}
-}
-@media(max-width:350px){
- .advent-tiles{gap:3px}
- .advent-intro h2{font-size:1.4rem}
- .advent-box-number{font-size:.92rem}
- .advent-shell-head h3{font-size:1.05rem}
-}
-@media(prefers-reduced-motion:reduce){
- .advent-box.available,.advent-box.opening,.advent-box.opening .advent-box-icon{
- animation:none!important}
-}
+/* Les lettres de décembre. Shared Home materials, one owner for Advent layout. */
+html:has(main#app.loveroll-advent-letters),body:has(main#app.loveroll-advent-letters){height:100%;overflow:hidden;}
+main#app.loveroll-advent-letters{box-sizing:border-box;width:100%;max-width:none;height:100dvh;min-height:0;margin:0;padding:max(var(--ritual-page-top),env(safe-area-inset-top,0px)) 16px calc(66px + env(safe-area-inset-bottom,0px));overflow:hidden;display:block;background:var(--ritual-page);color:var(--ritual-text);}
+main#app.loveroll-advent-letters>.header{display:none;}
+main#app.loveroll-advent-letters>.nav{position:fixed;inset:auto 0 0;box-sizing:border-box;min-height:0;padding:2px 3px calc(3px + env(safe-area-inset-bottom,0px));z-index:5000;}
+main#app.loveroll-advent-letters>.nav .nav-inner{width:min(100%,960px);gap:4px;}
+main#app.loveroll-advent-letters>.nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;padding:3px 1px;line-height:1.03;font-size:clamp(.58rem,2.3vw,.76rem);}
+main#app.loveroll-advent-letters>.nav button span{line-height:1.08;margin:0;font-size:1.25rem;}
+main#app.loveroll-advent-letters .advent-premium-view{--advent-space:10px;box-sizing:border-box;width:min(100%,680px);height:100%;min-height:0;margin:auto;padding:0;display:grid;grid-template-rows:var(--ritual-brand-height) auto 36px minmax(0,1fr) auto;gap:var(--advent-space);}
+main#app.loveroll-advent-letters .advent-top{display:grid;place-items:center;min-height:0;}
+main#app.loveroll-advent-letters .ritual-brand{margin:0;}
+main#app.loveroll-advent-letters .ritual-brand i{font-size:var(--ritual-heart-size);line-height:var(--ritual-heart-line);}
+main#app.loveroll-advent-letters .ritual-brand b{font-size:var(--ritual-word-size);line-height:var(--ritual-word-line);}
+main#app.loveroll-advent-letters .advent-intro{margin-top:calc(var(--ritual-brand-gap) - var(--advent-space) + var(--ritual-inline-kicker-offset));display:block;min-height:0;text-align:left;background:none;border:0;box-shadow:none;}
+main#app.loveroll-advent-letters .advent-intro>span{color:var(--ritual-rose);font-size:10px;letter-spacing:.19em;}
+main#app.loveroll-advent-letters .advent-intro h1{font:500 clamp(29px,8.3vw,43px)/1.01 Georgia,serif;letter-spacing:-.035em;color:var(--ritual-text);margin:7px 0 9px;}
+main#app.loveroll-advent-letters .advent-intro p{font-size:13px;line-height:1.3;color:var(--ritual-muted);margin:0;}
+main#app.loveroll-advent-letters .advent-month-row{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;align-items:center;gap:12px;min-height:0;color:var(--ritual-muted);font-size:13px;}
+main#app.loveroll-advent-letters .advent-month-row strong{font-weight:500;color:var(--ritual-text);font-variant-numeric:tabular-nums;}
+main#app.loveroll-advent-letters .advent-history-trigger{min-height:36px;padding:0;border:1px solid var(--ritual-border);border-radius:50%;background:transparent;box-shadow:none;color:var(--ritual-rose);font-size:23px;line-height:1;}
+main#app.loveroll-advent-letters .advent-tiles{min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));gap:10px 7px;margin:0;padding:0;isolation:isolate;}
+main#app.loveroll-advent-letters .advent-box{position:relative;display:grid;grid-template-rows:minmax(0,1fr) 15px;gap:5px;min-width:0;min-height:0;padding:0;border:0;border-radius:0;box-shadow:none;background:none;color:var(--ritual-text);font-family:inherit;text-align:center;touch-action:manipulation;cursor:pointer;}
+main#app.loveroll-advent-letters .advent-envelope{position:relative;min-height:0;display:block;perspective:500px;overflow:visible;border:1px solid var(--ritual-border);border-radius:5px;background:var(--ritual-card);box-shadow:inset 0 1px #ffe4e80a;}
+main#app.loveroll-advent-letters .advent-envelope-front{position:absolute;inset:0;z-index:2;border-radius:inherit;background:var(--ritual-card);}
+main#app.loveroll-advent-letters .advent-envelope-flap{position:absolute;inset:0 0 25%;clip-path:polygon(0 0,100% 0,50% 84%);z-index:3;background:var(--ritual-card);transform-origin:50% 0;backface-visibility:visible;}
+main#app.loveroll-advent-letters .advent-fold{position:absolute;inset:0;width:100%;height:100%;z-index:4;fill:none;stroke:var(--ritual-border);stroke-width:.7;pointer-events:none;}
+main#app.loveroll-advent-letters .advent-seal{position:absolute;left:60%;top:60%;transform:translate(-50%,-50%);z-index:5;display:grid;place-items:center;width:21px;height:21px;border-radius:50%;border:1px solid var(--ritual-border);background:var(--ritual-bg);color:var(--ritual-rose);font-size:13px;line-height:1;}
+main#app.loveroll-advent-letters .advent-seal svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+main#app.loveroll-advent-letters .advent-box-number{position:absolute;left:7px;top:5px;z-index:6;font:500 clamp(17px,4.8vw,25px)/1 Georgia,serif;color:var(--ritual-text);}
+main#app.loveroll-advent-letters .advent-state-label{font-weight:400;display:grid;place-items:center;font-size:clamp(11px,2.55vw,12px);line-height:1.15;color:var(--ritual-muted);white-space:nowrap;}
+main#app.loveroll-advent-letters .advent-box.locked{opacity:.65;cursor:not-allowed;}
+main#app.loveroll-advent-letters .advent-box:disabled:not(.locked){opacity:1;cursor:wait;}
+main#app.loveroll-advent-letters .advent-box.available{background:none;}
+main#app.loveroll-advent-letters .advent-box.available .advent-envelope{border-color:var(--ritual-rose);background:var(--ritual-button);box-shadow:var(--ritual-shadow);}
+main#app.loveroll-advent-letters .advent-box.available .advent-envelope-front,main#app.loveroll-advent-letters .advent-box.available .advent-envelope-flap{background:var(--ritual-button);}
+main#app.loveroll-advent-letters .advent-box.available .advent-state-label{color:var(--ritual-text);}
+main#app.loveroll-advent-letters .advent-box.opened .advent-envelope-flap{transform:rotateX(-35deg);opacity:.55;}
+main#app.loveroll-advent-letters .advent-box.opened .advent-envelope{border-style:dashed;}
+main#app.loveroll-advent-letters .advent-letter-paper{position:absolute;inset:12% 12% 6%;z-index:1;display:grid;place-items:center;border-radius:3px;background:var(--ritual-text);color:var(--ritual-rose);font:24px Georgia,serif;opacity:0;}
+main#app.loveroll-advent-letters .advent-box.opening-pending .advent-seal{animation:advent-pending 1s ease-in-out infinite;}
+main#app.loveroll-advent-letters .advent-box.opening{z-index:10;}
+main#app.loveroll-advent-letters .advent-box.opening .advent-envelope-flap{animation:advent-letter-flap 1s ease forwards;}
+main#app.loveroll-advent-letters .advent-box.opening .advent-letter-paper{animation:advent-letter-rise 1s ease forwards;}
+main#app.loveroll-advent-letters .advent-box.opening .advent-seal,main#app.loveroll-advent-letters .advent-box.opening .advent-fold{opacity:0;transition:opacity .2s;}
+main#app.loveroll-advent-letters .advent-footer{display:grid;gap:8px;min-height:0;text-align:center;}
+main#app.loveroll-advent-letters .advent-day-status{font-size:12px;line-height:1.2;color:var(--ritual-muted);margin:0;}
+main#app.loveroll-advent-letters .advent-primary{display:grid;place-items:center;min-height:48px;padding:9px 12px;border:1px solid #e5b3c381;border-radius:999px;background:var(--ritual-button);box-shadow:var(--ritual-shadow);color:var(--ritual-text);font-family:inherit;font-size:14px;font-weight:600;line-height:1.2;}
+main#app.loveroll-advent-letters .advent-primary:disabled{background:var(--ritual-card);color:var(--ritual-muted);opacity:.75;box-shadow:none;}
+main#app.loveroll-advent-letters .advent-footer>small{color:var(--ritual-muted);font-size:11px;line-height:1.2;}
+main#app.loveroll-advent-letters button:focus-visible{outline:2px solid var(--ritual-text);outline-offset:3px;}
+main#app.loveroll-advent-letters .advent-dialog-shade{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px));background:#10070ce8;backdrop-filter:blur(10px);}
+main#app.loveroll-advent-letters .advent-dialog{position:relative;box-sizing:border-box;width:min(100%,570px);max-height:100%;padding:26px 22px;overflow:auto;overscroll-behavior:contain;border:1px solid var(--ritual-border);border-radius:20px;background:var(--ritual-card),var(--ritual-bg);box-shadow:var(--ritual-shadow);text-align:center;color:var(--ritual-text);}
+main#app.loveroll-advent-letters .advent-paper-corner{position:absolute;right:0;top:0;width:34px;height:34px;background:linear-gradient(45deg,#e8b2c029 48%,transparent 50%);border-bottom-left-radius:5px;}
+main#app.loveroll-advent-letters .advent-reveal-heart{display:grid;place-items:center;margin-bottom:12px;color:var(--ritual-rose);}
+main#app.loveroll-advent-letters .advent-reveal-heart svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1;}
+main#app.loveroll-advent-letters .advent-reveal-heading{font-size:11px;letter-spacing:.17em;color:var(--ritual-rose);}
+main#app.loveroll-advent-letters .advent-dialog h2{font:500 30px/1.1 Georgia,serif;margin:12px 0;color:var(--ritual-text);}
+main#app.loveroll-advent-letters .advent-description{white-space:pre-wrap;text-align:left;font-size:15px;line-height:1.55;color:var(--ritual-text);margin:20px 0;}
+main#app.loveroll-advent-letters .advent-reveal-type{display:inline-block;padding:6px 12px;border:1px solid var(--ritual-border);border-radius:999px;font-size:12px;color:var(--ritual-muted);}
+main#app.loveroll-advent-letters .advent-opened-by{font-size:12px;line-height:1.4;color:var(--ritual-muted);margin:14px 0;}
+main#app.loveroll-advent-letters :is(.advent-dialog-close,.advent-dialog-year){width:100%;min-height:46px;margin-top:10px;padding:10px 12px;border:1px solid var(--ritual-border);border-radius:999px;background:var(--ritual-card);box-shadow:none;color:var(--ritual-text);font-size:14px;}
+main#app.loveroll-advent-letters :is(.advent-dialog-close,.advent-dialog-year.selected){background:var(--ritual-button);box-shadow:var(--ritual-shadow);}
+main#app.loveroll-advent-letters .timer-panel{border:1px solid var(--ritual-border);border-radius:16px;background:var(--ritual-card);padding:12px;}
+@keyframes advent-pending{50%{opacity:.45;}}
+@keyframes advent-letter-flap{0%{transform:rotateX(0);}45%,100%{transform:rotateX(-165deg);}}
+@keyframes advent-letter-rise{0%,25%{opacity:0;transform:translateY(0);}65%,100%{opacity:1;transform:translateY(-38%);box-shadow:0 0 15px #f5dcd82b;}}
+@media(max-height:740px){main#app.loveroll-advent-letters .advent-premium-view{grid-template-rows:var(--ritual-brand-height) auto 32px minmax(0,1fr) auto;--advent-space:7px;gap:var(--advent-space);}main#app.loveroll-advent-letters .advent-intro h1{font-size:29px;margin:4px 0 6px;}main#app.loveroll-advent-letters .advent-intro p{font-size:12px;}main#app.loveroll-advent-letters .advent-tiles{gap:7px 6px;}main#app.loveroll-advent-letters .advent-footer{gap:6px;}}
+@media(max-height:660px) and (max-width:767px){main#app.loveroll-advent-letters{padding-bottom:calc(57px + env(safe-area-inset-bottom,0px));}main#app.loveroll-advent-letters>.nav button{min-height:45px;}main#app.loveroll-advent-letters .advent-intro h1{font-size:27px;}main#app.loveroll-advent-letters .advent-primary{min-height:44px;font-size:13px;}main#app.loveroll-advent-letters .advent-envelope{border-radius:4px;}main#app.loveroll-advent-letters .advent-box-number{font-size:18px;left:5px;top:4px;}}
+@media(min-width:768px){main#app.loveroll-advent-letters{padding:var(--ritual-page-top) 26px calc(82px + env(safe-area-inset-bottom,0px));}main#app.loveroll-advent-letters>.nav{padding:8px 24px;min-height:68px;}main#app.loveroll-advent-letters>.nav button{flex-direction:row;gap:10px;min-height:49px;padding:8px 14px;font-size:14px;}main#app.loveroll-advent-letters .advent-intro h1{font-size:49px;}main#app.loveroll-advent-letters .advent-intro p{font-size:16px;}main#app.loveroll-advent-letters .advent-state-label{font-size:12px;}main#app.loveroll-advent-letters .advent-box-number{font-size:30px;top:9px;left:12px;}main#app.loveroll-advent-letters .advent-seal{width:28px;height:28px;}main#app.loveroll-advent-letters .advent-seal svg{width:16px;height:16px;}main#app.loveroll-advent-letters .advent-primary{font-size:15px;}main#app.loveroll-advent-letters .advent-tiles{gap:12px;}}
+@media(min-width:1050px){main#app.loveroll-advent-letters .advent-premium-view{--advent-space:18px;width:min(100%,1120px);grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);grid-template-rows:var(--ritual-brand-height) 36px minmax(0,1fr) auto;gap:18px 54px;}main#app.loveroll-advent-letters .advent-top{grid-column:1/-1;}main#app.loveroll-advent-letters .advent-intro{grid-column:1;grid-row:2/4;align-self:start;}main#app.loveroll-advent-letters .advent-intro h1{font-size:clamp(42px,4.5vw,62px);margin:16px 0;}main#app.loveroll-advent-letters .advent-intro p{font-size:17px;max-width:330px;line-height:1.5;}main#app.loveroll-advent-letters .advent-month-row{grid-column:2;grid-row:2;font-size:15px;}main#app.loveroll-advent-letters .advent-tiles{grid-column:2;grid-row:3/5;}main#app.loveroll-advent-letters .advent-footer{grid-column:1;grid-row:4;padding-bottom:10px;gap:12px;}main#app.loveroll-advent-letters .advent-day-status{font-size:14px;}main#app.loveroll-advent-letters .advent-footer>small{font-size:12px;}}
+@media(prefers-reduced-motion:reduce){main#app.loveroll-advent-letters *,main#app.loveroll-advent-letters *::before{animation:none;transition:none;}main#app.loveroll-advent-letters .advent-box.opening .advent-envelope-flap{transform:rotateX(-165deg);}main#app.loveroll-advent-letters .advent-box.opening .advent-letter-paper{opacity:1;transform:translateY(-38%);}}
+
+main#app.loveroll-advent-letters .advent-history-trigger .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;}

@@ -6,6 +6,10 @@ const stableStatus=status=>status?
 const challengeSignature=rows=>(rows||[]).map(r=>r.id+':'+r.status)
  .sort().join('|');
 export function coupleSyncChanged(local,remote,{week,month,tab}={}){
+ if(tab==='advent'&&remote.advent){
+  const signature=rows=>JSON.stringify((rows||[]).map(r=>[r.year,r.day,r.opened_by,r.opened_at].join(':')).sort());
+  if(signature(remote.advent)!==signature(local.advent))return true;
+ }
  const rolls=remote.rolls||[];
  const weekly=rolls.find(r=>r.kind==='weekly'&&r.key===week)||null;
  if(keyOf(weekly)!==keyOf(local.weekly)||weekly?.face!==local.weekly?.face)return true;
@@ -62,7 +66,7 @@ export function createCoupleLiveSync({state,query,rpc,refresh,render,ready,week,
  }
  async function reconcile(){
   if(!eligible())return;
-  if(inRefresh||state.diceStatus){refreshAgain=true;return;}
+  if(inRefresh||state.diceStatus||state.adventOpening!=null){refreshAgain=true;return;}
   if(['settings','library','monthly-library','advent-editor','special-editor'].includes(state.tab)&&formDirty()){
    refreshAgain=true;return;
   }
@@ -70,10 +74,10 @@ export function createCoupleLiveSync({state,query,rpc,refresh,render,ready,week,
   const couple=state.coupleId,previous=sharedSignature(state);
   try{
    await refresh();
-   if(state.coupleId===couple&&!state.diceStatus&&previous!==sharedSignature(state))render();
+   if(state.coupleId===couple&&!state.diceStatus&&state.adventOpening==null&&previous!==sharedSignature(state))render();
   }finally{
    inRefresh=false;
-   if(refreshAgain&&!state.diceStatus&&eligible()&&!formDirty()){
+   if(refreshAgain&&!state.diceStatus&&state.adventOpening==null&&eligible()&&!formDirty()){
     refreshAgain=false;request(350);
    }
   }
@@ -85,10 +89,11 @@ export function createCoupleLiveSync({state,query,rpc,refresh,render,ready,week,
   lastProbe=now;inProbe=true;
   const couple=state.coupleId,tab=state.tab;
   try{
-   const [rolls,sessions,reviews]=await Promise.all([
+   const [rolls,sessions,reviews,advent]=await Promise.all([
     query('couple_rolls',{eq:{couple_id:couple},columns:'id,kind,key,face'}),
     query('couple_sessions',{eq:{couple_id:couple},columns:'id,finished_at'}),
-    rpc('love_evening_reviews_for_couple',{p_couple:couple}).catch(()=>null)
+    rpc('love_evening_reviews_for_couple',{p_couple:couple}).catch(()=>null),
+    tab==='advent'?query('couple_advent',{eq:{couple_id:couple},columns:'year,day,opened_by,opened_at'}):Promise.resolve(null)
    ]);
    if(state.coupleId!==couple||state.diceStatus)return;
    const active=sessions.find(s=>s.finished_at==null)||null;
@@ -102,7 +107,7 @@ export function createCoupleLiveSync({state,query,rpc,refresh,render,ready,week,
     ]);
    }
    if(state.coupleId!==couple||state.diceStatus)return;
-   if(coupleSyncChanged(state,{rolls,sessions,rollStatus,challenges,board,reviews},
+   if(coupleSyncChanged(state,{rolls,sessions,rollStatus,challenges,board,reviews,advent},
     {week:week(),month:month(),tab}))request(0);
   }catch(e){
    if(online())console.warn('Statut des dés en direct',e?.code||e?.message);

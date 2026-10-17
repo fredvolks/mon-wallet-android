@@ -1,102 +1,85 @@
-// Live, shared LoveRoll Advent calendar. Never reveal unopened challenge contents.
+// Shared Advent letters. Only recorded server openings may reveal their contents.
+import {ritualBrandHtml} from './brand.mjs';
 export const ADVENT_ZONE='America/Toronto';
-export const torontoDay=(when=new Date())=>
- new Intl.DateTimeFormat('en-CA',{timeZone:ADVENT_ZONE,year:'numeric',month:'2-digit',day:'2-digit'}).format(when);
-const escape=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[ch]));
+export const torontoDay=(when=new Date())=>new Intl.DateTimeFormat('en-CA',{
+ timeZone:ADVENT_ZONE,year:'numeric',month:'2-digit',day:'2-digit'
+}).format(when);
+const escape=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 export function sharedAdventState(openings=[],when=new Date(),year=null){
- const [currentYear,month,day]=torontoDay(when).split('-').map(Number);
- const shown=Number.isInteger(year)?year:currentYear;
- const opened=new Map((openings||[]).filter(x=>x.year===shown&&x.day>=1&&x.day<=25)
-  .map(x=>[x.day,x]));
+ const date=torontoDay(when),[currentYear,month,day]=date.split('-').map(Number);
+ // Before the next December, the previous calendar remains available for catch-up.
+ const shown=Number.isInteger(year)?year:Math.max(2026,month<12?currentYear-1:currentYear);
+ const opened=new Map((openings||[]).filter(x=>x.year===shown&&x.day>=1&&x.day<=25).map(x=>[x.day,x]));
  const days=Array.from({length:25},(_,i)=>{
-  const d=i+1,entry=opened.get(d)||null;
-  const today=shown===currentYear&&month===12&&day===d;
-  const missed=shown<currentYear||(shown===currentYear&&(month>12||(month===12&&d<day)));
-  return {day:d,opened:!!entry,entry,today,canOpen:today&&!entry,
-   status:entry?'opened':today?'available':missed?'missed':'locked'};
+  const d=i+1,entry=opened.get(d)||null,availableOn=shown+'-12-'+String(d).padStart(2,'0');
+  const today=availableOn===date,canOpen=availableOn<=date&&!entry;
+  return {day:d,date:availableOn,opened:!!entry,entry,today,canOpen,
+   status:entry?'opened':today?'available':canOpen?'overdue':'locked'};
  });
- const note=shown!==currentYear?'Historique de décembre '+shown:
-  month<12?'Notre Avent commence le 1er décembre ♥':
-  month===12&&day<=25?'Une seule surprise officielle à découvrir aujourd’hui.':
-  'Les 25 journées de décembre sont passées. Vos souvenirs restent disponibles ♥';
- return {year:shown,currentYear,month,day,days,note,
-  totalOpened:days.filter(d=>d.opened).length,
-  canReturnCurrent:shown!==currentYear};
+ const note=days.some(x=>x.canOpen)?'Les lettres des jours passés restent à découvrir.':
+  days.every(x=>x.opened)?'Vos vingt-cinq lettres restent à relire.':'Première lettre le 1er décembre '+shown+'.';
+ return {year:shown,currentYear,month,day,date,days,note,
+  totalOpened:days.filter(d=>d.opened).length,canReturnCurrent:shown!==currentYear};
 }
-function goldHeartLock(n){
- return '<svg viewBox="0 0 56 62" class="advent-gold-lock" aria-hidden="true">'+
- '<defs><linearGradient id="adv-gold-'+n+'" x1="0" y1="0" x2="1" y2="1">'+
- '<stop stop-color="#fff2a7"/><stop offset=".45" stop-color="#ffc947"/>'+
- '<stop offset="1" stop-color="#a96a16"/></linearGradient></defs>'+
- '<path d="M18 25v-8a10 10 0 0 1 20 0v8" stroke="url(#adv-gold-'+n+')" stroke-width="5" fill="none" stroke-linecap="round"/>'+
- '<rect x="12" y="24" width="32" height="30" rx="5" fill="url(#adv-gold-'+n+')" stroke="#ffe6a0" stroke-width="1.4"/>'+
- '<path d="M28 44c-7-5-8-9-4-11 2-1 4 0 4 2 1-4 7-4 8 0 1 4-5 8-8 9z" fill="#8a1245"/>'+
- '<path d="M14 26h27" stroke="#fff8ca" stroke-opacity=".55" stroke-width="2"/></svg>';
-}
-function openGift(){
- return '<svg viewBox="0 0 56 62" class="advent-open-gift" aria-hidden="true">'+
- '<path d="M12 29h33v27H12z" fill="#c11668" stroke="#ffacd4" stroke-width="2"/>'+
- '<path d="M9 25l26-13 16 13-7 9-24-2z" fill="#ff5e9e" stroke="#ffd2e7" stroke-width="2"/>'+
- '<path d="M28 25v30m-17-20h34" stroke="#ffca60" stroke-width="5"/>'+
- '<path d="M28 14c-15-12-19 5-2 10 14-18 24-9 3-4" fill="none" stroke="#ffcc70" stroke-width="3"/>'+
- '</svg>';
-}
-const button=(action,label,classes='',disabled=false)=>
- '<button type="button" class="'+classes+'" data-action="'+escape(action)+'"'+(disabled?' disabled':'')+'>'+label+'</button>';
-export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=null,selectedDay=null,openingDay=null,showHistory=false,timerHtml=''}={}){
+const heart='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20C9 17 3 13 3 8a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5-6 9-9 12Z"/></svg>';
+const lock='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5zM12 14v3"/></svg>';
+const button=(action,label,classes='',disabled=false)=>'<button type="button" class="'+classes+'" data-action="'+escape(action)+'"'+(disabled?' disabled':'')+'>'+label+'</button>';
+export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=null,
+ selectedDay=null,openingDay=null,revealing=false,dateTrusted=true,showHistory=false,timerHtml=''}={}){
  const cal=sharedAdventState(openings,when,year),opened=cal.days.find(x=>x.day===selectedDay)?.entry;
- const who=id=>members.find(m=>m.user_id===id)?.name?.split(' ')[0]||'Votre partenaire';
+ const busy=openingDay!==null,today=cal.days.find(x=>x.today);
+ const who=id=>members.find(m=>m.user_id===id)?.name||'Votre partenaire';
  const grid=cal.days.map(d=>{
-  const act=d.opened?'advent-view:'+d.day:d.canOpen?'advent-open:'+d.day:'advent-locked:'+d.day;
-  const locked=d.status==='locked'||d.status==='missed';
-  const accessible=d.opened?'Consulter la surprise du '+d.day+' décembre':
-   d.canOpen?'Ouvrir la surprise du '+d.day+' décembre':
-   d.status==='missed'?'Jour '+d.day+' manqué · sans rattrapage':'Case '+d.day+' à venir';
-  return '<button class="advent-box '+d.status+(openingDay===d.day?' opening':'')+
-   '" type="button" data-action="'+act+'" aria-label="'+escape(accessible)+'"'+
-   (locked?' disabled aria-disabled="true"':'')+'>'+
-   (d.canOpen?'<span class="advent-today-tag">Aujourd’hui</span>':'')+
-   '<span class="advent-box-shimmer" aria-hidden="true"></span>'+
-   '<span class="advent-box-icon">'+(d.opened||d.canOpen?openGift():goldHeartLock(d.day))+'</span>'+
-   '<span class="advent-box-number">'+d.day+'</span>'+
-   (d.opened?'<span class="advent-opened-mark">✓ Ouvert</span>':
-   d.status==='missed'?'<span class="advent-state-label">Jour manqué</span>':
-   d.canOpen?'<span class="advent-state-label">À ouvrir</span>':'')+
-   '</button>';
+  const canOpen=d.canOpen&&dateTrusted,disabled=busy||(!d.opened&&!canOpen);
+  const act=d.opened?'advent-view:'+d.day:canOpen?'advent-open:'+d.day:'advent-locked:'+d.day;
+  const state=d.opened?'✓ Ouverte':d.today?'Aujourd’hui':d.status==='overdue'?'À découvrir':'À venir';
+  const label=d.opened?'Revoir la lettre':canOpen?'Ouvrir la lettre':'Lettre verrouillée';
+  return '<button class="advent-box '+d.status+(openingDay===d.day?(revealing?' opening':' opening-pending'):'')+
+   '" type="button" data-day="'+d.day+'" data-date="'+d.date+'" data-action="'+act+'" aria-label="'+
+   escape(label+' du '+d.day+' décembre '+cal.year+' · '+state)+'"'+(disabled?' disabled aria-disabled="true"':'')+
+   (openingDay===d.day?' aria-busy="true"':'')+'>'+
+   '<span class="advent-envelope" aria-hidden="true"><span class="advent-letter-paper">♡</span>'+
+   '<span class="advent-envelope-front"></span><span class="advent-envelope-flap"></span>'+
+   '<svg class="advent-fold" viewBox="0 0 100 70" preserveAspectRatio="none"><path d="M0 0 50 40 100 0M0 70 35 40M100 70 65 40"/></svg>'+
+   '<span class="advent-seal">'+(d.status==='locked'?lock:d.opened?'✓':heart)+'</span>'+
+   '<b class="advent-box-number">'+d.day+'</b></span>'+
+   '<span class="advent-state-label">'+state+'</span></button>';
  }).join('');
- const historyYears=[...new Set(openings.map(x=>x.year).filter(y=>Number.isInteger(y)&&y!==cal.currentYear))].sort((a,b)=>b-a);
- return '<div class="advent-premium-view">'+
- '<header class="advent-top"><span class="advent-top-heart" aria-hidden="true">♡</span>'+
-  '<div><h1>CALENDRIER DE<br>L’AVENT</h1><p>Votre rituel commun en décembre</p></div></header>'+
- '<div class="advent-intro"><div class="advent-overline">🎁 &nbsp; NOTRE AVENT</div>'+
- '<h2><em>25</em> moments à découvrir</h2>'+
- '<p>Chaque jour de décembre, une nouvelle surprise<br>rien que pour nous.</p></div>'+
- '<section class="advent-shell" aria-label="Les 25 jours de décembre '+cal.year+'">'+
- '<div class="advent-shell-head"><h3>Ouvrons une surprise à la fois · '+cal.totalOpened+' / 25</h3>'+
- '<p>Disponible aujourd’hui, ouverte ou manquée : chaque case ne peut être ouverte que le jour exact, une seule fois pour le couple.</p></div>'+
- '<div class="advent-tiles">'+grid+'</div>'+
- '<div class="advent-shell-bottom">'+
- '<span>'+escape(cal.note)+'</span>'+
- (historyYears.length||cal.canReturnCurrent?
-  button('advent-history','Années ▾','advent-history-trigger'): '')+'</div>'+
- '</section>'+
- (showHistory?'<div class="advent-dialog-shade" role="dialog" aria-modal="true" aria-label="Historique des calendriers">'+
-  '<article class="advent-dialog"><h2>♡ Nos calendriers</h2>'+
-  '<p>Chaque année conserve ses propres cases déjà ouvertes.</p>'+
-  button('advent-year:'+cal.currentYear,'Décembre '+cal.currentYear,'advent-dialog-action')+
-  historyYears.map(y=>button('advent-year:'+y,'Décembre '+y,'advent-dialog-action')).join('')+
-  button('advent-history','Fermer','advent-dialog-close')+'</article></div>':'')+
- (opened?'<div class="advent-dialog-shade" role="dialog" aria-modal="true" aria-label="Surprise du '+selectedDay+' décembre">'+
-   '<article class="advent-dialog advent-reveal">'+
-   '<div class="advent-reveal-heart" aria-hidden="true">♡</div>'+
-   '<div class="advent-reveal-heading">♥ SURPRISE DU '+selectedDay+' DÉCEMBRE '+cal.year+'</div>'+
-   '<p class="advent-opened-by">Ouverte par '+escape(who(opened.opened_by))+
-   ' · '+escape(new Intl.DateTimeFormat('fr-CA',{timeZone:ADVENT_ZONE,dateStyle:'medium',timeStyle:'short'}).format(new Date(opened.opened_at)))+'</p>'+
-   '<h2>'+escape(opened.advent_title||'Notre surprise du jour')+'</h2>'+
+ const historyYears=[...new Set([2026,cal.currentYear,cal.year,...openings.map(x=>x.year)])]
+  .filter(y=>Number.isInteger(y)&&y>=2026).sort((a,b)=>b-a);
+ const primaryAction=today&&dateTrusted?(today.opened?'advent-view:':'advent-open:')+today.day:'';
+ const primaryLabel=busy?(revealing?'Votre lettre se dévoile…':'Ouverture en cours…'):
+  !dateTrusted?'Connexion au calendrier…':today?(today.opened?'Relire notre surprise du jour':'Ouvrir notre surprise du jour'):
+  cal.days.every(d=>d.opened)?'Nos vingt-cinq lettres sont ouvertes':cal.days.some(d=>d.canOpen)?'Nos lettres restent à découvrir':'Rendez-vous le 1er décembre';
+ const status=today?today.day+' décembre · '+(today.opened?'Notre lettre est ouverte':'À découvrir aujourd’hui'):
+  cal.days.some(d=>d.canOpen)?'Choisissez une enveloppe à découvrir.':cal.note;
+ const openedAt=opened&&Date.parse(opened.opened_at);
+ const timestamp=Number.isFinite(openedAt)?new Intl.DateTimeFormat('fr-CA',{
+  timeZone:ADVENT_ZONE,dateStyle:'medium',timeStyle:'short'
+ }).format(new Date(openedAt)):null;
+ return '<section class="advent-premium-view advent-letters" aria-label="Les lettres de décembre">'+
+  '<header class="advent-top">'+ritualBrandHtml()+'</header>'+
+  '<div class="advent-intro"><span>NOTRE RITUEL DE L’AVENT</span><h1>Les mots doux<br>de décembre.</h1>'+
+  '<p>Vingt-cinq lettres, une histoire à deux.</p></div>'+
+  '<div class="advent-month-row"><span>Décembre '+cal.year+'</span><strong>'+cal.totalOpened+' / 25</strong>'+
+  button('advent-history','<span aria-hidden="true">⋯</span><span class="sr-only">Choisir un calendrier</span>','advent-history-trigger',busy)+'</div>'+
+  '<div class="advent-tiles" role="group" aria-label="Les 25 enveloppes de décembre '+cal.year+'">'+grid+'</div>'+
+  '<footer class="advent-footer"><p class="advent-day-status" aria-live="polite">'+escape(status)+'</p>'+
+  button(primaryAction,escape(primaryLabel),'advent-primary',busy||!dateTrusted||!today||(!today.opened&&!today.canOpen))+
+  '<small>Une découverte par jour, pour deux.</small></footer>'+
+  (showHistory?'<div class="advent-dialog-shade" role="dialog" aria-modal="true" aria-labelledby="advent-history-title"><article class="advent-dialog">'+
+   '<div class="advent-reveal-heading">NOS SOUVENIRS À DEUX</div><h2 id="advent-history-title">Nos calendriers</h2>'+
+   '<p>Les lettres des jours passés restent accessibles dans leur calendrier.</p>'+
+   historyYears.map(y=>button('advent-year:'+y,'Décembre '+y,'advent-dialog-year'+(y===cal.year?' selected':''))).join('')+
+   button('advent-history','Fermer','advent-dialog-close')+'</article></div>':'')+
+  (opened?'<div class="advent-dialog-shade" role="dialog" aria-modal="true" aria-labelledby="advent-letter-title">'+
+   '<article class="advent-dialog advent-reveal"><span class="advent-paper-corner" aria-hidden="true"></span>'+
+   '<div class="advent-reveal-heart" aria-hidden="true">'+heart+'</div>'+
+   '<div class="advent-reveal-heading">'+selectedDay+' DÉCEMBRE '+cal.year+'</div>'+
+   '<h2 id="advent-letter-title">'+escape(opened.advent_title??'Notre surprise du jour')+'</h2>'+
    (opened.advent_type?'<div class="advent-reveal-type">'+escape(opened.advent_type)+'</div>':'')+
-   '<p class="advent-description">'+escape(opened.advent_description||'Un moment à partager ensemble, à votre rythme.')+'</p>'+
+   '<p class="advent-description">'+escape(opened.advent_description??'Le texte de cette lettre n’a pas été enregistré.')+'</p>'+
+   '<p class="advent-opened-by">Ouverte par '+escape(who(opened.opened_by))+(timestamp?' · '+escape(timestamp):'')+'</p>'+
    (opened.advent_timer_minutes?timerHtml:'')+
-   button('advent-close','Fermer','advent-dialog-action')+
-   '</article></div>':'')+
- '</div>';
+   button('advent-close','Fermer','advent-dialog-close')+'</article></div>':'')+'</section>';
 }

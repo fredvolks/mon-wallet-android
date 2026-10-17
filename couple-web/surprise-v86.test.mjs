@@ -30,10 +30,10 @@ test('Activity modal shows the server-confirmed title, description and timer and
 });
 test('v104 refines v86, is cached offline and preserves desktop scroll constraints',()=>{
  const sw=read('service-worker.js'),ver=JSON.parse(read('web-version.json'));
- assert.equal(ver.build,'2026-10-17.118');
- assert.match(sw,/loveroll-static-v118/);
+ assert.equal(ver.build,'2026-10-17.119');
+ assert.match(sw,/loveroll-static-v119/);
  assert.match(sw,/\.\/surprise-responsive-v86\.css/);
- assert.match(index,/surprise-responsive-v86\.css\?v=20261017-editorial117/);
+ assert.match(index,/surprise-responsive-v86\.css\?v=20261017-advent119/);
  assert.ok(index.lastIndexOf('surprise-responsive-v86.css')>index.lastIndexOf('evening-focused-v84.css'));
  assert.ok(index.lastIndexOf('surprise-refined-v104.css')>index.lastIndexOf('surprise-responsive-v86.css'));
  assert.match(sw,/surprise-refined-v104\.css/);

@@ -2,16 +2,16 @@
    One big D20 panel, D6 "Qui invite" appears INSIDE only after the D20 result. */
 main#app.loveroll-surprise-page .surprise-premium-view{
  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
- grid-template-rows:minmax(62px,auto) minmax(0,1fr) minmax(225px,33%)!important;
+ grid-template-rows:auto minmax(0,1fr) minmax(225px,33%)!important;
  gap:clamp(5px,.9dvh,12px)!important;
  width:min(100%,900px)!important;min-height:0!important;
  overflow:hidden!important;align-content:stretch!important;
 }
 main#app.loveroll-surprise-page .surprise-header.surprise-new-header{
  grid-column:1!important;grid-row:1!important;display:flex!important;
- flex-direction:column!important;justify-content:center!important;
+ flex-direction:column!important;justify-content:flex-start!important;
  align-items:center!important;text-align:center!important;gap:2px!important;
- padding:4px 5px!important;min-height:0!important;overflow:hidden!important;
+ padding:0 5px!important;min-height:0!important;overflow:hidden!important;
 }
 main#app.loveroll-surprise-page .surprise-new-header .surprise-eyebrow{
  font:850 clamp(.66rem,2vw,.83rem)/1.12 system-ui,sans-serif!important;
@@ -186,7 +186,7 @@ main#app.loveroll-surprise-page .surprise-edit-close{
 @media(max-width:767px){
  main#app.loveroll-surprise-page .surprise-premium-view{
   grid-template-columns:minmax(0,1fr)!important;
-  grid-template-rows:minmax(62px,auto) minmax(0,1fr) clamp(225px,33dvh,315px)!important;
+  grid-template-rows:auto minmax(0,1fr) clamp(225px,33dvh,315px)!important;
   width:100%!important;gap:clamp(4px,.8dvh,9px)!important;
   height:100%!important;max-height:100%!important;align-content:stretch!important;
   overflow:hidden!important;
@@ -213,7 +213,7 @@ main#app.loveroll-surprise-page .surprise-edit-close{
  main#app.loveroll-surprise-page .surprise-premium-view{
   width:min(100%,1280px)!important;
   grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr)!important;
-  grid-template-rows:clamp(65px,9dvh,90px) minmax(0,1fr)!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
   gap:clamp(7px,1dvh,14px)!important;
  }
  main#app.loveroll-surprise-page .surprise-premium-view>.surprise-header{
@@ -402,3 +402,5 @@ main#app.loveroll-surprise-page .surprise-event-editor .surprise-edit-actions{
 main#app.loveroll-surprise-page .surprise-event-editor .surprise-edit-actions .surprise-primary{
  width:100%!important;min-height:48px!important;font-size:clamp(.9rem,2.7vw,1.07rem)!important;
 }
+
+main#app.loveroll-surprise-page .surprise-new-header>.ritual-brand{margin-bottom:calc(var(--ritual-brand-gap) - 2px + var(--ritual-kicker-offset));}
