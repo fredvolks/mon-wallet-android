@@ -310,7 +310,7 @@ function nav(){
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
- '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions')||(key==='settings'&&['library','monthly-library','advent-editor','special-editor','journal'].includes(state.tab)))?'active':'')+'"'+(state.diceStatus?' disabled':'')+'><span>'+navIcon(key,icon)+
+ '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions')||(key==='settings'&&!tabs.some(([tab])=>tab===state.tab)&&['library','monthly-library','advent-editor','special-editor','journal'].includes(state.tab)))?'active':'')+'"'+(state.diceStatus?' disabled':'')+'><span>'+navIcon(key,icon)+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
