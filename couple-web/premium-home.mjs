@@ -8,6 +8,32 @@ export const PIP_POSITIONS=Object.freeze({
   6:[[29,22],[71,22],[29,50],[71,50],[29,78],[71,78]]
 });
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
+let homeLayoutObserver=null;
+// Keep complete names and all seven cards visible when long labels outgrow a
+// short phone. Only the bottom cards compact; ordinary layouts retain scale 1.
+export function fitHomeLayout(root){
+ homeLayoutObserver?.disconnect();homeLayoutObserver=null;
+ const shell=root.querySelector('.real-home-shell'),stack=shell?.querySelector('.home-bottom-stack');
+ if(!stack)return;
+ const win=root.ownerDocument.defaultView;
+ let observer;
+ const fit=()=>{
+  if(!shell.isConnected){observer?.disconnect();return;}
+  shell.style.removeProperty('--home-details-scale');shell.classList.remove('home-fit-compact');
+  if(!win.matchMedia('(max-width:767px)').matches)return;
+  const fits=()=>stack.getBoundingClientRect().bottom<=shell.getBoundingClientRect().bottom+.1;
+  if(fits())return;
+  shell.classList.add('home-fit-compact');
+  let low=.75,high=1;
+  for(let i=0;i<8;i++){
+   const scale=(low+high)/2;shell.style.setProperty('--home-details-scale',String(scale));
+   if(fits())low=scale;else high=scale;
+  }
+  shell.style.setProperty('--home-details-scale',String(low));
+ };
+ if(win.ResizeObserver){observer=new win.ResizeObserver(fit);observer.observe(root);homeLayoutObserver=observer;}
+ fit();win.document.fonts?.ready.then(fit);
+}
 export function pipFace(n){
   if(!Number.isInteger(n)||n<1||n>6)throw new Error('Face de dé inconnue');
   return '<svg class="home-pip-svg" viewBox="0 0 100 100" role="img" aria-label="Dé face '+n+'">'+
@@ -114,8 +140,11 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const weeklyTitle=ready?weekly.face+' soirée'+(weekly.face===1?'':'s')+' de défi':'Prêts pour votre prochain rituel ?';
  const weeklySubtitle=ready?'cette semaine':'Brassez votre dé hebdomadaire';
  const statistic=(value,label,subtitle,cls='')=>
-  '<div class="home-stat-card '+cls+'"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
-  '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div>';
+  '<div class="home-stat-card '+cls+'"><div class="home-stat-content"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
+  '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div></div>';
+ const summary=(icon,value,label)=>'<div><div class="home-summary-content">'+
+  '<div class="home-summary-value"><span aria-hidden="true">'+icon+'</span><strong>'+shown(value)+'</strong></div>'+
+  '<small>'+label+'</small></div></div>';
  const displayNames=[0,1].map(i=>String(members[i]?.name||'Partenaire '+(i+1)).trim());
  const shortNames=displayNames.map(n=>n.split(/\s+/)[0]);
  const [nameA,nameB]=shortNames[0]===shortNames[1]?displayNames:shortNames;
@@ -141,9 +170,9 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
     (rolling?'Brassage 3D en cours…':disabled?'Préparation du brassage…':'🎲 BRASSER LE DÉ')+'</button>')+
    '</div>'+
    '<div class="home-bottom-stack"><div class="home-challenge-stats">'+
-   '<div><span aria-hidden="true">♢</span><strong>'+shown(stats.total)+'</strong><small>Défis attribués<br>ce soir</small></div>'+
-   '<div><span>♡</span><strong>'+shown(stats.forFirst)+'</strong><small>Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst)+'</small></div>'+
-   '<div><span>♡</span><strong>'+shown(stats.forSecond)+'</strong><small>Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond)+'</small></div></div>'+
+   summary('♢',stats.total,'Défis attribués<br>ce soir')+
+   summary('♡',stats.forFirst,'Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst))+
+   summary('♡',stats.forSecond,'Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond))+'</div>'+
    '<button class="home-next-month" data-action="tab:special" type="button">'+
    '<span class="home-calendar-icon home-present" aria-hidden="true">'+iconSvg('surprises')+'</span>'+ 
    '<span><small>'+(activity?'Surprise du mois tirée':'Surprise du mois disponible')+'</small>'+

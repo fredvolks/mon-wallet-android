@@ -71,6 +71,7 @@ jobs:
           python3 -m http.server 8765 -d couple-web > /tmp/loveroll-podium-http.log 2>&1 &
           node couple-web/dice-podium-browser-check.cjs
           node couple-web/home-podium-browser-check.cjs
+          node couple-web/home-card-centering-browser-check.cjs
           node couple-web/app-icon-browser-check.cjs
           node couple-web/loveroll-splash-browser-check.cjs
       - name: Preserve editorial and podium evidence
