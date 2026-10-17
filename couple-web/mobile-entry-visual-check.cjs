@@ -3,14 +3,13 @@
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const BASE='http://127.0.0.1:8765/';
+const fs=require('node:fs');
 async function main(){
  const [{discoverHtml},{authHtml}]=await Promise.all([
   import('./discover.mjs'),import('./onboarding.mjs')
  ]);
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
- const styles=['styles.css','discover.css','invitation-poster.css',
-  'invite-account.css','responsive-fullscreen.css','responsive-tablet-desktop.css',
-  'mobile-one-screen-v74.css','mobile-entry-v79.css'];
+ const styles=[...fs.readFileSync('couple-web/index.html','utf8').matchAll(/<link rel="stylesheet" href="\.\/([^"?]+)(?:\?[^"]*)?"/g)].map(m=>m[1]);
  const css=styles.map(s=>'<link rel="stylesheet" href="'+BASE+s+'">').join('');
  let checked=0;
  try{
@@ -76,6 +75,7 @@ async function main(){
       assert.ok(v.top>=0&&v.bottom<=measure.screen+2,name+' input clipped '+input+' '+JSON.stringify(v));
      }
     }
+    if(name==='signup'&&width===375){fs.mkdirSync('design-captures',{recursive:true});await page.screenshot({path:'design-captures/short-signup-375x520.png'});}
     checked++;
    }
    await page.close();

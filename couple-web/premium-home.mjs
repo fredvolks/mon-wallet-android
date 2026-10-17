@@ -116,8 +116,9 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const statistic=(value,label,subtitle,cls='')=>
   '<div class="home-stat-card '+cls+'"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
   '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div>';
- const nameA=String(members[0]?.name||'Joueur 1').split(' ')[0];
- const nameB=String(members[1]?.name||'Joueur 2').split(' ')[0];
+ const displayNames=[0,1].map(i=>String(members[i]?.name||'Partenaire '+(i+1)).trim());
+ const shortNames=displayNames.map(n=>n.split(/\s+/)[0]);
+ const [nameA,nameB]=shortNames[0]===shortNames[1]?displayNames:shortNames;
  const percent=coupleStats.sensualPercent==null?'—':
   coupleStats.sensualPercent+' / '+coupleStats.sexualPercent+' %';
  const pending=rolling||disabled;

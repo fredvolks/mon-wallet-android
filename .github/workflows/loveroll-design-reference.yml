@@ -23,7 +23,7 @@ jobs:
         run: |
           python3 -m http.server 8765 -d couple-web > /tmp/loveroll-design-http.log 2>&1 &
           check_status=0
-          for check in design-reference-browser-check evening-redesign-browser-check evening-d100-official-browser-check evening-couple-flow-browser-check surprise-desktop-v86-check; do
+          for check in design-reference-browser-check evening-redesign-browser-check evening-d100-official-browser-check evening-couple-flow-browser-check surprise-desktop-v86-check mobile-entry-visual-check; do
             node "couple-web/$check.cjs" || check_status=1
           done
           exit "$check_status"

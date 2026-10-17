@@ -264,7 +264,7 @@
  main#app .discover-v59 .discover-editorial-item p{font-size:.57rem!important}
  main#app .discover-v59 .discover-accept{min-height:43px!important}
  main#app .invite-account-screen:not(.invite-profile-screen) .invite-auth-card{
-  padding:6px 10px!important;gap:2px!important;
+  padding:6px 10px!important;gap:0!important;
  }
  main#app .invite-account-screen:not(.invite-profile-screen) .invite-account-hero{
   flex-basis:46px!important;height:46px!important;
@@ -275,6 +275,10 @@
  main#app .invite-account-screen:not(.invite-profile-screen) .invite-auth-trust{
   padding:3px 5px!important;
  }
+ main#app .invite-account-screen:not(.invite-profile-screen) .invite-auth-trust>span{
+  width:28px!important;height:28px!important;flex-basis:28px!important;
+ }
+ main#app .invite-account-screen:not(.invite-profile-screen) #invite-auth-form{gap:2px!important;}
  main#app .invite-account-screen:not(.invite-profile-screen) .invite-auth-lead{
   font-size:.68rem!important;
  }
