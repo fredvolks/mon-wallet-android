@@ -178,12 +178,12 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
  main#app.loveroll-evening-page .evening-premium-view.is-ready,
  main#app.loveroll-evening-page .evening-premium-view.is-waiting{
   box-sizing:border-box!important;
-  flex:1 1 0!important;width:100%!important;max-width:1280px!important;
-  height:100%!important;min-height:0!important;max-height:100%!important;
-  margin:0 auto!important;padding:0!important;overflow:hidden!important;
+  flex:none!important;width:100%!important;max-width:1280px!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  margin:0 auto!important;padding:0!important;overflow:visible!important;
   display:grid!important;
   grid-template-columns:minmax(0,1fr) minmax(0,1.06fr)!important;
-  grid-template-rows:clamp(48px,7dvh,70px) minmax(0,1fr) clamp(62px,9dvh,90px)!important;
+  grid-template-rows:clamp(48px,7dvh,70px) minmax(500px,auto) clamp(62px,9dvh,90px)!important;
   gap:clamp(6px,.9dvh,12px)!important;
  }
  main#app.loveroll-evening-page .evening-premium-view>.evening-intro{
@@ -255,10 +255,10 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
 @media(min-width:768px) and (max-height:680px){
  main#app.loveroll-surprise-page:has(> nav.nav),
  main#app.loveroll-evening-page:has(> nav.nav){
-  padding-top:65px!important;padding-bottom:5px!important;
+  padding-top:65px!important;padding-bottom:112px!important;
  }
  main#app.loveroll-surprise-page .surprise-premium-view{
-  grid-template-rows:44px minmax(0,1.08fr) minmax(0,.92fr)!important;
+  grid-template-rows:44px minmax(360px,auto) minmax(300px,auto)!important;
   gap:5px!important;
  }
  main#app.loveroll-surprise-page .surprise-month,
