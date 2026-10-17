@@ -127,6 +127,6 @@ main#app.loveroll-real-home{
  #app .home-stat-card strong{font-size:16px}
 }
 @media(min-width:768px) and (max-width:899px){
- #app .real-home-shell{width:min(100%,820px)}
+ #app .real-home-shell{width:min(100%,820px);height:calc(100dvh - 112px);min-height:0;grid-template-rows:auto 42px minmax(190px,1fr) auto auto;}
  #app .home-die-theater{min-height:240px}
 }

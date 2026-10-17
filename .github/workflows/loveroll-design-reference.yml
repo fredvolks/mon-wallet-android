@@ -22,11 +22,11 @@ jobs:
       - name: Production UI at five device sizes, real WebGL, safe simulated couple
         run: |
           python3 -m http.server 8765 -d couple-web > /tmp/loveroll-design-http.log 2>&1 &
-          node couple-web/design-reference-browser-check.cjs
-          node couple-web/evening-redesign-browser-check.cjs
-          node couple-web/evening-d100-official-browser-check.cjs
-          node couple-web/evening-couple-flow-browser-check.cjs
-          node couple-web/surprise-desktop-v86-check.cjs
+          check_status=0
+          for check in design-reference-browser-check evening-redesign-browser-check evening-d100-official-browser-check evening-couple-flow-browser-check surprise-desktop-v86-check; do
+            node "couple-web/$check.cjs" || check_status=1
+          done
+          exit "$check_status"
       - name: Preserve screenshots and geometry even on failure
         if: always()
         uses: actions/upload-artifact@v4

@@ -22,12 +22,13 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     await page.screenshot({path:'design-captures/'+name+'-'+tab+'.png',fullPage:true});
     const geometry=await page.evaluate(()=>{
      const main=document.querySelector('main'),nav=document.querySelector('.nav').getBoundingClientRect();
-     return {scrollWidth:document.documentElement.scrollWidth,mainScroll:main.scrollHeight,mainClient:main.clientHeight,navTop:nav.top,navBottom:nav.bottom,
+     return {documentHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,mainScroll:main.scrollHeight,mainClient:main.clientHeight,navTop:nav.top,navBottom:nav.bottom,
       sections:[...document.querySelectorAll('.real-home-shell > *')].map(e=>({class:e.className,top:Math.round(e.getBoundingClientRect().top),bottom:Math.round(e.getBoundingClientRect().bottom),height:Math.round(e.getBoundingClientRect().height)})),shell:{display:getComputedStyle(document.querySelector('.real-home-shell')||main).display,height:document.querySelector('.real-home-shell')?.getBoundingClientRect().height,top:document.querySelector('.real-home-shell')?.getBoundingClientRect().top},dice:[...document.querySelectorAll('canvas[data-dice-sides]')].map(c=>({side:c.dataset.diceSides,face:c.dataset.face,width:c.clientWidth,height:c.clientHeight,webgl:c.dataset.webglReady})),
       stats:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
     });
     report.push({name,tab,width,height,...geometry});
     assert.ok(geometry.scrollWidth<=width+1,'horizontal overflow');
+    if(tab!=='settings')assert.ok(geometry.documentHeight<=height+2&&geometry.mainScroll<=geometry.mainClient+2,'primary page scrolls '+JSON.stringify({name,tab,...geometry}));
     assert.ok(geometry.navBottom<=height+1&&geometry.navTop>=0,'navigation outside viewport');
     if(width<768){
      const navHeight=geometry.navBottom-geometry.navTop;

@@ -92,8 +92,7 @@
  /* No fixed S25 viewport math on desktop/tablet; document can scroll. */
  
  main#app.loveroll-evening-page:not(.loveroll-editorial),
- main#app.loveroll-surprise-page,
- main#app.loveroll-advent-page{
+ main#app.loveroll-surprise-page{
   overflow:visible!important;height:auto!important;min-height:100dvh!important;
  }
  
@@ -159,13 +158,15 @@
  /* Avent: larger 5x5 calendar and usable tap/click targets. */
  main#app.loveroll-advent-page .advent-premium-view{
   width:min(100%,1080px)!important;max-width:1080px!important;
-  grid-template-rows:minmax(90px,auto) minmax(125px,auto) minmax(600px,auto)!important;
+  height:100%!important;padding-bottom:0!important;margin:0 auto!important;
+  grid-template-rows:76px 90px minmax(0,1fr)!important;
  }
- main#app.loveroll-advent-page .advent-shell{min-height:610px;overflow:visible;}
+ main#app.loveroll-advent-page:has(> nav.nav){height:100dvh!important;overflow:hidden!important;padding:12px clamp(22px,3vw,44px) 82px!important;}
+ main#app.loveroll-advent-page .advent-shell{min-height:0;overflow:hidden;}
  main#app.loveroll-advent-page .advent-tiles{
-  min-height:470px;grid-template-rows:repeat(5,minmax(86px,1fr));
+  min-height:0;grid-template-rows:repeat(5,minmax(0,1fr));
  }
- main#app.loveroll-advent-page .advent-box{min-height:70px;}
+ main#app.loveroll-advent-page .advent-box{min-height:0;}
  main#app.loveroll-advent-page .advent-intro h2{white-space:normal;}
  /* All secondary pages: profile, invitations, libraries, journal, feedback,
     onboarding, settings and export forms become wider and usable. */
