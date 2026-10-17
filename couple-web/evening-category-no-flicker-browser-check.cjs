@@ -20,7 +20,7 @@ const origin='http://127.0.0.1:8765';
    const page=await browser.newPage({viewport:{width,height}});
    await page.route(origin+'/category-only-test.html',route=>route.fulfill({
     contentType:'text/html',body:'<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1">'+css+
-    '</head><body><main id="app" class="loveroll-evening-page">'+html+'</main></body></html>'
+    '</head><body><main id="app" class="loveroll-evening-page loveroll-editorial">'+html+'</main></body></html>'
    }));
    await page.goto(origin+'/category-only-test.html',{waitUntil:'load'});
    const result=await page.evaluate(async()=>{

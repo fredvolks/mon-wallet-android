@@ -120,7 +120,7 @@ test('D100 keeps its official face and shows the same number below it',()=>{
   turn:{...turns,pending:{face:21}},status:{both_ready:true},category:'SENSUEL'});
  assert.match(live,/data-dice-sides="100" data-face="21"/);
  assert.match(live,/evening-d100-result/);
- assert.match(live,/>21<\/div>/);
+ assert.match(live,/>Résultat : 21<\/div>/);
  const last=premiumEveningHtml({session,members:people,me:'first',
   turn:turns,status:{both_ready:true},lastD35Face:17});
  assert.match(last,/data-dice-sides="100" data-face="17"/);

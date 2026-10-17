@@ -23,7 +23,7 @@ test('Premium finale uses two existing 3D hearts dice; mobile and desktop CSS is
  const html=premiumEveningHtml({...base,canStartEvening:false});
  assert.equal((html.match(/data-dice-unrolled="true"/g)||[]).length,2);
  assert.match(html,/evening-finale-velvet/);
- assert.match(read('evening-finale-v99.css'),/\.evening-finale-start:disabled/);
- assert.match(read('index.html'),/evening-finale-v99\.css\?v=20261016-daily100/);
- assert.match(read('service-worker.js'),/evening-finale-v99\.css/);
+ assert.match(read('evening-editorial.css'),/\.evening-finale-start:disabled/);
+ assert.match(read('index.html'),/evening-editorial\.css\?v=20261017-editorial117/);
+ assert.match(read('service-worker.js'),/evening-editorial\.css/);
 });

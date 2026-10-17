@@ -37,7 +37,7 @@ main#app .evening-cal-day{
  min-height:clamp(33px,6.0dvh,47px)!important;height:auto!important;
  display:flex;flex-direction:column;align-items:center;justify-content:center;
  padding:2px 0!important;gap:0!important;
- border-radius:10px;border:1px solid #94386070!important;background:#310c29b2;
+ border-radius:10px;border:1px solid var(--ritual-border)!important;background:var(--ritual-card);
  font-size:clamp(.73rem,2.3vw,.94rem)!important;color:#f7deec;
 }
 main#app .evening-cal-day.has-evening{border-color:#ff85bc;background:#78204e}
@@ -89,11 +89,11 @@ main#app.loveroll-evening-calendar-page .evening-cal-people{
 }
 main#app.loveroll-evening-calendar-page details.evening-cal-person-group{
  display:block;min-width:0;max-width:100%;
- border:1px solid #f16aaa78;border-radius:15px;
- overflow:hidden;background:linear-gradient(128deg,#6b1d479c,#310d28f5);
+ border:1px solid var(--ritual-border);border-radius:15px;
+ overflow:hidden;background:var(--ritual-card);
 }
 main#app.loveroll-evening-calendar-page details.evening-cal-person-group[open]{
- border-color:#ff8ec3b8;box-shadow:0 0 15px #fb46882a;
+ border-color:var(--ritual-rose);box-shadow:var(--ritual-shadow);
 }
 main#app.loveroll-evening-calendar-page summary.evening-cal-person{
  display:grid!important;
@@ -135,7 +135,7 @@ main#app.loveroll-evening-calendar-page .evening-cal-person-content ul{
  list-style:none;margin:0;padding:0;display:grid;gap:7px;
 }
 main#app.loveroll-evening-calendar-page .evening-cal-person-content .evening-cal-challenge{
- background:linear-gradient(120deg,#3c0f2c,#240c24);margin:0;
+ background:var(--ritual-card);margin:0;
 }
 main#app.loveroll-evening-calendar-page .evening-cal-person-content .evening-cal-empty,
 main#app.loveroll-evening-calendar-page .evening-cal-unpicked{

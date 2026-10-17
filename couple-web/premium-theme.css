@@ -1,14 +1,21 @@
 /* LoveRoll premium design system — all authenticated pages and tabs.
    Visual-only: never changes data, navigation, roles, session logic or cards. */
 :root{
+ --ritual-bg:#10070c;
+ --ritual-page:radial-gradient(ellipse at 0% 25%,#58132950,transparent 55%),#10070c;
+ --ritual-text:#f5dcd8;--ritual-muted:#ccb3bf;--ritual-rose:#d58ba3;
+ --ritual-border:#ba7e9145;
+ --ritual-card:linear-gradient(120deg,#29111bce,#170d14df);
+ --ritual-button:linear-gradient(155deg,#efa4b7,#b73863 55%,#6b183d);
+ --ritual-shadow:inset 0 1px 2px #ffe4e833,0 5px 22px #c54e7020;
+ --ritual-space:8px;
  --bg:#0c0610;--panel:#301328;--edge:#a94b78;--pink:#ff68ac;
  --text:#fff3fa;--mute:#dfbfd1;--love-rose:#ff78b5;--love-wine:#42122e;
- --love-border:#e278a166;--love-glass:linear-gradient(145deg,#491b38e8,#261025f5 70%,#1c0b1c);
+ --love-border:var(--ritual-border);--love-glass:var(--ritual-card);
  --love-glow:0 12px 32px #09020ec9,inset 0 1px #ffd5eb2c;
 }
 body:not(:has(.love-discover)){
- background:radial-gradient(ellipse at 50% -12%,#711e515e,transparent 40%),
-  radial-gradient(ellipse at 2% 57%,#4f163a48,transparent 43%),#0d0711;
+ background:var(--ritual-page);
 }
 body:not(:has(.love-discover)) main{position:relative;}
 body:not(:has(.love-discover)) main>.header h1,
@@ -37,13 +44,13 @@ body:not(:has(.love-discover)) .settings-group-heading strong{
 body:not(:has(.love-discover)) .card p,
 body:not(:has(.love-discover)) .tiny-note{color:#dfbdd1;}
 body:not(:has(.love-discover)) button:not(.subtle):not(.pill):not(.nav button):not(.text-link):not(.love-answer-option){
- background:linear-gradient(132deg,#ff76b7,#ec3c8c 58%,#ae1c64);
- border:1px solid #ffb5d6aa;border-radius:16px;
- box-shadow:inset 0 2px 2px #fff5,0 6px 20px #d41c7440;
+ background:var(--ritual-button);
+ border:1px solid #e5b3c381;border-radius:16px;
+ box-shadow:var(--ritual-shadow);
 }
 body:not(:has(.love-discover)) button.subtle{
- background:linear-gradient(140deg,#4b2341,#30172f);
- border:1px solid #975878;color:#fce0ef;border-radius:15px;
+ background:var(--ritual-card);
+ border:1px solid var(--ritual-border);color:var(--ritual-text);border-radius:15px;
 }
 body:not(:has(.love-discover)) input,
 body:not(:has(.love-discover)) select,
@@ -107,12 +114,12 @@ body:not(:has(.love-discover)) #toast{background:#461735;border:1px solid #ff92c
 :root{
  --bg:#10070c;--panel:#24121b;--edge:#8e5366;--pink:#d6789a;
  --text:#f5e5e9;--mute:#c6a9b5;--love-rose:#e8b2c0;--love-wine:#401526;
- --love-border:#be819447;--love-glass:linear-gradient(135deg,#321823e8,#1b1018f2);
+ --love-border:var(--ritual-border);--love-glass:var(--ritual-card);
  --love-glow:inset 0 1px #f5d3dd12,0 10px 24px #09030945;
- --ritual-action:linear-gradient(145deg,#e7a0b3,#b53965 54%,#702041);
+ --ritual-action:var(--ritual-button);
 }
 body{background:radial-gradient(ellipse at 0 25%,#5b1c3744,transparent 55%),#10070c;color:var(--text);}
-#app:is(.loveroll-evening-page,.loveroll-surprise-page,.loveroll-advent-page,.loveroll-settings-page){background:radial-gradient(ellipse at 0 18%,#671b3430,transparent 55%),radial-gradient(ellipse at 95% 80%,#4c16322b,transparent 50%),#10070c;}
+#app:is(.loveroll-evening-page,.loveroll-surprise-page,.loveroll-advent-page,.loveroll-settings-page){background:var(--ritual-page);}
 #app :is(h1,h2,.surprise-header h1,.evening-intro h2,.advent-title){font-family:Georgia,"Times New Roman",serif;color:#f0cdd0;letter-spacing:-.025em;text-shadow:none;}
 #app :is(.evening-step,.evening-gift,.surprise-main,.surprise-special,.surprise-event-card,.settings-group,.settings-hero,.settings-section,.card,.auth-panel,.waiting-hero,.invite-panel,.love-dialog,.evening-review-modal,.evening-calendar-session){background:var(--love-glass);border-color:var(--love-border);box-shadow:var(--love-glow);border-radius:20px;}
 #app :is(.evening-user-die,.evening-partner-card,.evening-status,.surprise-invite-inside,.settings-item,.advent-door){background:linear-gradient(140deg,#321824a8,#180e17e6);border-color:#b67e9345;box-shadow:inset 0 1px #f5cfdb12;}
@@ -139,4 +146,15 @@ body{background:radial-gradient(ellipse at 0 25%,#5b1c3744,transparent 55%),#100
 #app :is(.discover-feature,.discover-finale){background:var(--love-glass);border-color:var(--love-border);box-shadow:var(--love-glow);}
 #app .discover-feature-symbol{color:#d99bb4;text-shadow:none;}
 #toast,.lr-dialog{background:#30151f;border-color:#bb8194;box-shadow:0 14px 45px #0008;color:#f4dce7;}
+/* Shared ritual materials also replace the older, brighter tab surfaces. */
+main#app:is(.loveroll-surprise-page,.loveroll-advent-page,.loveroll-settings-page) :is(.surprise-month,.surprise-special,.surprise-event-card,.surprise-invite-inside,.advent-shell,.advent-intro,.settings-group,.settings-item){background:var(--ritual-card);border-color:var(--ritual-border);box-shadow:var(--ritual-shadow);}
+main#app:is(.loveroll-surprise-page,.loveroll-advent-page,.loveroll-settings-page) :is(h1,h2,h3,.surprise-month-title strong,.surprise-event-title){color:var(--ritual-text);text-shadow:none;}
+main#app.loveroll-surprise-page :is(.surprise-d20-scene,.surprise-main-die-scene){background:url('./assets/ritual-satin-v115.webp') center 62%/cover no-repeat;box-shadow:none;}
+main#app.loveroll-surprise-page :is(.surprise-primary,.surprise-invite-button){background:var(--ritual-button);box-shadow:var(--ritual-shadow);color:var(--ritual-text);}
+main#app.loveroll-surprise-page :is(.surprise-event-days,.surprise-host-option){background:var(--ritual-card);color:var(--ritual-muted);box-shadow:none;}
+main#app.loveroll-advent-page .advent-box{background:var(--ritual-card);color:var(--ritual-text);box-shadow:var(--ritual-shadow);}
+main#app.loveroll-advent-page .advent-box.available{background:var(--ritual-button);}
+main#app.loveroll-advent-page :is(.advent-intro h2 em,.advent-overline,.advent-today-tag){color:var(--ritual-rose);text-shadow:none;}
+main#app.loveroll-advent-page .advent-box-shimmer{opacity:.2;}
+main#app.loveroll-advent-page .advent-top-heart,main#app.loveroll-advent-page .advent-intro::before,main#app.loveroll-advent-page .advent-intro::after{color:var(--ritual-rose);text-shadow:none;}
 @media(prefers-reduced-motion:reduce){#app *,#app *::before,#app *::after{animation-duration:0s;transition-duration:0s;scroll-behavior:auto;}}

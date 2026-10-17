@@ -11,7 +11,7 @@ test('Soirée removes oversized header and old top Options, but retains contextu
  const html=premiumEveningHtml({...base,status:{both_ready:false}});
  assert.doesNotMatch(html,/<header class="evening-topline">/);
  assert.doesNotMatch(html,/NOTRE SOIRÉE PARTAGÉE|⋯ Options/);
- assert.match(html,/<h2>Nos défis disponibles<\/h2>/);
+ assert.match(html,/<h2>À toi de brasser ton dé<\/h2>/);
  assert.match(html,/class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée"/);
  assert.match(html,/data-action="evening-list"/);
  assert.match(html,/data-action="give-challenge"/);
@@ -39,21 +39,15 @@ test('Partner numeric result is immutable and separate from our own D6',()=>{
  assert.match(html,/Voir mes défis \(2\)/);
  assert.match(html,/data-action="new-challenge"/);
 });
-test('v83 final responsive CSS reserves a fixed single-screen D6 and partner result',()=>{
- const css=read('evening-clean-v83.css');
- const index=read('index.html'),worker=read('service-worker.js');
- assert.match(css,/\.evening-partner-card\{/);
- assert.match(css,/\.evening-user-die \.love3d-stage\{/);
+test('Editorial layout owns a fixed viewport with square personal dice and a partner status',()=>{
+ const css=read('evening-editorial.css'),index=read('index.html'),worker=read('service-worker.js');
+ assert.match(css,/height:100dvh/);
+ assert.match(css,/\.evening-user-die \.love3d-stage/);
  assert.match(css,/aspect-ratio:1/);
- assert.match(css,/max-width:154px!important/);
- assert.match(css,/grid-template-rows:minmax\(51px,\.7fr\)/);
- assert.match(css,/\.evening-premium-view\.is-ready\{/);
- assert.match(index,/evening-clean-v83\.css\?v=20261015-no-toast87/);
- assert.match(index,/evening-focused-v84\.css\?v=20261015-no-toast87/);
- assert.ok(index.lastIndexOf('evening-clean-v83.css')>index.lastIndexOf('mobile-one-screen-v74.css'));
- assert.match(worker,/loveroll-static-v116/);
- assert.match(worker,/\.\/evening-clean-v83\.css/);
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.116');
+ assert.match(css,/\.evening-premium-view\.is-ready/);
+ assert.match(index,/evening-editorial\.css\?v=20261017-editorial117/);
+ assert.doesNotMatch(index,/evening-clean-v83\.css|evening-focused-v84\.css/);
+ assert.match(worker,/\.\/evening-editorial\.css/);
 });
 
 test('Two-step design locks challenges until both D6 and retains the ORIGINAL 3D engines',()=>{

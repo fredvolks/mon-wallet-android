@@ -76,7 +76,7 @@ main#app.loveroll-advent-page{
  position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;
  overflow:visible;min-width:0;min-height:0;
  padding:3px 2px 2px!important;
- border:1px solid #ffbd84df!important;border-radius:clamp(10px,2.8vw,19px);
+ border:1px solid var(--ritual-border)!important;border-radius:clamp(10px,2.8vw,19px);
  background:linear-gradient(145deg,#bd275b 0%,#8f0a3b 24%,#5a0c2a 68%,#280417);
  box-shadow:inset 0 2px #ffd4e180,inset -3px -5px 12px #08000580,
  0 4px 8px #080005b0,0 0 6px #ff6f9d28;
@@ -93,7 +93,7 @@ main#app.loveroll-advent-page{
 .advent-box-number{font:700 clamp(1rem,3.65vw,1.65rem)/1 Georgia,serif;
  text-shadow:0 0 6px #fff3ee60;position:relative}
 .advent-box.available{
- border:2px solid #ffb8de!important;
+ border:2px solid var(--ritual-rose)!important;
  background:linear-gradient(150deg,#ff4e9c,#ba0d59 35%,#640830 90%);
  box-shadow:inset 0 1px #ffedf0,0 0 11px #ff52a3,0 0 22px #f5298bb9;
  animation:advent-pulse 2.6s ease-in-out infinite;
@@ -102,7 +102,7 @@ main#app.loveroll-advent-page{
  background:linear-gradient(150deg,#ff61af,#9a0947);color:#fff;border:1px solid #ffb5d7;
  border-radius:30px;padding:2px 7px;white-space:nowrap;line-height:1.05;
  font-size:clamp(.49rem,1.68vw,.75rem);font-weight:750;box-shadow:0 0 8px #ff3698}
-.advent-box.opened{border:1px solid #ffd9a0!important;
+.advent-box.opened{border:1px solid var(--ritual-rose)!important;
  background:linear-gradient(135deg,#9c164e,#50102d);
  box-shadow:0 0 12px #ff9cba52,inset 0 2px #ffc0d980}
 .advent-box.opened .advent-box-icon{filter:drop-shadow(0 0 8px #ff71ab)}
@@ -141,8 +141,8 @@ main#app.loveroll-advent-page{
 .advent-description{white-space:pre-wrap;text-align:left;line-height:1.5}
 .advent-reveal-timer{color:#ffd792}
 @keyframes advent-pulse{
- 0%,100%{filter:brightness(1);box-shadow:0 0 10px #ff3e95}
- 50%{filter:brightness(1.1);box-shadow:0 0 20px #ff74ba}
+ 0%,100%{filter:brightness(1);box-shadow:var(--ritual-shadow)}
+ 50%{filter:brightness(1.04);box-shadow:var(--ritual-shadow)}
 }
 @keyframes advent-unlock{
  0%{transform:scale(1)}35%{transform:scale(1.09) rotateY(12deg)}

@@ -173,7 +173,7 @@ export function createClient(){
    await page.locator('.nav [data-action="tab:session"]').click();
    await page.locator('.evening-premium-view').waitFor({timeout:10000});
    const evening=await page.locator('.evening-premium-view').innerText();
-   if(!evening.includes('Nos défis disponibles')||!evening.includes('Voir mes défis')||errors.length)
+   if(!evening.includes('Votre défi du soir')||!evening.includes('Voir mes défis')||errors.length)
     throw Error('S25 ACTIVE SOIRÉE failed '+JSON.stringify({evening:evening.slice(0,350),errors}));
    const warnings=await page.locator('.toast.visible').allInnerTexts();
    if(warnings.some(t=>/pending is not defined|not defined|impossible/i.test(t)))

@@ -1,98 +1,36 @@
-// Browser geometry regression: No two huge overlapping D6s on mobile.
+// Editorial primary screens must fit the viewport; long cards use separate panels.
 const {chromium}=require('playwright');
-const fs=require('node:fs');
-const assert=require('node:assert/strict');
-const origin='http://127.0.0.1:8765/';
-async function main(){
+const fs=require('node:fs'),assert=require('node:assert/strict');
+(async()=>{
  const {premiumEveningHtml}=await import('./premium-evening.mjs');
- const index=fs.readFileSync('couple-web/index.html','utf8');
- const styles=[...index.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)"/g)]
-   .map(x=>'<link rel="stylesheet" href="'+origin+x[1]+'">').join('');
- const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+ const origin='http://127.0.0.1:8765/';
+ const styles=[...fs.readFileSync('couple-web/index.html','utf8').matchAll(/<link rel="stylesheet" href="\.\/([^"]+)"/g)].map(x=>'<link rel="stylesheet" href="'+origin+x[1]+'">').join('');
+ const browser=await chromium.launch({headless:true});
  try{
-  for(const [width,height] of [[393,852],[360,640],[412,915],[820,1180],[1180,820]]){
-   for(const ready of [false,true]){
-    const me='one',other='two',members=[{user_id:me,name:'Fred Messely'},{user_id:other,name:'Partenaire'}];
-    const rolls=ready?[{user_id:me,face:2},{user_id:other,face:5}]:[];
-    const html=premiumEveningHtml({session:{id:'s1'},members,me,rolls,
-      status:{my_rolled:ready,partner_rolled:ready,both_ready:ready},
-      turn:{ready,first:me,next:me,targets:{one:2,two:5},remaining:{one:2,two:5},completed:{one:0,two:0}},
-      category:'SENSUEL',ownChallengeCount:2,
-      playable:{sensual:25,sexual:25,total:50}});
-    const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1,isMobile:width<768,hasTouch:width<768});
-    await page.setContent('<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'+styles+
-      '</head><body style="margin:0"><main id="app" class="loveroll-evening-page">'+html+
-      '<nav class="nav"><div class="nav-inner"><button type="button">Soirée</button></div></nav></main></body></html>',
-      {waitUntil:'load'});
-    const geometry=await page.evaluate(()=>{
-      const main=document.querySelector('main'),evening=document.querySelector('.evening-premium-view'),
-       step=document.querySelector('.evening-step.one'),stage=document.querySelector('.evening-my-die .love3d-stage, .evening-user-die .love3d-stage'),
-       partner=document.querySelector('.evening-partner-card'),gift=document.querySelector('.evening-gift'),
-       nav=document.querySelector('.nav'),manage=document.querySelector('.evening-manage'),
-       d35=document.querySelector('.evening-d35-col .love3d-stage'),
-       row=document.querySelector('.evening-die-row'),
-       actions=document.querySelector('.evening-roll-actions');
-      const rect=e=>{let r=e?.getBoundingClientRect();return r&&{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};
-      return {viewport:{width:innerWidth,height:innerHeight},docH:document.documentElement.scrollHeight,
-        main:rect(main),content:rect(evening),step:rect(step),stage:rect(stage),
-        partner:rect(partner),gift:rect(gift),nav:rect(nav),manage:rect(manage),
-        d35:rect(d35),row:rect(row),actions:rect(actions),
-        categories:[...document.querySelectorAll('.evening-choice-btn')].map(el=>({
-          action:el.dataset.action,rect:rect(el),selected:el.getAttribute('aria-pressed')
-        })),
-        selectedOdds:rect(document.querySelector('.evening-choice-odds')),
-        canvases:step.querySelectorAll('canvas[data-dice-sides="6"]').length};
-    });
-    assert.equal(geometry.canvases,ready?4:1,'Only official D6 dice shown: own and partner when waiting, compact originals when ready');
-    if(width<768){
-     assert.ok(geometry.gift&&geometry.gift.bottom<=(geometry.nav?.top??height)+2,
-       'Gift hidden behind mobile nav '+JSON.stringify({width,height,ready,geometry}));
-    }else{
-     // Existing tablet/desktop navigation may sit above the page. Their
-     // longer landscape layouts are intentionally not mobile no-scroll mode.
-     assert.ok(geometry.gift&&geometry.gift.height>45&&geometry.gift.bottom<=geometry.docH+2,
-       'Gift missing from desktop/tablet '+JSON.stringify({width,height,ready,geometry}));
-    }
-    assert.ok(geometry.manage?.width>=28,'Manage not reachable');
-    if(!ready){
-     assert.ok(geometry.partner&&geometry.partner.width>90,'Partner status missing');
-     assert.ok(geometry.stage&&geometry.stage.width>=70&&geometry.stage.height>=70,
-      'Personal die too small '+JSON.stringify({width,height,geometry}));
-     assert.ok(geometry.stage.x>=geometry.step.x-1&&geometry.stage.right<=geometry.step.right+1,
-      'D6 stage clipped horizontally '+JSON.stringify({width,height,geometry}));
-     if(width<1024 || height>=width){
-      assert.ok(Math.abs(geometry.stage.width-geometry.stage.height)<4,
-       'D6 canvas is not square '+JSON.stringify({width,height,geometry}));
-     }
-    }
-    if(ready){
-     assert.ok(geometry.d35&&geometry.row&&geometry.actions,
-      'D100 / buttons absent '+JSON.stringify(geometry));
-     assert.ok(geometry.d35.height>75&&Math.abs(geometry.d35.width-geometry.d35.height)<4,
-      'Original D100 must be a visible square '+JSON.stringify({width,height,geometry}));
-     assert.ok(geometry.d35.x>=geometry.row.x-2&&geometry.d35.right<=geometry.row.right+2&&
-       geometry.d35.y>=geometry.row.y-2&&geometry.d35.bottom<=geometry.row.bottom+2,
-       'D100 gets clipped '+JSON.stringify({width,height,geometry}));
-     assert.deepEqual(geometry.categories.map(x=>x.action),
-      ['category:SENSUEL','category:HASARD','category:SEXUEL']);
-     assert.ok(geometry.selectedOdds&&geometry.selectedOdds.y>=geometry.categories[0].rect.bottom-2,
-       'Selected 88% is not below Sensuel button '+JSON.stringify({width,height,geometry}));
-     assert.ok(Math.abs((geometry.d35.x+geometry.d35.right)/2-(geometry.row.x+geometry.row.right)/2)<=5,
-       '100-sided die is not centered '+JSON.stringify({width,height,geometry}));
-     if(width<768){
-      assert.ok(geometry.actions.bottom<=geometry.gift.y+2,
-       'Mobile D100 buttons overlap gifts '+JSON.stringify({width,height,geometry}));
-     }else{
-      assert.ok(geometry.actions.height>55,
-       'Tablet/desktop D100 actions missing '+JSON.stringify({width,height,geometry}));
-     }
-    }
-    if(width<768)assert.ok(geometry.docH<=height+3,
-      'Mobile page scrolls '+JSON.stringify({width,height,ready,geometry}));
-    console.log('EVENING_DESIGN_OK',width,height,ready?'ready':'waiting');
-    await page.close();
-   }
+ for(const [w,h] of [[360,640],[393,852],[412,824],[412,915],[820,1180],[1180,820],[1440,900],[1920,1080]]){
+  for(const mode of ['intro','waiting','ready','finished']){
+   const ready=mode==='ready',session=['waiting','ready'].includes(mode)?{id:'s1',self_draws:true,paired_turns:true}:null;
+   const html=premiumEveningHtml({session,members:[{user_id:'a',name:'Camille'},{user_id:'b',name:'Noémie'}],me:'a',
+    status:{both_ready:ready,my_rolled:ready,partner_rolled:ready},rolls:ready?[{user_id:'a',face:2},{user_id:'b',face:5}]:[],
+    turn:{ready,next:'a',first:'a',targets:{a:2,b:5},remaining:{a:2,b:5},completed:{a:0,b:0}},category:'SENSUEL',lastD35Face:47,
+    weeklyCount:0,weeklyLimit:2,playable:{sensual:100,sexual:100,total:200},
+    lastEvening:mode==='finished'?{completed:5,responses:1,myResponse:true,partnerResponse:false}:null});
+   const p=await browser.newPage({viewport:{width:w,height:h}});
+   await p.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'+styles+'</head><body><main id="app" class="loveroll-evening-page loveroll-editorial">'+html+'<nav class="nav"><div class="nav-inner">'+['Accueil','Soirée','Surprise','Avent','Réglages'].map(x=>'<button><span>♡</span>'+x+'</button>').join('')+'</div></nav></main></body></html>',{waitUntil:'load'});
+   const g=await p.evaluate(()=>{
+    const rect=e=>e?.getBoundingClientRect().toJSON();
+    const nav=rect(document.querySelector('.nav'));
+    const visible=[...document.querySelectorAll('.evening-premium-view button')].filter(e=>e.getBoundingClientRect().height>0);
+    const die=document.querySelector('.is-ready .evening-d35-col .love3d-stage,.is-waiting .evening-my-die .love3d-stage');
+    return {docH:document.documentElement.scrollHeight,docW:document.documentElement.scrollWidth,rootH:document.querySelector('#app').scrollHeight,
+     nav,die:rect(die),buttons:visible.map(e=>({action:e.dataset.action,...rect(e)})),result:document.querySelector('.evening-d100-result')?.textContent};
+   });
+   assert.ok(g.docH<=h+2&&g.rootH<=h+2&&g.docW<=w+1,'Primary screen scroll '+JSON.stringify({w,h,mode,g}));
+   for(const b of g.buttons)assert.ok(b.top>=0&&b.bottom<=g.nav.top+2&&b.left>=0&&b.right<=w+1,'Action obscured '+JSON.stringify({w,h,mode,b,g}));
+   if(session){assert.ok(g.die.width>=130&&Math.abs(g.die.width-g.die.height)<2,'Die distorted or too small '+JSON.stringify({w,h,mode,g}));}
+   if(ready)assert.equal(g.result,'Résultat : 47');
+   console.log('EDITORIAL_VIEWPORT_OK',w,h,mode);await p.close();
   }
+ }
  }finally{await browser.close()}
-}
-main().catch(err=>{console.error(err.stack||err);process.exit(1)});
+})().catch(e=>{console.error(e);process.exit(1)});

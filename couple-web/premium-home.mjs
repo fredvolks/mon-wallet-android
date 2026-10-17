@@ -97,6 +97,8 @@ const iconSvg=(kind)=>{
  return '<svg viewBox="0 0 62 62" aria-hidden="true" focusable="false">'+paths[kind]+'</svg>';
 };
 
+export {ritualBrandHtml} from './brand.mjs';
+import {ritualBrandHtml} from './brand.mjs';
 export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,members=[],
   turn=null,monthly={},history=[],sessions=[],events=[],rollFace=1,now=new Date()}={}){
  const weights=WEEKLY_ODDS.map((pct,i)=>
@@ -120,7 +122,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
   coupleStats.sensualPercent+' / '+coupleStats.sexualPercent+' %';
  const pending=rolling||disabled;
  return '<section class="real-home-shell" aria-label="Tableau de bord du couple">'+
-   '<div class="home-ritual"><div class="ritual-brand" aria-label="LoveRoll"><i aria-hidden="true">♡</i><b>LoveRoll</b></div><span>NOTRE RITUEL DE LA SEMAINE</span>'+
+   '<div class="home-ritual">'+ritualBrandHtml()+'<span>NOTRE RITUEL DE LA SEMAINE</span>'+
    '<h2>'+escape(weeklyTitle)+'</h2><p>'+weeklySubtitle+'</p></div>'+
    '<div class="home-weights" aria-label="Pondération des six faces du dé">'+weights+'</div>'+
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+
@@ -140,7 +142,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    'Brassage disponible 1x par semaine et par couple. ')+
    'Prochain tirage : lundi '+escape(next.slice(8,10)+'/'+next.slice(5,7))+' à 00 h (Québec)</p>'+
    '</div>'+
-   '<div class="home-challenge-stats">'+
+   '<div class="home-bottom-stack"><div class="home-challenge-stats">'+
    '<div><span aria-hidden="true">♢</span><strong>'+shown(stats.total)+'</strong><small>Défis attribués<br>ce soir</small></div>'+
    '<div><span>♡</span><strong>'+shown(stats.forFirst)+'</strong><small>Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst)+'</small></div>'+
    '<div><span>♡</span><strong>'+shown(stats.forSecond)+'</strong><small>Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond)+'</small></div></div>'+
@@ -155,5 +157,5 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    statistic(coupleStats.byPartner.join(' / '),'Répartition',nameA+' / '+nameB,'partners')+
    statistic(percent,'Sensuel / Sexuel','Ce mois','categories')+
    statistic(String(coupleStats.streak),'Semaines actives','Série actuelle','streak')+
-   '</div></section>';
+   '</div></div></section>';
 }

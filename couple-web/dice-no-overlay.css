@@ -35,12 +35,3 @@
  position:absolute!important;inset:0!important;
  display:block;width:100%!important;height:100%!important;
 }
-
-
-/* Before either personal D6 is rolled, show the decorative heart rather
-   than an empty square: WebGL neutral face is intentionally not displayed. */
-.love3d-stage.is-unrolled .dice-fallback,
-.love3d-stage.is-unrolled.webgl-ready .dice-fallback{
- display:block!important;visibility:visible!important;opacity:1!important;
- position:relative;z-index:3;
-}

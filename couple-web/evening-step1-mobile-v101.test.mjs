@@ -22,13 +22,12 @@ test('Partner status uses only confirmed personal D6 result',()=>{
 test('Single result uses correct singular',()=>{
  assert.match(render([{user_id:'friend',face:1}]),/Fred a obtenu 1 défi/);
 });
-test('S25 mobile layout is one wide dice with partner status directly below',()=>{
- const css=read('evening-step1-mobile-v101.css');
- assert.match(css,/grid-template-columns:minmax\(0,1fr\)!important/);
- assert.match(css,/grid-template-rows:minmax\(0,1fr\) auto!important/);
+test('Editorial personal die and partner status use one mobile column',()=>{
+ const css=read('evening-editorial.css');
+ assert.match(css,/grid-template-rows:minmax\(0,1fr\) auto/);
  assert.match(css,/\.evening-partner-mobile-status/);
- assert.match(css,/62vw,29dvh,260px/);
- assert.match(css,/@media \(min-width:768px\)/);
- assert.match(read('index.html'),/evening-step1-mobile-v101\.css\?v=20261016-step101/);
- assert.match(read('service-worker.js'),/evening-step1-mobile-v101\.css/);
+ assert.match(css,/64vw,260px,33dvh/);
+ assert.match(css,/@media\(min-width:768px\)/);
+ assert.match(read('index.html'),/evening-editorial\.css/);
+ assert.match(read('service-worker.js'),/evening-editorial\.css/);
 });

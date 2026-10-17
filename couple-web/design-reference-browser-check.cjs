@@ -22,12 +22,13 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     await page.screenshot({path:'design-captures/'+name+'-'+tab+'.png',fullPage:true});
     const geometry=await page.evaluate(()=>{
      const main=document.querySelector('main'),nav=document.querySelector('.nav').getBoundingClientRect();
-     return {scrollWidth:document.documentElement.scrollWidth,mainScroll:main.scrollHeight,mainClient:main.clientHeight,navTop:nav.top,navBottom:nav.bottom,
+     return {documentHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,mainScroll:main.scrollHeight,mainClient:main.clientHeight,navTop:nav.top,navBottom:nav.bottom,
       sections:[...document.querySelectorAll('.real-home-shell > *')].map(e=>({class:e.className,top:Math.round(e.getBoundingClientRect().top),bottom:Math.round(e.getBoundingClientRect().bottom),height:Math.round(e.getBoundingClientRect().height)})),shell:{display:getComputedStyle(document.querySelector('.real-home-shell')||main).display,height:document.querySelector('.real-home-shell')?.getBoundingClientRect().height,top:document.querySelector('.real-home-shell')?.getBoundingClientRect().top},dice:[...document.querySelectorAll('canvas[data-dice-sides]')].map(c=>({side:c.dataset.diceSides,face:c.dataset.face,width:c.clientWidth,height:c.clientHeight,webgl:c.dataset.webglReady})),
       stats:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
     });
     report.push({name,tab,width,height,...geometry});
     assert.ok(geometry.scrollWidth<=width+1,'horizontal overflow');
+    if(tab!=='settings')assert.ok(geometry.documentHeight<=height+2&&geometry.mainScroll<=geometry.mainClient+2,'primary page scrolls '+JSON.stringify({name,tab,...geometry}));
     assert.ok(geometry.navBottom<=height+1&&geometry.navTop>=0,'navigation outside viewport');
     if(width<768){
      const navHeight=geometry.navBottom-geometry.navTop;
@@ -40,6 +41,13 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      assert.equal(await page.locator('.home-weights button').count(),0);
      assert.equal(await page.locator('.home-weight').count(),6);
      assert.deepEqual(geometry.stats,['0','0 / 0','—','0']);
+     if(width<768){
+      const margins=await page.evaluate(()=>{
+       const cards=[...document.querySelector('.home-bottom-stack').children].map(e=>e.getBoundingClientRect());
+       return [cards[1].top-cards[0].bottom,cards[2].top-cards[1].bottom];
+      });
+      assert.ok(Math.abs(margins[0]-margins[1])<1&&margins[0]>=6,'bottom Home card margins differ');
+     }
      assert.ok(await page.evaluate(()=>[...document.querySelectorAll('.home-stat-card')].every(card=>{
       const box=card.getBoundingClientRect();
       return [...card.querySelectorAll('strong,span,small')].every(text=>{
@@ -60,7 +68,13 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
       assert.ok(await page.evaluate(()=>window.__keptDie===document.querySelector('.evening-d35-col canvas')),'category replaced D100');
      }
     }
-    if(tab==='advent')assert.equal(await page.locator('.advent-box').count(),25);
+    if(tab==='advent'){
+     assert.equal(await page.locator('.advent-box').count(),25);
+     assert.ok(await page.evaluate(()=>{
+      const h=document.querySelector('.advent-top').getBoundingClientRect(),intro=document.querySelector('.advent-intro').getBoundingClientRect();
+      return h.bottom<=intro.top+1 && [...document.querySelector('.advent-top').querySelectorAll('h1,p')].every(e=>e.getBoundingClientRect().bottom<=intro.top+1);
+     }),'Advent heading overlaps introduction');
+    }
     assert.deepEqual(errors,[],'page errors');
    }catch(error){failures.push(name+'/'+tab+': '+error.message);await page.screenshot({path:'design-captures/'+name+'-'+tab+'-FAIL.png',fullPage:true}).catch(()=>{});}
   }

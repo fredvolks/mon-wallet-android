@@ -57,7 +57,7 @@ test('D100 live reroll starts from the existing visible face and stops exactly o
   assert.ok(Math.abs(Math.sin((settled[axis]-dest[axis])/2))<1e-8);
  }
  const diceSource=readFileSync(new URL('./dice3d.js',import.meta.url),'utf8');
- assert.match(diceSource,/canvas\.loveRollDie=\{rollTo\}/);
+ assert.match(diceSource,/canvas\.loveRollDie=\{rollTo,readState/);
  assert.match(diceSource,/target=selected/);
  assert.match(diceSource,/built\.group\.quaternion\.copy\(target\)/);
 });
