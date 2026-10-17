@@ -44,13 +44,13 @@ body:not(:has(.love-discover)) .settings-group-heading strong{
 body:not(:has(.love-discover)) .card p,
 body:not(:has(.love-discover)) .tiny-note{color:#dfbdd1;}
 body:not(:has(.love-discover)) button:not(.subtle):not(.pill):not(.nav button):not(.text-link):not(.love-answer-option){
- background:linear-gradient(132deg,#ff76b7,#ec3c8c 58%,#ae1c64);
- border:1px solid #ffb5d6aa;border-radius:16px;
- box-shadow:inset 0 2px 2px #fff5,0 6px 20px #d41c7440;
+ background:var(--ritual-button);
+ border:1px solid #e5b3c381;border-radius:16px;
+ box-shadow:var(--ritual-shadow);
 }
 body:not(:has(.love-discover)) button.subtle{
- background:linear-gradient(140deg,#4b2341,#30172f);
- border:1px solid #975878;color:#fce0ef;border-radius:15px;
+ background:var(--ritual-card);
+ border:1px solid var(--ritual-border);color:var(--ritual-text);border-radius:15px;
 }
 body:not(:has(.love-discover)) input,
 body:not(:has(.love-discover)) select,
