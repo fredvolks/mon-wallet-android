@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG: des-a-deux-v0.13.9
+      TAG: des-a-deux-v0.13.10
       KEYSTORE_B64: ${{ secrets.KEYSTORE || secrets.ANDROID_KEYSTORE_BASE64 }}
       STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.ANDROID_STORE_PASSWORD }}
       SIGN_ALIAS: ${{ secrets.KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
@@ -92,7 +92,7 @@ jobs:
           assert Path('app/src/main/res/values/styles.xml').is_file()
           colors=Path('app/src/main/res/values/styles.xml').read_text()
           assert 'Theme.Material.NoActionBar' in colors
-          assert '#FF58A0' in colors
+          assert '#D58BA3' in colors
           assert 'TRUSTED_HOST.equals(url.getHost())' in native
           assert 'startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(LOVEROLL_WEB)))' not in src
           assert 'section("💘  Dates à célébrer")' not in src
@@ -161,21 +161,21 @@ jobs:
             --ks-key-alias "$SIGN_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
             --key-pass env:KEY_PASSWORD \
-            --out dist/LoveRoll-v0.13.9.apk "$RUNNER_TEMP/aligned.apk"
-          cp dist/LoveRoll-v0.13.9.apk dist/Des-a-Deux-v0.13.9.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.13.9.apk
+            --out dist/LoveRoll-v0.13.10.apk "$RUNNER_TEMP/aligned.apk"
+          cp dist/LoveRoll-v0.13.10.apk dist/Des-a-Deux-v0.13.10.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/LoveRoll-v0.13.10.apk
           # Confirm this APK can update the installed release without uninstalling.
-          curl -fL --retry 3 'https://github.com/fredvolks/mon-wallet-android/releases/download/des-a-deux-v0.13.8/LoveRoll-v0.13.8.apk' -o "$RUNNER_TEMP/previous-loveroll.apk"
+          curl -fL --retry 3 'https://github.com/fredvolks/mon-wallet-android/releases/download/des-a-deux-v0.13.9/LoveRoll-v0.13.9.apk' -o "$RUNNER_TEMP/previous-loveroll.apk"
           installed_cert=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$RUNNER_TEMP/previous-loveroll.apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
-          update_cert=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs dist/LoveRoll-v0.13.9.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          update_cert=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs dist/LoveRoll-v0.13.10.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
           test -n "$installed_cert" && test "$installed_cert" = "$update_cert"
           echo 'APK signing certificate matches the existing LoveRoll release.'
-          sha256sum dist/LoveRoll-v0.13.9.apk dist/Des-a-Deux-v0.13.9.apk
+          sha256sum dist/LoveRoll-v0.13.10.apk dist/Des-a-Deux-v0.13.10.apk
           rm -f "$RUNNER_TEMP/des-a-deux.jks"
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: LoveRoll-v0.13.9
+          name: LoveRoll-v0.13.10
           path: dist/*.apk
           if-no-files-found: error
       - name: Publish GitHub Release (automatic in-app update source)
@@ -184,10 +184,10 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-             gh release edit "$TAG" --title "LoveRoll v0.13.9" --notes "Nouvelle icône bordeaux et rose champagne identique au Web, icône Android adaptative, dé d’Accueil sur son socle. Mise à jour signée; comptes et données conservés."
-            gh release upload "$TAG" dist/LoveRoll-v0.13.9.apk dist/Des-a-Deux-v0.13.9.apk --clobber
+             gh release edit "$TAG" --title "LoveRoll v0.13.10" --notes "Chargement avec cœur en verre et satin, démarrage sans réseau avec réessai, dés recalés après synchronisation. Mise à jour signée; comptes et données conservés."
+            gh release upload "$TAG" dist/LoveRoll-v0.13.10.apk dist/Des-a-Deux-v0.13.10.apk --clobber
           else
-            gh release create "$TAG" dist/LoveRoll-v0.13.9.apk dist/Des-a-Deux-v0.13.9.apk \
-              --target "$GITHUB_SHA" --title "LoveRoll v0.13.9" \
-              --notes "LoveRoll v0.13.9 : nouvelle icône bordeaux et rose champagne, identique au Web, prise en charge des masques Android et des icônes thématiques. Dé d’Accueil recalé sur le marbre. Mise à jour signée compatible avec les comptes et données existants."
+            gh release create "$TAG" dist/LoveRoll-v0.13.10.apk dist/Des-a-Deux-v0.13.10.apk \
+              --target "$GITHUB_SHA" --title "LoveRoll v0.13.10" \
+              --notes "LoveRoll v0.13.10 : nouvel écran de chargement en verre et satin, ressources natives locales, réessai réseau. Dés conservés et recalés sur le socle après actualisation. Mise à jour signée compatible avec les comptes et données existants."
           fi

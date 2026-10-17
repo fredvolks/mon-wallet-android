@@ -52,6 +52,39 @@ import android.util.Base64;
  * clearing, or modifying PrivateJournal / legacy SharedPreferences.
  */
 public final class ConnectedLoveRollActivity extends Activity {
+ private android.widget.FrameLayout splashHost;
+ private View nativeLoadError;
+ private boolean pageLoadFailed;
+ private long navigationSerial;
+ private String retryDestination;
+ private void showNativeLoadFailure(){
+  if(pageLoadFailed||splashHost==null)return;
+  pageLoadFailed=true;pageReady=false;
+  web.setVisibility(View.INVISIBLE);
+  web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+  if(nativeSplash!=null){nativeSplash.animate().cancel();nativeSplash.pauseHeart();nativeSplash.setVisibility(View.GONE);}
+  float d=getResources().getDisplayMetrics().density;
+  LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);
+  panel.setGravity(Gravity.CENTER);panel.setPadding((int)(28*d),(int)(24*d),(int)(28*d),(int)(24*d));
+  panel.setBackgroundColor(Color.rgb(16,7,12));
+  TextView title=new TextView(this);title.setText("LoveRoll");title.setTextColor(0xfff5dcd8);
+  title.setTextSize(34);title.setTypeface(android.graphics.Typeface.create("serif",android.graphics.Typeface.ITALIC));
+  title.setGravity(Gravity.CENTER);panel.addView(title);
+  TextView message=new TextView(this);message.setText("La page n’a pas pu s’ouvrir. Vos comptes, invitations et données restent enregistrés.");
+  message.setTextSize(16);message.setTextColor(0xffccb3bf);message.setGravity(Gravity.CENTER);
+  message.setPadding(0,(int)(24*d),0,(int)(24*d));panel.addView(message);
+  Button retry=new Button(this);retry.setText("Réessayer");retry.setTextColor(0xfffff2f2);retry.setTextSize(16);retry.setAllCaps(false);
+  android.graphics.drawable.GradientDrawable button=new android.graphics.drawable.GradientDrawable(
+   android.graphics.drawable.GradientDrawable.Orientation.TL_BR,new int[]{0xffefa4b7,0xffb73863,0xff6b183d});
+  button.setCornerRadius(28*d);retry.setBackground(button);
+  panel.addView(retry,new LinearLayout.LayoutParams(-1,(int)(56*d)));
+  retry.setOnClickListener(v->{splashHost.removeView(panel);nativeLoadError=null;pageLoadFailed=false;
+   if(nativeSplash!=null)nativeSplash.resumeHeart();
+   web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+   web.loadUrl(retryDestination==null?SITE:retryDestination);});
+  panel.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE);
+  nativeLoadError=panel;splashHost.addView(panel,new android.widget.FrameLayout.LayoutParams(-1,-1));
+ }
  private static final String TRUSTED_HOST = "fredvolks.github.io";
  private static final String TRUSTED_PATH = "/mon-wallet-android/";
  private static final String SITE = "https://" + TRUSTED_HOST + TRUSTED_PATH;
@@ -240,14 +273,26 @@ public final class ConnectedLoveRollActivity extends Activity {
  @Override public void onCreate(Bundle savedInstanceState) {
   super.onCreate(savedInstanceState);
   initializeLoveRollFirebase();
-  getWindow().setStatusBarColor(Color.rgb(16,3,14));
-  getWindow().setNavigationBarColor(Color.rgb(9,1,11));
+  getWindow().setStatusBarColor(Color.rgb(16,7,12));
+  getWindow().setNavigationBarColor(Color.rgb(16,7,12));
   LinearLayout layout = new LinearLayout(this);
   layout.setOrientation(LinearLayout.VERTICAL);
-  layout.setBackgroundColor(Color.rgb(16,3,14));
+  layout.setBackgroundColor(Color.rgb(16,7,12));
+  getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+  // Android 15 enforces edge-to-edge for target 35. Give the WebView the
+  // actual safe viewport; CSS env() in a WebView does not include system bars.
+  if(Build.VERSION.SDK_INT>=30){
+   getWindow().setDecorFitsSystemWindows(false);
+   layout.setOnApplyWindowInsetsListener((view,insets)->{
+    android.graphics.Insets safe=insets.getInsets(android.view.WindowInsets.Type.systemBars()
+     |android.view.WindowInsets.Type.displayCutout()|android.view.WindowInsets.Type.ime());
+    view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+    return android.view.WindowInsets.CONSUMED;
+   });
+  }else layout.setFitsSystemWindows(true);
   // Shared LoveRoll web app is the only visible UI; no duplicate native header or tabs.
   web = new WebView(this);
-  web.setBackgroundColor(Color.rgb(16,3,14));
+  web.setBackgroundColor(Color.rgb(16,7,12));
   web.setOverScrollMode(View.OVER_SCROLL_NEVER);
   WebSettings settings = web.getSettings();
   settings.setJavaScriptEnabled(true);
@@ -308,12 +353,19 @@ public final class ConnectedLoveRollActivity extends Activity {
    }
    @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon) {
     pageReady=false;
+    web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+    pageLoadFailed=false;
+    if(nativeLoadError!=null){splashHost.removeView(nativeLoadError);nativeLoadError=null;}
+    if(isTrusted(Uri.parse(url)))retryDestination=url;
+    long serial=++navigationSerial;
+    view.postDelayed(()->{if(serial==navigationSerial&&!pageReady&&!isFinishing())showNativeLoadFailure();},18000);
     if(nativeSplash!=null){
      nativeSplash.animate().cancel();
      nativeSplash.resumeHeart();
     }
    }
    @Override public void onPageFinished(WebView view,String url) {
+    if(pageLoadFailed)return;
     pageReady=isTrusted(Uri.parse(url));
     // onPageFinished does not guarantee a painted WebView frame.
     // Keep the matching native heart until the first web frame is ready.
@@ -336,13 +388,21 @@ public final class ConnectedLoveRollActivity extends Activity {
      sendGoogleResult(result);
     }
    }
+   @Override public void onReceivedError(WebView view,WebResourceRequest request,android.webkit.WebResourceError error){
+    if(request.isForMainFrame())showNativeLoadFailure();
+   }
+   @Override public void onReceivedHttpError(WebView view,WebResourceRequest request,android.webkit.WebResourceResponse response){
+    if(request.isForMainFrame()&&response.getStatusCode()>=400)showNativeLoadFailure();
+   }
   });
   android.widget.FrameLayout bridge=new android.widget.FrameLayout(this);
+  splashHost=bridge;
   bridge.addView(web,new android.widget.FrameLayout.LayoutParams(-1,-1));
   nativeSplash=new LoveRollHeartSplashView(this);
   bridge.addView(nativeSplash,new android.widget.FrameLayout.LayoutParams(-1,-1));
   layout.addView(bridge,new LinearLayout.LayoutParams(-1,0,1));
   setContentView(layout);
+  layout.requestApplyInsets();
   String pushed=getIntent().getStringExtra("push_section");
   String destination=getIntent().getStringExtra("destination");
   String suffix="";

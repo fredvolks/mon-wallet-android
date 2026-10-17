@@ -105,7 +105,7 @@ test('Surprise one-screen CSS keeps the same generous stage on phone and desktop
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(html,/surprise-refined-v104\.css\?v=20261017-editorial121/);
- assert.match(sw,/loveroll-static-v122/);
+ assert.match(sw,/loveroll-static-v123/);
 });
 
 test('Partners sharing a first name keep their distinct saved names in parity and winner',()=>{

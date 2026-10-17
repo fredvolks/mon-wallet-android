@@ -25,6 +25,21 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      assert.ok(Math.abs(result.meshBottom-result.contact)<=2,JSON.stringify(result));assert.ok(result.meshTop>=-2&&result.meshBottom<=result.sceneHeight+2,JSON.stringify(result));
      assert.ok(result.statsBottom<=result.navTop-3&&result.textFits,JSON.stringify(result));assert.ok(result.bodyHeight<=height+2&&result.horizontal<=1,JSON.stringify(result));
      if(face)assert.equal(result.face,String(face));assert.deepEqual(errors,[]);
+     const summary=await page.evaluate(()=>[...document.querySelectorAll('.home-challenge-stats>div')].map(column=>{
+      const value=column.querySelector('strong').getBoundingClientRect(),label=column.querySelector('small').getBoundingClientRect(),box=column.getBoundingClientRect();
+      return {top:value.top,labelCenter:(label.left+label.right-box.left-box.right)/2};
+     }));
+     assert.equal(summary.length,3);assert.ok(Math.max(...summary.map(x=>x.top))-Math.min(...summary.map(x=>x.top))<=1,'Partner name changed the value baseline '+JSON.stringify(summary));
+     assert.ok(summary.every(x=>Math.abs(x.labelCenter)<1.5),'Summary labels are not centered');
+     // Regression: a live text refresh used to retain WebGL but drop the stage
+     // transform. A size-only check misses this because the canvas is unchanged.
+     await page.evaluate(()=>{window.__beforeRefresh=document.querySelector('.home-die-platform canvas');});
+     for(let refresh=0;refresh<3;refresh++){
+      await page.locator('.nav [data-action="tab:home"]').click();await page.waitForTimeout(50);
+      const after=await inspect();
+      assert.ok(await page.evaluate(()=>window.__beforeRefresh===document.querySelector('.home-die-platform canvas')),'Refresh remounted weekly WebGL');
+      assert.deepEqual(after.q,result.q);assert.ok(Math.abs(after.meshBottom-after.contact)<=2,'Refresh lost podium contact '+JSON.stringify(after));
+     }
      if(name==='S25'&&face===2){
       await page.evaluate(()=>{window.__homeDie=document.querySelector('.home-die-platform canvas');});
       await page.setViewportSize({width,height:915});await page.waitForTimeout(100);const resized=await inspect();
@@ -32,8 +47,8 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
       assert.ok(await page.evaluate(()=>window.__homeDie===document.querySelector('.home-die-platform canvas')),'Resize replaced WebGL');
       await page.setViewportSize({width,height});
      }
-     await page.screenshot({path:'design-captures/home122-'+name+'-'+(face||'unrolled')+'.png'});console.log('HOME_PODIUM_OK',name,face,JSON.stringify(result));
-    }catch(error){failures.push({name,face,error:error.message});await page.screenshot({path:'design-captures/home122-'+name+'-'+(face||'unrolled')+'-FAIL.png'}).catch(()=>{});}
+     await page.screenshot({path:'design-captures/home123-'+name+'-'+(face||'unrolled')+'.png'});console.log('HOME_PODIUM_OK',name,face,JSON.stringify(result));
+    }catch(error){failures.push({name,face,error:error.message});await page.screenshot({path:'design-captures/home123-'+name+'-'+(face||'unrolled')+'-FAIL.png'}).catch(()=>{});}
     finally{await context.close();}
    }
   }
