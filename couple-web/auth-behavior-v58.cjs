@@ -107,7 +107,7 @@ async function open(browser,mode,extra=''){
   await page.locator('#signin-password').fill('ValidPass9');
   await page.locator('[data-action="auth-signup-password"]').click();
   await page.locator('.email-confirm-screen').waitFor({timeout:20000});
-  if(!(await page.locator('.email-confirm-screen').innerText()).includes('Encore une petite étape'))
+  if(!(await page.locator('.email-confirm-screen').innerText()).includes('Confirmez'))
    throw Error('Signup did not show confirmation gate');
   await page.locator('[data-action="email-confirm-resend"]').click();
   await page.waitForFunction(()=>window.__fakeCalls.resend.length===1);

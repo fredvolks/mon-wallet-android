@@ -47,7 +47,7 @@ test('settings and save flows use profile gender not the two Fred display names'
  const app=read('app.js');
  assert.match(app,/profileGenderSelect\(state\.profile\.gender\)/);
  assert.match(app,/save_my_gender/);
- assert.match(app,/\['both','him','her'\]\.map\(role/);
+ assert.match(read('editorial-ui.mjs'),/\['both','him','her'\]\.map\(role/);
  assert.match(app,/\['both','him','her'\]\.includes\(drawer\)/);
  assert.match(app,/gender:profilesAll\.find\(p=>p\.id===m\.user_id\)\?\.gender/);
  const j=read('json-library-ui.mjs');

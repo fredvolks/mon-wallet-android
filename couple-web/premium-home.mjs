@@ -139,9 +139,6 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
     '<button class="home-roll-button is-used" type="button" disabled>Déjà brassé cette semaine, revenez la semaine prochaine</button>':
     '<button class="home-roll-button" type="button" data-action="roll:weekly" '+(pending?'disabled':'')+'>'+
     (rolling?'Brassage 3D en cours…':disabled?'Préparation du brassage…':'🎲 BRASSER LE DÉ')+'</button>')+
-   '<p>Info : '+(ready?'Par '+escape(members.find(p=>p.user_id===weekly.actor)?.name||'un partenaire')+'. ':
-   'Brassage disponible 1x par semaine et par couple. ')+
-   'Prochain tirage : lundi '+escape(next.slice(8,10)+'/'+next.slice(5,7))+' à 00 h (Québec)</p>'+
    '</div>'+
    '<div class="home-bottom-stack"><div class="home-challenge-stats">'+
    '<div><span aria-hidden="true">♢</span><strong>'+shown(stats.total)+'</strong><small>Défis attribués<br>ce soir</small></div>'+

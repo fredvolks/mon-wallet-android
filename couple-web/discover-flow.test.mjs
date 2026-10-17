@@ -58,7 +58,7 @@ test('App-wide theme brings premium visual language to all signed-in sections',(
  }
  assert.match(html,/premium-theme\.css/);
  assert.match(worker,/premium-theme\.css/);
- assert.match(worker,/loveroll-static-v120/);
+ assert.match(worker,/loveroll-static-v121/);
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
@@ -90,7 +90,7 @@ test('iPad invitation fits one viewport without carousel or overlapping poster',
  assert.match(responsive,/\.discover-editorial-die>img\{/);
  assert.match(responsive,/object-fit:contain!important/);
  assert.match(responsive,/overflow:hidden!important/);
- assert.match(html,/responsive-tablet-desktop\.css\?v=20261017-ecrin120/);
+ assert.match(html,/responsive-tablet-desktop\.css\?v=20261017-editorial121/);
  assert.equal((h.match(/class="discover-editorial-item /g)||[]).length,4);
  assert.doesNotMatch(h,/carousel|slider|swiper|overflow-x:auto/i);
 });

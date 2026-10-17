@@ -549,7 +549,7 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
 .push-option span{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
 .push-option strong{color:#ffe7f2;font-size:.92rem}
 .push-option small{color:#baa0b1;font-size:.79rem;line-height:1.35}
-.push-option input{appearance:auto!important;width:22px;height:22px;flex:0 0 22px;
+.push-option input{appearance:auto;width:22px;height:22px;flex:0 0 22px;
  accent-color:#ec448f;cursor:pointer}
 .push-option input:disabled{opacity:.4;cursor:not-allowed}
 

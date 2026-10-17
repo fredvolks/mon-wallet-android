@@ -6,15 +6,14 @@ const start=app.indexOf('function verificationPendingHtml(email){');
 const end=app.indexOf('async function refreshVerifiedIdentity(){',start);
 assert.ok(start>=0&&end>start);
 const source=app.slice(start,end);
-const make=(state)=>new Function('state','safe','button',source+';return verificationPendingHtml;')(
- state,s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'),
- (act,title,attrs='')=>'<button data-action="'+act+'" '+attrs+'>'+title+'</button>');
+import {emailConfirmationHtml} from './onboarding.mjs';
+const make=state=>email=>emailConfirmationHtml(email,{needsSignIn:!state.user,google:true});
 test('Existing Google account path never falsely promises an email was sent',()=>{
  const html=make({user:null})('existing@example.com');
  assert.match(html,/data-action="google"/);
  assert.match(html,/Continuer avec Google/);
  assert.match(html,/data-action="email-confirm-login"/);
- assert.match(html,/Aucun nouveau courriel|aucun nouveau courriel/);
+ assert.match(html,/Un renvoi accepté ne garantit pas la livraison/);
  assert.doesNotMatch(html,/Nous venons de vous envoyer un lien de confirmation/);
  assert.match(html,/existing@example\.com/);
 });

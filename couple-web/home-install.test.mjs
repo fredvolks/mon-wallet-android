@@ -74,6 +74,6 @@ test('real PWA icons, manifest, offline cache and entry points are present',()=>
  assert.match(app,/state.installModalOpen\|\|state.forceInstallGuide/);
  assert.match(app,/if\(verb==='install-home'\)/);
  assert.match(app,/if\(verb==='install-copy-url'\)/);
- assert.match(app,/Placer LoveRoll sur l’écran d’accueil/);
- assert.match(app,/Ajouter LoveRoll à l’écran d’accueil/);
+ assert.match(app,/Écran d’accueil/);
+ assert.match(app,/Ajouter ou retrouver l’icône/);
 });

@@ -1,31 +1,23 @@
 // Shared HTML controls for LoveRoll JSON library backup/import on phone and iPad.
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&#39;'}[c]));
+import {editorialIcon,escapeHtml as esc} from './editorial-ui.mjs';
 export function jsonInputId(kind){
  return kind==='special'?'special-events-json':kind==='advent'?'advent-2026-json':
   kind==='monthly'?'json-input-monthly':'json-input-evening';
 }
 export function jsonToolsPanel(kind,label,pending=null){
- const manual=kind==='evening'||kind==='monthly';
- return '<section class="card json-tools"><div class="eyebrow">♡ BIBLIOTHÈQUE PRIVÉE</div>'+
- '<h3>Importer / exporter · '+esc(label)+'</h3>'+
- '<p>Enregistrez vos idées en JSON et renouvelez votre bibliothèque sans effacer les anciens tirages.</p>'+
- '<div class="json-tool-buttons">'+
- '<button type="button" data-action="json-export:'+kind+'">↧ Exporter JSON</button>'+
- '<label class="json-file-button">↥ Choisir un fichier'+
- '<input type="file" data-json-file="'+kind+'" accept=".json,application/json,text/plain"></label></div>'+
- (manual?'<label>Ou coller le JSON<textarea id="'+jsonInputId(kind)+
- '" rows="4" spellcheck="false" placeholder="Collez votre liste JSON ici"></textarea></label>':'')+
- (kind==='evening'?'<p class="tiny-note">Pour les restrictions JSON : <code>both</code> = les deux, <code>him</code> = homme, <code>her</code> = femme. Ces valeurs sont permises dans <code>drawer_role</code> et <code>recipient_role</code>.</p>':'')+
- (kind==='special'?
- '<p class="tiny-note">Minuteries D6 : ajoutez <code>"minuteurs":{"D6_activite":[5,null,null,null,null,null],"D6_modificateur":[null,null,null,null,null,null]}</code> dans chaque événement. Chaque position représente une face, <code>null</code> désactive le minuteur.</p>':
- '<p class="tiny-note">Durée facultative par défi : <code>"timer_minutes": 5</code> prépare un minuteur de 5 minutes; <code>null</code> le désactive.</p>')+
- '<button type="button" class="subtle" data-action="json-preview:'+kind+'">Prévisualiser avant import</button>'+
- (pending?.kind===kind?'<div class="json-preview"><strong>♡ '+esc(pending.summary.label)+'</strong>'+
- '<p>'+pending.summary.count+' idées · '+pending.summary.timers+' minuteur(s) configuré(s)</p>'+
- '<div class="json-tool-buttons"><button type="button" data-action="json-apply:'+kind+'">Confirmer l’import</button>'+
- '<button type="button" class="subtle" data-action="json-cancel">Annuler</button></div></div>':'')+
- '<p class="tiny-note">Seul l’administrateur peut importer. Aucun secret, compte ou journal personnel n’est exporté.</p>'+
- '</section>';
+ return '<section class="json-tools" aria-label="Import et export JSON">'+
+ '<div class="editorial-json-actions"><button type="button" class="editorial-row" data-action="json-export:'+kind+'">'+editorialIcon('upload')+'<strong>Exporter JSON</strong><b aria-hidden="true">›</b></button>'+
+ '<label class="editorial-row json-file-button">'+editorialIcon('file')+'<strong>Choisir un fichier</strong><b aria-hidden="true">›</b><input type="file" data-json-file="'+kind+'" accept=".json,application/json,text/plain"></label></div>'+
+ '<small id="json-file-name" role="status"></small><label>Ou coller le JSON<textarea id="'+jsonInputId(kind)+'" rows="5" spellcheck="false" placeholder="Collez votre fichier JSON ici"></textarea></label>'+
+ '<p id="json-validation-error" class="editorial-error" role="alert" hidden></p>'+
+ '<button type="button" class="settings-primary" data-action="json-preview:'+kind+'">Prévisualiser</button>'+
+ (pending?.kind===kind?'<div class="json-preview">'+editorialIcon('check')+'<strong>'+esc(pending.summary.label)+'</strong>'+
+ '<p>'+pending.summary.count+' éléments'+(pending.summary.total>pending.summary.count?' / '+pending.summary.total+' emplacements':'')+' · '+pending.summary.timers+' minuteur(s)</p><small>Fichier valide · aucun changement enregistré</small>'+(pending.fileName?'<small>'+esc(pending.fileName)+'</small>':'')+
+ '<button type="button" class="settings-primary" data-action="json-apply:'+kind+'">Confirmer l’import</button>'+
+ '<button type="button" class="settings-signout" data-action="json-cancel">Annuler</button></div>':'')+
+ '<p class="editorial-note">'+editorialIcon('help')+'<span>Les anciens tirages restent conservés. Aucun compte, secret ou journal personnel n’est exporté.</span></p>'+
+ (kind==='evening'?'<details class="settings-help-item"><summary>Format des restrictions</summary><p><code>both</code> : les deux · <code>him</code> : homme · <code>her</code> : femme. Champs <code>drawer_role</code> et <code>recipient_role</code>. La durée <code>timer_minutes</code> est facultative.</p></details>':'')+
+ (kind==='special'?'<details class="settings-help-item"><summary>Format des minuteries</summary><p><code>minuteurs.D6_activite</code> et <code>minuteurs.D6_modificateur</code> : six durées en minutes, ou <code>null</code> pour désactiver une minuterie.</p></details>':'')+'</section>';
 }
 export async function exportJsonFile(filename,content){
  if(typeof window!=='undefined'&&window.LoveRollNativeAuth?.exportJson){

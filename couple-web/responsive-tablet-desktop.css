@@ -171,10 +171,6 @@
  /* All secondary pages: profile, invitations, libraries, journal, feedback,
     onboarding, settings and export forms become wider and usable. */
  
- main#app.loveroll-settings-page{
-  width:min(100%,1180px)!important;max-width:1180px!important;
-  padding-top:max(var(--ritual-page-top),env(safe-area-inset-top,0px))!important;
- }
  main#app.loveroll-settings-page .settings-grid{
   width:100%;max-width:1000px!important;grid-template-columns:minmax(0,1fr)!important;
   gap:13px!important;

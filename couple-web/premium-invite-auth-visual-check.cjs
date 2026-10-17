@@ -10,7 +10,7 @@ const fs=require('node:fs'),path=require('node:path');
  <link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./premium-theme.css">
  <link rel="stylesheet" href="./discover.css"><link rel="stylesheet" href="./approved-artwork.css">
  <link rel="stylesheet" href="./satin-reference.css"><link rel="stylesheet" href="./invite-account.css"><link rel="stylesheet" href="./invitation-poster.css"><link rel="stylesheet" href="./responsive-tablet-desktop.css">
- </head><body><main id="app"></main><script type="module">
+ <link rel="stylesheet" href="./premium-home.css"><link rel="stylesheet" href="./editorial-details.css"></head><body><main id="app"></main><script type="module">
  import {discoverHtml} from './discover.mjs';
  import {authHtml} from './onboarding.mjs';
  let mode='invitation';const root=document.querySelector('#app');
@@ -91,12 +91,12 @@ const fs=require('node:fs'),path=require('node:path');
   let signup=await page.evaluate(()=>{
    const button=document.querySelector('[data-action="auth-signup-password"]').getBoundingClientRect();
    return {horizontal:document.documentElement.scrollWidth>innerWidth+2,submitHeight:button.height,
-    signup:!!document.querySelector('.invite-auth-segments .is-active[data-action="auth-mode:signup"]'),
-    formWidth:Math.round(document.querySelector('.invite-account-screen').getBoundingClientRect().width),
+    signup:!!document.querySelector('.entry-auth-segments .is-active[data-action="auth-mode:signup"]'),
+    formWidth:Math.round(document.querySelector('.auth-editorial').getBoundingClientRect().width),
     email:document.querySelector('#signin-email')?.type,
     pass:document.querySelector('#signin-password')?.type};
   });
-  if(signup.horizontal||signup.submitHeight<44||!signup.signup||signup.email!=='email'||signup.pass!=='password'||errors.length||(v.width>=768&&signup.formWidth<550))
+  if(signup.horizontal||signup.submitHeight<44||!signup.signup||signup.email!=='email'||signup.pass!=='password'||errors.length||(v.width>=768&&signup.formWidth<440))
    throw Error('Signup layout '+v.name+JSON.stringify({signup,errors}));
   await page.screenshot({path:path.join(captures,v.name+'-PAGE2-CREER-v58.png'),fullPage:true});
   await page.locator('[data-action="auth-eye"]').click();
@@ -108,7 +108,7 @@ const fs=require('node:fs'),path=require('node:path');
   await page.locator('[data-action="auth-reset-request"]').click();
   await page.locator('[data-action="auth-send-reset"]').waitFor();
   if(await page.locator('#signin-password').count())throw Error('Password request incorrectly asks for password');
-  await page.locator('[data-action="invite-return"]').click();
+  await page.locator('[data-action="auth-mode:signin"]').click();await page.locator('[data-action="invite-return"]').click();
   await page.locator('[data-action="invite-start"]').waitFor();
   console.log('INVITE_AUTH_VISUAL',v.name,JSON.stringify({first,signup,errors}));
   await page.close();

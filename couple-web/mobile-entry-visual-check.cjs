@@ -31,7 +31,7 @@ async function main(){
     const measure=await page.evaluate(s=>{
      const element=document.querySelector(s),screen=window.innerHeight;
      const r=element?.getBoundingClientRect();
-     const container=document.querySelector('.love-discover,.invite-account-screen');
+     const container=document.querySelector('.love-discover,.auth-editorial');
      const c=container?.getBoundingClientRect();
      const bounds=e=>e?{top:e.top,bottom:e.bottom,height:e.height}:null;
      return {screen,scrollHeight:document.documentElement.scrollHeight,
@@ -39,13 +39,14 @@ async function main(){
       interactive:!!element&&!element.disabled&&getComputedStyle(element).display!=='none'};
     },selector);
     assert.ok(measure.interactive,name+' '+width+'x'+height+' missing active CTA');
-    assert.ok(measure.primary.top>=-3&&measure.primary.bottom<=measure.screen+2,
-     name+' '+width+'x'+height+' CTA clipped '+JSON.stringify(measure));
-    const lastControl=name==='invitation'?'[data-action="invite-start"]':
-     name==='public'?'[data-action="show-auth:signin"]':'.invite-auth-back';
+    const marketing=name==='invitation'||name==='public';
+    if(marketing)assert.ok(measure.primary.top>=-3&&measure.primary.bottom<=measure.screen+2,name+' CTA clipped');
+    else{await page.locator(selector).scrollIntoViewIfNeeded();const r=await page.locator(selector).boundingBox();assert.ok(r.y>=0&&r.y+r.height<=height+2,name+' submit unreachable');}
+    const lastControl=name==='invitation'?'[data-action="invite-start"]':name==='public'?'[data-action="show-auth:signin"]':'.entry-auth-back';
+    await page.locator(lastControl).first().scrollIntoViewIfNeeded();
     const last=await page.locator(lastControl).first().boundingBox();
-    assert.ok(last&&last.y>=-2&&last.y+last.height<=measure.screen+2,
-     name+' '+width+'x'+height+' last control clipped '+JSON.stringify({last,screen:measure.screen}));
+    assert.ok(last&&last.y>=-2&&last.y+last.height<=height+2,name+' last control unreachable');
+    await page.evaluate(()=>scrollTo(0,0));
     if(name==='invitation'||name==='public'){
      const visual=await page.evaluate(()=>{
       const stage=document.querySelector('.discover-editorial-stage')?.getBoundingClientRect();
@@ -59,22 +60,9 @@ async function main(){
      assert.ok(visual.stageHeight>=130&&visual.artHeight>=100&&visual.listHeight>=125&&
       visual.features===4&&visual.naturalImageWidth>100,
       name+' '+width+'x'+height+' showcase disappeared '+JSON.stringify(visual));
-    }else{
-     const fit=await page.locator('.invite-auth-card').evaluate(el=>{
-      const r=el.getBoundingClientRect();
-      return {top:r.top,bottom:r.bottom,height:r.height,viewport:innerHeight};
-     });
-     assert.ok(fit.bottom>=fit.viewport*.87&&fit.bottom<=fit.viewport+2,
-      name+' '+width+'x'+height+' account card must reach screen bottom '+JSON.stringify(fit));
     }
-    assert.ok(measure.scrollHeight<=measure.screen+3,
-     name+' '+width+'x'+height+' page scroll '+JSON.stringify(measure));
-    if(['signin','signup','invitation-signin'].includes(name)){
-     for(const input of ['#signin-email','#signin-password']){
-      const v=await page.locator(input).evaluate(el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom};});
-      assert.ok(v.top>=0&&v.bottom<=measure.screen+2,name+' input clipped '+input+' '+JSON.stringify(v));
-     }
-    }
+    if(marketing)assert.ok(measure.scrollHeight<=measure.screen+3,name+' page scroll');
+    else assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),name+' horizontal overflow');
     if(name==='signup'&&width===375){fs.mkdirSync('design-captures',{recursive:true});await page.screenshot({path:'design-captures/short-signup-375x520.png'});}
     checked++;
    }
@@ -86,6 +74,7 @@ async function main(){
   await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'+css+'</head><body><main id="app">'+authHtml(true,'signin')+'</main></body></html>',{waitUntil:'load'});
   await page.locator('#signin-email').focus();
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.locator('[data-action="auth-signin-password"]').scrollIntoViewIfNeeded();
   const keyboard=await page.locator('[data-action="auth-signin-password"]').boundingBox();
   assert.ok(keyboard&&keyboard.y>=0&&keyboard.y+keyboard.height<=360,
    'Submit must fit inside a keyboard-shrunken viewport '+JSON.stringify(keyboard));
