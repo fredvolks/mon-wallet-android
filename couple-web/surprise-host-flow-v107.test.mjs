@@ -35,8 +35,8 @@ test('D20 confirmed: activity opens; closing it reveals one full-stage host D6',
  assert.equal(count(closed,'data-dice-sides="20"'),0);
  assert.match(closed,/PAIR/);
  assert.match(closed,/IMPAIR/);
- assert.match(closed,/♡ Fred/);
- assert.match(closed,/♡ Émilie/);
+ assert.match(closed,/Fred/);
+ assert.match(closed,/Émilie/);
  assert.doesNotMatch(closed,/2 · 4 · 6/);
  assert.doesNotMatch(closed,/1 · 3 · 5/);
  assert.equal(count(closed,'data-action="roll:monthly_host"'),1);
@@ -60,7 +60,7 @@ test('When the official D6 stops, the same face stays visible for the result pau
  assert.equal(count(html,'data-dice-sides="20"'),0);
  assert.match(html,/data-action="roll:monthly_host" disabled/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- const start=app.indexOf("if(kind==='monthly_host'){",app.indexOf('async function animateRoll'));
+ const start=app.indexOf("if(kind==='monthly_host'||kind==='monthly_activity'){",app.indexOf('async function animateRoll'));
  const end=app.indexOf("if(kind==='new-challenge')",start);
  assert.ok(start>0&&end>start);
  const hostPause=app.slice(start,end);
@@ -72,7 +72,7 @@ test('When the official D6 stops, the same face stays visible for the result pau
 test('Duplicate partner display names are allowed; parity follows partner order, not name',()=>{
  const same=[{user_id:'account-f',name:'Fred'},{user_id:'account-g',name:'Fred'}];
  const pending=make(null,{members:same});
- assert.equal(count(pending,'<strong>♡ Fred</strong>'),2);
+ assert.equal(count(pending,'<strong>Fred</strong>'),2);
  for(const face of [1,2,3,4,5,6]){
   const done=make(face,{members:same});
   assert.match(done,/Fred invite cette fois-ci !/);
@@ -94,16 +94,28 @@ test('Each official D6 face uses parity; the large D20 comes back with only winn
 });
 test('Surprise one-screen CSS keeps the same generous stage on phone and desktop',()=>{
  const css=readFileSync(new URL('./surprise-refined-v104.css',import.meta.url),'utf8');
- assert.match(css,/\.surprise-month\.host-pending>\.surprise-d20-scene/);
- assert.match(css,/\.surprise-month\.host-complete>\.surprise-d20-scene/);
+ assert.match(css,/\.surprise-main-die-scene/);
+ assert.match(css,/\.surprise-host-winner/);
  assert.match(css,/\.surprise-host-legend/);
  assert.match(css,/@media\(max-width:767px\)/);
  assert.match(css,/@media\(min-width:768px\)/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.match(app,/premium-surprise\.mjs\?v=20261017-advent119/);
+ assert.match(app,/premium-surprise\.mjs\?v=20261017-ecrin120/);
  assert.match(app,/if\(kind==='monthly_activity'\)state\.showSurpriseActivity=!!state\.monthly\?\.monthly_activity/);
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
- assert.match(html,/surprise-refined-v104\.css\?v=20261017-advent119/);
- assert.match(sw,/loveroll-static-v119/);
+ assert.match(html,/surprise-refined-v104\.css\?v=20261017-ecrin120/);
+ assert.match(sw,/loveroll-static-v120/);
+});
+
+test('Partners sharing a first name keep their distinct saved names in parity and winner',()=>{
+ const html=make(1,{members:[{user_id:'a',name:'Camille'},{user_id:'b',name:'Camille André'}]});
+ assert.match(html,/Camille André invite cette fois-ci/);
+ const waiting=make(null,{members:[{user_id:'a',name:'Camille'},{user_id:'b',name:'Camille André'}]});
+ assert.match(waiting,/<strong>Camille André<\/strong>/);
+});
+test('Month heading uses Toronto month at the UTC boundary',()=>{
+ const html=premiumSurpriseHtml({members,now:new Date('2026-11-01T02:00:00Z')});
+ assert.match(html,/surprise-month-label"><span>octobre<\/span>/);
+ assert.doesNotMatch(html,/host-winner|host-legend/);
 });

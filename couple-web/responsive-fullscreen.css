@@ -4,7 +4,7 @@
    while anchoring the bottom tab bar above Android gesture navigation. */
 
 main#app.loveroll-evening-page:not(.loveroll-editorial),
-main#app.loveroll-surprise-page{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin){
  --lr-nav-space:calc(76px + env(safe-area-inset-bottom,0px));
  width:100%!important;max-width:none!important;
  height:100dvh!important;min-height:100dvh!important;
@@ -15,7 +15,7 @@ main#app.loveroll-surprise-page{
 }
 
 main#app.loveroll-evening-page:not(.loveroll-editorial) .nav,
-main#app.loveroll-surprise-page .nav{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .nav{
  position:fixed!important;z-index:5000!important;
  left:0!important;right:0!important;bottom:0!important;
  padding:4px 4px calc(6px + env(safe-area-inset-bottom,0px))!important;
@@ -23,18 +23,18 @@ main#app.loveroll-surprise-page .nav{
 }
 
 main#app.loveroll-evening-page:not(.loveroll-editorial) .nav button,
-main#app.loveroll-surprise-page .nav button{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .nav button{
  min-height:58px!important;
  display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;
  padding:5px 2px!important;line-height:1.05;
 }
 
 main#app.loveroll-evening-page:not(.loveroll-editorial) .nav button span,
-main#app.loveroll-surprise-page .nav button span{line-height:1.05;}
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .nav button span{line-height:1.05;}
 
 
 main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view::-webkit-scrollbar,
-main#app.loveroll-surprise-page .surprise-premium-view::-webkit-scrollbar{display:none;}
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view::-webkit-scrollbar{display:none;}
 
 
 
@@ -43,7 +43,7 @@ main#app.loveroll-surprise-page .surprise-premium-view::-webkit-scrollbar{displa
 /* The connected pages need a protected content viewport independent of
    Messenger/Chrome bars. All active controls stay above the native tab bar. */
 main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view,
-main#app.loveroll-surprise-page .surprise-premium-view{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view{
  flex:1 1 auto!important;min-height:0!important;height:auto!important;
  width:min(100%,820px);box-sizing:border-box;
  padding:0 0 8px!important;
@@ -57,44 +57,44 @@ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view{
  grid-template-rows:minmax(53px,.8fr) minmax(52px,.75fr)
  minmax(160px,2.35fr) minmax(209px,3.1fr) minmax(61px,.9fr)!important;
 }
-main#app.loveroll-surprise-page .surprise-premium-view{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view{
  grid-template-rows:minmax(50px,.7fr) minmax(160px,2.55fr)
  minmax(172px,2.6fr) minmax(243px,3.65fr)!important;
 }
-main#app.loveroll-surprise-page .surprise-header h1{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-header h1{
  font-size:clamp(1.2rem,4.65vw,2rem);line-height:.99;
 }
-main#app.loveroll-surprise-page .surprise-banner{font-size:clamp(1.6rem,6vw,2.7rem);}
-main#app.loveroll-surprise-page .surprise-month,
-main#app.loveroll-surprise-page .surprise-host,
-main#app.loveroll-surprise-page .surprise-special{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-banner{font-size:clamp(1.6rem,6vw,2.7rem);}
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-month,
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-host,
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-special{
  min-width:0!important;min-height:0!important;
  box-sizing:border-box;padding:clamp(5px,1.15vw,9px)!important;
  gap:clamp(2px,.42dvh,5px)!important;
  overflow:hidden;
 }
-main#app.loveroll-surprise-page .surprise-d20-scene{min-height:43px;}
-main#app.loveroll-surprise-page .surprise-month>.surprise-primary{min-height:46px!important;padding:6px 12px!important;}
-main#app.loveroll-surprise-page .surprise-host-grid{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-d20-scene{min-height:43px;}
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-month>.surprise-primary{min-height:46px!important;padding:6px 12px!important;}
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-host-grid{
  flex:1 1 auto!important;height:auto!important;min-height:65px!important;
  grid-template-columns:minmax(0,1fr) minmax(65px,.6fr) minmax(0,1fr);
  gap:4px;
 }
-main#app.loveroll-surprise-page .surprise-host-die{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-host-die{
  height:100%!important;max-height:86px;
 }
-main#app.loveroll-surprise-page .surprise-host-partner{min-height:56px!important;}
-main#app.loveroll-surprise-page .surprise-host>.surprise-primary{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-host-partner{min-height:56px!important;}
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-host>.surprise-primary{
  min-height:46px!important;flex:0 0 46px!important;
  margin:0 auto!important;
 }
-main#app.loveroll-surprise-page .surprise-special-grid{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-special-grid{
  flex:1 1 auto!important;min-height:0!important;
  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
  grid-template-rows:repeat(3,minmax(0,1fr))!important;
  gap:clamp(3px,.7vw,6px)!important;align-items:stretch;
 }
-main#app.loveroll-surprise-page .surprise-event-card{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-card{
  display:grid!important;
  grid-template-columns:clamp(27px,7.4vw,43px) minmax(0,1fr) 9px;
  grid-template-rows:1fr;align-items:center;justify-content:stretch;
@@ -103,33 +103,33 @@ main#app.loveroll-surprise-page .surprise-event-card{
  border-radius:clamp(10px,3vw,15px);
  white-space:normal;
 }
-main#app.loveroll-surprise-page .surprise-event-symbol{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-symbol{
  display:flex;align-items:center;justify-content:center;
  min-width:0;min-height:0;height:clamp(25px,6.4dvh,42px);
 }
-main#app.loveroll-surprise-page .surprise-event-svg{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-svg{
  display:block;width:100%;height:100%;max-height:40px;
  filter:drop-shadow(0 0 5px #f72a88);
 }
-main#app.loveroll-surprise-page .surprise-event-details{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-details{
  display:flex;flex-direction:column;gap:3px;
  align-items:flex-start;justify-content:center;
  min-width:0;min-height:0;overflow:hidden;
 }
-main#app.loveroll-surprise-page .surprise-event-title{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-title{
  display:block;font-size:clamp(.62rem,2.27vw,.88rem)!important;
  line-height:1.07!important;font-weight:800;overflow-wrap:anywhere;
 }
-main#app.loveroll-surprise-page .surprise-event-days{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-days{
  display:inline-block;max-width:100%;
  font-size:clamp(.53rem,1.75vw,.71rem)!important;
  line-height:1.05!important;padding:3px 7px!important;
  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-main#app.loveroll-surprise-page .surprise-event-chevron{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-chevron{
  position:static!important;font-size:1.15rem;line-height:1;
 }
-main#app.loveroll-surprise-page .surprise-bottom-info{
+main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-bottom-info{
  flex:0 0 19px!important;min-height:19px!important;max-height:19px;
  padding:1px 6px!important;font-size:.63rem!important;overflow:hidden;
 }
@@ -187,7 +187,7 @@ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-locked-view{
 /* Short messenger viewports/large fonts: no cropped cards, safely scroll
    the content within the screen, not under Android's bottom navigation. */
 @media(max-height:760px){
- main#app.loveroll-surprise-page .surprise-premium-view{
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view{
   grid-template-rows:45px minmax(158px,auto) minmax(168px,auto) minmax(223px,auto)!important;
   align-content:start!important;
  }
@@ -200,10 +200,10 @@ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-locked-view{
  .evening-locked-hero{flex:0 0 auto;}
 }
 @media(max-width:350px){
- main#app.loveroll-surprise-page .surprise-event-card{
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-card{
   grid-template-columns:24px minmax(0,1fr) 7px;gap:2px!important;
  }
- main#app.loveroll-surprise-page .surprise-event-title{font-size:.59rem!important;}
- main#app.loveroll-surprise-page .surprise-event-days{font-size:.51rem!important;padding:2px 5px!important;}
- main#app.loveroll-surprise-page .surprise-header h1{font-size:1.12rem;}
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-title{font-size:.59rem!important;}
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-event-days{font-size:.51rem!important;padding:2px 5px!important;}
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-header h1{font-size:1.12rem;}
 }

@@ -142,7 +142,7 @@ test('Before D20 roll, Surprise has no separate host bubble and exactly six edit
  const html=premiumSurpriseHtml({members:people,settings:{anniversary_md:'08-20',
    birthday_by_user:{first:'01-10',second:'11-25'}},now:new Date('2026-10-14T17:00:00Z')});
  assert.match(html,/class="surprise-header surprise-new-header"/);
- assert.match(html,/Nos surprises disponibles/);
+ assert.match(html,/Une surprise <br>à partager/);
  assert.doesNotMatch(html,/surprise-top-icons|surprise-header-symbol|surprise-host-grid/);
  assert.equal((html.match(/class="surprise-event-card /g)||[]).length,6);
  assert.equal((html.match(/data-action="edit-surprise-event:/g)||[]).length,6);
@@ -151,7 +151,7 @@ test('Before D20 roll, Surprise has no separate host bubble and exactly six edit
   'The D6 appears only after the monthly activity is chosen');
  assert.match(html,/data-action="roll:monthly_activity">Brasser le dé<\/button>/);
  assert.doesNotMatch(html,/roll:monthly_host|surprise-invite-inside/);
- assert.match(html,/Brasse le dé pour découvrir une des 20 activités du mois\./);
+ assert.match(html,/20 activités · 1 tirage commun ce mois-ci/);
  assert.match(html,/Fête des Mères/);
  assert.match(html,/Fête des Pères/);
  assert.match(html,/Anniversaire couple/);
@@ -164,7 +164,7 @@ test('After D20 roll, D6 replaces the full-size D20 then restores it after the h
  assert.doesNotMatch(html,/data-action="surprise-activity"/);
  assert.doesNotMatch(html,/data-action="roll:monthly_activity"/);
  assert.match(html,/class="surprise-month has-activity host-pending"/);
- assert.match(html,/data-action="roll:monthly_host">Brasser le dé · Qui invite \?<\/button>/);
+ assert.match(html,/data-action="roll:monthly_host">Brasser le dé<\/button>/);
  assert.match(html,/class="surprise-host-legend"/);
  assert.match(html,/data-dice-preview="true"/);
  assert.match(html,/data-dice-markers="pips"/);
@@ -197,7 +197,7 @@ test('The six event cards open an editor for shared name/date without rewriting 
  assert.match(html,/placeholder="JJ\/MM\/AAAA"/);
  assert.match(html,/value="07\/12\/2026"/);
  assert.match(html,/data-action="close-surprise-event"/);
- assert.doesNotMatch(html,/data-action="open-occasion:anniversary:-"/);
+ assert.match(html,/data-action="open-occasion:anniversary:-"/);
  assert.equal((html.match(/data-action="save-surprise-event"/g)||[]).length,1);
  assert.match(app,/rpc\('save_love_surprise_event'/);
  assert.match(app,/surpriseEditSlot/);

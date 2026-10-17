@@ -78,7 +78,7 @@ const {chromium}=require('playwright');
       result.neutralDice.some(d=>!d.visible||!d.hasWebGL||d.markers!=='hearts'||d.top>=d.buttonTop)))||
      (pageName.startsWith('surprise')&&(
       result.dice.length!==1||
-      result.eventCount!==6||!result.eventVisible||result.eventColumns!==2||
+      result.eventCount!==6||!result.eventVisible||result.eventColumns!==3||
       result.surpriseDice.length!==1||
       result.inlineInvite||result.oldHostBubble||
       result.parityLegend!==(pageName==='surprise-ready')||

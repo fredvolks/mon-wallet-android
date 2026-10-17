@@ -229,8 +229,9 @@ export function createClient(){
   if(cards!==6)throw Error('Surprise events missing '+v.name+' '+cards);
   await inspect('advent','.advent-premium-view');
   if(await page.locator('.advent-box').count()!==25)throw Error('Advent tiles missing '+v.name);
-  await inspect('settings','.settings-grid');
-  await page.locator('details.settings-group summary').first().click();
+  await inspect('settings','.settings-sections');
+  await page.locator('.settings-profile-row').click();
+  await page.locator('#profile-name').waitFor();
   if(errors.length)throw Error('Browser console errors '+v.name+' '+JSON.stringify(errors));
   console.log('RESPONSIVE_NAV_OK',v.name,JSON.stringify({homeWidth:initial.width,events:cards,tabs:5}));
   await page.close();

@@ -138,3 +138,11 @@ main#app :is(.evening-toolbar,.advent-top,.surprise-header,.settings-page-header
  #app .real-home-shell{height:calc(100dvh - 112px);min-height:0;grid-template-rows:auto 42px minmax(180px,1fr) auto;}
  #app .home-die-theater{min-height:180px;}#app .home-die-platform{width:230px;height:230px;}
 }
+
+/* The Home logo shares Soirée's safe-area anchor, including native overlays. */
+main#app.loveroll-real-home{padding-top:max(var(--ritual-page-top),env(safe-area-inset-top,0px));}
+main#app.loveroll-real-home .ritual-brand{height:var(--ritual-brand-height);justify-content:center;}
+main#app.loveroll-real-home .ritual-brand i{font-size:var(--ritual-heart-size);line-height:var(--ritual-heart-line);}
+main#app.loveroll-real-home .ritual-brand b{font-size:var(--ritual-word-size);line-height:var(--ritual-word-line);}
+
+@media(min-width:900px){main#app.loveroll-real-home{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));}}

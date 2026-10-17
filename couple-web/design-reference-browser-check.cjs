@@ -30,10 +30,10 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     if(tab==='home'){homeWordTop=geometry.wordTop;homeKickerTop=geometry.kickerTop;}
     else{
      assert.ok(Math.abs(geometry.wordTop-homeWordTop)<=1,'LoveRoll wordmark moved between tabs '+JSON.stringify({name,tab,homeWordTop,actual:geometry.wordTop}));
-     assert.ok(Math.abs(geometry.kickerTop-homeKickerTop)<=2,'Ritual heading moved between tabs '+JSON.stringify({name,tab,homeKickerTop,actual:geometry.kickerTop}));
+     if(['session','advent'].includes(tab))assert.ok(Math.abs(geometry.kickerTop-homeKickerTop)<=2,'Ritual heading moved between tabs '+JSON.stringify({name,tab,homeKickerTop,actual:geometry.kickerTop}));
     }
     assert.ok(geometry.scrollWidth<=width+1,'horizontal overflow');
-    if(tab!=='settings')assert.ok(geometry.documentHeight<=height+2&&geometry.mainScroll<=geometry.mainClient+2,'primary page scrolls '+JSON.stringify({name,tab,...geometry}));
+    assert.ok(geometry.documentHeight<=height+2&&geometry.mainScroll<=geometry.mainClient+2,'primary page scrolls '+JSON.stringify({name,tab,...geometry}));
     assert.ok(geometry.navBottom<=height+1&&geometry.navTop>=0,'navigation outside viewport');
     if(width<768){
      const navHeight=geometry.navBottom-geometry.navTop;

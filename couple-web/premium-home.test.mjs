@@ -140,7 +140,7 @@ test('D6 uses an actual bevel and no neon wireframe; fallback hidden during thro
 });
 
 test('Connected Home restores centered LoveRoll brand and preserves weekly status',()=>{
- assert.match(app,/root\.innerHTML=\(realHome\|\|realEvening\|\|eveningArchive\|\|\(isCouple&&state\.tab==='advent'\)\?'':usualHeader\)\+body/);
+ assert.match(app,/root\.innerHTML=\(realHome\|\|realEvening\|\|realSurprise\|\|realSettings\|\|eveningArchive\|\|\(isCouple&&state\.tab==='advent'\)\?'':usualHeader\)\+body/);
  assert.doesNotMatch(app,/const homeHeader=|data-action="home-notices" aria-label="Notifications du couple"/);
  const html=premiumHomeHtml({
   weekly:{face:1,actor:'a'},members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Émilie'}]

@@ -9,7 +9,7 @@ import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261017-entry118
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-editorial117';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-editorial117';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-advent119';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-ecrin120';
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -36,7 +36,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-17.119';
+const WEB_RELEASE='2026-10-17.120';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -45,7 +45,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
  createClient(CONFIG.supabaseUrl,CONFIG.supabasePublishableKey,opts):null;
 const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
-let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('loveroll-settings-section')||'';
+let settingsOpenSection=requestedSettingsSection||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
  events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventRevealing:false,adventServerDate:null,unlockKey:null,channel:null,
@@ -209,6 +209,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const realEvening=isCouple&&state.tab==='session'&&(!state.session||(state.session.paired_turns&&state.session.self_draws));
  const eveningArchive=isCouple&&state.tab==='evening-calendar';
  const realSurprise=isCouple&&state.tab==='special';
+ const realSettings=connected&&state.tab==='settings';
  root.classList.toggle('loveroll-advent-page',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-advent-letters',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-real-home',realHome);
@@ -216,6 +217,9 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.classList.toggle('loveroll-editorial',realEvening||eveningArchive);
  root.classList.toggle('loveroll-evening-calendar-page',eveningArchive);
  root.classList.toggle('loveroll-surprise-page',realSurprise);
+ root.classList.toggle('loveroll-surprise-ecrin',realSurprise);
+ root.classList.toggle('loveroll-settings-menu',realSettings&&!settingsOpenSection);
+ root.classList.toggle('loveroll-settings-detail',realSettings&&!!settingsOpenSection);
  root.classList.toggle('loveroll-settings-page',connected&&state.tab==='settings');
  // Preserve the SAME D100 canvas through UI refreshes with an unchanged face.
  const oldD100=realEvening?root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]'):null;
@@ -242,7 +246,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  }
  const installation=connected&&(state.installModalOpen||state.forceInstallGuide)?
   (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
- const usualHeader=connected&&state.tab==='settings'?'<header class="header settings-page-header">'+ritualBrandHtml()+'<div class="settings-page-titles"><span>NOTRE ESPACE LOVEROLL</span><h1>'+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div></header>':'<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
+ const usualHeader='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user&&state.tab!=='settings'?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+'</header>';
  // The connected Home begins directly with the weekly ritual: no top logo or action buttons.
  const reviewing=state.reviewModalSessionId&&isCouple&&state.sessions?.some(x=>
@@ -251,7 +255,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   sessionId:state.reviewModalSessionId,draft:state.reviewDraft||{},
   saving:state.reviewSaving,partnerName:other()?.name?.split(' ')[0]||'ton partenaire'
  }):'';
- root.innerHTML=(realHome||realEvening||eveningArchive||(isCouple&&state.tab==='advent')?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
+ root.innerHTML=(realHome||realEvening||realSurprise||realSettings||eveningArchive||(isCouple&&state.tab==='advent')?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
  if(savedStage){
   const freshD100=root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]');
   const freshStage=freshD100?.closest('.love3d-stage');
@@ -280,7 +284,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261017-editorial117').then(({dieOn})=>{
+  import('./dice3d.js?v=20261017-ecrin120').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected||canvas.loveRollDie)continue;
@@ -306,7 +310,7 @@ function nav(){
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
- '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+navIcon(key,icon)+
+ '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions')||(key==='settings'&&['library','monthly-library','advent-editor','special-editor','journal'].includes(state.tab)))?'active':'')+'"'+(state.diceStatus?' disabled':'')+'><span>'+navIcon(key,icon)+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
@@ -1679,6 +1683,7 @@ function renderMonthlyLibrary(){
  frame(body,'MES ACTIVITÉS','20 sorties personnalisables et privées');
 }
 function settingsIcon(key){
+ if(key==='application')return navIcon('settings');
  const strokes={
   compte:'<circle cx="12" cy="7.5" r="3.5"/><path d="M5 21v-2c0-4 3-6 7-6s7 2 7 6v2"/>',
   couple:'<path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11Z"/>',
@@ -1690,15 +1695,6 @@ function settingsIcon(key){
   aide:'<circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.6 2.6 0 1 1 4.5 2c-1.4 1-2 1.6-2 3M12 18h.01"/>'
  };
  return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+strokes[key]+'</svg>';
-}
-function settingGroup(title,icon,description,body,opened=false){
- const sections={'Compte':'compte','Couple':'couple','Notifications':'notifications','Jeu et personnalisation':'jeu','Administration':'admin','Application':'application','Confidentialité':'confidentialite','Aide':'aide'};
- const section=sections[title]||'';
- return '<details class="settings-group" data-settings-section="'+section+'"'+(settingsOpenSection===section?' open':'')+'><summary>'+
-  '<span class="settings-group-icon">'+(sections[title]?settingsIcon(section):icon)+'</span>'+
-  '<span class="settings-group-heading"><strong>'+safe(title)+'</strong><small>'+safe(description)+'</small></span>'+
-  '<span aria-hidden="true" class="settings-chevron">⌄</span></summary>'+
-  '<div class="settings-group-content">'+body+'</div></details>';
 }
 function settingRow(title,detail,action,label='Ouvrir'){
  return '<button type="button" class="settings-link-row" data-action="'+safe(action)+'">'+
@@ -1719,37 +1715,24 @@ function renderCoupleDateSetting(){
   '<div class="settings-date-field"><strong>Date de début</strong><p>'+safe(formatCoupleDate(started))+'</p></div>')+
   '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(frenchMonthDay(state.occasionSettings?.anniversary_md))+'</p>';
 }
-function initSettingsAccordion(){
- const groups=[...root.querySelectorAll('details.settings-group[data-settings-section]')];
- const saveOpen=section=>{
-  try{
-   if(section)sessionStorage.setItem('loveroll-settings-section',section);
-   else sessionStorage.removeItem('loveroll-settings-section');
-  }catch(error){console.warn('Préférence locale non disponible',error);}
- };
- for(const group of groups){
-  group.querySelector('summary')?.addEventListener('click',event=>{
-   event.preventDefault();
-   const shouldOpen=!group.open;
-   for(const other of groups)other.open=shouldOpen&&other===group;
-   settingsOpenSection=shouldOpen?group.dataset.settingsSection:'';
-   saveOpen(settingsOpenSection);
-  });
- }
+function openSettingsPage(section=''){
+ const allowed=['','compte','couple','notifications','jeu','confidentialite','application','aide','admin'];
+ if(!allowed.includes(section))return;
+ if(section==='admin'&&!isLoveAdmin())throw Error('Options réservées au créateur du couple.');
+ settingsOpenSection=section;state.tab='settings';render();
+ window.scrollTo({top:0,behavior:'instant'});
 }
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
- const account='<div class="settings-split settings-account-top">'+
-  '<div class="settings-identity"><strong>Compte connecté</strong><p>'+safe(state.user.email||'Courriel privé')+'</p></div>'+
+ const account='<div class="settings-account-form">'+
+  '<p class="settings-detail-intro">Compte connecté</p>'+
   '<label class="settings-inline-name"><span>Prénom affiché</span>'+
-  '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label>'+profileGenderSelect(state.profile.gender)+'</div>'+
-  '<div class="settings-actions">'+
+  '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label>'+
+  profileGenderSelect(state.profile.gender)+
+  '<div class="settings-birthday-edit"><span>Mon anniversaire</span>'+monthDayInputs('settings-birthday',state.profile.birthday_md)+'</div>'+
+  '<label>Courriel du compte<input type="email" readonly aria-readonly="true" value="'+safe(state.user.email||'')+'" autocomplete="email"></label>'+
   button('profile','Enregistrer mon profil','class="settings-primary"')+
-  button('signout','Déconnexion','class="subtle settings-secondary"')+'</div>'+
-  '<details class="settings-birthday-edit"><summary>Modifier ma date d’anniversaire · '+
-   safe(frenchMonthDay(state.profile.birthday_md))+'</summary>'+
-  '<p>Cette date sera aussi corrigée dans les occasions du couple.</p>'+
-  monthDayInputs('settings-birthday',state.profile.birthday_md)+'</details>';
+  '<div class="settings-danger-zone">'+button('signout','Se déconnecter','class="settings-signout"')+'</div></div>';
  let partner='';
  if(hasPartner){
   partner='<div class="settings-split settings-couple-top"><div class="settings-couple-status">'+
@@ -1780,21 +1763,21 @@ function renderSettings(){
       '" data-action="set-celebrant:'+key+':'+m.user_id+'">'+safe(m.name)+'</button>').join('')+
     '</div></div>';
   }).join(''):'';
- const eveningButtons=isLoveAdmin()?
-  '<div class="settings-item"><div><strong>Choix du dé de Soirée</strong>'+
-  '<p>Masquer ou afficher Sensuel et Sexuel. Aléatoire reste toujours disponible (50/50).</p></div></div>'+
-  '<label class="custom-draw-setting"><input id="show-sensuel-button" type="checkbox"'+
-    (state.couple?.show_sensuel_button!==false?' checked':'')+'> Afficher le bouton Sensuel (88 %)</label>'+
-  '<label class="custom-draw-setting"><input id="show-sexuel-button" type="checkbox"'+
-    (state.couple?.show_sexuel_button!==false?' checked':'')+'> Afficher le bouton Sexuel (88 %)</label>'+
-  button('save-evening-buttons','Enregistrer les boutons de Soirée','class="subtle"'):'';
- const game=isLoveAdmin()?
-  settingRow('Mes cartes','200 cartes · 100 Sensuel et 100 Sexuel.','tab:library','Modifier')+
-  settingRow('Activités du mois','20 activités du dé D20.','tab:monthly-library','Modifier')+
-  settingRow('Calendrier de l’Avent','25 surprises du calendrier partagé.','tab:advent-editor','Modifier')+
-  settingRow('Événements spéciaux','Six événements, activités et variantes.','tab:special-editor','Modifier')+
-  eveningButtons+celebrants:
-  '<p>Les réglages des cartes sont réservés au créateur du couple.</p>';
+ const canEdit=isLoveAdmin();
+ const eveningButtons='<div class="settings-category-options"><h3>Catégories visibles</h3>'+
+  '<label class="push-option"><span>Sensuel</span><input id="show-sensuel-button" type="checkbox" role="switch"'+
+   (state.couple?.show_sensuel_button!==false?' checked':'')+(!canEdit?' disabled':'')+'></label>'+
+  '<label class="push-option"><span>Sexuel</span><input id="show-sexuel-button" type="checkbox" role="switch"'+
+   (state.couple?.show_sexuel_button!==false?' checked':'')+(!canEdit?' disabled':'')+'></label>'+
+  '<p class="tiny-note">Aléatoire reste disponible.</p>'+
+  (canEdit?button('save-evening-buttons','Enregistrer','class="settings-primary"'):'<p>Seul le créateur peut modifier ces choix.</p>')+'</div>';
+ const game=(canEdit?
+  settingRow('Mes cartes','100 Sensuel · 100 Sexuel','tab:library','')+
+  settingRow('Activités du mois','20 activités','tab:monthly-library','')+
+  settingRow('Calendrier de l’Avent','25 surprises','tab:advent-editor','')+
+  settingRow('Événements spéciaux','Événements, activités et variantes','tab:special-editor',''):
+  '<p>Les éditeurs sont réservés au créateur du couple.</p>')+eveningButtons+
+  (canEdit?'<div class="settings-advanced">'+settingRow('Options avancées','Créateur','settings-page:admin','')+'</div>':'');
  const resettableDice=!!(state.weekly||state.session||
   Object.keys(state.monthly||{}).length||state.occasionRolls?.length);
  const adminWeekly=isLoveAdmin()&&hasPartner?
@@ -1831,48 +1814,60 @@ function renderSettings(){
    'Force le chargement de la dernière version sans supprimer votre compte ni vos défis.',
    'reload-web','Actualiser')+
   '<p class="tiny-note">Thème LoveRoll : bourgogne, noir et rose. L’APK Android est mis à jour séparément.</p>';
- const privacy=(linked?settingRow('Journal partagé','Consulter le journal commun et son calendrier.','tab:journal','Ouvrir'):'')+
-  (nativeApp?settingRow('Mes anciennes données hors ligne',
-   'Ouvrir volontairement le journal Android local non synchronisé.','native-legacy','Ouvrir'):'')+
-  (linked?button('lock','Verrouiller le journal partagé','class="subtle"'):'')+
-  '<div class="settings-item"><div><strong>Mon ressenti</strong><p>Réglages personnels et confidentiels.</p></div></div>'+
-  wellbeingFields(state.wellbeing)+button('save-wellbeing','Enregistrer mon ressenti','class="subtle"');
+ const privacy=(linked?settingRow('Journal partagé','Journal commun et calendrier','tab:journal','Ouvrir'):'<p>Associez votre partenaire pour accéder au journal partagé.</p>')+
+  (nativeApp?settingRow('Mes anciennes données hors ligne','Journal Android local non synchronisé','native-legacy','Ouvrir'):'')+
+  (linked?button('lock','Verrouiller le journal partagé','class="settings-secondary"'):'');
  const helpEntries=[
   ['Association des comptes','Une invitation privée relie deux comptes distincts après acceptation.'],
   ['Dé hebdomadaire','Un seul tirage officiel par couple et par semaine, renouvelé le lundi.'],
   ['Soirée et défis','Chacun joue les défis qui lui sont attribués et peut les refuser.'],
-  ['Cadeaux','Les cadeaux restent dans l’historique commun prévu pour le couple.'],
+  ['Cadeaux','Vous pouvez offrir un défi non commencé à votre partenaire, jusqu’à trois dons par mois et par personne.'],
   ['Rendez-vous surprise','Les dés vous proposent une activité et déterminent qui invite.'],
-  ['Événements spéciaux','Les occasions et leurs variantes se gèrent dans Jeu et personnalisation.'],
-  ['Calendrier de l’Avent','Une seule ouverture officielle par journée pour le couple.'],
+  ['Événements spéciaux','Les activités et variantes se gèrent dans Cartes et activités. Appuyez sur une tuile de Surprise pour modifier son nom ou sa date.'],
+  ['Calendrier de l’Avent','Chaque lettre se débloque à sa date et reste ouvrable plus tard. Les lettres déjà ouvertes restent consultables.'],
   ['Synchronisation','Les données partagées se mettent à jour entre les comptes connectés.'],
-  ['Confidentialité','Le ressenti de chaque personne demeure individuel.'],
+  ['Confidentialité','Le journal partagé reste protégé par votre phrase secrète. Les bilans de soirée restent associés à leur auteur.'],
   ['Mises à jour','Vérifiez les versions Android et actualisez le contenu Web dans Application.']
  ];
  const support='<div class="settings-help-list">'+helpEntries.map(([title,answer])=>
   '<details class="settings-help-item"><summary>'+safe(title)+'<span aria-hidden="true">⌄</span></summary>'+
   '<p>'+safe(answer)+'</p></details>').join('')+'</div>';
- frame('<div class="settings-grid">'+
-   settingGroup('Compte','♙','Gérez votre compte et votre appareil',account,requestedSettingsSection==='compte')+
-   settingGroup('Couple','♥',hasPartner?'Votre espace partagé et vos dates':'Invitations et état de la demande',partner,
-     !requestedSettingsSection||requestedSettingsSection==='couple')+
-   settingGroup('Notifications','♧','Rappels et préférences',notifications,requestedSettingsSection==='notifications')+
-   settingGroup('Jeu et personnalisation','🎲','Cartes, activités et surprises',game,requestedSettingsSection==='jeu')+
-   (isLoveAdmin()?settingGroup('Administration','♛','Gestion des tirages',adminWeekly,
-     requestedSettingsSection==='admin'):'')+
-   settingGroup('Application','▣','Version et mises à jour',appSettings,requestedSettingsSection==='application')+
-   settingGroup('Confidentialité','♙','Journal, données et ressenti',privacy,requestedSettingsSection==='confidentialite')+
-   settingGroup('Aide','?','Informations et fonctionnement',support,requestedSettingsSection==='aide')+'</div>',
-  'RÉGLAGES','Compte, couple, notifications et confidentialité');
- initSettingsAccordion();
+ const pages={compte:{title:'Mon compte',body:account},couple:{title:'Notre duo',body:partner},
+  notifications:{title:'Notifications',body:notifications},jeu:{title:'Cartes et activités',body:game},
+  confidentialite:{title:'Journal et confidentialité',body:privacy},
+  application:{title:'Application et aide',body:appSettings+settingRow('Aide','Comprendre les rituels LoveRoll','settings-page:aide','')},
+  aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+celebrants}};
+ if(settingsOpenSection==='admin'&&!canEdit)settingsOpenSection='jeu';
+ if(!pages[settingsOpenSection])settingsOpenSection='';
+ const name=state.profile.display_name||'Mon profil',initial=Array.from(name)[0]||'♡';
+ const items=[['couple','Notre duo',hasPartner?state.members.map(m=>m.name).join(' & '):linked?'Invitation en attente':'Inviter mon partenaire'],
+  ['notifications','Notifications','Rappels et autorisations'],['jeu','Cartes et activités','Soirée, Surprise et Avent'],
+  ['confidentialite','Journal et confidentialité','Journal partagé et données'],['application','Application et aide','Versions et fonctionnement']];
+ const menu='<button class="settings-profile-row" data-action="settings-page:compte"><span class="settings-initial" aria-hidden="true">'+safe(initial)+'</span><span><strong>'+safe(name)+'</strong><small>Mon compte</small></span><b aria-hidden="true">›</b></button>'+
+  '<nav class="settings-sections" aria-label="Rubriques des réglages">'+items.map(([key,label,detail])=>
+   '<button data-action="settings-page:'+key+'" class="settings-section-row"><span class="settings-row-icon">'+settingsIcon(key)+'</span><span><strong>'+label+'</strong><small>'+safe(detail)+'</small></span><b aria-hidden="true">›</b></button>').join('')+'</nav>';
+ const page=pages[settingsOpenSection];
+ const heading='<header class="settings-page-header">'+
+  (page?button('settings-page:','<span aria-hidden="true">‹</span> Réglages','class="settings-back"'):'')+
+  ritualBrandHtml()+'</header>';
+ frame('<section class="settings-editorial">'+heading+'<div class="settings-editorial-content">'+
+  '<h1>'+safe(page?.title||'Réglages')+'</h1>'+
+  (page?'<article class="settings-detail-body" data-settings-page="'+settingsOpenSection+'">'+page.body+'</article>':menu)+
+  '</div></section>','Réglages','');
 }
+
 async function refreshAndShow(){await refreshShared();render();}
 async function animateRoll(fn,kind='general'){
  if(state.diceStatus)throw Error('Un dé est déjà en cours de brassage.');
  const activeD100=kind==='new-challenge'&&state.tab==='session'?
   root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]'):null;
+ const activeMonthly=['monthly_activity','monthly_host'].includes(kind)&&state.tab==='special'?
+  root.querySelector('.surprise-main-die-scene canvas[data-dice-sides]'):null;
+ const liveDie=activeD100||activeMonthly;
  const useLiveD100=!!activeD100?.loveRollDie?.rollTo;
+ const useLiveMonthly=!!activeMonthly?.loveRollDie?.rollTo;
  state.rollAnimationKind=kind;state.diceStatus='pending';
+ for(const tab of root.querySelectorAll('.nav button'))tab.disabled=true;
  if(useLiveD100){
   // No DOM replacement while the server selects the official face.
   const button=root.querySelector('button[data-action="new-challenge"]');
@@ -1881,6 +1876,10 @@ async function animateRoll(fn,kind='general'){
    option.disabled=true;
   const number=root.querySelector('.evening-d100-result');
   if(number)number.hidden=true;
+ }else if(useLiveMonthly){
+  for(const button of root.querySelectorAll('.surprise-month button,.surprise-event-card'))button.disabled=true;
+  const button=root.querySelector('.surprise-month>.surprise-primary');
+  if(button){button.textContent='Brassage en cours…';button.setAttribute('aria-busy','true');}
  }else render();
  try{
   const result=await fn(); // Supabase determines and persists the actual result
@@ -1888,21 +1887,23 @@ async function animateRoll(fn,kind='general'){
   const confirmedFace=Number(result?.face);
   if(!Number.isInteger(confirmedFace)||confirmedFace<1||
      (kind==='my-d6'&&confirmedFace>6)||
-     (kind==='new-challenge'&&confirmedFace>100))
+     (kind==='new-challenge'&&confirmedFace>100)||
+     (kind==='monthly_activity'&&confirmedFace>20)||(kind==='monthly_host'&&confirmedFace>6))
    throw new Error('Le serveur n’a pas confirmé le résultat officiel du dé.');
   state.rollAnimationFace=confirmedFace;
   state.diceStatus='rolling';
-  const liveD100Started=useLiveD100&&activeD100.isConnected&&
-   activeD100.loveRollDie?.rollTo(confirmedFace)===true;
-  if(!liveD100Started)render();
+  const liveStarted=(useLiveD100||useLiveMonthly)&&liveDie.isConnected&&
+   liveDie.loveRollDie?.rollTo(confirmedFace)===true;
+  const liveD100Started=useLiveD100&&liveStarted;
+  if(!liveStarted)render();
   await new Promise(resolve=>setTimeout(resolve,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?180:ROLL_TOTAL_MS+140));
   if(liveD100Started&&activeD100.isConnected){
    const number=root.querySelector('.evening-d100-result');
    if(number){number.textContent='Résultat : '+confirmedFace;number.hidden=false;}
   }
-  if(kind==='monthly_host'){
-   // Show the official D6 face for a full second after it stops, before
-   // restoring the monthly D20 scene. No second server roll is performed.
+  if(kind==='monthly_host'||kind==='monthly_activity'){
+   // Show each official monthly face for a full second after it stops, before
+   // opening the activity or restoring the D20. Never draw twice.
    state.diceStatus='settled';
    await refreshShared();
    // Keep the existing WebGL canvas mounted: no flash or animation restart.
@@ -1923,7 +1924,8 @@ async function animateRoll(fn,kind='general'){
   render();return result;
  }catch(e){
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
-  await refreshAndShow();throw e;
+  try{await refreshShared();}finally{render();}
+  throw e;
  }
 }
 async function hashToken(token){
@@ -2880,7 +2882,13 @@ async function handle(action,element){
   state.inviteAttemptKey=null;state.inviteError=null;
   await reload();return;
  }
+ if(verb==='settings-page'){
+  if(hasUnsavedForm()&&!(await premiumConfirm('Vos modifications non enregistrées seront perdues. Voulez-vous quitter cette page ?',{
+   kind:'library',title:'Quitter sans enregistrer ?',accept:'Quitter',cancel:'Rester'})))return;
+  openSettingsPage(parts[0]||'');return;
+ }
  if(verb==='tab'){
+  if(state.diceStatus)return;
   const ready=isSharedCoupleReady(state.coupleId,state.members);
   const allowed=ready?
    ['home','session','special','occasions','advent','settings','library',
@@ -2897,6 +2905,7 @@ async function handle(action,element){
    settingsOpenSection='couple';
    try{sessionStorage.setItem('loveroll-settings-section','couple');}catch{}
   }
+  if(parts[0]==='settings'&&state.tab!=='occasions')settingsOpenSection='';
   allowBackExit=false;state.tab=parts[0];state.confirmCancel=false;
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.showEveningChallenges=false;state.selectedEveningChallengeId=null;state.eveningMore=false;}

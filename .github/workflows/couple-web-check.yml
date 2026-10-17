@@ -401,7 +401,7 @@ jobs:
       - name: Verify 25 Advent doors and opened surprise on Galaxy S25 Ultra
         run: node couple-web/premium-advent-visual-check.cjs
 
-      - name: Verify premium eight-section Settings on Galaxy S25 Ultra and iPhone
+      - name: Verify five Settings routes and saved forms on phone tablet and PC
         run: node couple-web/premium-settings-visual-check.cjs
 
       - name: Verify invitation and account pages on Galaxy S25 Ultra
