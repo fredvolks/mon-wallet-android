@@ -7,6 +7,37 @@ mkdir -p qa
 adb shell wm size 1440x3120
 adb shell wm density 560
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+# Test the native failure view on an isolated fresh emulator, without user accounts.
+trap 'adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true' EXIT
+adb shell cmd connectivity airplane-mode enable
+adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity
+sleep 20
+adb shell uiautomator dump /sdcard/loveroll-network-error.xml
+adb pull /sdcard/loveroll-network-error.xml qa/loveroll-network-error.xml
+adb exec-out screencap -p > qa/loveroll-network-error.png
+python3 - <<'PY_NATIVE'
+import xml.etree.ElementTree as ET
+root=ET.parse('qa/loveroll-network-error.xml').getroot()
+buttons=[n for n in root.iter('node') if n.get('text')=='Réessayer']
+assert len(buttons)==1,'Native network failure must provide one retry, not an endless heart'
+import re
+x1,y1,x2,y2=map(int,re.findall(r'\d+',buttons[0].get('bounds')))
+open('qa/retry-coordinate.txt','w').write(str((x1+x2)//2)+' '+str((y1+y2)//2)+'\n')
+print('LOVEROLL_NATIVE_NETWORK_ERROR_OK retry is visible')
+PY_NATIVE
+adb shell cmd connectivity airplane-mode disable
+sleep 3
+read -r retry_x retry_y < qa/retry-coordinate.txt
+adb shell input tap "$retry_x" "$retry_y"
+sleep 10
+adb shell uiautomator dump /sdcard/loveroll-after-retry.xml
+adb pull /sdcard/loveroll-after-retry.xml qa/loveroll-after-retry.xml
+python3 - <<'PY_NATIVE'
+import xml.etree.ElementTree as ET
+root=ET.parse('qa/loveroll-after-retry.xml').getroot()
+assert not any(n.get('text')=='Réessayer' for n in root.iter('node')),'Retry returned to native error'
+print('LOVEROLL_NATIVE_RETRY_OK no native error overlay remains')
+PY_NATIVE
 # Non-blocking launch: am start -W may time out waiting for remote WebView.
 adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity
 sleep 10

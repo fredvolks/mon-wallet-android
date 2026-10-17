@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
@@ -26,6 +27,8 @@ final class LoveRollHeartSplashView extends View {
  private final Typeface text=Typeface.create("sans-serif",Typeface.NORMAL);
  private boolean visibleAnimation=true;
  private RadialGradient glow;
+ private LinearGradient decorFade;
+ private final Paint.FontMetrics fontMetrics=new Paint.FontMetrics();
 
  LoveRollHeartSplashView(Context context){
   super(context);
@@ -36,24 +39,26 @@ final class LoveRollHeartSplashView extends View {
   setContentDescription(CAPTION);
   setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
  }
- private void cover(Canvas canvas,Bitmap image,float left,float top,float width,float height){
+ private void cover(Canvas canvas,Bitmap image,float left,float top,float width,float height,int alpha){
   float scale=Math.max(width/image.getWidth(),height/image.getHeight());
   float bw=image.getWidth()*scale,bh=image.getHeight()*scale;
   canvas.save();canvas.clipRect(left,top,left+width,top+height);
   frame.set(left+(width-bw)/2f,top+height-bh,left+(width+bw)/2f,top+height);
-  brush.setShader(null);brush.setAlpha(255);canvas.drawBitmap(image,null,frame,brush);canvas.restore();
+  brush.setShader(null);brush.setAlpha(alpha);canvas.drawBitmap(image,null,frame,brush);canvas.restore();brush.setAlpha(255);
  }
  @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){
   super.onSizeChanged(w,h,oldw,oldh);
   glow=new RadialGradient(w*.5f,h*.43f,Math.min(w*.4f,h*.24f),
    new int[]{0x4d7b1d35,0x007b1d35},null,Shader.TileMode.CLAMP);
+  decorFade=new LinearGradient(0,h*.6f,0,h*.72f,0xff10070c,0x0010070c,Shader.TileMode.CLAMP);
  }
  @Override protected void onDraw(Canvas canvas){
   super.onDraw(canvas);
   float w=getWidth(),h=getHeight();if(w<=0||h<=0)return;
   canvas.drawColor(0xff10070c);
   boolean landscape=w>=h;
-  cover(canvas,decor,0,landscape?h*.46f:0,w,landscape?h*.54f:h);
+  cover(canvas,decor,0,landscape?h*.6f:0,w,landscape?h*.4f:h,landscape?184:255);
+  if(landscape){brush.setShader(decorFade);canvas.drawRect(0,h*.6f,w,h*.72f,brush);brush.setShader(null);}
   brush.setAlpha(255);brush.setShader(glow);canvas.drawRect(0,0,w,h,brush);brush.setShader(null);
   boolean animate=visibleAnimation&&ValueAnimator.areAnimatorsEnabled();
   long now=SystemClock.uptimeMillis();
@@ -68,7 +73,7 @@ final class LoveRollHeartSplashView extends View {
   brush.setAlpha(255);canvas.drawBitmap(heart,null,sprite,brush);
   float logoTop=top+size+12*density;
   brush.setTypeface(logo);brush.setTextSize(font);brush.setTextAlign(Paint.Align.CENTER);brush.setColor(0xfff5dcd8);
-  Paint.FontMetrics fm=brush.getFontMetrics();
+  brush.getFontMetrics(fontMetrics);Paint.FontMetrics fm=fontMetrics;
   float baseline=logoTop+(font*1.15f-fm.bottom-fm.top)/2f;
   canvas.drawText("LoveRoll",cx,baseline,brush);
   float word=brush.measureText("LoveRoll"),gap=16*density,line=Math.max(28*density,Math.min(w*.1f,58*density));

@@ -27,6 +27,6 @@
 @keyframes lr-splash-dot{0%,60%,100%{opacity:.28;}30%{opacity:1;}}
 .lr-splash--overlay{pointer-events:all;opacity:1;transition:opacity .2s ease;}
 .lr-splash.lr-splash--leaving{opacity:0;pointer-events:none;transition:opacity .2s ease;}
-@media(min-aspect-ratio:1/1){.lr-splash__decor{top:auto;height:54%;object-position:center 92%;mask-image:linear-gradient(transparent,#000 26%);}.lr-splash__content{top:47%;}}
+@media(min-aspect-ratio:1/1){.lr-splash__decor{top:auto;height:40%;object-position:center bottom;opacity:.72;mask-image:linear-gradient(transparent,#000 30%);}.lr-splash__content{top:47%;}}
 @media(max-height:450px){.lr-splash__scene{width:min(32vh,145px);}.lr-splash__logo{margin-top:4px;}.lr-splash__logo b{font-size:34px;}.lr-splash__dots{margin:13px 0 8px;}}
 @media(prefers-reduced-motion:reduce){.lr-splash__heart,.lr-splash__dots i{animation:none;}.lr-splash__dots i:nth-child(2){opacity:1;}.lr-splash.lr-splash--leaving,.lr-splash--overlay{transition:none;}}
