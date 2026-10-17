@@ -280,3 +280,57 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
   width:min(94vw,480px)!important;max-height:80dvh!important;
  }
 }
+/* Tablet portrait can scroll the monthly cards without changing Soirée's
+   validated personal-die geometry. */
+@media(min-width:768px) and (max-width:899px){
+ html:has(main#app.loveroll-surprise-page),
+ body:has(main#app.loveroll-surprise-page),
+ html:has(main#app.loveroll-evening-page),
+ body:has(main#app.loveroll-evening-page){
+  height:auto!important;max-height:none!important;
+  overflow-x:clip!important;overflow-y:auto!important;
+ }
+ main#app.loveroll-surprise-page:has(> nav.nav){
+  height:auto!important;min-height:100dvh!important;max-height:none!important;
+  padding-bottom:112px!important;display:block!important;overflow:visible!important;
+ }
+ main#app.loveroll-evening-page:has(> nav.nav){
+  height:auto!important;min-height:100dvh!important;max-height:none!important;
+  padding-bottom:112px!important;overflow:visible!important;
+ }
+ main#app.loveroll-evening-page:has(> nav.nav) .evening-premium-view:is(.is-ready,.is-waiting){
+  flex:none!important;height:calc(100dvh - 99px)!important;max-height:none!important;
+ }
+ main#app.loveroll-surprise-page:has(> nav.nav) .surprise-premium-view{
+  flex:none!important;height:auto!important;max-height:none!important;
+  grid-template-rows:clamp(52px,8dvh,72px) minmax(360px,auto) minmax(300px,auto)!important;
+  overflow:visible!important;
+ }
+}
+/* Wide screens need document scroll below the anchored navigation.
+   Preserve the validated portrait-tablet Soirée die geometry below 900px. */
+@media(min-width:900px){
+ html:has(main#app.loveroll-surprise-page),
+ body:has(main#app.loveroll-surprise-page),
+ html:has(main#app.loveroll-evening-page),
+ body:has(main#app.loveroll-evening-page){
+  height:auto!important;max-height:none!important;
+  overflow-x:clip!important;overflow-y:auto!important;
+ }
+ main#app.loveroll-surprise-page:has(> nav.nav),
+ main#app.loveroll-evening-page:has(> nav.nav){
+  height:auto!important;min-height:100dvh!important;max-height:none!important;
+  padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important;
+  display:block!important;overflow:visible!important;
+ }
+ main#app.loveroll-surprise-page:has(> nav.nav) .surprise-premium-view{
+  flex:none!important;height:auto!important;max-height:none!important;
+  grid-template-rows:clamp(52px,8dvh,72px) minmax(360px,auto) minmax(300px,auto)!important;
+  overflow:visible!important;
+ }
+ main#app.loveroll-evening-page:has(> nav.nav) .evening-premium-view:is(.is-ready,.is-waiting){
+  flex:none!important;height:auto!important;max-height:none!important;
+  grid-template-rows:clamp(48px,7dvh,70px) minmax(500px,auto) clamp(62px,9dvh,90px)!important;
+  overflow:visible!important;
+ }
+}

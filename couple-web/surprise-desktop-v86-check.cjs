@@ -38,29 +38,36 @@ const assert=require('node:assert/strict');
       gift:rect(document.querySelector('.evening-gift'))};
     });
     assert.deepEqual(issues,[],name+' '+view+' JS errors');
-    assert.ok(size.docH<=h+3&&size.bodyH<=h+3&&size.rootH<=h+3,
-      'Desktop viewport scroll '+name+' '+view+' '+JSON.stringify(size));
-    assert.ok(size.panel.bottom<=h+3&&size.panel.top>=size.nav.bottom-4,
-      'Panel outside desktop viewport '+name+' '+view+' '+JSON.stringify(size));
+    assert.ok(size.docH>=h-3&&size.panel.top>=0&&size.nav.bottom<=h+2,
+      'Desktop layout or navigation outside viewport '+name+' '+view+' '+JSON.stringify(size));
     if(view.startsWith('surprise')){
      assert.equal(size.events.length,6,name+' missing events');
-     for(const event of size.events)assert.ok(event.height>=20&&event.bottom<=h+2,
+     for(const event of size.events)assert.ok(event.height>=20,
        'Clipped event '+name+' '+JSON.stringify(size));
      assert.equal(size.host,null,'Old separate Qui invite card must be gone');
      if(view==='surprise-ready')
        assert.ok(size.d20?.height>50,'Monthly activity D20 remains visible with inline invite '+name);
      for(const key of ['month','special'])assert.ok(size[key]?.height>75&&
-       size[key].bottom<=h+2,'Section clipped '+key+' '+name+' '+JSON.stringify(size));
+       size[key].bottom<=size.docH+2,'Section clipped '+key+' '+name+' '+JSON.stringify(size));
      assert.ok(size.d20?.height>50,'D20 missing '+name+' '+JSON.stringify(size));
     }else if(view==='evening'){
      assert.equal(size.d6.length,2,'Need both official D6 dice in step 1 '+name);
      for(const die of size.d6)assert.ok(die.width>=90&&die.height>=90,
       'Confirmed desktop D6 too small '+name+' '+JSON.stringify(size));
-     assert.ok(size.d35?.height>=80&&size.gift?.bottom<=h+2,
+     assert.ok(size.d35?.height>=80&&size.gift?.bottom<=size.docH+2,
       'D35 or gift clipped '+name+' '+JSON.stringify(size));
     }else{
      assert.ok(size.d6Mine?.width>=90,'Own desktop D6 too small '+name+' '+JSON.stringify(size));
     }
+    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+    const last=await page.evaluate(kind=>{
+     const element=document.querySelector(kind.startsWith('surprise')?'.surprise-event-card:last-child':
+      '.evening-gift,.evening-empty');
+     const nav=document.querySelector('.nav').getBoundingClientRect();
+     return {bottom:element?.getBoundingClientRect().bottom,navTop:nav.top};
+    },view);
+    assert.ok(last.bottom<=last.navTop+2,
+      'Last action unreachable above fixed navigation '+name+' '+view+' '+JSON.stringify({size,last}));
     console.log('SURPRISE_DESKTOP_V86_OK',name,view);
     await page.close();
    }
