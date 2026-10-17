@@ -51,6 +51,19 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     assert.deepEqual(errors,[],'page errors');
    }catch(error){failures.push(name+'/'+tab+': '+error.message);await page.screenshot({path:'design-captures/'+name+'-'+tab+'-FAIL.png',fullPage:true}).catch(()=>{});}
   }
+  if(name==='S25-short'){
+   await page.goto('http://127.0.0.1:8765/?boot_case=paired');
+   await page.locator('.real-home-shell').waitFor();
+   await page.screenshot({path:'design-captures/S25-short-home-unrolled.png'});
+   const unrolled=await page.evaluate(()=>({
+    last:document.querySelector('.home-stats-grid').getBoundingClientRect().bottom,
+    nav:document.querySelector('.nav').getBoundingClientRect().top,
+    title:document.querySelector('.home-ritual h2').textContent,
+    dice:document.querySelector('.home-die-platform canvas')?.dataset.face
+   }));
+   report.push({name:'S25-short',tab:'home-unrolled',...unrolled});
+   if(unrolled.last>unrolled.nav+2)failures.push('S25-short/home-unrolled: statistics under navigation '+JSON.stringify(unrolled));
+  }
   await page.close();
  }
  }finally{await browser.close();fs.writeFileSync('design-captures/report.json',JSON.stringify({report,failures},null,2))}
