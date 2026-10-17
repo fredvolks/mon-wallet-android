@@ -59,6 +59,10 @@ root=ET.parse('qa/loveroll-after-retry.xml').getroot()
 assert not any(n.get('text')=='Réessayer' for n in root.iter('node')),'Retry returned to native error'
 assert not any(n.get('content-desc')=='Chargement de votre espace…' for n in root.iter('node')),'Retry stayed on the loading view'
 assert any('WebView' in n.get('class','') for n in root.iter('node')),'Retry did not reach the real WebView'
+import re
+web=next(n for n in root.iter('node') if n.get('class')=='android.webkit.WebView')
+_,top,_,bottom=map(int,re.findall(r'\d+',web.get('bounds')))
+assert 0<top<bottom<2340,('System bars overlap the WebView',top,bottom)
 print('LOVEROLL_NATIVE_RETRY_OK no native error overlay remains')
 PY_NATIVE
 # Non-blocking launch: am start -W may time out waiting for remote WebView.
@@ -78,6 +82,57 @@ test "$(stat -c%s qa/loveroll-shared-s25-android.png)" -gt 15000
 
 adb shell dumpsys activity activities > qa/activities.txt
 grep 'ca.desadeux.jeu/.ConnectedLoveRollActivity' qa/activities.txt || grep 'ConnectedLoveRollActivity' qa/activities.txt
+# The user uses Android's three navigation buttons. Check those insets too.
+adb shell cmd overlay enable-exclusive --user 0 --category com.android.internal.systemui.navbar.threebutton
+sleep 3
+adb shell uiautomator dump /sdcard/loveroll-three-buttons.xml
+adb pull /sdcard/loveroll-three-buttons.xml qa/loveroll-three-buttons.xml
+adb exec-out screencap -p > qa/loveroll-three-buttons.png
+python3 - <<'PY_BARS'
+import xml.etree.ElementTree as ET,re
+def bounds(path):
+ root=ET.parse(path).getroot()
+ web=next(n for n in root.iter('node') if n.get('class')=='android.webkit.WebView')
+ return list(map(int,re.findall(r'\d+',web.get('bounds'))))
+gesture=bounds('qa/loveroll-after-retry.xml');buttons=bounds('qa/loveroll-three-buttons.xml')
+assert 0<buttons[1]<buttons[3]<2340,buttons
+assert buttons[3]<gesture[3],('Three-button navigation must reserve its larger bottom inset',gesture,buttons)
+print('LOVEROLL_NATIVE_SAFE_AREA_OK',gesture,buttons)
+PY_BARS
+# Open the actual account form and keyboard; do not submit or create an account.
+adb shell am force-stop ca.desadeux.jeu
+adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity --es destination auth
+for attempt in $(seq 1 10); do
+  sleep 2
+  adb shell uiautomator dump /sdcard/loveroll-account.xml
+  adb pull /sdcard/loveroll-account.xml qa/loveroll-account.xml
+  if python3 - <<'PY_INPUT'
+import xml.etree.ElementTree as ET,re,json
+root=ET.parse('qa/loveroll-account.xml').getroot()
+fields=[n for n in root.iter('node') if n.get('class')=='android.widget.EditText']
+if not fields:raise SystemExit(1)
+x1,y1,x2,y2=map(int,re.findall(r'\d+',fields[0].get('bounds')))
+open('qa/email-coordinate.txt','w').write(f'{(x1+x2)//2} {(y1+y2)//2}\n')
+PY_INPUT
+  then break; fi
+done
+read -r email_x email_y < qa/email-coordinate.txt
+adb shell input tap "$email_x" "$email_y"
+adb shell input text 'test@example.invalid'
+sleep 3
+adb shell uiautomator dump /sdcard/loveroll-keyboard.xml
+adb pull /sdcard/loveroll-keyboard.xml qa/loveroll-keyboard.xml
+adb exec-out screencap -p > qa/loveroll-keyboard.png
+python3 - <<'PY_KEYBOARD'
+import xml.etree.ElementTree as ET,re
+def webbottom(root):
+ web=next(n for n in root.iter('node') if n.get('class')=='android.webkit.WebView')
+ return int(re.findall(r'\d+',web.get('bounds'))[3])
+before=ET.parse('qa/loveroll-account.xml').getroot();after=ET.parse('qa/loveroll-keyboard.xml').getroot()
+assert webbottom(after)<webbottom(before)-150,('Keyboard must resize the real viewport',webbottom(before),webbottom(after))
+assert any(n.get('text')=='test@example.invalid' for n in after.iter('node')),'Email field must stay editable with the keyboard open'
+print('LOVEROLL_NATIVE_KEYBOARD_OK',webbottom(before),webbottom(after))
+PY_KEYBOARD
 # UIAutomator cannot inspect the WebView DOM reliably, so web Playwright CI
 # checks exact HTML/dice placement separately.
 adb logcat -d -v brief -s AndroidRuntime:E > qa/runtime_errors.txt || true

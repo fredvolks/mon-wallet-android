@@ -278,6 +278,18 @@ public final class ConnectedLoveRollActivity extends Activity {
   LinearLayout layout = new LinearLayout(this);
   layout.setOrientation(LinearLayout.VERTICAL);
   layout.setBackgroundColor(Color.rgb(16,7,12));
+  getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+  // Android 15 enforces edge-to-edge for target 35. Give the WebView the
+  // actual safe viewport; CSS env() in a WebView does not include system bars.
+  if(Build.VERSION.SDK_INT>=30){
+   getWindow().setDecorFitsSystemWindows(false);
+   layout.setOnApplyWindowInsetsListener((view,insets)->{
+    android.graphics.Insets safe=insets.getInsets(android.view.WindowInsets.Type.systemBars()
+     |android.view.WindowInsets.Type.displayCutout()|android.view.WindowInsets.Type.ime());
+    view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+    return android.view.WindowInsets.CONSUMED;
+   });
+  }else layout.setFitsSystemWindows(true);
   // Shared LoveRoll web app is the only visible UI; no duplicate native header or tabs.
   web = new WebView(this);
   web.setBackgroundColor(Color.rgb(16,7,12));
@@ -390,6 +402,7 @@ public final class ConnectedLoveRollActivity extends Activity {
   bridge.addView(nativeSplash,new android.widget.FrameLayout.LayoutParams(-1,-1));
   layout.addView(bridge,new LinearLayout.LayoutParams(-1,0,1));
   setContentView(layout);
+  layout.requestApplyInsets();
   String pushed=getIntent().getStringExtra("push_section");
   String destination=getIntent().getStringExtra("destination");
   String suffix="";
