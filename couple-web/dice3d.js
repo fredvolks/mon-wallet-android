@@ -2,28 +2,9 @@ import * as THREE from 'https://esm.sh/three@0.167.1';
 import {ROLL_TOTAL_MS,makeForwardRoll,rollAngles,rollProgress,rollOffset} from './dice-roll-motion.mjs';
 import {RoundedBoxGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/ConvexGeometry.js';
+import {faceMarks,engravedFace} from './dice-engraving.mjs';
 /** Safari/Chrome WebGL die. Values come from the shared server, never from animation. */
 const pool=new Set();
-function digits(value,heart=false,pips=false,neutral=false){const c=document.createElement('canvas');c.width=c.height=384;
- const x=c.getContext('2d');x.font='bold '+(heart?({1:184,2:143,3:120,4:102,5:94,6:84}[value]||84):180)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#d66b94';x.shadowBlur=10;
- x.fillStyle='#ffe2ec';x.strokeStyle='#fff4f8';x.lineWidth=1.5;
- // Before an official D6 roll, all six faces use the SAME heart symbol.
- // Never show fake pips or a made-up result while waiting for a server roll.
- if(neutral){
-  x.font='bold 214px Georgia,serif';
-  x.fillText('♥',192,198);
-  x.strokeText('♥',192,198);
- }else if(!heart)x.fillText(String(value),192,200);
- else{
-  const spots=[[192,192],[102,102],[282,282],[282,102],[102,282],[102,192],[282,192]];
-  const indices={1:[0],2:[1,2],3:[1,0,2],4:[1,2,3,4],
-   5:[1,2,3,4,0],6:[1,2,3,4,5,6]}[value]||[0];
-  for(const i of indices){
-    if(pips){const [px,py]=spots[i];x.beginPath();x.arc(px,py,20,0,Math.PI*2);x.fill();x.stroke();}
-    else{x.fillText('♥',...spots[i]);x.strokeText('♥',...spots[i]);}
-   }
- }
- const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;}
 // A genuine convex 35-faced die. The polar dual of a 35-vertex convex hull
 // has one planar polygonal face per original vertex (no duplicate side labels).
 function manySidedGeometry(count=35){
@@ -95,7 +76,7 @@ function manySidedGeometry(count=35){
  * all normal arcs are completed by round vertex caps.
  * Supabase results / dice-face indexing are entirely unaffected.
  */
-function roundedPolyhedron(polygons,{bevel=.105,shrink=.075,steps=6}={}){
+function roundedPolyhedron(polygons,{bevel=.105,shrink=.075,steps=6,surface}={}){
  const positions=[],shades=[];
  const vertices=new Map(),edges=new Map();
  const pointKey=p=>p.toArray().map(n=>Math.round(n*10000)).join(',');
@@ -129,7 +110,8 @@ function roundedPolyhedron(polygons,{bevel=.105,shrink=.075,steps=6}={}){
   const center=corners.reduce((acc,p)=>acc.add(p),new THREE.Vector3()).divideScalar(corners.length);
   const middle=q(center).addScaledVector(n,bevel);
   const shifted=corners.map(p=>q(p).addScaledVector(n,bevel));
-  for(let j=0;j<shifted.length;j++)tri(middle,shifted[j],shifted[(j+1)%shifted.length],n,n,n);
+  if(surface){const carved=surface(shifted,n,face.value);positions.push(...carved.glassPositions);shades.push(...carved.glassNormals);}
+  else for(let j=0;j<shifted.length;j++)tri(middle,shifted[j],shifted[(j+1)%shifted.length],n,n,n);
   for(let j=0;j<corners.length;j++){
    const a=insertVertex(corners[j]),b=insertVertex(corners[(j+1)%corners.length]);
    const sorted=a<b?[a,b]:[b,a],key=sorted.join(':');
@@ -198,7 +180,7 @@ function twentyPolygons(geo){
 // satin photograph. This environment belongs to one renderer and is disposed
 // with it; the photograph, die geometry and official face orientation stay put.
 function glassEnvironment(renderer){
- const studio=new THREE.Scene();studio.background=new THREE.Color(0x120910);
+ const studio=new THREE.Scene();studio.background=new THREE.Color(0x24050c);
  const shape=document.createElement('canvas');shape.width=64;shape.height=128;
  const ctx=shape.getContext('2d');
  const cross=ctx.createLinearGradient(0,0,64,0);
@@ -216,10 +198,16 @@ function glassEnvironment(renderer){
  const softbox=new THREE.CanvasTexture(shape);softbox.colorSpace=THREE.SRGBColorSpace;
  const panels=[];
  for(const [color,power,w,h,position] of [
-  [0xfff2ee,5.5,.62,3.6,[-1.45,.15,3]],
-  [0xffd8e8,5,.42,3.1,[1.35,.45,3.1]],
-  [0xffffff,5,2.5,.42,[0,2.35,2.6]],
-  [0xb46e8d,.5,3,3,[0,.5,-4]]
+  [0xffeadc,5,1.2,3.6,[-2.1,.15,2.8]],
+  [0xffe6df,4,.62,3.1,[2.3,.45,2.4]],
+  [0xfff6ed,3,2.6,.7,[0,2.35,2.6]],
+  [0xffffff,1.8,1.2,1.4,[-1.4,1.4,3.5]],
+  [0xffe8d4,7,.24,4,[-3,.2,-1.6]],
+  [0xfff1df,7,.24,4,[3,.2,-1.6]],
+  [0xffd6c0,.45,2.4,4,[-3,.2,-1.6]],
+  [0xffe5d3,.45,2.4,4,[3,.2,-1.6]],
+  [0xffd9c3,5,3,.9,[0,-2,-1.1]],
+  [0x8d1c35,1.5,4,4,[0,.5,-4]]
  ]){
   const material=new THREE.MeshBasicMaterial({map:softbox,
    color:new THREE.Color(color).multiplyScalar(power),side:THREE.DoubleSide,
@@ -235,67 +223,124 @@ function glassEnvironment(renderer){
  return target;
 }
 
+// Three's physical transmission must see the satin photograph. The CSS image
+// is projected into its offscreen refraction pass only; the canvas remains
+// clear outside the die, including at resize and after a retained DOM refresh.
+function crystalBackdrop(renderer,scene,canvas,onLoad){
+ const pixel=new THREE.DataTexture(new Uint8Array([38,3,10,255]),1,1);pixel.needsUpdate=true;pixel.colorSpace=THREE.SRGBColorSpace;
+ const material=new THREE.ShaderMaterial({uniforms:{photo:{value:pixel},crop:{value:new THREE.Vector4(1,1,0,0)}},
+  vertexShader:'varying vec2 photoUv; void main(){photoUv=uv;gl_Position=vec4(position.xy,0.999,1.0);}',
+  fragmentShader:'uniform sampler2D photo; uniform vec4 crop; varying vec2 photoUv; void main(){gl_FragColor=vec4(texture2D(photo,photoUv*crop.xy+crop.zw).rgb,1.0);}',
+  depthWrite:false,depthTest:false,colorWrite:false,toneMapped:false});
+ const proxy=new THREE.Mesh(new THREE.PlaneGeometry(2,2),material);proxy.frustumCulled=false;proxy.renderOrder=-1000;
+ proxy.onBeforeRender=()=>{material.colorWrite=renderer.getRenderTarget()!==null;};scene.add(proxy);
+ let target=null,source='',texture=null,loaded=false,disposed=false;
+ const sync=()=>{
+  target=canvas.parentElement;
+  while(target&&getComputedStyle(target).backgroundImage==='none')target=target.parentElement;
+  const style=target?getComputedStyle(target):null;
+  const url=style?.backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]||new URL('./assets/ritual-satin-v115.webp',import.meta.url).href;
+  if(url!==source){
+   source=url;loaded=false;texture?.dispose();
+   texture=new THREE.TextureLoader().load(url,()=>{if(disposed)return;loaded=true;sync();onLoad();},undefined,()=>{loaded=false;});
+   texture.colorSpace=THREE.SRGBColorSpace;material.uniforms.photo.value=texture;
+  }
+  if(!loaded||!texture.image)return;
+  const c=canvas.getBoundingClientRect(),r=(target||canvas).getBoundingClientRect();
+  const iw=texture.image.width,ih=texture.image.height,scale=Math.max(r.width/iw,r.height/ih);
+  const width=iw*scale,height=ih*scale;
+  const px=(parseFloat(style?.backgroundPositionX)||50)/100,py=(parseFloat(style?.backgroundPositionY)||62)/100;
+  const left=r.left+(r.width-width)*px,top=r.top+(r.height-height)*py;
+  material.uniforms.crop.value.set(c.width/width,c.height/height,(c.left-left)/width,1-(c.top+c.height-top)/height);
+ };
+ return {sync,state:()=>({loaded,source}),dispose:()=>{disposed=true;scene.remove(proxy);proxy.geometry.dispose();material.dispose();texture?.dispose();pixel.dispose();}};
+}
+
+const cubeFaces=[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],[5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]];
+function engravedCube(surface){
+ const original=new RoundedBoxGeometry(1.8,1.8,1.8,9,.30),p=original.getAttribute('position'),n=original.getAttribute('normal');
+ const positions=[],normals=[];
+ for(let i=0;i<p.count;i+=3){
+  // Keep the original rounded box's bevels, corners and silhouette exactly.
+  const flat=cubeFaces.some(([,axis])=>[0,1,2].every(j=>new THREE.Vector3().fromBufferAttribute(n,i+j).dot(new THREE.Vector3(...axis))>.999999));
+  if(!flat)for(let j=0;j<3;j++){positions.push(p.getX(i+j),p.getY(i+j),p.getZ(i+j));normals.push(n.getX(i+j),n.getY(i+j),n.getZ(i+j));}
+ }
+ original.dispose();
+ for(const [value,axis] of cubeFaces){
+  const normal=new THREE.Vector3(...axis),rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),normal);
+  const corners=[[-.6,-.6],[.6,-.6],[.6,.6],[-.6,.6]].map(([x,y])=>new THREE.Vector3(x,y,.9).applyQuaternion(rotation));
+  const carved=surface(corners,normal,value);positions.push(...carved.glassPositions);normals.push(...carved.glassNormals);
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geo.computeBoundingSphere();return geo;
+}
+
 function geometry(sides,pips=false,neutral=false){
  const group=new THREE.Group(),normals=new Map();
+ const inkPositions=[],inkNormals=[],engravings=[];
+ const surface=(corners,normal,value)=>{
+  const carved=engravedFace(corners,normal,faceMarks(sides,value,pips,neutral));
+  inkPositions.push(...carved.inkPositions);inkNormals.push(...carved.inkNormals);
+  engravings.push({face:value,depth:carved.depth,marks:carved.marks,clearance:carved.clearance});return carved;
+ };
  const custom=sides===35||sides===100?manySidedGeometry(sides):null;
  const original20=sides===20?new THREE.IcosahedronGeometry(1.16,0):null;
  const polygons=custom?custom.polygons:sides===20?twentyPolygons(original20):null;
- const geo=polygons?roundedPolyhedron(polygons,{bevel:sides===20?.13:.095,shrink:sides===20?.095:.07,steps:8}):
-  new RoundedBoxGeometry(1.8,1.8,1.8,9,.30);
+ const geo=polygons?roundedPolyhedron(polygons,{bevel:sides===20?.13:.095,shrink:sides===20?.095:.07,steps:8,surface}):engravedCube(surface);
  original20?.dispose();
  custom?.geo.dispose();
  custom?.edges.dispose();
  const mat=new THREE.MeshPhysicalMaterial({
-  color:0xffdae8,metalness:0,roughness:.105,
-  clearcoat:1,clearcoatRoughness:.12,
-  specularIntensity:1,ior:1.5,transmission:0,envMapIntensity:1.2,
-  side:THREE.FrontSide,flatShading:false,transparent:true,opacity:1,depthWrite:true
+  color:0xffffff,metalness:0,roughness:.025,
+  clearcoat:1,clearcoatRoughness:.025,
+  specularIntensity:1,ior:1.52,transmission:1,thickness:1.9,
+  attenuationColor:0xa62d42,attenuationDistance:2.4,envMapIntensity:1.15,
+  side:THREE.FrontSide,flatShading:false,transparent:false,opacity:1,depthWrite:true
  });
- // The scene's photograph is in CSS, outside WebGL. Angle-dependent alpha
- // reveals that real background; reflected highlights keep their brightness.
- // A transmission pass would sample an empty white buffer in Three r167.
+ // Clear rose crystal: the photograph is refracted by the real face normals,
+ // with ruby absorption and warm polished edges matching the loading heart.
  mat.onBeforeCompile=shader=>{
-  shader.fragmentShader=shader.fragmentShader.replace(
-   'vec3 totalDiffuse = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;',
-   'vec3 totalDiffuse = (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse) * 0.025;'
-  ).replace('#include <opaque_fragment>',`
-float glassFacing = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
-float glassEdge = pow(1.0 - glassFacing, 1.65);
-outgoingLight += vec3(0.72,0.38,0.53) * glassEdge * 0.60;
-float glassLuma = dot(outgoingLight, vec3(0.2126,0.7152,0.0722));
-float glassHighlight = smoothstep(0.06,0.55,glassLuma);
-// Rose absorption stays visible against the dark satin, including front faces.
-// Add it after measuring reflections so the tint cannot turn into a white flare.
-outgoingLight += vec3(1.0,0.12,0.28) * (0.70 + glassEdge * 0.30);
-diffuseColor.a = clamp(0.40 + glassEdge * 0.42 + glassHighlight * 0.40, 0.04, 0.90);
+  shader.vertexShader='varying vec3 vPolishBend;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <beginnormal_vertex>',`#include <beginnormal_vertex>
+vPolishBend = normalMatrix * (position - normal * dot(position,normal));`);
+  shader.fragmentShader='varying vec3 vPolishBend;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <transmission_fragment>',THREE.ShaderChunk.transmission_fragment.replace('material.thickness = thickness;',
+   'material.thickness = thickness * mix(0.05,1.0,pow(clamp(dot(normal,normalize(vViewPosition)),0.0,1.0),1.8));'));
+  shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+normal=normalize(normal+vPolishBend*0.42);`).replace('#include <clearcoat_normal_fragment_maps>',`#include <clearcoat_normal_fragment_maps>
+clearcoatNormal=normalize(clearcoatNormal+vPolishBend*0.42);`).replace('#include <opaque_fragment>',`
+float crystalFacing = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
+outgoingLight += vec3(0.06,0.0005,0.005) * pow(crystalFacing,2.0);
 #include <opaque_fragment>
 `);
  };
- mat.customProgramCacheKey=()=> 'loveroll-rose-glass-v130';
+ mat.customProgramCacheKey=()=> 'loveroll-heart-crystal-engraved';
  group.add(new THREE.Mesh(geo,mat));
+ // A continuous optical back wall gives the volume a clean internal rim.
+ // Refracting through the reverse of engraved text would make ghost digits.
+ const backGeometry=polygons?roundedPolyhedron(polygons,{bevel:sides===20?.13:.095,shrink:sides===20?.095:.07,steps:8}):new RoundedBoxGeometry(1.8,1.8,1.8,9,.30);
+ const backMaterial=mat.clone();backMaterial.side=THREE.DoubleSide;
+ backMaterial.onBeforeCompile=mat.onBeforeCompile;backMaterial.customProgramCacheKey=mat.customProgramCacheKey;
+ const opticalBack=new THREE.Mesh(backGeometry,backMaterial);opticalBack.renderOrder=-1;
+ opticalBack.onBeforeRender=renderer=>{const refraction=renderer.getRenderTarget()!==null;backMaterial.colorWrite=refraction;backMaterial.depthWrite=refraction;backGeometry.setDrawRange(0,refraction?Infinity:0);};
+ group.add(opticalBack);
  // No wireframe: smooth bevel geometry and PBR specular highlights are the
  // only visible transitions between the glass faces on D6, D20 and D100.
- const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
-  [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
+ const layout=sides===6?cubeFaces:null;
  for(let value=1;value<=sides;value++){
-  let normal,depth;
+  let normal;
   const polygon=polygons?.[value-1];
   if(polygon){normal=polygon.normal.clone();}
-  else if(layout){normal=new THREE.Vector3(...layout.find(row=>row[0]===value)[1]);depth=.91;}
+  else if(layout){normal=new THREE.Vector3(...layout.find(row=>row[0]===value)[1]);}
   normals.set(value,normal);
-  const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===100?.185:sides===35?.27:sides===20?.36:1.64,
-   sides===100?.185:sides===35?.27:sides===20?.36:1.64),
-    new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips,neutral),transparent:true,depthWrite:false,side:THREE.FrontSide}));
-  if(polygon){
-   const center=polygon.corners.reduce((a,p)=>a.add(p),new THREE.Vector3())
-    .divideScalar(polygon.corners.length);
-   const shrink=sides===20?.095:.07,bevel=sides===20?.13:.095;
-   plane.position.copy(center.multiplyScalar(1-shrink)).addScaledVector(normal,bevel+.013);
-  }else plane.position.copy(normal).multiplyScalar(depth);
-  plane.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),normal);
-  group.add(plane);
  }
- return {group,normals};
+ const inkGeometry=new THREE.BufferGeometry();inkGeometry.setAttribute('position',new THREE.Float32BufferAttribute(inkPositions,3));inkGeometry.setAttribute('normal',new THREE.Float32BufferAttribute(inkNormals,3));
+ const ink=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.32,metalness:0,emissive:0xffffff,emissiveIntensity:.4,envMapIntensity:.8,transparent:false,opacity:1,side:THREE.FrontSide});
+ const inlay=new THREE.Mesh(inkGeometry,ink);
+ // Foreground inlays cannot be fed back into the glass refraction buffer:
+ // doing so would duplicate their silhouettes in neighbouring faces.
+ inlay.onBeforeRender=renderer=>{const foreground=renderer.getRenderTarget()===null;ink.colorWrite=foreground;ink.depthWrite=foreground;inkGeometry.setDrawRange(0,foreground?Infinity:0);};
+ group.add(inlay);
+ return {group,normals,engravings,material:mat,ink};
 }
 export function dieOn(canvas,sides,value,rolling){
  let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});canvas.dataset.webglReady='true';canvas.closest('.home-die-platform, .love3d-stage')?.classList.add('webgl-ready');}catch{return ()=>{};}
@@ -309,7 +354,7 @@ export function dieOn(canvas,sides,value,rolling){
  renderer.setSize(initialSize.width,initialSize.height,false);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
- renderer.toneMappingExposure=1.6;
+ renderer.toneMappingExposure=1.25;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,15);camera.position.z=(sides===6?5.25:4.15)/Math.min(1.4,Math.max(.8,Number(canvas.dataset.diceZoom)||1));
  camera.aspect=initialSize.width/initialSize.height;camera.updateProjectionMatrix();
  let previousWidth=initialSize.width,previousHeight=initialSize.height;
@@ -328,6 +373,7 @@ export function dieOn(canvas,sides,value,rolling){
  const podiumObserver=typeof ResizeObserver==='function'?new ResizeObserver(()=>{alignPodium();request();}):null;
  window.addEventListener('resize',resizeDie);
  const glass=glassEnvironment(renderer);scene.environment=glass.texture;
+ const backdrop=crystalBackdrop(renderer,scene,canvas,()=>request());
  scene.add(new THREE.AmbientLight(0xffe1eb,.12));
  const key=new THREE.PointLight(0xffe7ef,2,12);key.position.set(-2,3.2,3.3);scene.add(key);
  const rim=new THREE.PointLight(0xffb3d0,1.5,9);rim.position.set(3,-1,1.9);scene.add(rim);
@@ -455,7 +501,7 @@ export function dieOn(canvas,sides,value,rolling){
   shadow.scale.x=1+elevation*.9;
   shadow.scale.y=.25+elevation*.14;
   shadow.position.x=built.group.position.x;
-  renderer.render(scene,camera);
+  backdrop.sync();renderer.render(scene,camera);
   renderedFrames++;
   if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003)request();
  }
@@ -484,8 +530,8 @@ export function dieOn(canvas,sides,value,rolling){
    if(facing>best){best=facing;frontFace=face;}
   }
   return {face:Number(canvas.dataset.face),frontFace,quaternion:built.group.quaternion.toArray(),renderedFrames,
-   spinning:canvas.dataset.spinning==='true'};
- },projectedBounds,refresh:()=>{resizeDie();alignPodium();renderer.render(scene,camera);renderedFrames++;request();}};
+   spinning:canvas.dataset.spinning==='true',optics:{...backdrop.state(),transmission:built.material.transmission,roughness:built.material.roughness,inkOpacity:built.ink.opacity,inkTransparent:built.ink.transparent,engravings:built.engravings}};
+ },projectedBounds,refresh:()=>{resizeDie();alignPodium();backdrop.sync();renderer.render(scene,camera);renderedFrames++;request();}};
  const down=e=>{
   if(duration&&performance.now()-start<duration)return;
   drag=true;returnStart=null;x=e.clientX;y=e.clientY;vx=vy=0;
@@ -520,7 +566,7 @@ export function dieOn(canvas,sides,value,rolling){
      mat.map?.dispose();mat.dispose();
     }
   }});
-  scene.environment=null;glass.dispose();renderer.dispose();pool.delete(clean);
+  backdrop.dispose();scene.environment=null;glass.dispose();renderer.dispose();pool.delete(clean);
  };
  pool.add(clean);return clean;
 }

@@ -206,3 +206,12 @@ Les anciennes contraintes de hauteur de la mise en page PC sont maintenant limit
 La grille des six événements Surprise utilise ses deux rangées actuelles, sans la troisième rangée vide imposée par l’ancienne feuille PC. Sur un téléphone de 660 px de hauteur ou moins, les boutons de navigation de Soirée et Surprise ont la même hauteur que ceux des trois autres onglets et gardent une cible tactile supérieure à 44 px.
 
 `design-reference-browser-check.cjs` contrôle aussi les limites de chaque bouton visible et le bas du bloc cadeau. Il couvre les cinq onglets sur neuf formats, dont 360 × 640, 1366 × 700 et 1366 × 768, afin de détecter un élément masqué par la navigation même si la page ne défile pas. Les données de couple restent simulées.
+
+
+## Cristal de référence et gravures — Web 132
+
+La matière reprend le cœur du chargement : volume bordeaux transparent, bords rosés champagne et poli brillant. Le moteur Three.js reste celui de l’application. La photographie du socle est projetée uniquement dans le tampon de réfraction physique : le verre déforme le vrai décor, et le canvas reste transparent autour du modèle. Une paroi optique continue évite les chiffres fantômes dans les autres facettes. Les faces, les orientations officielles et les règles des dés sont conservées.
+
+Les points des D6 concernés sont des cavités concaves avec un fond blanc opaque. Les chiffres D20, D35 et D100 sont creusés dans les faces, avec un fond blanc opaque sous la surface. Les contours numériques vectoriels locaux dérivent de DejaVu Sans Bold ; leur notice se trouve dans `assets/dice-numerals-LICENSE.txt`. Aucun chargement de police supplémentaire. Les D6 non tirés gardent leur symbole neutre.
+
+`crystal-glass-browser-check.cjs`, appelé par le contrôle des socles, vérifie le vrai WebGL sur les quatre géométries : gravures sous la surface, blanc opaque, transparence autour du modèle et réaction du verre à deux décors contrastés, sans rotation du résultat. Une mesure d’alpha seule serait incorrecte pour le verre physique, dont les pixels contiennent déjà le décor réfracté. Les contrôles de contact, de conservation du canvas, des 100 orientations du D100 et des lancers restent applicables. Les essais de parcours utilisent des données simulées.

@@ -1,10 +1,12 @@
 // Exercise original WebGL geometry, including its idle orientation and photo contact.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
+const {glassState,verifyCrystalMaterials}=require('./crystal-glass-browser-check.cjs');
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']}),world=createWorld();fs.mkdirSync('design-captures',{recursive:true});
  const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fakeSupabase=`([\s\S]*?)`;/)[1];
  try{
+  await verifyCrystalMaterials(browser);
   for(const [name,width,height] of [['small',360,640],['S25',412,824],['S25-tall',412,915],['iPhone',393,852],['iPad',820,1180],['PC',1366,768]]){
    for(const phase of ['d20','host','d6','d100','intro']){
     world.rolls=phase==='host'?[{id:'activity',couple_id:'c',kind:'monthly_activity',key:new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit'}).format(new Date()).slice(0,7),face:19,activity_title:'Activité officielle',activity_description:'Texte officiel conservé.'}]:[];
@@ -13,7 +15,7 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      await page.route('https://esm.sh/@supabase/supabase-js@2.57.0*',r=>r.fulfill({contentType:'application/javascript',body:fake}));
      await page.goto('http://127.0.0.1:8765/?boot_case='+(phase==='d6'?'paired-pending':phase==='intro'?'paired':'paired-active')+'&open=session');
     }
-    await page.waitForFunction(()=>{const cs=[...document.querySelectorAll('canvas[data-dice-sides]')];return cs.length&&cs.every(c=>c.loveRollDie?.projectedBounds)});
+    await page.waitForFunction(()=>{const cs=[...document.querySelectorAll('canvas[data-dice-sides]')];return cs.length&&cs.every(c=>c.loveRollDie?.readState().optics.loaded)});
     await page.waitForTimeout(150);
     const before=await page.evaluate(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0).map(c=>({q:c.loveRollDie.readState().quaternion,frames:c.loveRollDie.readState().renderedFrames})));
     await page.waitForTimeout(500);
@@ -23,29 +25,13 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
     }));
     assert.ok(boxes.length);for(let i=0;i<boxes.length;i++){const box=boxes[i];assert.deepEqual(box.q,before[i].q,name+' '+phase+' idle die moved');assert.ok(Math.abs(box.meshBottom-box.contact)<=2,JSON.stringify({name,phase,box}));assert.ok(box.meshTop>=-2&&box.meshBottom<=box.sceneHeight+2,JSON.stringify({name,phase,box}));}
     if(name==='S25'){
-     const interiors=await page.evaluate(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0).map(c=>{
-      // Render and read synchronously before the default drawing buffer can clear.
-      c.loveRollDie.refresh();
-      const gl=c.getContext('webgl2'),b=c.loveRollDie.projectedBounds();
-      if(!gl)throw Error('Glass check requires the rendered WebGL2 context');
-      const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
-      // Keep the sample well inside the actual mesh, away from its antialiased edge.
-      const side=Math.floor(.4*Math.min((b.right-b.left)*width,(b.bottom-b.top)*height));
-      const x=Math.round((b.left+b.right)*width/2-side/2);
-      const top=Math.round((b.top+b.bottom)*height/2-side/2),y=height-top-side;
-      if(side<8||x<0||y<0||x+side>width||y+side>height)throw Error('Invalid glass sample '+JSON.stringify({x,y,side,width,height,b}));
-      const pixels=new Uint8Array(side*side*4);
-      gl.readPixels(x,y,side,side,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
-      const error=gl.getError();if(error!==gl.NO_ERROR)throw Error('Glass readPixels failed: '+error);
-      let translucent=0,opaque=0,clear=0,minAlpha=255,maxAlpha=0;
-      for(let i=3;i<pixels.length;i+=4){const a=pixels[i];minAlpha=Math.min(minAlpha,a);maxAlpha=Math.max(maxAlpha,a);if(a>10&&a<245)translucent++;else if(a>=245)opaque++;else clear++;}
-      const total=side*side;
-      return {translucentFraction:translucent/total,translucent,opaque,clear,total,minAlpha,maxAlpha,sample:{x,y,side,width,height}};
-     }));
+     // Refraction includes the photographed background in the framebuffer;
+     // its optical response is verified above instead of testing CSS alpha.
+     const interiors=[];for(const handle of await page.locator('canvas[data-dice-sides]').elementHandles())if(await handle.evaluate(c=>c.getBoundingClientRect().height>0))interiors.push(await handle.evaluate(glassState));
      assert.equal(interiors.length,boxes.length);
      for(let i=0;i<boxes.length;i++){
       boxes[i].translucency=interiors[i];
-      assert.ok(interiors[i].translucentFraction>.2,'Die body is opaque '+JSON.stringify({phase,sides:boxes[i].sides,translucency:interiors[i]}));
+      assert.equal(interiors[i].optics.transmission,1);assert.ok(interiors[i].white>0,'White engraving is missing');
      }
     }
     if(phase==='intro'){
