@@ -141,7 +141,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    'Prochain tirage : lundi '+escape(next.slice(8,10)+'/'+next.slice(5,7))+' à 00 h (Québec)</p>'+
    '</div>'+
    '<div class="home-challenge-stats">'+
-   '<div><span>🎲</span><strong>'+shown(stats.total)+'</strong><small>Défis attribués<br>ce soir</small></div>'+
+   '<div><span aria-hidden="true">♢</span><strong>'+shown(stats.total)+'</strong><small>Défis attribués<br>ce soir</small></div>'+
    '<div><span>♡</span><strong>'+shown(stats.forFirst)+'</strong><small>Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst)+'</small></div>'+
    '<div><span>♡</span><strong>'+shown(stats.forSecond)+'</strong><small>Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond)+'</small></div></div>'+
    '<button class="home-next-month" data-action="tab:special" type="button">'+

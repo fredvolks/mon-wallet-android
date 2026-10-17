@@ -54,22 +54,22 @@
   min-height:66px!important;font-size:clamp(1.15rem,1.65vw,1.55rem)!important;
  }
  .discover-v59 .discover-login{min-height:49px;font-size:clamp(.91rem,1.25vw,1.07rem);}
- /* All connected tabs: centered large workspace with top navigation. */
+ /* All connected tabs: centered large workspace with bottom navigation. */
  main#app:has(> nav.nav){
   box-sizing:border-box;width:min(100%,1240px)!important;
   max-width:1240px!important;min-height:100dvh!important;
   margin-inline:auto!important;
-  padding:calc(87px + env(safe-area-inset-top,0px)) clamp(22px,3vw,44px) 42px!important;
+  padding:calc(20px + env(safe-area-inset-top,0px)) clamp(22px,3vw,44px) calc(92px + env(safe-area-inset-bottom,0px))!important;
   height:auto!important;overflow:visible!important;display:block!important;
  }
  main#app:has(> nav.nav)>.nav{
-  position:fixed!important;top:0!important;bottom:auto!important;left:0!important;right:0!important;
+  position:fixed!important;top:auto!important;bottom:0!important;left:0!important;right:0!important;
   box-sizing:border-box;display:flex;justify-content:center;
   padding:8px clamp(16px,3vw,40px)!important;
   min-height:68px;z-index:5000!important;
   background:linear-gradient(180deg,#2a081ef7,#110612f5);
-  border-top:0!important;border-bottom:1px solid #fb71ac80!important;
-  box-shadow:0 9px 24px #0a0314ae;
+  border-top:1px solid #bd82984a!important;border-bottom:0!important;
+  box-shadow:0 -9px 24px #0a0314ae;
  }
  main#app:has(> nav.nav) .nav-inner{
   display:grid!important;align-items:center;
