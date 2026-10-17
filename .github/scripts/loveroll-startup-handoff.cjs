@@ -24,9 +24,12 @@ async function capture(name){
    adb('shell','uiautomator','dump','/sdcard/'+name+'.xml');
    adb('pull','/sdcard/'+name+'.xml','qa/'+name+'.xml');
    const xml=fs.readFileSync('qa/'+name+'.xml','utf8');
-   fs.writeFileSync('qa/'+name+'.png',execFileSync('adb',['exec-out','screencap','-p'],{timeout:20000}));
+   // The full-resolution satin/heart PNG exceeds Node's 1 MiB output default.
+   // Retrying a truncated screenshot can otherwise consume the real 18s
+   // startup watchdog before the held-state assertion is ever evaluated.
+   fs.writeFileSync('qa/'+name+'.png',execFileSync('adb',['exec-out','screencap','-p'],{timeout:20000,maxBuffer:16*1024*1024}));
    return xml;
-  }catch(e){error=e;await pause(500);}
+  }catch(e){error=e;console.warn('Android capture retry',name,e.code||e.message);await pause(500);}
  }
  throw error;
 }
