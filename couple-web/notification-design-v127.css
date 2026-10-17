@@ -47,7 +47,7 @@ main#app.loveroll-settings-page [data-settings-page="notifications"] .notificati
 main#app.loveroll-settings-page [data-settings-page="notifications"] .notification-settings .notification-feedback[data-tone="error"]{border-color:#d993a780;color:#ffe0e7;background:#47202c99;}
 main#app.loveroll-settings-page [data-settings-page="notifications"] .notification-settings [hidden]{display:none;}
 @media(max-width:767px) and (max-height:700px){
- main#app.loveroll-settings-page [data-settings-page="notifications"] .notification-settings{--notification-gap:8px;}
+ main#app.loveroll-settings-page [data-settings-page="notifications"] .notification-settings{--notification-gap:6px;}
  main#app.loveroll-settings-page [data-settings-page="notifications"] .notification-settings .notification-summary{grid-template-columns:34px minmax(0,1fr);gap:10px;padding:10px 12px;border-radius:15px;}
  main#app.loveroll-settings-page [data-settings-page="notifications"] .notification-summary .notification-emblem{width:34px;height:34px;}
  main#app.loveroll-settings-page [data-settings-page="notifications"] .notification-summary .notification-emblem svg{width:20px;height:20px;}
