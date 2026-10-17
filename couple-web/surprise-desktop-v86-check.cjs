@@ -10,7 +10,7 @@ const assert=require('node:assert/strict');
    ['PC-1080',1920,1080],['PC-768',1366,768],
    ['Laptop-650',1280,650],['iPad-Portrait',820,1180],
    ['iPad-Landscape',1180,820]]){
-   for(const view of ['surprise','surprise-ready','evening','evening-idle']){
+   for(const view of ['surprise','surprise-ready']){
     const page=await browser.newPage({viewport:{width:w,height:h},deviceScaleFactor:1});
     const issues=[];page.on('pageerror',e=>issues.push(e.message));
     await page.goto('http://127.0.0.1:8765/__premium-couple-pages-test.html?page='+view,

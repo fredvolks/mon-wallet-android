@@ -25,7 +25,7 @@ const origin='http://127.0.0.1:8765/';
   for(const [width,height] of [[360,640],[393,852],[412,915],[820,1180],[1180,820],[1440,900]]){
    const page=await browser.newPage({viewport:{width,height}});
    await page.setContent('<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1">'+styles+
-    '</head><body style="margin:0"><main id="app" class="loveroll-evening-calendar-page">'+markup+
+    '</head><body style="margin:0"><main id="app" class="loveroll-evening-calendar-page loveroll-editorial">'+markup+
     '<nav class="nav"><div class="nav-inner"><button>Soirée</button></div></nav></main></body></html>',{waitUntil:'load'});
    const first=page.locator('details[data-person-id="me"] summary');
    const second=page.locator('details[data-person-id="partner"] summary');

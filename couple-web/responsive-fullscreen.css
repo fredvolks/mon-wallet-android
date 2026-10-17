@@ -3,7 +3,7 @@
    Never hide overflow on live pages: on short devices allow content-area scroll,
    while anchoring the bottom tab bar above Android gesture navigation. */
 
-main#app.loveroll-evening-page,
+main#app.loveroll-evening-page:not(.loveroll-editorial),
 main#app.loveroll-surprise-page{
  --lr-nav-space:calc(76px + env(safe-area-inset-bottom,0px));
  width:100%!important;max-width:none!important;
@@ -14,7 +14,7 @@ main#app.loveroll-surprise-page{
  padding:max(10px,env(safe-area-inset-top,0px)) clamp(9px,2.7vw,24px) 0!important;
 }
 
-main#app.loveroll-evening-page .nav,
+main#app.loveroll-evening-page:not(.loveroll-editorial) .nav,
 main#app.loveroll-surprise-page .nav{
  position:fixed!important;z-index:5000!important;
  left:0!important;right:0!important;bottom:0!important;
@@ -22,18 +22,18 @@ main#app.loveroll-surprise-page .nav{
  box-sizing:border-box;
 }
 
-main#app.loveroll-evening-page .nav button,
+main#app.loveroll-evening-page:not(.loveroll-editorial) .nav button,
 main#app.loveroll-surprise-page .nav button{
  min-height:58px!important;
  display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;
  padding:5px 2px!important;line-height:1.05;
 }
 
-main#app.loveroll-evening-page .nav button span,
+main#app.loveroll-evening-page:not(.loveroll-editorial) .nav button span,
 main#app.loveroll-surprise-page .nav button span{line-height:1.05;}
 
 
-main#app.loveroll-evening-page .evening-premium-view::-webkit-scrollbar,
+main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view::-webkit-scrollbar,
 main#app.loveroll-surprise-page .surprise-premium-view::-webkit-scrollbar{display:none;}
 
 
@@ -42,7 +42,7 @@ main#app.loveroll-surprise-page .surprise-premium-view::-webkit-scrollbar{displa
 
 /* The connected pages need a protected content viewport independent of
    Messenger/Chrome bars. All active controls stay above the native tab bar. */
-main#app.loveroll-evening-page .evening-premium-view,
+main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view,
 main#app.loveroll-surprise-page .surprise-premium-view{
  flex:1 1 auto!important;min-height:0!important;height:auto!important;
  width:min(100%,820px);box-sizing:border-box;
@@ -53,7 +53,7 @@ main#app.loveroll-surprise-page .surprise-premium-view{
  display:grid;align-content:stretch;
  gap:clamp(4px,.65dvh,8px);
 }
-main#app.loveroll-evening-page .evening-premium-view{
+main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view{
  grid-template-rows:minmax(53px,.8fr) minmax(52px,.75fr)
  minmax(160px,2.35fr) minmax(209px,3.1fr) minmax(61px,.9fr)!important;
 }
@@ -134,7 +134,7 @@ main#app.loveroll-surprise-page .surprise-bottom-info{
  padding:1px 6px!important;font-size:.63rem!important;overflow:hidden;
 }
 /* Inviting premium lock state instead of the unhelpful JavaScript error. */
-main#app.loveroll-evening-page .evening-locked-view{
+main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-locked-view{
  width:min(100%,820px);flex:1;min-height:0;
  margin:0 auto var(--lr-nav-space);
  padding:clamp(7px,1vh,14px) 3px;
@@ -191,7 +191,7 @@ main#app.loveroll-evening-page .evening-locked-view{
   grid-template-rows:45px minmax(158px,auto) minmax(168px,auto) minmax(223px,auto)!important;
   align-content:start!important;
  }
- main#app.loveroll-evening-page .evening-premium-view{
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view{
   grid-template-rows:51px 50px minmax(161px,auto) minmax(207px,auto) minmax(60px,auto)!important;
   align-content:start!important;
  }

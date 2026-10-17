@@ -13,12 +13,11 @@ test('D35 official result is shown for one second after completing the roll anim
  assert.ok(flow.indexOf("state.diceStatus='settled'")<flow.indexOf('setTimeout(resolve,1000)'));
  assert.match(app,/state\.selectedEveningChallengeId=drawn\.id/);
 });
-test('Only selected detail locks scroll, not the queue list',()=>{
+test('Private queue and full official card remain accessible in an independent detailed workspace',()=>{
  assert.ok(app.includes("evening-queue-modal'+(view?' is-detail':'')"));
- assert.match(css,/@media\(max-width:767px\)/);
- assert.match(css,/\.evening-queue-modal\.is-detail/);
- assert.match(css,/\.evening-queue-content\.is-detail/);
- assert.match(css,/overflow:hidden!important/);
- assert.ok(read('index.html').includes('evening-queue-fixed-v102.css?v=20261016-queue102'));
- assert.ok(read('service-worker.js').includes('./evening-queue-fixed-v102.css'));
+ const editorial=read('evening-editorial.css');
+ assert.match(editorial,/\.evening-queue-modal\{position:fixed;inset:0/);
+ assert.match(editorial,/\.evening-queue-content\{[^}]*overflow:auto/);
+ assert.match(read('index.html'),/evening-editorial\.css/);
+ assert.match(read('service-worker.js'),/evening-editorial\.css/);
 });

@@ -367,7 +367,16 @@ export function dieOn(canvas,sides,value,rolling){
  };
  // Allow LoveRoll to launch the next server-confirmed throw on the SAME
  // WebGL canvas, without teardown, blank frame, or replaying the idle face.
- canvas.loveRollDie={rollTo};
+ canvas.loveRollDie={rollTo,readState:()=>{
+  // Read-only geometry diagnostics: verify the actual model, never a text overlay.
+  let frontFace=null,best=-Infinity;
+  for(const [face,normal] of built.normals){
+   const facing=normal.clone().applyQuaternion(built.group.quaternion).z;
+   if(facing>best){best=facing;frontFace=face;}
+  }
+  return {face:Number(canvas.dataset.face),frontFace,quaternion:built.group.quaternion.toArray(),
+   spinning:canvas.dataset.spinning==='true'};
+ }};
  const down=e=>{
   if(duration&&performance.now()-start<duration)return;
   drag=true;returnStart=null;x=e.clientX;y=e.clientY;vx=vy=0;

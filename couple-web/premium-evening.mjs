@@ -1,4 +1,5 @@
 // LoveRoll connected couple — production UI, not a demo. All results are provided by Supabase.
+import {ritualBrandHtml} from './brand.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
 const bt=(action,text,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(action)+'"'+
  (action.startsWith('category:')?' aria-pressed="'+(cls.includes('selected')?'true':'false')+'"':'')+
@@ -137,7 +138,13 @@ export function premiumEveningHtml({
  // result BELOW it, never painted over the 3D face or used as a placeholder.
  const count=(uid)=>esc((done[uid]||0)+' / '+(totals[uid]??'—'));
  return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):'is-inactive is-finale')+'">'+
- '<div class="evening-intro"><span>♥ NOTRE RITUEL DE LA SOIRÉE</span><h2>Nos défis disponibles</h2><p>'+help+'</p></div>'+
+ '<div class="evening-toolbar">'+
+  (session?'<button type="button" class="evening-back" data-action="tab:home" aria-label="Retour à l’accueil">‹</button>':'<span></span>')+
+  ritualBrandHtml()+
+  (session?'<button type="button" class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée">⋯</button>':'<span></span>')+'</div>'+
+ '<div class="evening-intro"><span>'+(session?(ready?'ÉTAPE 2 · DÉFI DU SOIR':'ÉTAPE 1 · NOMBRE DE DÉFIS'):'♥ NOTRE RITUEL DE LA SOIRÉE')+'</span>'+
+ '<h2>'+(session?(ready?'Votre défi du soir':'À toi de brasser ton dé'):'Nos défis disponibles')+'</h2>'+
+ '<p>'+(session?(ready?'Choisissez une catégorie ou laissez le hasard décider.':'Chaque partenaire brasse son propre dé.'):help)+'</p></div>'+
  (session?
   '<section class="evening-step one '+(ready?'is-complete':'is-incomplete')+'"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
@@ -149,7 +156,7 @@ export function premiumEveningHtml({
   '<section class="evening-step two"><div class="evening-step-label"><span class="step-number">2</span><div>'+
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
   '<small>'+(!ready?'Compléter l’étape 1 pour brasser le dé':first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
-  '<button type="button" class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée" title="Gérer notre soirée">⋯</button></div>'+ 
+  '</div>'+
   '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
   '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
   '<div class="evening-play">'+
@@ -164,7 +171,7 @@ export function premiumEveningHtml({
          (category==='SEXUEL'?'<small class="evening-choice-odds">88 % de chances<span>d’avoir cette catégorie</span></small>':'')+'</div>':'')+'</div>'+
     '<div class="evening-die-row">'+
       '<div class="evening-d35-col">'+premiumPolyDie(100,rolling&&rollingKind==='new-challenge'?rollFace:officialD100,'Notre dé 100 faces',rolling&&rollingKind==='new-challenge')+
-       '<div class="evening-d100-result" role="status" aria-live="polite"'+(officialD100?'':' hidden')+'>'+(officialD100||'')+'</div>'+
+       '<div class="evening-d100-result" role="status" aria-live="polite"'+(officialD100?'':' hidden')+'>'+(officialD100?'Résultat : '+officialD100:'')+'</div>'+
        '<div class="evening-play-state">'+currentStatus+'</div></div>'+
 
     '</div>'+

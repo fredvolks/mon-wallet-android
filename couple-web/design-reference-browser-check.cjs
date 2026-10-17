@@ -40,6 +40,13 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      assert.equal(await page.locator('.home-weights button').count(),0);
      assert.equal(await page.locator('.home-weight').count(),6);
      assert.deepEqual(geometry.stats,['0','0 / 0','—','0']);
+     if(width<768){
+      const margins=await page.evaluate(()=>{
+       const cards=[...document.querySelector('.home-bottom-stack').children].map(e=>e.getBoundingClientRect());
+       return [cards[1].top-cards[0].bottom,cards[2].top-cards[1].bottom];
+      });
+      assert.ok(Math.abs(margins[0]-margins[1])<1&&margins[0]>=6,'bottom Home card margins differ');
+     }
      assert.ok(await page.evaluate(()=>[...document.querySelectorAll('.home-stat-card')].every(card=>{
       const box=card.getBoundingClientRect();
       return [...card.querySelectorAll('strong,span,small')].every(text=>{

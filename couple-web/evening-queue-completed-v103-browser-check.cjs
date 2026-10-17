@@ -5,7 +5,7 @@ const {chromium}=require('playwright');
  const documentHtml=await (await fetch(base+'/index.html')).text();
  const links=[...documentHtml.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)"/g)]
   .map(m=>'<link rel="stylesheet" href="'+base+'/'+m[1]+'">').join('');
- const markup='<main id="app" class="loveroll-evening-page">'+
+ const markup='<main id="app" class="loveroll-evening-page loveroll-editorial">'+
   '<div class="evening-queue-modal"><article class="evening-queue-content">'+
   '<div class="evening-queue-list">'+
   '<button type="button" class="evening-queue-item" data-action="evening-open:pending">'+
@@ -31,15 +31,14 @@ const {chromium}=require('playwright');
     const done=document.querySelector('[data-action="evening-open:done"]');
     return {pendingBackground:getComputedStyle(pending).backgroundImage,
      doneBackground:getComputedStyle(done).backgroundImage,
-     completedColor:getComputedStyle(done).color,
+     completedColor:getComputedStyle(done).color,completedFilter:getComputedStyle(done).filter,completedOpacity:Number(getComputedStyle(done).opacity),
      pendingColor:getComputedStyle(pending).color,
      completedAccessible:!done.disabled&&done.tagName==='BUTTON',
      completedText:done.textContent,cardCount:document.querySelectorAll('.evening-queue-item').length};
    });
    if(state.cardCount!==2||!state.completedAccessible||
       !state.completedText.includes('✓ Terminé')||
-      state.doneBackground===state.pendingBackground||
-      !state.doneBackground.includes('rgb(57, 50, 59)'))
+      state.completedOpacity>=1||!state.completedFilter.includes('grayscale(1)'))
     throw Error('Completed challenge not gray and clickable '+JSON.stringify({width,height,state}));
    console.log('LOVE_COMPLETED_GREY_OK',width,height,JSON.stringify(state));
    await page.close();

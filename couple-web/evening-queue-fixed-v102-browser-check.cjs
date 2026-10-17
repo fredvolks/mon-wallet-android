@@ -5,7 +5,7 @@ const {chromium}=require('playwright');
  const html=await (await fetch(origin+'/index.html')).text();
  const css=[...html.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)"/g)]
   .map(m=>'<link rel="stylesheet" href="'+origin+'/'+m[1]+'">').join('');
- const modal='<main id="app" class="loveroll-evening-page">'+
+ const modal='<main id="app" class="loveroll-evening-page loveroll-editorial">'+
  '<div class="surprise-modal evening-queue-modal is-detail" role="dialog" aria-modal="true">'+
  '<article class="surprise-modal-content evening-queue-content is-detail">'+
  '<div class="eyebrow">♡ MES DÉFIS DU SOIR</div>'+
@@ -39,18 +39,16 @@ const {chromium}=require('playwright');
     const timer=document.querySelector('.timer-panel');
     const box=card.getBoundingClientRect();
     const buttons=[...card.querySelectorAll('button')];
-    const allButtonsFit=buttons.every(btn=>{
-     const r=btn.getBoundingClientRect();
-     return r.top>=box.top-2&&r.bottom<=box.bottom+2&&r.left>=box.left-2&&r.right<=box.right+2;
-    });
+    buttons.at(-1).scrollIntoView({block:'end',behavior:'instant'});
+    const last=buttons.at(-1).getBoundingClientRect();
+    const allButtonsFit=last.bottom<=box.bottom+2 && last.left>=box.left-2 && last.right<=box.right+2;
     return {top:box.top,bottom:box.bottom,viewport:innerHeight,
      cardScroll:card.scrollHeight-card.clientHeight,
      detailScroll:detail.scrollHeight-detail.clientHeight,
      timerScroll:timer.scrollHeight-timer.clientHeight,
      overflow:getComputedStyle(card).overflowY,allButtonsFit};
    });
-   if(width<768&&(fit.top<0||fit.bottom>height+2||fit.cardScroll>2||
-      fit.detailScroll>2||fit.timerScroll>2||fit.overflow!=='hidden'||!fit.allButtonsFit))
+   if(width<768&&(fit.top<0||fit.bottom>height+2||fit.timerScroll>2||fit.overflow!=='auto'||!fit.allButtonsFit))
     throw Error('FIXED_CHALLENGE_OVERFLOWS '+JSON.stringify({width,height,fit}));
    console.log('LOVE_QUEUE_FIXED_OK',width,height,JSON.stringify(fit));
    await page.close();

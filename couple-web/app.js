@@ -5,8 +5,8 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-person-rev
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261017-align116';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-d100114';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261017-editorial117';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-editorial117';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise109';
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-17.116';
+const WEB_RELEASE='2026-10-17.117';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -211,6 +211,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.classList.toggle('loveroll-advent-page',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-real-home',realHome);
  root.classList.toggle('loveroll-evening-page',realEvening);
+ root.classList.toggle('loveroll-editorial',realEvening||eveningArchive);
  root.classList.toggle('loveroll-evening-calendar-page',eveningArchive);
  root.classList.toggle('loveroll-surprise-page',realSurprise);
  root.classList.toggle('loveroll-settings-page',connected&&state.tab==='settings');
@@ -248,7 +249,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   sessionId:state.reviewModalSessionId,draft:state.reviewDraft||{},
   saving:state.reviewSaving,partnerName:other()?.name?.split(' ')[0]||'ton partenaire'
  }):'';
- root.innerHTML=(realHome?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
+ root.innerHTML=(realHome||realEvening||eveningArchive?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
  if(savedStage){
   const freshD100=root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]');
   const freshStage=freshD100?.closest('.love3d-stage');
@@ -275,7 +276,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261016-d100114').then(({dieOn})=>{
+  import('./dice3d.js?v=20261017-editorial117').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected||canvas.loveRollDie)continue;
@@ -291,7 +292,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  }
 }
 function navIcon(key,fallback){
- const paths={home:'<path d="m3 10 9-7 9 7v10H3z M9 20v-7h6v7"/>',session:'<path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/>',special:'<path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6Z"/>',advent:'<path d="M3 9h18v4H3z M5 13v8h14v-8 M12 9v12"/><path d="M12 9C2 9 5 0 9 4L12 9c10 0 7-9 3-5Z"/>',settings:'<path d="m10 3 4 0 1 3 3 1 3 3-2 3 0 3-3 3-3-1-3 1-3-3 0-3-2-3 3-3 3-1Z"/><circle cx="12" cy="12" r="3"/>'};
+ const paths={home:'<path d="m3 10 9-7 9 7v10H3z M9 20v-7h6v7"/>',session:'<path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/>',special:'<path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6Z"/>',advent:'<path d="M3 9h18v4H3z M5 13v8h14v-8 M12 9v12"/><path d="M12 9C2 9 5 0 9 4L12 9c10 0 7-9 3-5Z"/>',settings:'<path d="M19.32,9.62 L21.85,10.26 L21.85,13.74 L19.32,14.38 L18.86,15.50 L20.19,17.74 L17.74,20.19 L15.50,18.86 L14.38,19.32 L13.74,21.85 L10.26,21.85 L9.62,19.32 L8.50,18.86 L6.26,20.19 L3.81,17.74 L5.14,15.50 L4.68,14.38 L2.15,13.74 L2.15,10.26 L4.68,9.62 L5.14,8.50 L3.81,6.26 L6.26,3.81 L8.50,5.14 L9.62,4.68 L10.26,2.15 L13.74,2.15 L14.38,4.68 L15.50,5.14 L17.74,3.81 L20.19,6.26 L18.86,8.50 Z"/><circle cx="12" cy="12" r="3.5"/>'};
  return paths[key]?'<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[key]+'</svg>':fallback;
 }
 function nav(){
@@ -1112,9 +1113,10 @@ function renderSession(){
      button('evening-close','✕ Fermer','class="subtle"')+'</div>')+
    (view?
     '<div class="evening-queue-detail">'+
-     '<div class="eyebrow">♥ '+safe(names[view.category]||view.category)+
-      ' · Dé 100 : '+safe(view.face)+' · '+safe(queueLabel(view.status))+'</div>'+
+     '<div class="evening-challenge-badge">♥ '+safe(names[view.category]||view.category)+
+      ' · Résultat : '+safe(view.face)+' · '+safe(queueLabel(view.status))+'</div>'+
      '<h2>'+safe(resolvedCard(view).title)+'</h2>'+
+     '<div class="evening-challenge-scene" aria-hidden="true"></div>'+
      '<p>'+safe(resolvedCard(view).description)+'</p>'+
      timerWidget(view,resolvedCard(view).minutes)+
      (view.status==='proposed'?
@@ -1892,7 +1894,7 @@ async function animateRoll(fn,kind='general'){
   await new Promise(resolve=>setTimeout(resolve,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?180:ROLL_TOTAL_MS+140));
   if(liveD100Started&&activeD100.isConnected){
    const number=root.querySelector('.evening-d100-result');
-   if(number){number.textContent=String(confirmedFace);number.hidden=false;}
+   if(number){number.textContent='Résultat : '+confirmedFace;number.hidden=false;}
   }
   if(kind==='monthly_host'){
    // Show the official D6 face for a full second after it stops, before
@@ -3379,6 +3381,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261017-align116',
+    navigator.serviceWorker.register('./service-worker.js?v=20261017-editorial117',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }

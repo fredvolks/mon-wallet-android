@@ -14,7 +14,7 @@ const ready={
 const extractButtonOrder=html=>[...html.matchAll(/data-action="category:([^"]+)"/g)].map(x=>x[1]);
 test('The weekly wording is replaced only for Soirée and all 3 category choices are in order',()=>{
  const html=premiumEveningHtml({...ready,category:null});
- assert.match(html,/NOTRE RITUEL DE LA SOIRÉE/);
+ assert.match(html,/ÉTAPE 2 · DÉFI DU SOIR/);
  assert.deepEqual(extractButtonOrder(html),['SENSUEL','HASARD','SEXUEL']);
  assert.match(html,/Au hasard/);
  assert.doesNotMatch(html,/NOTRE RITUEL À DEUX/);
@@ -47,7 +47,7 @@ test('Existing 3D engine and the server-confirmed result remain unchanged',()=>{
 test('D100 official number stays readable below the stationary 3D face on reload',()=>{
  const html=premiumEveningHtml({...ready,category:'HASARD',lastD35Face:100});
  assert.match(html,/data-dice-sides="100" data-face="100"/);
- assert.match(html,/class="evening-d100-result" role="status" aria-live="polite">100<\/div>/);
+ assert.match(html,/class="evening-d100-result" role="status" aria-live="polite">Résultat : 100<\/div>/);
  const app=read('app.js');
  assert.match(app,/activeD100\.loveRollDie\?\.rollTo\(confirmedFace\)/);
  assert.match(app,/if\(savedStage\)savedStage\.remove\(\)/);
