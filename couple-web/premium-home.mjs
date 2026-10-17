@@ -159,9 +159,10 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    '<div class="home-fabric-photo" aria-hidden="true"></div>'+
    '<div class="home-satin-orbit" aria-hidden="true"></div>'+
    '<div class="home-die-platform"><strong class="dice-fallback" '+(rolling?'aria-hidden="true"':'')+'>'+
-   '♡'+'</strong>'+
+   (ready?pipFace(weekly.face):'—')+'</strong>'+
    '<canvas class="dice-canvas" width="300" height="300" data-dice-sides="6" '+
    'data-face="'+(rolling?rollFace:ready?weekly.face:1)+'" data-spinning="'+(rolling?'true':'false')+'" '+
+   'data-dice-markers="pips" '+(!ready&&!rolling?'data-dice-preview="true" ':'')+
    'aria-label="Dé 3D, '+(rolling?'en cours de brassage':ready?'face '+weekly.face:'en attente du tirage')+'"></canvas></div></div>'+
    '<div class="home-roll-area">'+
    (ready?

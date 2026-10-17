@@ -18,13 +18,38 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      const inspect=()=>page.evaluate(()=>{
       const c=document.querySelector('.home-die-platform canvas'),b=c.loveRollDie.projectedBounds(),r=c.getBoundingClientRect(),scene=c.closest('.home-die-theater').getBoundingClientRect();
       const nav=document.querySelector('.nav').getBoundingClientRect(),stats=document.querySelector('.home-stats-grid').getBoundingClientRect();
-      return {face:c.dataset.face,q:c.loveRollDie.readState().quaternion,webgl:c.dataset.webglReady,contact:Number(c.dataset.podiumContact),meshBottom:r.top+b.bottom*r.height-scene.top,meshTop:r.top+b.top*r.height-scene.top,sceneHeight:scene.height,sceneWidth:scene.width,navTop:nav.top,statsBottom:stats.bottom,bodyHeight:document.documentElement.scrollHeight,horizontal:document.documentElement.scrollWidth-innerWidth,textFits:[...document.querySelectorAll('.home-stat-card')].every(card=>[...card.querySelectorAll('strong,span,small')].every(t=>t.getBoundingClientRect().bottom<=Math.min(card.getBoundingClientRect().bottom,nav.top)+1))};
+      return {face:c.dataset.face,markers:c.dataset.diceMarkers,preview:c.dataset.dicePreview==='true',q:c.loveRollDie.readState().quaternion,webgl:c.dataset.webglReady,contact:Number(c.dataset.podiumContact),meshBottom:r.top+b.bottom*r.height-scene.top,meshTop:r.top+b.top*r.height-scene.top,sceneHeight:scene.height,sceneWidth:scene.width,navTop:nav.top,statsBottom:stats.bottom,bodyHeight:document.documentElement.scrollHeight,horizontal:document.documentElement.scrollWidth-innerWidth,textFits:[...document.querySelectorAll('.home-stat-card')].every(card=>[...card.querySelectorAll('strong,span,small')].every(t=>t.getBoundingClientRect().bottom<=Math.min(card.getBoundingClientRect().bottom,nav.top)+1))};
      });
      const initial=await inspect();await page.waitForTimeout(500);const result=await inspect();
      assert.deepEqual(result.q,initial.q,'Idle weekly die moved');assert.equal(result.webgl,'true');
+     assert.equal(result.markers,'pips','Home D6 must use classic points');
+     assert.equal(result.preview,face===null,'Only an unrolled Home D6 is a preview');
      assert.ok(Math.abs(result.meshBottom-result.contact)<=2,JSON.stringify(result));assert.ok(result.meshTop>=-2&&result.meshBottom<=result.sceneHeight+2,JSON.stringify(result));
      assert.ok(result.statsBottom<=result.navTop-3&&result.textFits,JSON.stringify(result));assert.ok(result.bodyHeight<=height+2&&result.horizontal<=1,JSON.stringify(result));
      if(face)assert.equal(result.face,String(face));assert.deepEqual(errors,[]);
+     if(name==='S25'){
+      result.translucency=await page.evaluate(()=>{
+       const c=document.querySelector('.home-die-platform canvas');
+       // Read in this same task: an unpreserved WebGL drawing buffer may clear later.
+       c.loveRollDie.refresh();
+       const gl=c.getContext('webgl2'),b=c.loveRollDie.projectedBounds();
+       if(!gl)throw Error('Home glass check requires the rendered WebGL2 context');
+       const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
+       // The inner 40% square excludes transparent background and edge antialiasing.
+       const side=Math.floor(.4*Math.min((b.right-b.left)*width,(b.bottom-b.top)*height));
+       const x=Math.round((b.left+b.right)*width/2-side/2);
+       const top=Math.round((b.top+b.bottom)*height/2-side/2),y=height-top-side;
+       if(side<8||x<0||y<0||x+side>width||y+side>height)throw Error('Invalid Home glass sample '+JSON.stringify({x,y,side,width,height,b}));
+       const pixels=new Uint8Array(side*side*4);
+       gl.readPixels(x,y,side,side,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+       const error=gl.getError();if(error!==gl.NO_ERROR)throw Error('Home glass readPixels failed: '+error);
+       let translucent=0,opaque=0,clear=0,minAlpha=255,maxAlpha=0;
+       for(let i=3;i<pixels.length;i+=4){const a=pixels[i];minAlpha=Math.min(minAlpha,a);maxAlpha=Math.max(maxAlpha,a);if(a>10&&a<245)translucent++;else if(a>=245)opaque++;else clear++;}
+       const total=side*side;
+       return {translucentFraction:translucent/total,translucent,opaque,clear,total,minAlpha,maxAlpha,sample:{x,y,side,width,height}};
+      });
+      assert.ok(result.translucency.translucentFraction>.2,'Home die body is opaque '+JSON.stringify({face,translucency:result.translucency}));
+     }
      const summary=await page.evaluate(()=>[...document.querySelectorAll('.home-challenge-stats>div')].map(column=>{
       const content=column.querySelector('.home-summary-content').getBoundingClientRect(),value=column.querySelector('.home-summary-value').getBoundingClientRect(),box=column.getBoundingClientRect();
       return {groupX:(content.left+content.right-box.left-box.right)/2,groupY:(content.top+content.bottom-box.top-box.bottom)/2,valueX:(value.left+value.right-box.left-box.right)/2};

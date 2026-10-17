@@ -22,6 +22,32 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      return {sides:c.dataset.diceSides,q:c.loveRollDie.readState().quaternion,frames:c.loveRollDie.readState().renderedFrames,contact,meshBottom:r.top+b.bottom*r.height-s.top,meshTop:r.top+b.top*r.height-s.top,meshCenterX:r.left+(b.left+b.right)*r.width/2-s.left,sceneHeight:s.height,sceneWidth:s.width};
     }));
     assert.ok(boxes.length);for(let i=0;i<boxes.length;i++){const box=boxes[i];assert.deepEqual(box.q,before[i].q,name+' '+phase+' idle die moved');assert.ok(Math.abs(box.meshBottom-box.contact)<=2,JSON.stringify({name,phase,box}));assert.ok(box.meshTop>=-2&&box.meshBottom<=box.sceneHeight+2,JSON.stringify({name,phase,box}));}
+    if(name==='S25'){
+     const interiors=await page.evaluate(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0).map(c=>{
+      // Render and read synchronously before the default drawing buffer can clear.
+      c.loveRollDie.refresh();
+      const gl=c.getContext('webgl2'),b=c.loveRollDie.projectedBounds();
+      if(!gl)throw Error('Glass check requires the rendered WebGL2 context');
+      const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
+      // Keep the sample well inside the actual mesh, away from its antialiased edge.
+      const side=Math.floor(.4*Math.min((b.right-b.left)*width,(b.bottom-b.top)*height));
+      const x=Math.round((b.left+b.right)*width/2-side/2);
+      const top=Math.round((b.top+b.bottom)*height/2-side/2),y=height-top-side;
+      if(side<8||x<0||y<0||x+side>width||y+side>height)throw Error('Invalid glass sample '+JSON.stringify({x,y,side,width,height,b}));
+      const pixels=new Uint8Array(side*side*4);
+      gl.readPixels(x,y,side,side,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+      const error=gl.getError();if(error!==gl.NO_ERROR)throw Error('Glass readPixels failed: '+error);
+      let translucent=0,opaque=0,clear=0,minAlpha=255,maxAlpha=0;
+      for(let i=3;i<pixels.length;i+=4){const a=pixels[i];minAlpha=Math.min(minAlpha,a);maxAlpha=Math.max(maxAlpha,a);if(a>10&&a<245)translucent++;else if(a>=245)opaque++;else clear++;}
+      const total=side*side;
+      return {translucentFraction:translucent/total,translucent,opaque,clear,total,minAlpha,maxAlpha,sample:{x,y,side,width,height}};
+     }));
+     assert.equal(interiors.length,boxes.length);
+     for(let i=0;i<boxes.length;i++){
+      boxes[i].translucency=interiors[i];
+      assert.ok(interiors[i].translucentFraction>.2,'Die body is opaque '+JSON.stringify({phase,sides:boxes[i].sides,translucency:interiors[i]}));
+     }
+    }
     if(phase==='intro'){
      assert.equal(boxes.length,1,'Evening podium must show one decorative die');
      assert.equal(boxes[0].sides,'100','Evening podium must use the original D100');

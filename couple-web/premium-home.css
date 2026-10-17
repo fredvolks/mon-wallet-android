@@ -31,6 +31,7 @@ main#app.loveroll-real-home{
 #app .home-die-platform{width:clamp(180px,46vw,255px);height:clamp(180px,46vw,255px);position:relative;display:grid;place-items:center;filter:drop-shadow(0 12px 12px #0009);}
 #app .home-die-platform .dice-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 #app .home-die-platform .dice-fallback{font:70px Georgia,serif;color:#f4bbcd;}
+#app .home-die-platform .dice-fallback .home-pip-svg{width:70px;height:70px;}
 #app .home-die-platform.webgl-ready .dice-fallback,#app .home-die-platform:has(canvas[data-spinning="true"]) .dice-fallback{visibility:hidden;opacity:0;}
 #app .home-roll-area{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
 #app .home-roll-button{position:relative;display:grid;place-items:center;text-align:center;line-height:1.25;width:92%;min-height:48px;border-radius:999px;border:1px solid #efc3cb;background:linear-gradient(155deg,#efa4b7,#b73863 55%,#6b183d);box-shadow:inset 0 1px 2px #ffe4e888,0 5px 22px #c54e7029;color:#fff2f2;font-size:15px;font-weight:650;letter-spacing:.10em;padding:12px 22px;}

@@ -194,6 +194,47 @@ function twentyPolygons(geo){
  return faces;
 }
 
+// Soft studio reflections give transparent glass visible edges on the existing
+// satin photograph. This environment belongs to one renderer and is disposed
+// with it; the photograph, die geometry and official face orientation stay put.
+function glassEnvironment(renderer){
+ const studio=new THREE.Scene();studio.background=new THREE.Color(0x120910);
+ const shape=document.createElement('canvas');shape.width=64;shape.height=128;
+ const ctx=shape.getContext('2d');
+ const cross=ctx.createLinearGradient(0,0,64,0);
+ cross.addColorStop(0,'rgba(255,255,255,0)');
+ cross.addColorStop(.25,'rgba(255,255,255,.85)');
+ cross.addColorStop(.5,'white');
+ cross.addColorStop(.75,'rgba(255,255,255,.85)');
+ cross.addColorStop(1,'rgba(255,255,255,0)');
+ ctx.fillStyle=cross;ctx.fillRect(0,0,64,128);
+ ctx.globalCompositeOperation='destination-in';
+ const ends=ctx.createLinearGradient(0,0,0,128);
+ ends.addColorStop(0,'rgba(255,255,255,0)');ends.addColorStop(.12,'white');
+ ends.addColorStop(.88,'white');ends.addColorStop(1,'rgba(255,255,255,0)');
+ ctx.fillStyle=ends;ctx.fillRect(0,0,64,128);
+ const softbox=new THREE.CanvasTexture(shape);softbox.colorSpace=THREE.SRGBColorSpace;
+ const panels=[];
+ for(const [color,power,w,h,position] of [
+  [0xfff2ee,5.5,.62,3.6,[-1.45,.15,3]],
+  [0xffd8e8,5,.42,3.1,[1.35,.45,3.1]],
+  [0xffffff,5,2.5,.42,[0,2.35,2.6]],
+  [0xb46e8d,.5,3,3,[0,.5,-4]]
+ ]){
+  const material=new THREE.MeshBasicMaterial({map:softbox,
+   color:new THREE.Color(color).multiplyScalar(power),side:THREE.DoubleSide,
+   transparent:true,depthWrite:false});
+  const panel=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);
+  panel.position.set(...position);panel.lookAt(0,0,0);studio.add(panel);panels.push(panel);
+ }
+ const generator=new THREE.PMREMGenerator(renderer);
+ const target=generator.fromScene(studio,.025,.1,20);
+ generator.dispose();
+ for(const panel of panels){panel.geometry.dispose();panel.material.dispose();}
+ softbox.dispose();
+ return target;
+}
+
 function geometry(sides,pips=false,neutral=false){
  const group=new THREE.Group(),normals=new Map();
  const custom=sides===35||sides===100?manySidedGeometry(sides):null;
@@ -205,14 +246,32 @@ function geometry(sides,pips=false,neutral=false){
  custom?.geo.dispose();
  custom?.edges.dispose();
  const mat=new THREE.MeshPhysicalMaterial({
-  color:0x542730,metalness:.13,roughness:.24,
+  color:0xffdae8,metalness:0,roughness:.105,
   clearcoat:1,clearcoatRoughness:.12,
-  specularIntensity:1.15,ior:1.5,transmission:0,thickness:.8,
-  side:THREE.FrontSide,flatShading:false
+  specularIntensity:1,ior:1.5,transmission:0,envMapIntensity:1.2,
+  side:THREE.FrontSide,flatShading:false,transparent:true,opacity:1,depthWrite:true
  });
+ // The scene's photograph is in CSS, outside WebGL. Angle-dependent alpha
+ // reveals that real background; reflected highlights keep their brightness.
+ // A transmission pass would sample an empty white buffer in Three r167.
+ mat.onBeforeCompile=shader=>{
+  shader.fragmentShader=shader.fragmentShader.replace(
+   'vec3 totalDiffuse = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;',
+   'vec3 totalDiffuse = (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse) * 0.025;'
+  ).replace('#include <opaque_fragment>',`
+float glassFacing = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
+float glassEdge = pow(1.0 - glassFacing, 1.65);
+outgoingLight += vec3(0.72,0.38,0.53) * glassEdge * 0.60;
+float glassLuma = dot(outgoingLight, vec3(0.2126,0.7152,0.0722));
+float glassHighlight = smoothstep(0.06,0.55,glassLuma);
+diffuseColor.a = clamp(0.055 + glassEdge * 0.66 + glassHighlight * 0.62, 0.04, 0.90);
+#include <opaque_fragment>
+`);
+ };
+ mat.customProgramCacheKey=()=> 'loveroll-rose-glass-v129';
  group.add(new THREE.Mesh(geo,mat));
  // No wireframe: smooth bevel geometry and PBR specular highlights are the
- // only visible transitions between the ruby faces on D6, D20 and D100.
+ // only visible transitions between the glass faces on D6, D20 and D100.
  const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
   [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
  for(let value=1;value<=sides;value++){
@@ -223,7 +282,7 @@ function geometry(sides,pips=false,neutral=false){
   normals.set(value,normal);
   const plane=new THREE.Mesh(new THREE.PlaneGeometry(sides===100?.185:sides===35?.27:sides===20?.36:1.64,
    sides===100?.185:sides===35?.27:sides===20?.36:1.64),
-    new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips,neutral),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({map:digits(value,sides===6,pips,neutral),transparent:true,depthWrite:false,side:THREE.FrontSide}));
   if(polygon){
    const center=polygon.corners.reduce((a,p)=>a.add(p),new THREE.Vector3())
     .divideScalar(polygon.corners.length);
@@ -265,10 +324,11 @@ export function dieOn(canvas,sides,value,rolling){
  resizeObserver?.observe(canvas);
  const podiumObserver=typeof ResizeObserver==='function'?new ResizeObserver(()=>{alignPodium();request();}):null;
  window.addEventListener('resize',resizeDie);
- scene.add(new THREE.AmbientLight(0xffe1eb,1.25));
- const key=new THREE.PointLight(0xffc1d5,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
- const rim=new THREE.PointLight(0xff9fcb,22,9);rim.position.set(3,-1,1.9);scene.add(rim);
- const white=new THREE.DirectionalLight(0xfff0fa,2.3);white.position.set(1.3,3,4);scene.add(white);
+ const glass=glassEnvironment(renderer);scene.environment=glass.texture;
+ scene.add(new THREE.AmbientLight(0xffe1eb,.12));
+ const key=new THREE.PointLight(0xffe7ef,2,12);key.position.set(-2,3.2,3.3);scene.add(key);
+ const rim=new THREE.PointLight(0xffb3d0,1.5,9);rim.position.set(3,-1,1.9);scene.add(rim);
+ const white=new THREE.DirectionalLight(0xfff0fa,.25);white.position.set(1.3,3,4);scene.add(white);
  const neutral=canvas.dataset.diceUnrolled==='true'&&sides===6;
  let preview=canvas.dataset.dicePreview==='true'&&sides===6;
  const built=geometry(sides,canvas.dataset.diceMarkers==='pips',neutral);scene.add(built.group);
@@ -457,7 +517,7 @@ export function dieOn(canvas,sides,value,rolling){
      mat.map?.dispose();mat.dispose();
     }
   }});
-  renderer.dispose();pool.delete(clean);
+  scene.environment=null;glass.dispose();renderer.dispose();pool.delete(clean);
  };
  pool.add(clean);return clean;
 }

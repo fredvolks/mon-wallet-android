@@ -16,6 +16,12 @@ test('Weekly faces 1-6 use true standard dice spot geometry and 100% total',()=>
  for(let n=1;n<=6;n++){
    assert.equal(PIP_POSITIONS[n].length,n);
    assert.equal((pipFace(n).match(/<circle /g)||[]).length,n);
+   const home=premiumHomeHtml({weekly:{face:n}});
+   const fallback=home.match(/<strong class="dice-fallback"[^>]*>([\s\S]*?)<\/strong>/)?.[1];
+   assert.equal((fallback?.match(/<circle /g)||[]).length,n);
+   assert.match(home,new RegExp('aria-label="Dé 3D, face '+n+'"'));
+   assert.match(home,/data-dice-markers="pips"/);
+   assert.doesNotMatch(home,/data-dice-preview="true"/);
  }
  assert.deepEqual(PIP_POSITIONS[1],[[50,50]]);
  assert.deepEqual(PIP_POSITIONS[2],[[29,29],[71,71]]);
@@ -62,14 +68,21 @@ test('Production home uses actual saved weekly result, disabled state and live c
  assert.doesNotMatch(h,/data-action="roll:weekly"/);
  const waiting=premiumHomeHtml({...args,weekly:null});
  assert.match(waiting,/data-action="roll:weekly"/);
+ assert.match(waiting,/data-dice-markers="pips"/);
+ assert.match(waiting,/data-dice-preview="true"/);
+ assert.match(waiting,/aria-label="Dé 3D, en attente du tirage"/);
+ assert.match(waiting,/<strong class="dice-fallback"[^>]*>—<\/strong>/);
+ assert.doesNotMatch(waiting,/aria-label="Dé 3D, face [1-6]"|[1-6] soirées? de défi/);
  assert.doesNotMatch(waiting,/<p>Info :|Prochain tirage/);
  const rolling=premiumHomeHtml({...args,weekly:args.weekly,rolling:true,rollFace:5});
  assert.match(rolling,/data-spinning="true"/);
  assert.match(rolling,/data-face="5"/);
+ assert.match(rolling,/data-dice-markers="pips"/);
+ assert.doesNotMatch(rolling,/data-dice-preview="true"/);
  assert.doesNotMatch(rolling,/2 soirées de défi/);
  assert.doesNotMatch(rolling,/Déjà brassé cette semaine, revenez la semaine prochaine/);
  assert.match(rolling,/Brassage 3D en cours/);
- assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true">♡<\/strong>/);
+ assert.match(rolling,/<strong class="dice-fallback" aria-hidden="true">—<\/strong>/);
 });
 test('True WebGL die retains 1/6, 2/5, 3/4 opposite sides and 3s fast roll + smooth slowdown',()=>{
  assert.match(die,/\[1,\[0,0,1\]\],\[6,\[0,0,-1\]\]/);
