@@ -198,3 +198,11 @@ Les trois résumés et les quatre statistiques centrent désormais leur contenu 
 `home-card-centering-browser-check.cjs` mesure les groupes et les lignes de texte réellement rendues, et conserve les marges et captures dans les artifacts. Il couvre 42 compositions sur sept formats : les valeurs de la capture signalée, les états sans données et avec défis attribués, et les noms longs avant et après le premier tirage, y compris sur 360 × 640. Si le texte dépasse la hauteur disponible d’un téléphone, seul le bloc inférieur se compacte pour conserver les noms complets et les sept bulles au-dessus du menu. Les marges restent symétriques, les espaces entre les trois blocs sont conservés et l’échelle normale revient automatiquement lorsque l’écran s’agrandit. Le bouton Surprise garde une hauteur de cible supérieure à 44 px.
 
 `home-podium-browser-check.cjs` conserve les vérifications du dé avant/après résultat, lors de trois rafraîchissements et au redimensionnement. Le contrôle des noms longs vérifie aussi que l’adaptation à deux hauteurs conserve le même canvas WebGL. Ces contrôles utilisent une API simulée et ne modifient pas les comptes réels. Le cache Web passe à 124 ; l’APK 0.13.10 reçoit cette interface connectée depuis le site, sans changement de moteur ni de données.
+
+## Marges de Soirée — Web 125
+
+Les anciennes contraintes de hauteur de la mise en page PC sont maintenant limitées à leur ancien écran. Le bloc cadeau de la Soirée actuelle prend la hauteur de son contenu et conserve un espace au-dessus du menu sur PC, tablette et téléphone. Les textes, les contrôles et le dé gardent leur taille ; la scène utilise l’espace restant.
+
+La grille des six événements Surprise utilise ses deux rangées actuelles, sans la troisième rangée vide imposée par l’ancienne feuille PC. Sur un téléphone de 660 px de hauteur ou moins, les boutons de navigation de Soirée et Surprise ont la même hauteur que ceux des trois autres onglets et gardent une cible tactile supérieure à 44 px.
+
+`design-reference-browser-check.cjs` contrôle aussi les limites de chaque bouton visible et le bas du bloc cadeau. Il couvre les cinq onglets sur neuf formats, dont 360 × 640, 1366 × 700 et 1366 × 768, afin de détecter un élément masqué par la navigation même si la page ne défile pas. Les données de couple restent simulées.

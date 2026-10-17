@@ -275,23 +275,23 @@
   grid-template-rows:auto auto minmax(480px,auto) minmax(95px,auto)!important;
   gap:12px!important;
  }
- .evening-premium-view>.evening-topline{grid-column:1/-1;grid-row:1;}
- .evening-premium-view>.evening-intro{grid-column:1/-1;grid-row:2;}
- .evening-premium-view>.evening-step.one{grid-column:1;grid-row:3;min-height:475px;}
- .evening-premium-view>.evening-step.two{grid-column:2;grid-row:3/5;min-height:580px;}
- .evening-premium-view>.evening-gift{grid-column:1;grid-row:4;min-height:92px;}
- .evening-premium-view>.evening-empty{grid-column:1/-1;grid-row:3/5;min-height:365px;}
- .evening-premium-view>.evening-more-menu{grid-column:1/-1;}
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view>.evening-topline{grid-column:1/-1;grid-row:1;}
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view>.evening-intro{grid-column:1/-1;grid-row:2;}
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view>.evening-step.one{grid-column:1;grid-row:3;min-height:475px;}
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view>.evening-step.two{grid-column:2;grid-row:3/5;min-height:580px;}
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view>.evening-gift{grid-column:1;grid-row:4;min-height:92px;}
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view>.evening-empty{grid-column:1/-1;grid-row:3/5;min-height:365px;}
+ main#app.loveroll-evening-page:not(.loveroll-editorial) .evening-premium-view>.evening-more-menu{grid-column:1/-1;}
  main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view{
   display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr)!important;
   grid-template-rows:minmax(65px,auto) minmax(325px,auto) minmax(275px,auto)!important;
   gap:14px!important;
  }
- .surprise-premium-view>.surprise-header{grid-column:1/-1;grid-row:1;}
- .surprise-premium-view>.surprise-month{grid-column:1;grid-row:2;}
- .surprise-premium-view>.surprise-host{grid-column:1;grid-row:3;}
- .surprise-premium-view>.surprise-special{grid-column:2;grid-row:2/4;min-height:625px;}
- .surprise-premium-view>.surprise-special .surprise-special-grid{
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view>.surprise-header{grid-column:1/-1;grid-row:1;}
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view>.surprise-month{grid-column:1;grid-row:2;}
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view>.surprise-host{grid-column:1;grid-row:3;}
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view>.surprise-special{grid-column:2;grid-row:2/4;min-height:625px;}
+ main#app.loveroll-surprise-page:not(.loveroll-surprise-ecrin) .surprise-premium-view>.surprise-special .surprise-special-grid{
   grid-template-rows:repeat(3,minmax(125px,1fr))!important;min-height:490px!important;
  }
  main#app.loveroll-settings-page .settings-grid{

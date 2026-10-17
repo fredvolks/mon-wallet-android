@@ -7,7 +7,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
  const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const failures=[];const report=[];
  try{
- for(const [name,width,height] of [['S25',412,915],['S25-short',412,824],['Android',360,740],['iPhone',393,852],['iPad',820,1180],['PC',1440,1000],['PC-768',1366,768]]){
+ for(const [name,width,height] of [['S25',412,915],['S25-short',412,824],['small',360,640],['Android',360,740],['iPhone',393,852],['iPad',820,1180],['PC',1440,1000],['PC-768',1366,768],['PC-short',1366,700]]){
   const page=await browser.newPage({viewport:{width,height},serviceWorkers:'block',isMobile:width<768,hasTouch:width<900});
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.route('https://esm.sh/@supabase/supabase-js@2.57.0*',r=>r.fulfill({contentType:'application/javascript',body:fake}));
@@ -22,7 +22,14 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     await page.screenshot({path:'design-captures/'+name+'-'+tab+'.png',fullPage:true});
     const geometry=await page.evaluate(()=>{
      const main=document.querySelector('main'),nav=document.querySelector('.nav').getBoundingClientRect();
+     // A fixed nav can cover a card even when the root never scrolls. Measure
+     // the actual controls and full gift border against the nav's top edge.
+     const controls=[...main.querySelectorAll('button,a[href],input,textarea,select')].filter(e=>!e.closest('.nav')&&getComputedStyle(e).visibility!=='hidden').map(e=>{
+      const r=e.getBoundingClientRect();return {action:e.dataset.action||e.tagName,text:e.textContent.trim().slice(0,90),left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};
+     }).filter(r=>r.width>0&&r.height>0);
+     const gift=document.querySelector('.evening-gift'),giftBox=gift?.getBoundingClientRect();
      return {documentHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,mainScroll:main.scrollHeight,mainClient:main.clientHeight,navTop:nav.top,navBottom:nav.bottom,
+      controlsOutside:controls.filter(r=>r.left< -1||r.right>innerWidth+1||r.top< -1||r.bottom>nav.top-3),giftGap:giftBox&&giftBox.height>0?nav.top-giftBox.bottom:null,
       sections:[...document.querySelectorAll('.real-home-shell > *')].map(e=>({class:e.className,top:Math.round(e.getBoundingClientRect().top),bottom:Math.round(e.getBoundingClientRect().bottom),height:Math.round(e.getBoundingClientRect().height)})),shell:{display:getComputedStyle(document.querySelector('.real-home-shell')||main).display,height:document.querySelector('.real-home-shell')?.getBoundingClientRect().height,top:document.querySelector('.real-home-shell')?.getBoundingClientRect().top},dice:[...document.querySelectorAll('canvas[data-dice-sides]')].map(c=>({side:c.dataset.diceSides,face:c.dataset.face,width:c.clientWidth,height:c.clientHeight,webgl:c.dataset.webglReady})),
       wordTop:document.querySelector('.ritual-brand b')?.getBoundingClientRect().top,kickerTop:document.querySelector('.home-ritual>span,.evening-intro>span,.surprise-eyebrow,.advent-intro>span,.settings-page-titles>span')?.getBoundingClientRect().top,stats:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
     });
@@ -35,6 +42,8 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     assert.ok(geometry.scrollWidth<=width+1,'horizontal overflow');
     assert.ok(geometry.documentHeight<=height+2&&geometry.mainScroll<=geometry.mainClient+2,'primary page scrolls '+JSON.stringify({name,tab,...geometry}));
     assert.ok(geometry.navBottom<=height+1&&geometry.navTop>=0,'navigation outside viewport');
+    assert.deepEqual(geometry.controlsOutside,[],'A visible control is clipped or covered by navigation');
+    if(geometry.giftGap!==null)assert.ok(geometry.giftGap>=6,'Gift card border touches or extends behind navigation: '+JSON.stringify({name,gap:geometry.giftGap}));
     if(width<768){
      const navHeight=geometry.navBottom-geometry.navTop;
      if(tab==='home')mobileNavHeight=navHeight;

@@ -65,3 +65,7 @@ main#app.loveroll-surprise-ecrin .surprise-event-activities{min-height:44px;padd
 @media(max-width:767px) and (max-height:740px){main#app.loveroll-surprise-ecrin .surprise-header h2 br{display:none;}}
 
 main#app.loveroll-surprise-ecrin .love3d-stage .dice-fallback{position:absolute;inset:0;display:grid;place-items:center;}
+
+@media(max-width:767px) and (max-height:660px){
+ main#app.loveroll-surprise-ecrin>.nav button{min-height:45px;}
+}

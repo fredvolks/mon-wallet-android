@@ -1,6 +1,6 @@
 /* Option 2. One layout owner; all materials come from the Home ritual tokens. */
 html:has(#app.loveroll-editorial),body:has(#app.loveroll-editorial){height:100%;overflow:hidden;}
-main#app.loveroll-editorial{--nav-space:58px;box-sizing:border-box;width:100%;max-width:none;height:100dvh;min-height:0;margin:0;padding:max(var(--ritual-page-top),env(safe-area-inset-top,0px)) 12px calc(var(--nav-space) + env(safe-area-inset-bottom,0px));overflow:hidden;background:var(--ritual-page);color:var(--ritual-text);}
+main#app.loveroll-editorial{--nav-space:66px;box-sizing:border-box;width:100%;max-width:none;height:100dvh;min-height:0;margin:0;padding:max(var(--ritual-page-top),env(safe-area-inset-top,0px)) 12px calc(var(--nav-space) + env(safe-area-inset-bottom,0px));overflow:hidden;background:var(--ritual-page);color:var(--ritual-text);}
 #app.loveroll-editorial :is(button,input,textarea){font-family:inherit;}
 #app.loveroll-editorial :is(button,summary){touch-action:manipulation;}
 #app.loveroll-editorial button:focus-visible{outline:2px solid var(--ritual-text);outline-offset:3px;}
@@ -171,7 +171,7 @@ main#app.loveroll-editorial{--nav-space:58px;box-sizing:border-box;width:100%;ma
  #app .evening-partner-card{align-self:center;min-height:140px;padding:24px;font-size:17px;}
  #app .evening-partner-mobile-status{font-size:18px;}
  #app .is-waiting .evening-step.two{grid-column:1/-1;}
- #app .evening-premium-view.is-ready{grid-template-rows:var(--ritual-brand-height) auto minmax(0,1fr) 60px;}
+ #app .evening-premium-view.is-ready{grid-template-rows:var(--ritual-brand-height) auto minmax(0,1fr) auto;}
  #app .is-ready .evening-step.two{grid-column:1/-1;grid-row:3;}
  #app .evening-play{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;column-gap:28px;}
  #app .evening-choice{grid-column:2;grid-row:1;}
@@ -205,5 +205,8 @@ main#app.loveroll-editorial{--nav-space:58px;box-sizing:border-box;width:100%;ma
 }
 @media(min-width:768px) and (max-height:720px){
  #app .evening-d35-col .love3d-stage{width:min(34vw,37dvh,300px);}
+}
+@media(max-width:767px) and (max-height:660px){
+ #app.loveroll-editorial>.nav button{min-height:45px;}
 }
 @media(prefers-reduced-motion:reduce){#app.loveroll-editorial *,#app.loveroll-editorial *::before{animation:none;scroll-behavior:auto;transition:none;}}
