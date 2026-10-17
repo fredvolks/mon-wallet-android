@@ -13,6 +13,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
   await page.route('https://esm.sh/@supabase/supabase-js@2.57.0*',r=>r.fulfill({contentType:'application/javascript',body:fake}));
   await page.goto('http://127.0.0.1:8765/?boot_case=paired-active');
   await page.locator('.real-home-shell').waitFor();
+  let mobileNavHeight;
   for(const tab of ['home','session','special','advent','settings']){
    try{
     if(tab!=='home')await page.locator('.nav [data-action="tab:'+tab+'"]').click();
@@ -28,12 +29,24 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     report.push({name,tab,width,height,...geometry});
     assert.ok(geometry.scrollWidth<=width+1,'horizontal overflow');
     assert.ok(geometry.navBottom<=height+1&&geometry.navTop>=0,'navigation outside viewport');
+    if(width<768){
+     const navHeight=geometry.navBottom-geometry.navTop;
+     if(tab==='home')mobileNavHeight=navHeight;
+     else assert.ok(Math.abs(navHeight-mobileNavHeight)<1,'bottom navigation height differs between tabs');
+    }
     assert.equal(await page.locator('.nav button').count(),5);
     if(tab==='home'){
      assert.equal(await page.locator('.ritual-brand').count(),1);
      assert.equal(await page.locator('.home-weights button').count(),0);
      assert.equal(await page.locator('.home-weight').count(),6);
      assert.deepEqual(geometry.stats,['0','0 / 0','—','0']);
+     assert.ok(await page.evaluate(()=>[...document.querySelectorAll('.home-stat-card')].every(card=>{
+      const box=card.getBoundingClientRect();
+      return [...card.querySelectorAll('strong,span,small')].every(text=>{
+       const r=text.getBoundingClientRect();
+       return Math.abs((r.left+r.right-box.left-box.right)/2)<1.5 && r.bottom<=box.bottom+1;
+      });
+     })),'statistic text is off-center or outside its card');
      assert.ok(geometry.dice[0].width>=(height<=860?160:175),'weekly die too small');
      if(name.startsWith('S25'))assert.ok(await page.evaluate(()=>document.querySelector('.home-stats-grid').getBoundingClientRect().bottom<=document.querySelector('.nav').getBoundingClientRect().top+2),'Home stats under bottom navigation '+JSON.stringify(geometry));
      await page.locator('.home-next-month').click();await page.locator('.surprise-premium-view').waitFor();
