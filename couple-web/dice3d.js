@@ -5,8 +5,8 @@ import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometri
 /** Safari/Chrome WebGL die. Values come from the shared server, never from animation. */
 const pool=new Set();
 function digits(value,heart=false,pips=false,neutral=false){const c=document.createElement('canvas');c.width=c.height=384;
- const x=c.getContext('2d');x.font='bold '+(heart?({1:184,2:143,3:120,4:102,5:94,6:84}[value]||84):180)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#ff1e91';x.shadowBlur=24;
- x.fillStyle='#ff9ccf';x.strokeStyle='#ffe3f3';x.lineWidth=1.5;
+ const x=c.getContext('2d');x.font='bold '+(heart?({1:184,2:143,3:120,4:102,5:94,6:84}[value]||84):180)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#d66b94';x.shadowBlur=10;
+ x.fillStyle='#ffe2ec';x.strokeStyle='#fff4f8';x.lineWidth=1.5;
  // Before an official D6 roll, all six faces use the SAME heart symbol.
  // Never show fake pips or a made-up result while waiting for a server roll.
  if(neutral){
@@ -205,14 +205,14 @@ function geometry(sides,pips=false,neutral=false){
  custom?.geo.dispose();
  custom?.edges.dispose();
  const mat=new THREE.MeshPhysicalMaterial({
-  color:0x130716,metalness:.13,roughness:.10,
-  clearcoat:1,clearcoatRoughness:.035,
-  specularIntensity:1.65,ior:1.5,transmission:0,thickness:.8,
+  color:0x542730,metalness:.13,roughness:.24,
+  clearcoat:1,clearcoatRoughness:.12,
+  specularIntensity:1.15,ior:1.5,transmission:0,thickness:.8,
   side:THREE.FrontSide,flatShading:false
  });
  group.add(new THREE.Mesh(geo,mat));
  // No wireframe: smooth bevel geometry and PBR specular highlights are the
- // only visible transitions between the black faces on D6, D20 and D100.
+ // only visible transitions between the ruby faces on D6, D20 and D100.
  const layout=sides===6?[[1,[0,0,1]],[6,[0,0,-1]],[2,[0,1,0]],
   [5,[0,-1,0]],[3,[1,0,0]],[4,[-1,0,0]]]:null;
  for(let value=1;value<=sides;value++){
@@ -265,8 +265,8 @@ export function dieOn(canvas,sides,value,rolling){
  resizeObserver?.observe(canvas);
  const podiumObserver=typeof ResizeObserver==='function'?new ResizeObserver(()=>{alignPodium();request();}):null;
  window.addEventListener('resize',resizeDie);
- scene.add(new THREE.AmbientLight(0xffb7df,1.25));
- const key=new THREE.PointLight(0xff3e99,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
+ scene.add(new THREE.AmbientLight(0xffe1eb,1.25));
+ const key=new THREE.PointLight(0xffc1d5,44,12);key.position.set(-2,3.2,3.3);scene.add(key);
  const rim=new THREE.PointLight(0xff9fcb,22,9);rim.position.set(3,-1,1.9);scene.add(rim);
  const white=new THREE.DirectionalLight(0xfff0fa,2.3);white.position.set(1.3,3,4);scene.add(white);
  const neutral=canvas.dataset.diceUnrolled==='true'&&sides===6;

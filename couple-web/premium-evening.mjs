@@ -190,11 +190,8 @@ export function premiumEveningHtml({
   :
   '<section class="evening-empty is-finale">'+
   '<div class="evening-finale-hero" aria-hidden="true">'+
-    '<svg class="evening-finale-heart" viewBox="0 0 220 195" focusable="false" aria-hidden="true">'+
-      '<path d="M110 181 C87 160 17 118 17 72 C17 36 40 16 72 16 C91 16 103 27 110 42 C117 27 129 16 148 16 C180 16 203 36 203 72 C203 118 133 160 110 181Z"/></svg>'+
     '<span class="evening-finale-velvet"></span>'+
-    '<div class="evening-finale-dice">'+premiumPolyDie(6,null,'Dé décoratif')+
-      premiumPolyDie(6,null,'Dé décoratif')+'</div></div>'+
+    '<div class="evening-finale-dice">'+premiumPolyDie(100,null,'Dé 100 faces décoratif',false,true)+'</div></div>'+
   '<div class="evening-aftercare">'+
     '<div class="evening-finale-ornament" aria-hidden="true"><span>♡</span></div>'+
     '<div class="evening-finale-weekly">♡ SOIRÉES CETTE SEMAINE · '+

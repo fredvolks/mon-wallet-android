@@ -76,13 +76,10 @@ main#app.loveroll-editorial{--nav-space:66px;box-sizing:border-box;width:100%;ma
 #app .evening-draw-done{font-size:12px;line-height:1.3;text-align:center;color:var(--ritual-text);}
 #app .evening-empty{min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:var(--ritual-space);}
 #app .evening-finale-hero{position:relative;display:grid;place-items:center;min-height:0;overflow:hidden;border-radius:20px;background:url('./assets/ritual-satin-v115.webp') center 62%/cover no-repeat;}
-#app .evening-finale-heart{position:absolute;left:22%;top:7%;width:56%;height:64%;fill:none;stroke:var(--ritual-rose);stroke-width:1.4;opacity:.55;filter:drop-shadow(0 0 7px #efa4b755);}
 #app .evening-finale-velvet{display:none;}
-#app .evening-finale-dice{display:flex;align-items:center;justify-content:center;width:100%;height:100%;gap:0;padding-top:5%;}
-#app .evening-finale-dice>.love3d{display:grid;place-items:center;width:44%;height:auto;aspect-ratio:1;max-height:28dvh;}
+#app .evening-finale-dice{display:grid;place-items:center;width:100%;height:100%;padding:0;}
+#app .evening-finale-dice>.love3d{display:grid;place-items:center;width:min(68%,36dvh,360px);height:auto;aspect-ratio:1;max-height:none;transform:none;}
 #app .evening-finale-dice .love3d-stage{width:100%;height:100%;}
-#app .evening-finale-dice>.love3d:first-child{transform:none;}
-#app .evening-finale-dice>.love3d:last-child{transform:none;}
 #app .evening-aftercare{display:grid;gap:8px;padding:12px;text-align:center;}
 #app .evening-finale-ornament{display:none;}
 #app .evening-finale-weekly{font-size:10px;letter-spacing:.08em;color:var(--ritual-rose);}
@@ -162,7 +159,7 @@ main#app.loveroll-editorial{--nav-space:66px;box-sizing:border-box;width:100%;ma
  #app .evening-intro p{font-size:14px;max-width:850px;}
  #app .evening-empty{grid-column:1/-1;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:28px;align-items:stretch;}
  #app .evening-aftercare{align-self:center;padding:24px;gap:15px;}
- #app .evening-finale-dice>.love3d{width:48%;max-height:45dvh;}
+ #app .evening-finale-dice>.love3d{width:min(68%,45dvh,440px);}
  #app .evening-finale-start,#app .evening-finale-calendar{min-height:50px;font-size:15px;}
  #app .evening-premium-view.is-waiting{grid-template-rows:var(--ritual-brand-height) auto minmax(0,1fr) 40px;}
  #app .is-waiting .evening-step.one{grid-column:1/-1;}

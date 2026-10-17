@@ -45,7 +45,7 @@ test('Editorial layout owns a fixed viewport with square personal dice and a par
  assert.match(css,/\.evening-user-die \.love3d-stage/);
  assert.match(css,/aspect-ratio:1/);
  assert.match(css,/\.evening-premium-view\.is-ready/);
- assert.match(index,/evening-editorial\.css\?v=20261017-spacing125/);
+ assert.match(index,/evening-editorial\.css\?v=20261017-dice128/);
  assert.doesNotMatch(index,/evening-clean-v83\.css|evening-focused-v84\.css/);
  assert.match(worker,/\.\/evening-editorial\.css/);
 });

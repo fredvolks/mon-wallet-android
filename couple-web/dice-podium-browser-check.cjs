@@ -19,9 +19,15 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
     await page.waitForTimeout(500);
     const boxes=await page.evaluate(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0).map(c=>{
      const scene=c.closest('.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero'),r=c.getBoundingClientRect(),s=scene.getBoundingClientRect(),b=c.loveRollDie.projectedBounds(),contact=Number(c.dataset.podiumContact);
-     return {sides:c.dataset.diceSides,q:c.loveRollDie.readState().quaternion,frames:c.loveRollDie.readState().renderedFrames,contact,meshBottom:r.top+b.bottom*r.height-s.top,meshTop:r.top+b.top*r.height-s.top,sceneHeight:s.height,sceneWidth:s.width};
+     return {sides:c.dataset.diceSides,q:c.loveRollDie.readState().quaternion,frames:c.loveRollDie.readState().renderedFrames,contact,meshBottom:r.top+b.bottom*r.height-s.top,meshTop:r.top+b.top*r.height-s.top,meshCenterX:r.left+(b.left+b.right)*r.width/2-s.left,sceneHeight:s.height,sceneWidth:s.width};
     }));
     assert.ok(boxes.length);for(let i=0;i<boxes.length;i++){const box=boxes[i];assert.deepEqual(box.q,before[i].q,name+' '+phase+' idle die moved');assert.ok(Math.abs(box.meshBottom-box.contact)<=2,JSON.stringify({name,phase,box}));assert.ok(box.meshTop>=-2&&box.meshBottom<=box.sceneHeight+2,JSON.stringify({name,phase,box}));}
+    if(phase==='intro'){
+     assert.equal(boxes.length,1,'Evening podium must show one decorative die');
+     assert.equal(boxes[0].sides,'100','Evening podium must use the original D100');
+     assert.ok(Math.abs(boxes[0].meshCenterX-boxes[0].sceneWidth/2)<=2,'D100 mesh is not centered on the podium '+JSON.stringify({name,box:boxes[0]}));
+     assert.equal(await page.locator('.evening-finale-heart').count(),0);
+    }
     await page.evaluate(()=>{window.__stableCanvases=[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0);});
     await page.locator('.nav [data-action="tab:'+(['d20','host'].includes(phase)?'special':'session')+'"]').click();await page.waitForTimeout(80);
     assert.ok(await page.evaluate(()=>window.__stableCanvases.every(c=>c.isConnected&&Math.abs(c.getBoundingClientRect().top+c.loveRollDie.projectedBounds().bottom*c.getBoundingClientRect().height-c.closest('.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero').getBoundingClientRect().top-Number(c.dataset.podiumContact))<2)),'Refresh lost die or podium '+name+' '+phase);
