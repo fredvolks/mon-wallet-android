@@ -19,11 +19,12 @@ test('If more counted soirées permitted by weekly D6, start button stays live',
  assert.match(html,/class="evening-finale-start" data-action="new-session">/);
  assert.doesNotMatch(html,/data-action="new-session" disabled/);
 });
-test('Premium finale uses two existing 3D hearts dice; mobile and desktop CSS is isolated',()=>{
+test('Premium finale uses one decorative 3D D100; mobile and desktop CSS is isolated',()=>{
  const html=premiumEveningHtml({...base,canStartEvening:false});
- assert.equal((html.match(/data-dice-unrolled="true"/g)||[]).length,2);
+ assert.deepEqual([...html.matchAll(/data-dice-sides="(\d+)"/g)].map(match=>Number(match[1])),[100]);
+ assert.match(html,/data-dice-preview="true"/);
  assert.match(html,/evening-finale-velvet/);
  assert.match(read('evening-editorial.css'),/\.evening-finale-start:disabled/);
- assert.match(read('index.html'),/evening-editorial\.css\?v=20261017-spacing125/);
+ assert.match(read('index.html'),/evening-editorial\.css\?v=20261017-dice128/);
  assert.match(read('service-worker.js'),/evening-editorial\.css/);
 });

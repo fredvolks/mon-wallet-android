@@ -35,13 +35,6 @@ main#app.loveroll-evening-page .evening-finale-hero{
   radial-gradient(ellipse at 80% 25%,#a9115770,transparent 55%),
   radial-gradient(ellipse at 10% 84%,#670a33a8,transparent 55%);
 }
-main#app.loveroll-evening-page .evening-finale-heart{
- position:absolute;z-index:-1;top:-25%;left:50%;transform:translateX(-50%);
- font:400 clamp(12rem,28dvh,22rem)/1 Georgia,serif;
- color:transparent;-webkit-text-stroke:2px #ff559fba;
- filter:drop-shadow(0 0 11px #f82280) drop-shadow(0 0 22px #f5297f);
- pointer-events:none;
-}
 main#app.loveroll-evening-page .evening-finale-velvet{
  position:absolute;z-index:-1;inset:35% -15% -22%;
  background:repeating-radial-gradient(ellipse at 15% 90%,#0a010d 0 24px,#430b29 38px,#b919554e 59px,#170310 85px);
@@ -61,13 +54,7 @@ main#app.loveroll-evening-page .evening-finale-dice .love3d{
  flex:0 0 auto!important;width:min(27vw,21dvh,190px)!important;
  height:min(27vw,21dvh,190px)!important;
  min-width:0!important;min-height:0!important;
- background:none;border:0!important;box-shadow:none;
-}
-main#app.loveroll-evening-page .evening-finale-dice .love3d:first-child{
- transform:translate(7%,0) rotate(-9deg);
-}
-main#app.loveroll-evening-page .evening-finale-dice .love3d:last-child{
- transform:translate(-6%,13%) rotate(9deg) scale(.9);
+ background:none;border:0!important;box-shadow:none;transform:none;
 }
 main#app.loveroll-evening-page .evening-finale-dice .love3d-stage{
  position:relative!important;display:grid!important;place-items:center!important;
@@ -207,16 +194,6 @@ main#app.loveroll-evening-page .evening-finale-actions button:focus-visible{
  }
 }
 /* LoveRoll v100: both the waiting and finished states share one composition. */
-main#app.loveroll-evening-page .evening-premium-view.is-finale .evening-finale-heart{
- position:absolute!important;z-index:0;top:1%!important;left:50%!important;
- transform:translateX(-50%)!important;display:block!important;
- width:min(75%,330px)!important;height:min(80%,250px)!important;
- overflow:visible!important;filter:drop-shadow(0 0 11px #f22b85) drop-shadow(0 0 19px #f71e80);
- color:#ff569e;opacity:.88;
-}
-main#app.loveroll-evening-page .evening-finale-heart path{
- fill:none;stroke:currentColor;stroke-width:2.4;stroke-linejoin:round;
-}
 main#app.loveroll-evening-page .evening-finale-dice{
  z-index:1!important;box-sizing:border-box;
  align-items:flex-end!important;padding-bottom:clamp(14px,6%,44px)!important;
