@@ -304,10 +304,8 @@ jobs:
           const weekly=new URLSearchParams(location.search).has('unrolled')?null:{
             face:2,actor:'owner',created_at:'2026-10-14T15:00:00Z'
           };
-          root.innerHTML='<header class="home-brandbar"><div class="home-brand">'+
-            '<b>♡ Love<em>Roll</em>♡</b><small>LA COMPLICITÉ SE JOUE À DEUX</small></div>'+
-            '<div class="home-brand-actions"><button>♧</button><button>♙</button></div></header>'+
-          premiumHomeHtml({
+          // The connected app renders premiumHomeHtml directly; its logo is inside.
+          root.innerHTML=premiumHomeHtml({
             weekly,members:[{user_id:'owner',name:'Fred'},{user_id:'partner',name:'Émilie'}],
             challenges:[
               {recipient:'owner',category:'SENSUEL',status:'pending'},
@@ -322,7 +320,7 @@ jobs:
             now:new Date('2026-10-14T15:00:00Z')
           })+
           '<nav class="nav"><div class="nav-inner">'+
-          [['⌂','Accueil'],['🎲','Soirée'],['✦','Défi spécial'],['🎁','Avent'],['⚙','Réglages']].map(
+          [['⌂','Accueil'],['☾','Soirée'],['✦','Surprise'],['🎁','Avent'],['⚙','Réglages']].map(
            ([ic,name],i)=>'<button class="'+(i===0?'active':'')+'"><span>'+ic+'</span>'+name+'</button>').join('')+
           '</div></nav>';
           const canvas=root.querySelector('canvas');
