@@ -22,7 +22,7 @@ async function editor(p,tab){await settings(p,'jeu');await click(p,'tab:'+tab);}
      if(!(await button.isVisible()))continue;await button.evaluate(e=>e.scrollIntoView({block:'center'}));const r=await button.boundingBox();
      const nav=await p.locator('.nav').boundingBox();assert.ok(r.y+r.height<=nav.y+2,JSON.stringify({label,name,button:await button.innerText(),r,nav}));
     }
-    await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:'design-captures/editorial121-'+label+'-'+name+'.png',fullPage:true});console.log('EDITORIAL_SCREEN_OK',label,name,JSON.stringify(measure));
+    await p.evaluate(()=>{scrollTo(0,0);for(const panel of document.querySelectorAll('.editorial-content,.settings-detail-body,.editorial-card-list'))panel.scrollTop=0;});await p.screenshot({path:'design-captures/editorial121-'+label+'-'+name+'.png',fullPage:true});console.log('EDITORIAL_SCREEN_OK',label,name,JSON.stringify(measure));
    }
    for(const key of ['couple','notifications','confidentialite','application']){await settings(p,key);await capture(key,{short:height>=824});}
    await settings(p,'jeu');await click(p,'settings-page:admin');await capture('advanced',{short:height>=824});
