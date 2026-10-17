@@ -14,6 +14,7 @@ adb shell wm size 1080x2340
 adb shell wm density 420
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 # Test the native failure view on an isolated fresh emulator, without user accounts.
+adb shell cmd wifi status > qa/wifi-before-airplane.txt
 adb shell cmd connectivity airplane-mode enable
 adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity
 sleep 20
@@ -31,16 +32,29 @@ open('qa/retry-coordinate.txt','w').write(str((x1+x2)//2)+' '+str((y1+y2)//2)+'\
 print('LOVEROLL_NATIVE_NETWORK_ERROR_OK retry is visible')
 PY_NATIVE
 adb shell cmd connectivity airplane-mode disable
+adb shell svc wifi enable
+adb shell svc data enable
+adb shell cmd wifi connect-network AndroidWifi open
+# Turning airplane mode off does not guarantee Wi-Fi has reassociated yet.
+# Wait for the actual link before using the app's retry button.
+for attempt in $(seq 1 25); do
+  adb shell cmd wifi status > qa/wifi-after-airplane.txt
+  if grep -q 'Wifi is connected' qa/wifi-after-airplane.txt; then break; fi
+  sleep 1
+done
+grep 'Wifi is connected' qa/wifi-after-airplane.txt
 sleep 3
 read -r retry_x retry_y < qa/retry-coordinate.txt
 adb shell input tap "$retry_x" "$retry_y"
-sleep 10
+sleep 20
 adb shell uiautomator dump /sdcard/loveroll-after-retry.xml
 adb pull /sdcard/loveroll-after-retry.xml qa/loveroll-after-retry.xml
 python3 - <<'PY_NATIVE'
 import xml.etree.ElementTree as ET
 root=ET.parse('qa/loveroll-after-retry.xml').getroot()
 assert not any(n.get('text')=='Réessayer' for n in root.iter('node')),'Retry returned to native error'
+assert not any(n.get('content-desc')=='Chargement de votre espace…' for n in root.iter('node')),'Retry stayed on the loading view'
+assert any('WebView' in n.get('class','') for n in root.iter('node')),'Retry did not reach the real WebView'
 print('LOVEROLL_NATIVE_RETRY_OK no native error overlay remains')
 PY_NATIVE
 # Non-blocking launch: am start -W may time out waiting for remote WebView.

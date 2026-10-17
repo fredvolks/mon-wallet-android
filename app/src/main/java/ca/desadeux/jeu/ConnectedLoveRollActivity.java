@@ -60,6 +60,8 @@ public final class ConnectedLoveRollActivity extends Activity {
  private void showNativeLoadFailure(){
   if(pageLoadFailed||splashHost==null)return;
   pageLoadFailed=true;pageReady=false;
+  web.setVisibility(View.INVISIBLE);
+  web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
   if(nativeSplash!=null){nativeSplash.animate().cancel();nativeSplash.pauseHeart();nativeSplash.setVisibility(View.GONE);}
   float d=getResources().getDisplayMetrics().density;
   LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);
@@ -76,7 +78,10 @@ public final class ConnectedLoveRollActivity extends Activity {
    android.graphics.drawable.GradientDrawable.Orientation.TL_BR,new int[]{0xffefa4b7,0xffb73863,0xff6b183d});
   button.setCornerRadius(28*d);retry.setBackground(button);
   panel.addView(retry,new LinearLayout.LayoutParams(-1,(int)(56*d)));
-  retry.setOnClickListener(v->{splashHost.removeView(panel);nativeLoadError=null;pageLoadFailed=false;web.loadUrl(retryDestination==null?SITE:retryDestination);});
+  retry.setOnClickListener(v->{splashHost.removeView(panel);nativeLoadError=null;pageLoadFailed=false;
+   if(nativeSplash!=null)nativeSplash.resumeHeart();
+   web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+   web.loadUrl(retryDestination==null?SITE:retryDestination);});
   panel.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE);
   nativeLoadError=panel;splashHost.addView(panel,new android.widget.FrameLayout.LayoutParams(-1,-1));
  }
@@ -336,6 +341,7 @@ public final class ConnectedLoveRollActivity extends Activity {
    }
    @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon) {
     pageReady=false;
+    web.setVisibility(View.VISIBLE);web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
     pageLoadFailed=false;
     if(nativeLoadError!=null){splashHost.removeView(nativeLoadError);nativeLoadError=null;}
     if(isTrusted(Uri.parse(url)))retryDestination=url;
