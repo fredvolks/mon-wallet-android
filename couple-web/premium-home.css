@@ -140,7 +140,7 @@ main#app.loveroll-real-home{
  #app.loveroll-real-home .home-title{grid-column:1;grid-row:2;}
  #app.loveroll-real-home .home-title h2{font-size:19px;margin:0 0 2px;}
  #app.loveroll-real-home .home-title p{font-size:11px;}
- #app.loveroll-real-home .home-die-theater{grid-row:3;--dice-headroom:10px;}
+ #app.loveroll-real-home .home-die-theater{grid-row:3;--dice-headroom:10px;background-position:center 62%;}
  #app.loveroll-real-home .home-weights{grid-row:4;}
  #app.loveroll-real-home .home-roll-area{grid-row:5;}
  #app.loveroll-real-home .home-bottom-stack{grid-row:2/6;gap:calc(6px / var(--home-details-scale,1));}
