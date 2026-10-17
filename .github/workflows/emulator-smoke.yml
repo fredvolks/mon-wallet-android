@@ -43,7 +43,7 @@ jobs:
           emulator-boot-timeout: 300
           ram-size: 1536M
           heap-size: 256M
-          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swangle -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -show-kernel
           disable-animations: true
           script: bash .github/scripts/loveroll-emulator-smoke.sh
       - uses: actions/upload-artifact@v4

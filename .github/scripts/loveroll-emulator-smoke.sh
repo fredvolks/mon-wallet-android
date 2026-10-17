@@ -7,8 +7,10 @@ mkdir -p qa
 adb logcat -c
 adb logcat -v brief -s AndroidRuntime:E > qa/runtime-live.txt &
 logcat_pid=$!
+adb logcat -v threadtime > qa/device-log.txt &
+device_log_pid=$!
 # Preserve emulator/host evidence even if adb disconnects.
-trap 'kill "$logcat_pid" 2>/dev/null || true; adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true; free -m > qa/host-memory.txt; df -h > qa/host-disk.txt' EXIT
+trap 'kill "$logcat_pid" "$device_log_pid" 2>/dev/null || true; adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true; free -m > qa/host-memory.txt; df -h > qa/host-disk.txt' EXIT
 # Same 412dp-wide S25 proportions, FHD pixel buffers for stable CI software rendering.
 adb shell wm size 1080x2340
 adb shell wm density 420
@@ -36,13 +38,15 @@ adb shell svc wifi enable
 adb shell svc data enable
 adb shell cmd wifi connect-network AndroidWifi open
 # Turning airplane mode off does not guarantee Wi-Fi has reassociated yet.
-# Wait for the actual link before using the app's retry button.
+# Wait for association AND DHCP before using the app's retry button.
 for attempt in $(seq 1 25); do
   adb shell cmd wifi status > qa/wifi-after-airplane.txt
-  if grep -q 'Wifi is connected' qa/wifi-after-airplane.txt; then break; fi
+  adb shell ip -4 addr show wlan0 > qa/wifi-address.txt
+  if grep -q 'Wifi is connected' qa/wifi-after-airplane.txt && grep -q 'inet ' qa/wifi-address.txt; then break; fi
   sleep 1
 done
 grep 'Wifi is connected' qa/wifi-after-airplane.txt
+grep 'inet ' qa/wifi-address.txt
 sleep 3
 read -r retry_x retry_y < qa/retry-coordinate.txt
 adb shell input tap "$retry_x" "$retry_y"
