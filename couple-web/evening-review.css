@@ -12,12 +12,12 @@
 .lr-review-modal button{font-family:inherit}
 .lr-review-x{position:absolute;right:clamp(8px,2.5vw,21px);top:clamp(8px,2vw,19px);
  width:38px;height:38px;min-height:38px!important;padding:0!important;display:grid;place-items:center;
- border-radius:50%!important;border:1px solid #fa82bd!important;background:#400c2f!important;
- font-size:1.8rem!important;line-height:1!important;color:#ffe5f3!important;z-index:2}
+ border-radius:50%;border:1px solid #fa82bd!important;background:#400c2f;
+ font-size:1.8rem!important;line-height:1!important;color:#ffe5f3;z-index:2}
 .lr-review-eyebrow{text-align:center;font-size:clamp(.7rem,1.6vw,.89rem);font-weight:850;
  color:#ff96c9;letter-spacing:.17em;padding:3px 30px 0}
 .lr-review-modal h2{font:800 clamp(1.45rem,4.5vw,2.3rem)/1.05 Georgia,serif!important;
- text-align:center;color:#fff0f6!important;margin:0!important}
+ text-align:center;color:#fff0f6;margin:0!important}
 .lr-review-modal #lr-review-intro{text-align:center;margin:0!important;
  font-size:clamp(.76rem,2.3vw,.97rem);color:#ead0e1}
 .lr-review-questions{display:grid;gap:clamp(6px,.9dvh,10px)}
@@ -32,8 +32,8 @@
 .lr-review-hearts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(1px,.5vw,6px);min-width:0}
 .lr-review-heart{display:flex!important;flex-direction:column;align-items:center;justify-content:center;
  gap:0!important;min-height:38px!important;height:auto!important;min-width:0!important;width:100%!important;
- padding:2px 0!important;margin:0!important;border:0!important;background:transparent!important;
- box-shadow:none!important;border-radius:8px!important}
+ padding:2px 0!important;margin:0!important;border:0!important;background:transparent;
+ box-shadow:none;border-radius:8px}
 .lr-review-heart>span{font-size:clamp(1.1rem,4.7vw,2.1rem);line-height:1.05;color:#ac507b;
  text-shadow:0 0 3px #ed4d9566}
 .lr-review-heart.is-lit>span{color:#ff70b4;text-shadow:0 0 10px #fa63aa,0 0 3px #fff1f8}
@@ -43,17 +43,17 @@
 .lr-review-note{border:1px solid #ef71ada6;border-radius:15px;background:#2a0a24be;
  padding:7px 10px;display:flex;flex-direction:column;min-height:90px}
 .lr-review-note textarea{box-sizing:border-box;resize:vertical;width:100%;min-height:74px;
- color:#ffe8f4;background:transparent!important;border:0!important;box-shadow:none!important;
+ color:#ffe8f4;background:transparent;border:0!important;box-shadow:none;
  font:inherit;font-size:clamp(.78rem,2.3vw,.96rem);outline:none;padding:2px}
 .lr-review-note textarea::placeholder{color:#c5a0b6}
 .lr-review-note span{align-self:end;font-size:.68rem;color:#cda0b9}
 .lr-review-calendar-note{text-align:center!important;font-size:clamp(.68rem,1.8vw,.83rem);
  line-height:1.24;color:#eec3dc;margin:0!important}
 .lr-review-save{box-sizing:border-box;width:100%!important;
- min-height:clamp(44px,6dvh,54px)!important;margin:0!important;border-radius:999px!important;
+ min-height:clamp(44px,6dvh,54px)!important;margin:0!important;border-radius:999px;
  padding:8px!important;font-size:clamp(.86rem,2.5vw,1.05rem)!important;font-weight:830}
-.lr-review-save{background:linear-gradient(105deg,#ff87bb,#f00080)!important;
- border:1px solid #ffd4e6!important;color:#fff!important}
+.lr-review-save{background:linear-gradient(105deg,#ff87bb,#f00080);
+ border:1px solid #ffd4e6!important;color:#fff}
 .lr-review-save:disabled{opacity:.65}
 .lr-review-error{color:#ffcfdf;padding:6px;margin:0}
 .evening-review-person{min-width:0;margin-top:13px;border:1px solid #c9589382;border-radius:13px;
@@ -68,7 +68,7 @@
 .evening-review-score strong{font-size:clamp(.8rem,2.4vw,1.16rem);letter-spacing:.04em;color:#f36ca8}
 .evening-review-note{padding:8px;border:1px solid #ff8ac18a;border-radius:9px;white-space:pre-wrap}
 .evening-review-edit{margin-top:9px;min-height:36px!important;width:100%!important;
- border-radius:10px!important;background:#811c52a8!important;border:1px solid #e47aac!important;
+ border-radius:10px;background:#811c52a8;border:1px solid #e47aac!important;
  padding:7px!important;font-size:.75rem!important}
 @media(max-width:480px){
  .lr-review-modal{padding:17px 10px 12px;gap:7px}

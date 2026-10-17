@@ -139,7 +139,7 @@ test('D6 uses an actual bevel and no neon wireframe; fallback hidden during thro
  assert.match(css,/home-stats-grid/);
 });
 
-test('Connected Home starts at ritual, without logo or top action buttons',()=>{
+test('Connected Home restores centered LoveRoll brand and preserves weekly status',()=>{
  assert.match(app,/root\.innerHTML=\(realHome\?'':usualHeader\)\+body/);
  assert.doesNotMatch(app,/const homeHeader=|data-action="home-notices" aria-label="Notifications du couple"/);
  const html=premiumHomeHtml({
@@ -149,8 +149,9 @@ test('Connected Home starts at ritual, without logo or top action buttons',()=>{
  assert.doesNotMatch(html,/♡ Dé déjà brassé cette semaine|Mon dé/);
  assert.match(html,/<button class="home-roll-button is-used" type="button" disabled>/);
  assert.equal((html.match(/home-gift-icon/g)||[]).length,1);
- assert.match(css,/max-height:55px/);
- assert.match(css,/width:85%/);
- assert.match(css,/home-gift-icon svg/);
- assert.match(css,/transform:translateY\(3px\)/);
+ assert.match(html,/ritual-brand/);
+ assert.match(css,/min-height:48px/);
+ assert.match(css,/width:92%/);
+ assert.match(css,/home-calendar-icon svg/);
+ assert.match(html,/aria-hidden="true">›/);
 });

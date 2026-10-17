@@ -19,7 +19,7 @@ main#app.loveroll-evening-page .evening-step.two .evening-choice-option .evening
   width:100%!important;max-width:none!important;
   height:auto!important;min-height:36px!important;flex:0 0 auto!important;
   padding:4px 2px!important;margin:0!important;
-  border-radius:999px!important;white-space:nowrap!important;
+  border-radius:999px;white-space:nowrap!important;
   font-size:clamp(.65rem,2.5vw,.95rem)!important;
   line-height:1.1!important;
 }
@@ -34,15 +34,15 @@ main#app.loveroll-evening-page .evening-step.two .evening-choice-odds span{
   display:block;font-weight:600;white-space:nowrap;
 }
 main#app.loveroll-evening-page .evening-step.two .evening-choice-btn.selected{
-  border-color:#ffb8dc!important;background:linear-gradient(135deg,#c52579,#6d1849)!important;
-  color:#fff9fc!important;box-shadow:0 0 14px #fa3a9259,inset 0 1px #ffe6f56d!important;
+  border-color:#ffb8dc;background:linear-gradient(135deg,#c52579,#6d1849);
+  color:#fff9fc;box-shadow:0 0 14px #fa3a9259,inset 0 1px #ffe6f56d;
 }
 main#app.loveroll-evening-page .evening-step.two .evening-die-row{
   box-sizing:border-box!important;
   grid-template-columns:minmax(0,1fr)!important;
   width:100%!important;min-width:0!important;min-height:0!important;
   align-items:center!important;justify-items:center!important;
-  background:radial-gradient(ellipse at 50% 78%,#fb187d35,transparent 54%)!important;
+  background:radial-gradient(ellipse at 50% 78%,#fb187d35,transparent 54%);
 }
 main#app.loveroll-evening-page .evening-step.two .evening-d35-col{
   grid-column:1!important;width:100%!important;max-width:100%!important;

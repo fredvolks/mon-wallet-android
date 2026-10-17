@@ -5,8 +5,8 @@ body:has(main#app.loveroll-surprise-page) #toast{
  top:auto!important;bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;
  left:50%!important;right:auto!important;transform:translateX(-50%)!important;
  width:max-content;max-width:min(90vw,480px)!important;
- padding:8px 13px!important;border-radius:14px!important;
- box-shadow:0 3px 18px #080008b8!important;
+ padding:8px 13px!important;border-radius:14px;
+ box-shadow:0 3px 18px #080008b8;
  font-size:clamp(.78rem,2vw,.94rem)!important;
 }
 body:has(main#app.loveroll-surprise-page) #toast .lr-toast-glyph{width:30px;height:30px;flex:none}
@@ -15,17 +15,17 @@ main#app.loveroll-surprise-page .surprise-modal{
  z-index:8002!important;inset:0!important;
  display:grid;place-items:center;
  padding:clamp(12px,3vw,28px)!important;
- background:rgba(12,2,15,.87)!important;backdrop-filter:blur(7px);
+ background:rgba(12,2,15,.87);backdrop-filter:blur(7px);
 }
 main#app.loveroll-surprise-page .surprise-modal-content{
  width:min(92vw,590px)!important;max-width:100%!important;
  max-height:min(84dvh,760px)!important;
  overflow-y:auto!important;overscroll-behavior:contain;
  padding:clamp(18px,3vw,28px)!important;
- border-radius:24px!important;
+ border-radius:24px;
  border:1.5px solid #ff80b5!important;
- box-shadow:0 0 34px #f0207c55,0 20px 80px #07010ee0!important;
- background:linear-gradient(145deg,#641337 0%,#350c27 62%,#1a061c 100%)!important;
+ box-shadow:0 0 34px #f0207c55,0 20px 80px #07010ee0;
+ background:linear-gradient(145deg,#641337 0%,#350c27 62%,#1a061c 100%);
 }
 main#app.loveroll-surprise-page .surprise-modal-content h2{
  font-size:clamp(1.55rem,4vw,2.25rem)!important;line-height:1.12!important;

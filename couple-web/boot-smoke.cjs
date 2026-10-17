@@ -97,7 +97,7 @@ export function createClient(){
     throw Error('Connected Home still displays removed top header');
    const gift=await page.evaluate(()=>{
     const button=document.querySelector('.home-next-month')?.getBoundingClientRect();
-    const graphic=document.querySelector('.home-gift-icon svg')?.getBoundingClientRect();
+    const graphic=document.querySelector('.home-calendar-icon svg')?.getBoundingClientRect();
     return button&&graphic?{diff:(graphic.top+graphic.bottom)/2-(button.top+button.bottom)/2,
       graphicWidth:graphic.width,buttonHeight:button.height}:null;
    });
@@ -166,8 +166,8 @@ export function createClient(){
      widthRatio:rect.width/parent.width,height:rect.height}:null;
    });
    if(!info||info.text!=='Déjà brassé cette semaine, revenez la semaine prochaine'||
-     !info.disabled||Math.abs(info.widthRatio-.85)>.025||info.height>57)
-    throw Error('Already rolled weekly button was enlarged or mislabeled '+JSON.stringify(info));
+     !info.disabled||Math.abs(info.widthRatio-.92)>.025||info.height>57)
+    throw Error('Already rolled weekly button is hidden or mislabeled '+JSON.stringify(info));
    // This is the essential regression: last tests stopped at locked Soirée
    // and never executed renderSession's real 70-card active branch.
    await page.locator('.nav [data-action="tab:session"]').click();
@@ -208,12 +208,12 @@ export function createClient(){
    const result=await page.evaluate(sel=>{
     const main=document.querySelector('#app'),nav=document.querySelector('.nav');
     const node=document.querySelector(sel),n=nav.getBoundingClientRect(),el=node.getBoundingClientRect();
-    return {page:document.documentElement.scrollWidth,screen:innerWidth,navTop:n.top,
+    return {page:document.documentElement.scrollWidth,screen:innerWidth,navTop:n.top,navBottom:n.bottom,viewportHeight:innerHeight,
      tabs:nav.querySelectorAll('[data-action^="tab:"]').length,
      visible:el.width>200&&el.height>60,
      navigation:!!nav.querySelector('.active[data-action="tab:'+sel.replace(/^\\./,'')+'"]')};
    },selector);
-   if(result.page>result.screen+2||result.navTop>2||result.tabs!==5||!result.visible)
+   if(result.page>result.screen+2||result.navTop<0||result.navBottom>result.viewportHeight+2||result.tabs!==5||!result.visible)
     throw Error('Adaptive tab error '+v.name+' '+tab+' '+JSON.stringify(result));
    return result;
   };

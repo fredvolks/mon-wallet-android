@@ -61,7 +61,7 @@
  .discover-v59 .discover-editorial-list{
   min-height:0!important;overflow:hidden!important;
   padding:clamp(2px,.7dvh,6px) clamp(3px,1.5vw,10px)!important;
-  border-radius:15px!important;
+  border-radius:15px;
  }
  .discover-v59 .discover-editorial-item{
   min-height:0!important;min-width:0!important;
@@ -69,7 +69,7 @@
   gap:clamp(3px,.9vw,7px)!important;
   padding:clamp(2px,.65dvh,5px) 0!important;
  }
- .discover-v59 .discover-editorial-icon{border-radius:10px!important}
+ .discover-v59 .discover-editorial-icon{border-radius:10px}
  .discover-v59 .discover-editorial-item h2{
   font-size:clamp(.74rem,3.2vw,1.06rem)!important;
   line-height:1.04!important;margin:0 0 2px!important;white-space:normal!important;
@@ -139,7 +139,7 @@
   box-sizing:border-box!important;flex:1 1 0!important;
   height:auto!important;min-height:0!important;max-height:none!important;
   margin:2px 2px 0!important;padding:clamp(8px,1.6dvh,14px) clamp(11px,3vw,18px)!important;
-  border-radius:19px!important;
+  border-radius:19px;
   display:flex!important;flex-direction:column!important;
   justify-content:space-evenly!important;gap:clamp(2px,.55dvh,6px)!important;
   overflow:hidden!important;
@@ -174,7 +174,7 @@
  }
  .invite-account-screen:not(.invite-profile-screen) .invite-auth-field{
   box-sizing:border-box!important;min-height:47px!important;
-  padding:5px 9px!important;gap:7px!important;border-radius:12px!important;
+  padding:5px 9px!important;gap:7px!important;border-radius:12px;
  }
  .invite-account-screen:not(.invite-profile-screen) .invite-field-icon{
   font-size:1.2rem!important;flex-basis:21px!important;
@@ -206,7 +206,7 @@
  .invite-account-screen:not(.invite-profile-screen) .invite-auth-submit{
   flex:none!important;min-height:42px!important;max-height:48px!important;
   padding:4px 8px!important;font-size:clamp(.94rem,3.7vw,1.17rem)!important;
-  border-radius:15px!important;
+  border-radius:15px;
  }
  .invite-account-screen:not(.invite-profile-screen) .invite-auth-submit small{font-size:.65rem!important}
  .invite-account-screen:not(.invite-profile-screen) .invite-auth-link,

@@ -7,7 +7,7 @@ body:has(.demo-shell) main{max-width:none;padding:0;background:#110717}
 .demo-body .premium-intro{padding:16px 12px;margin:0 0 12px;text-align:center}
 .demo-body .premium-intro h2{font-family:Georgia,serif;font-size:clamp(1.7rem,7vw,2.6rem);color:#fff4fa;line-height:1.07}
 .demo-body .premium-intro h2 span{color:#ff73b7}
-.demo-card{border:1px solid #f392bf7d!important;background:radial-gradient(ellipse at 20% 7%,#74274b55,transparent 60%),linear-gradient(135deg,#441a35,#200b21)!important;box-shadow:inset 0 1px #fff2,0 10px 30px #09010fbb!important;border-radius:22px!important}
+.demo-card{border:1px solid #f392bf7d!important;background:radial-gradient(ellipse at 20% 7%,#74274b55,transparent 60%),linear-gradient(135deg,#441a35,#200b21);box-shadow:inset 0 1px #fff2,0 10px 30px #09010fbb;border-radius:22px}
 .demo-card h2{font:700 1.48rem Georgia,serif}
 .demo-card h3{font-family:Georgia,serif;color:#ffd6e9}
 .demo-big-die{height:112px;display:flex;align-items:center;justify-content:center;gap:15px;font:3rem Georgia,serif;color:#ff81c0;background:radial-gradient(ellipse,#8a2360,#320d2d 70%,transparent);text-shadow:0 0 20px #ff48a0}

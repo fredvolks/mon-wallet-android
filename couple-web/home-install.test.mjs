@@ -23,7 +23,7 @@ test('native APK gets a home launcher guide, not a second APK/PWA installation',
  const oldWindow=globalThis.window,oldNavigator=globalThis.navigator;
  try{
   globalThis.window={LoveRollNativeAuth:{},matchMedia:()=>({matches:false})};
-  globalThis.navigator={userAgent:'Mozilla/5.0 (Linux; Android 16)',standalone:false};
+  Object.defineProperty(globalThis,'navigator',{configurable:true,writable:true,value:{userAgent:'Mozilla/5.0 (Linux; Android 16)',standalone:false}});
   assert.equal(installStatus(),'apk');
   assert.equal(shouldOfferInstall('new-native',localStore()),true);
   assert.match(installOfferHtml(),/Placer l’icône LoveRoll/);
@@ -33,25 +33,25 @@ test('native APK gets a home launcher guide, not a second APK/PWA installation',
   assert.equal(result.alreadyInstalled,true);
  }finally{
   if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow;
-  if(oldNavigator===undefined)delete globalThis.navigator;else globalThis.navigator=oldNavigator;
+  if(oldNavigator===undefined)delete globalThis.navigator;else Object.defineProperty(globalThis,'navigator',{configurable:true,value:oldNavigator});
  }
 });
 test('Messenger provides a copyable external browser guide; iPhone uses Safari',()=>{
  const oldWindow=globalThis.window,oldNavigator=globalThis.navigator;
  try{
   globalThis.window={matchMedia:()=>({matches:false})};
-  globalThis.navigator={userAgent:'Mozilla/5.0 (iPhone) Messenger',platform:'iPhone',maxTouchPoints:5};
+  Object.defineProperty(globalThis,'navigator',{configurable:true,writable:true,value:{userAgent:'Mozilla/5.0 (iPhone) Messenger',platform:'iPhone',maxTouchPoints:5}});
   assert.equal(installStatus(),'embedded');
   assert.match(installSteps().text,/Safari/);
   assert.match(installStepsHtml(),/install-copy-url/);
-  globalThis.navigator={userAgent:'Mozilla/5.0 (iPhone) Safari',platform:'iPhone',maxTouchPoints:5};
+  Object.defineProperty(globalThis,'navigator',{configurable:true,writable:true,value:{userAgent:'Mozilla/5.0 (iPhone) Safari',platform:'iPhone',maxTouchPoints:5}});
   assert.match(installSteps().text,/Sur l’écran d’accueil/);
   globalThis.window={matchMedia:()=>({matches:true})};
   assert.equal(shouldOfferInstall('new-user',localStore()),false);
   assert.equal(installStatus(),'installed');
  }finally{
   if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow;
-  if(oldNavigator===undefined)delete globalThis.navigator;else globalThis.navigator=oldNavigator;
+  if(oldNavigator===undefined)delete globalThis.navigator;else Object.defineProperty(globalThis,'navigator',{configurable:true,value:oldNavigator});
  }
 });
 test('real PWA icons, manifest, offline cache and entry points are present',()=>{

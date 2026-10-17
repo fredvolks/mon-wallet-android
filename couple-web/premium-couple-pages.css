@@ -141,10 +141,10 @@ main#app.loveroll-surprise-page{
 .evening-play-controls>small{font-size:clamp(.53rem,1.65vw,.71rem);line-height:1.13}
 .evening-primary,.surprise-primary{
  min-height:41px!important;padding:5px 9px!important;
- border:1px solid #ffa9cc!important;border-radius:18px!important;
- background:linear-gradient(115deg,#ff80b3,#f32280 54%,#bc075d)!important;
- box-shadow:inset 0 2px #ffdcf180,0 0 16px #f92e8380!important;
- color:#fff!important;font-weight:850!important;font-size:clamp(.78rem,2.6vw,1.06rem)!important;
+ border:1px solid #ffa9cc!important;border-radius:18px;
+ background:linear-gradient(115deg,#ff80b3,#f32280 54%,#bc075d);
+ box-shadow:inset 0 2px #ffdcf180,0 0 16px #f92e8380;
+ color:#fff;font-weight:850!important;font-size:clamp(.78rem,2.6vw,1.06rem)!important;
 }
 .evening-gift{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;gap:7px}
 .evening-gift strong{font-size:clamp(.71rem,2.15vw,.88rem);color:#ff86bb}
@@ -223,9 +223,9 @@ main#app.loveroll-surprise-page{
 }
 .surprise-host>.surprise-primary:disabled{
  opacity:1!important;cursor:not-allowed;
- background:linear-gradient(115deg,#57233f,#43132f)!important;
- color:#b29aab!important;border-color:#8c4b6f!important;
- box-shadow:inset 0 1px #b7789a55!important
+ background:linear-gradient(115deg,#57233f,#43132f);
+ color:#b29aab;border-color:#8c4b6f;
+ box-shadow:inset 0 1px #b7789a55
 }
 .surprise-winner{text-align:center;font-weight:800;color:#ff9ccc;font-size:clamp(.69rem,2.2vw,.9rem)}
 .surprise-restaurant,.surprise-restaurant-button{font-size:.7rem;text-align:center}
@@ -291,13 +291,13 @@ main#app.loveroll-surprise-page{
 
 /* Reference-match finish: transparent burgundy tiles, not generic bright-pink buttons. */
 main#app.loveroll-surprise-page .surprise-event-card{
- background:linear-gradient(151deg,#541334ed,#250a22f5 66%,#170614f7)!important;
- color:#fff4fb!important;
+ background:linear-gradient(151deg,#541334ed,#250a22f5 66%,#170614f7);
+ color:#fff4fb;
  border:1px solid #f45e9bbd!important;
- box-shadow:inset 0 1px #ffaad757,0 0 9px #fc418522!important;
+ box-shadow:inset 0 1px #ffaad757,0 0 9px #fc418522;
 }
 main#app.loveroll-surprise-page .surprise-event-card:active{
- background:linear-gradient(146deg,#962151,#420d30)!important;
+ background:linear-gradient(146deg,#962151,#420d30);
 }
 .surprise-event-symbol{
  display:grid;place-items:center;
@@ -312,7 +312,7 @@ main#app.loveroll-surprise-page .surprise-event-card:active{
  text-shadow:0 0 8px #f6257548;
 }
 .surprise-event-days{
- background:linear-gradient(100deg,#e62983,#940552)!important;
+ background:linear-gradient(100deg,#e62983,#940552);
  border:1px solid #ff7ebfa8;
 }
 .surprise-event-chevron{font-size:clamp(1rem,3.2vw,1.35rem)}
@@ -341,15 +341,15 @@ main#app.loveroll-surprise-page .surprise-event-card:active{
 
 /* Audit: global premium-theme button styles must not erase selected categories. */
 main#app.loveroll-evening-page .evening-choice-btn:not(.selected){
- background:linear-gradient(145deg,#452039,#2b1229)!important;
- border:2px solid #8a5275!important;color:#efd0e0!important;
- box-shadow:none!important;opacity:.88;
+ background:linear-gradient(145deg,#452039,#2b1229);
+ border:2px solid #8a5275!important;color:#efd0e0;
+ box-shadow:none;opacity:.88;
 }
 main#app.loveroll-evening-page .evening-choice-btn.selected,
 main#app.loveroll-evening-page .evening-choice-btn[aria-pressed="true"]{
- background:linear-gradient(125deg,#ff78ba,#ed2d8d 65%,#ae095d)!important;
- border:2px solid #ffdfef!important;color:#fff!important;
- box-shadow:0 0 15px #f3278c99,inset 0 1px #ffffff88!important;opacity:1;
+ background:linear-gradient(125deg,#ff78ba,#ed2d8d 65%,#ae095d);
+ border:2px solid #ffdfef!important;color:#fff;
+ box-shadow:0 0 15px #f3278c99,inset 0 1px #ffffff88;opacity:1;
 }
 main#app.loveroll-evening-page .evening-choice-btn{min-height:44px!important}
 main#app.loveroll-evening-page .evening-small-roll{
@@ -422,7 +422,7 @@ main#app .occasion-back-top{margin:0 auto 10px;max-width:680px}
 main#app .occasion-back-top button{min-height:44px}
 main#app .occasion-premium-card{
  width:min(100%,680px);margin:10px auto;
- background:linear-gradient(146deg,#481430,#281023 75%,#1a0b19)!important;
+ background:linear-gradient(146deg,#481430,#281023 75%,#1a0b19);
  border:1px solid #dd5994;border-radius:22px;
  box-shadow:0 9px 26px #09030e6b,inset 0 1px 0 #ffbee35c;
  padding:clamp(13px,3vw,23px);

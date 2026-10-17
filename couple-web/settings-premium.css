@@ -126,7 +126,7 @@ main#app.loveroll-settings-page .settings-date-field input{
 main#app.loveroll-settings-page .settings-date-hint,
 main#app.loveroll-settings-page .settings-footer-hint{
  font-size:.72rem!important;margin:8px 3px 0!important;line-height:1.25;
- color:#caadbe!important;
+ color:#caadbe;
 }
 main#app.loveroll-settings-page .settings-confirmation{
  display:inline-flex;align-items:center;gap:5px;
@@ -139,27 +139,27 @@ main#app.loveroll-settings-page .settings-actions{
 main#app.loveroll-settings-page .settings-actions>button{
  display:grid;place-items:center;min-width:0;min-height:44px;
  padding:9px 7px;font-size:clamp(.73rem,2.5vw,.83rem);
- font-weight:780;border-radius:12px!important;
+ font-weight:780;border-radius:12px;
 }
 main#app.loveroll-settings-page .settings-primary{
- color:#fff!important;border:1px solid #ff89c0!important;
- background:linear-gradient(113deg,#ff62ab,#ee2f87 64%,#b61767)!important;
- box-shadow:inset 0 1px 0 #ffe2ef7d,0 4px 13px #e3227750!important;
+ color:#fff;border:1px solid #ff89c0!important;
+ background:linear-gradient(113deg,#ff62ab,#ee2f87 64%,#b61767);
+ box-shadow:inset 0 1px 0 #ffe2ef7d,0 4px 13px #e3227750;
 }
 main#app.loveroll-settings-page .settings-secondary{
- color:#ffe1ef!important;border:1px solid #a44a78!important;
- background:linear-gradient(130deg,#4e1c3b,#2b122c)!important;
- box-shadow:inset 0 1px #f9a8d329!important;
+ color:#ffe1ef;border:1px solid #a44a78!important;
+ background:linear-gradient(130deg,#4e1c3b,#2b122c);
+ box-shadow:inset 0 1px #f9a8d329;
 }
 main#app.loveroll-settings-page .settings-link-row{
  display:flex;align-items:center;justify-content:space-between;gap:9px;
  min-height:53px;width:100%;padding:10px 5px!important;
  margin:0;border:0!important;border-bottom:1px solid #83415f78!important;
- border-radius:0!important;background:transparent!important;
- box-shadow:none!important;text-align:left;color:#fff0f7!important;
+ border-radius:0;background:transparent;
+ box-shadow:none;text-align:left;color:#fff0f7;
 }
 main#app.loveroll-settings-page .settings-link-row:last-child{border-bottom:0!important}
-main#app.loveroll-settings-page .settings-link-row:active{background:#6b25474a!important}
+main#app.loveroll-settings-page .settings-link-row:active{background:#6b25474a}
 main#app.loveroll-settings-page .settings-link-copy{min-width:0;flex:1;display:grid;gap:3px}
 main#app.loveroll-settings-page .settings-link-copy strong{font-size:.87rem;font-weight:770;color:#ffedf6}
 main#app.loveroll-settings-page .settings-link-copy small{
@@ -249,10 +249,10 @@ main#app.loveroll-settings-page .nav{
  border-top:1px solid #9d447676;backdrop-filter:blur(18px);
 }
 main#app.loveroll-settings-page .nav button.active{
- background:linear-gradient(130deg,#8b275c,#481632)!important;
+ background:linear-gradient(130deg,#8b275c,#481632);
  border:1px solid #eb66a49d!important;
- box-shadow:inset 0 1px 0 #ffbadd75,0 0 17px #f14b8b50!important;
- color:#fff6fa!important;
+ box-shadow:inset 0 1px 0 #ffbadd75,0 0 17px #f14b8b50;
+ color:#fff6fa;
 }
 @media(max-width:360px){
  main#app.loveroll-settings-page{padding-inline:9px}
@@ -282,7 +282,7 @@ main#app.loveroll-settings-page .settings-couple-invite>p{
 }
 main#app.loveroll-settings-page .settings-couple-invite>button{
  width:100%;margin:0;min-height:46px;white-space:normal;
- border-radius:14px!important;text-align:center;
+ border-radius:14px;text-align:center;
 }
 main#app.loveroll-settings-page .settings-couple-invite .settings-couple-cta{
  padding:12px 14px!important;font-size:clamp(.91rem,3vw,1.06rem);

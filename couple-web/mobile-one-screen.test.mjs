@@ -7,7 +7,7 @@ import {adventPremiumHtml} from './premium-advent.mjs';
 const read=name=>readFileSync(new URL('./'+name,import.meta.url),'utf8');
 const css=read('mobile-one-screen-v74.css');
 test('Mobile main screens have fixed dynamic viewport; bottom navigation remains visible',()=>{
- for(const cls of ['loveroll-real-home','loveroll-evening-page','loveroll-surprise-page','loveroll-advent-page']){
+ for(const cls of ['loveroll-evening-page','loveroll-surprise-page','loveroll-advent-page']){
   assert.ok(css.includes('main#app.'+cls),'Missing '+cls);
  }
  assert.match(css,/height:100dvh!important/);
@@ -16,11 +16,12 @@ test('Mobile main screens have fixed dynamic viewport; bottom navigation remains
  assert.match(css,/max-height:660px/);
  assert.doesNotMatch(css,/scroll-padding-bottom|grid-auto-rows:max-content/);
 });
-test('Home 3D die is optically centered in the satin theater on phones',()=>{
- assert.match(css,/home-die-platform\{[\s\S]*?transform:translate3d\(0,-11%,0\)!important/);
- assert.match(css,/@media \(max-width:767px\) and \(max-height:740px\)\{/);
- assert.match(css,/transform:translate3d\(0,-8%,0\)!important/);
- assert.doesNotMatch(css,/home-die-platform\{transform:none!important\}/);
+test('Home owns its responsive layout and retains a real canvas',()=>{
+ const home=read('premium-home.css');
+ assert.match(home,/height:100dvh/);
+ assert.match(home,/transform:translateY\(-8%\)/);
+ assert.match(home,/safe-area-inset-bottom/);
+ assert.doesNotMatch(css,/loveroll-real-home/);
 });
 test('Step 2 and all private-queue controls fit into the same mobile grid',()=>{
  assert.match(css,/grid-template-rows:minmax\(36px,\.48fr\)/);
@@ -44,21 +45,23 @@ test('Surprise monthly D20, host D6, six events stay in one fixed panel view',()
  assert.match(css,/\.surprise-host-die\{/);
  assert.match(css,/\.surprise-special-grid\{/);
  assert.match(html,/data-dice-sides="20"/);
- assert.match(html,/data-dice-sides="6"/);
- assert.equal((html.match(/data-action="open-occasion:/g)||[]).length,6);
+ assert.doesNotMatch(html,/data-dice-sides="6"/);
+ const ready=premiumSurpriseHtml({monthly:{monthly_activity:{face:2}}});
+ assert.match(ready,/data-dice-sides="6"/);
+ assert.equal((html.match(/data-action="edit-surprise-event:/g)||[]).length,6);
 });
 test('Advent 25 squares keep their screen space',()=>{
  assert.match(css,/\.advent-premium-view\{/);
  assert.match(css,/\.advent-tiles\{/);
  const html=adventPremiumHtml();
- assert.equal((html.match(/class="advent-box/g)||[]).length,25);
+ assert.equal((html.match(/class="advent-box /g)||[]).length,25);
 });
 test('v74 loaded LAST in HTML and cached with updated worker; server version updated',()=>{
  const index=read('index.html'),sw=read('service-worker.js'),v=JSON.parse(read('web-version.json'));
- assert.equal(v.build,'2026-10-16.100');
+ assert.equal(v.build,'2026-10-16.115');
  assert.match(index,/mobile-one-screen-v74\.css\?v=20261016-center98/);
  assert.ok(index.lastIndexOf('mobile-one-screen-v74.css')>index.lastIndexOf('surprise-dice-layout-v73.css'));
- assert.match(sw,/loveroll-static-v100/);
+ assert.match(sw,/loveroll-static-v115/);
  assert.match(sw,/\.\/mobile-one-screen-v74\.css/);
 });
 

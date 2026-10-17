@@ -156,12 +156,12 @@ main#app:has(.discover-v59){width:100%;max-width:none;min-height:100dvh;padding:
 }
 .discover-v59 .discover-accept{
  width:100%;min-height:clamp(59px,8.4dvh,88px);
- border:2px solid #ffdbed!important;border-radius:999px!important;
+ border:2px solid #ffdbed!important;border-radius:999px;
  padding:10px clamp(12px,3vw,32px);
- color:#fff!important;font:900 clamp(1.05rem,4.1vw,1.6rem)/1.2 Inter,system-ui,sans-serif;
+ color:#fff;font:900 clamp(1.05rem,4.1vw,1.6rem)/1.2 Inter,system-ui,sans-serif;
  letter-spacing:.014em;text-shadow:0 2px 4px #931446ab;
- background:linear-gradient(180deg,#ff9dc9 0%,#ff68aa 24%,#f33891 68%,#c21675 100%)!important;
- box-shadow:inset 0 3px 2px #fff4fba6,0 0 26px #f83c93b6,0 8px 25px #87043bba!important;
+ background:linear-gradient(180deg,#ff9dc9 0%,#ff68aa 24%,#f33891 68%,#c21675 100%);
+ box-shadow:inset 0 3px 2px #fff4fba6,0 0 26px #f83c93b6,0 8px 25px #87043bba;
 }
 .discover-v59 .discover-accept:active{transform:scale(.99)}
 .discover-v59 .discover-privacy{
@@ -177,8 +177,8 @@ main#app:has(.discover-v59){width:100%;max-width:none;min-height:100dvh;padding:
 .discover-v59 .messenger-browser-handoff>strong{display:none}
 .discover-v59 .messenger-browser-primary{
  display:inline-flex!important;min-height:32px;width:auto;
- border:0!important;border-radius:0!important;box-shadow:none!important;
- background:transparent!important;color:#ffc1de!important;
+ border:0!important;border-radius:0;box-shadow:none;
+ background:transparent;color:#ffc1de;
  font-size:clamp(.72rem,2.3vw,.85rem);text-decoration:underline!important;
  padding:4px 8px;
 }
