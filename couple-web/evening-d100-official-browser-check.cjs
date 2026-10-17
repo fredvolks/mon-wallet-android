@@ -20,13 +20,29 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   await reduced.close();
   const page=await browser.newPage({viewport:{width:412,height:824}});await page.goto(url);
   await page.waitForFunction(()=>document.querySelector('canvas[data-dice-sides="100"]')?.loveRollDie);
-  await page.evaluate(()=>{window.__officialDie=document.querySelector('canvas[data-dice-sides="100"]');window.__officialDie.loveRollDie.rollTo(27);});
+  const started=await page.evaluate(()=>{window.__officialDie=document.querySelector('canvas[data-dice-sides="100"]');window.__officialDieStarted=performance.now();window.__officialDie.loveRollDie.rollTo(27);return window.__officialDie.loveRollDie.readState();});
+  assert.equal(started.spinning,true,'Animated throw did not start');
   for(let i=0;i<10;i++){
    assert.ok(await page.evaluate(()=>window.__officialDie===document.querySelector('canvas[data-dice-sides="100"]')&&window.__officialDie.isConnected&&window.__officialDie.getBoundingClientRect().height>100),'Die disappeared during animation');
    await page.waitForTimeout(500);
   }
-  const settled=await page.evaluate(()=>window.__officialDie.loveRollDie.readState());
-  assert.equal(settled.frontFace,27);assert.equal(settled.face,27);assert.equal(settled.spinning,false);
+  const animationState=()=>page.evaluate(()=>({elapsed:performance.now()-window.__officialDieStarted,hidden:document.hidden,rect:window.__officialDie.getBoundingClientRect().toJSON(),...window.__officialDie.loveRollDie.readState()}));
+  const observed=await animationState();
+  console.log('D100_AFTER_OBSERVATION',observed);
+  // Software WebGL may deliver its final animation frame after the observation
+  // window. Wait for the engine to stop, then assert the real face independently.
+  // Never wait for the expected face itself: a wrong stopped face must fail.
+  try{
+   await page.waitForFunction(()=>{
+    const c=window.__officialDie;
+    if(c!==document.querySelector('canvas[data-dice-sides="100"]')||!c.isConnected||c.getBoundingClientRect().height<=100)throw new Error('Die disappeared before animation completed');
+    return c.loveRollDie?.readState().spinning===false;
+   },null,{timeout:Math.max(1,15000-observed.elapsed),polling:100});
+  }catch(error){console.error('D100_ANIMATION_INCOMPLETE',await animationState());throw error;}
+  const settled=await animationState();
+  console.log('D100_ANIMATION_SETTLED',settled);
+  assert.equal(settled.spinning,false);assert.equal(settled.frontFace,27);assert.equal(settled.face,27);
+  assert.ok(settled.renderedFrames>started.renderedFrames,'Animated throw rendered no frames');
   await page.locator('.evening-d100-result').evaluate(e=>e.textContent='Résultat : 27');
   const refreshed=await page.evaluate(async()=>{const {updateEveningCategoryUi}=await import('/premium-evening.mjs');updateEveningCategoryUi(document.querySelector('#app'),'HASARD');
    const c=window.__officialDie,p=c.parentNode;c.remove();p.append(c);c.loveRollDie.refresh();window.dispatchEvent(new Event('resize'));return c.loveRollDie.readState();});

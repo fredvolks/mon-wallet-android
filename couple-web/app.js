@@ -7,7 +7,7 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261017-advent119'
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261017-centering124';
+import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261017-glass129';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-dice128';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-complete127';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
@@ -38,7 +38,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-17.128';
+const WEB_RELEASE='2026-10-17.129';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -314,7 +314,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261017-dice128').then(({dieOn})=>{
+  import('./dice3d.js?v=20261017-glass129').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected||canvas.loveRollDie)continue;
