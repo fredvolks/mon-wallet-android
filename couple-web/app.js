@@ -1924,7 +1924,8 @@ async function animateRoll(fn,kind='general'){
   render();return result;
  }catch(e){
   state.diceStatus=null;state.rollAnimationFace=null;state.rollAnimationKind=null;
-  await refreshAndShow();throw e;
+  try{await refreshShared();}finally{render();}
+  throw e;
  }
 }
 async function hashToken(token){

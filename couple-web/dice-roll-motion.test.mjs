@@ -116,3 +116,14 @@ test('Launch and diminishing contacts settle with zero translation and velocity'
  assert.ok(Math.abs(rollOffset(path,ROLL_TOTAL_MS-1).x)<1e-10);
  for(let t=0;t<=ROLL_TOTAL_MS;t+=16){const pose=rollOffset(path,t);assert.ok(Number.isFinite(pose.x)&&pose.y>=0&&pose.contact>=0&&pose.contact<=1);}
 });
+test('A failed draw followed by a refresh outage unlocks the interface without another draw',async()=>{
+ const source=appSource.slice(appSource.indexOf('async function animateRoll('),appSource.indexOf('\nasync function hashToken('));
+ const state={tab:'special',diceStatus:null},tabs=Array.from({length:5},()=>({disabled:false}));
+ const root={querySelector:()=>null,querySelectorAll:()=>tabs};let calls=0,renders=0;
+ const render=()=>{renders++;for(const tab of tabs)tab.disabled=!!state.diceStatus;};
+ const run=new Function('state','root','render','refreshShared','ROLL_TOTAL_MS',source+';return animateRoll;')(
+  state,root,render,async()=>{throw Error('Réseau indisponible');},ROLL_TOTAL_MS);
+ await assert.rejects(()=>run(async()=>{calls++;throw Error('Tirage non confirmé');},'monthly_activity'),/Réseau indisponible/);
+ assert.equal(calls,1);assert.equal(state.diceStatus,null);assert.equal(state.rollAnimationFace,null);
+ assert.equal(tabs.some(t=>t.disabled),false);assert.ok(renders>=2);
+});
