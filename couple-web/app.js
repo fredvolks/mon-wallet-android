@@ -1,4 +1,4 @@
-import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-editorial121';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-complete127';
 import {editorialHeader,editorialRow,editorialIcon} from './editorial-ui.mjs?v=20261017-editorial121';
 import {cardLibraryHtml,monthlyEditorHtml,adventEditorHtml,specialEditorHtml,importEditorHtml} from './editorial-editors.mjs?v=20261017-editorial121';
 import { discoverHtml } from './discover.mjs';
@@ -9,7 +9,7 @@ import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261017-centering124';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-editorial117';
-import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-editorial117';
+import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-complete127';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-editorial121';
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
@@ -31,14 +31,14 @@ import { SPECIAL_SURPRISES,OCCASIONS,occasionDate,dueOccasions,specialSurprise,o
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
-import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken,currentPushDevice} from './push-notifications.mjs?v=20261017-editorial121';
-import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs';
+import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken,currentPushDevice} from './push-notifications.mjs?v=20261017-complete127';
+import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs?v=20261017-complete127';
 import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
-import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
+import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-17.126';
+const WEB_RELEASE='2026-10-17.127';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -48,6 +48,7 @@ const client=CONFIG.supabaseUrl&&CONFIG.supabasePublishableKey?
 const launchParams=new URLSearchParams(location.search);
 const requestedSettingsSection=launchParams.get('section')||'';
 let settingsOpenSection=requestedSettingsSection||'';
+let notificationFeedback=null;
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,customSearch:'',customFilter:'all',monthlyActivities:[],monthlySlot:1,libraryScreen:'list',libraryImportKind:null,specialEditorKey:null,specialEditorStage:'D6_activite',specialEditorFace:1,adventEditorDay:1,pushDevice:null,
  events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventRevealing:false,adventServerDate:null,unlockKey:null,channel:null,
@@ -122,7 +123,24 @@ function showInlineError(message){
 function fail(error){
  console.error(error);
  const msg=String(error?.message||'Une erreur est survenue');
- showInlineError(msg);
+ if(isNotificationPage())setNotificationFeedback(msg,'error');else showInlineError(msg);
+}
+function isNotificationPage(){return state.tab==='settings'&&settingsOpenSection==='notifications';}
+function setNotificationFeedback(message,tone='status'){
+ notificationFeedback={message:String(message||''),tone};
+ const note=root.querySelector('#notification-feedback');
+ if(note){
+  note.textContent=notificationFeedback.message;note.dataset.tone=tone;note.hidden=!message;
+  const panel=note.closest('.settings-detail-body');
+  if(message&&panel){
+   const bounds=note.getBoundingClientRect(),visible=panel.getBoundingClientRect();
+   if(bounds.bottom>visible.bottom||bounds.top<visible.top)note.scrollIntoView({block:'nearest',behavior:'instant'});
+  }
+ }
+}
+function refreshNativeNotificationSettings(){
+ if(!isNotificationPage())return;
+ render();
 }
 async function rpc(name,args={}){const {data,error}=await client.rpc(name,args);if(error)throw error;return data;}
 async function query(table,options={}){
@@ -165,6 +183,7 @@ function backFromLoveRoll(){
   document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   return true;
  }
+ if(state.installModalOpen||state.forceInstallGuide){handle('install-later').catch(fail);return true;}
  if(state.reviewModalSessionId){state.reviewDismissedSessionId=state.reviewModalSessionId;state.reviewModalSessionId=null;state.reviewDraft={};render();return true;}
  if(allowBackExit){allowBackExit=false;return false;}
  if(state.showEveningChallenge){state.showEveningChallenge=false;render();return true;}
@@ -177,6 +196,7 @@ function backFromLoveRoll(){
  if(state.confirmCancel){state.confirmCancel=false;render();return true;}
  if(state.specialFocus){state.specialFocus=null;state.tab='special';render();return true;}
  if(state.tab==='settings'&&settingsOpenSection){handle('settings-page:'+(['admin'].includes(settingsOpenSection)?'jeu':settingsOpenSection.startsWith('aide')?'application':'')).catch(fail);return true;}
+ if(state.tab==='evening-calendar'){handle(eveningCalendarReturn()).catch(fail);return true;}
  if(['library','monthly-library','advent-editor','special-editor'].includes(state.tab)){handle(state.libraryImportKind?'editor-import-back':state.tab==='library'&&state.libraryScreen==='edit'?'editor-back':state.specialEditorKey?'special-editor-back':'settings-page:jeu').catch(fail);return true;}
  const parent={
   library:'settings','monthly-library':'settings','advent-editor':'settings',
@@ -212,7 +232,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const isCouple=connected&&isSharedCoupleReady(state.coupleId,state.members);
  const realHome=isCouple&&state.tab==='home';
  const realEvening=isCouple&&state.tab==='session'&&(!state.session||(state.session.paired_turns&&state.session.self_draws));
- const eveningArchive=isCouple&&state.tab==='evening-calendar';
+ const eveningArchive=connected&&state.tab==='evening-calendar';
  const realSurprise=isCouple&&state.tab==='special';
  const realSettings=connected&&state.tab==='settings';
  const realEditor=connected&&['library','monthly-library','advent-editor','special-editor'].includes(state.tab);
@@ -226,7 +246,8 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  root.classList.toggle('loveroll-surprise-ecrin',realSurprise);
  root.classList.toggle('loveroll-settings-menu',realSettings&&!settingsOpenSection);
  root.classList.toggle('loveroll-settings-detail',realSettings&&!!settingsOpenSection);
- root.classList.toggle('loveroll-settings-page',realSettings||realEditor);
+ root.classList.toggle('loveroll-settings-page',realSettings||realEditor||(isCouple&&state.tab==='occasions'));
+ root.classList.toggle('loveroll-occasion-details',isCouple&&state.tab==='occasions');
  root.classList.toggle('loveroll-library-page',realEditor);
  root.classList.toggle('loveroll-library-list',realEditor&&state.tab==='library'&&state.libraryScreen!=='edit'&&!state.libraryImportKind);
  // Preserve the SAME D100 canvas through UI refreshes with an unchanged face.
@@ -319,7 +340,7 @@ function nav(){
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
- '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions')||(key==='settings'&&!tabs.some(([tab])=>tab===state.tab)&&['library','monthly-library','advent-editor','special-editor','journal'].includes(state.tab)))?'active':'')+'"'+(state.diceStatus?' disabled':'')+'><span>'+navIcon(key,icon)+
+ '<button data-action="tab:'+key+'" class="'+((state.tab===key||(['session','personal-journal'].includes(key)&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions')||(key==='settings'&&!tabs.some(([tab])=>tab===state.tab)&&['library','monthly-library','advent-editor','special-editor','journal'].includes(state.tab)))?'active':'')+'"'+(state.diceStatus?' disabled':'')+'><span>'+navIcon(key,icon)+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
@@ -378,12 +399,13 @@ function bindActions(){
   try{const text=await file.text();if(!output.isConnected)return;output.value=text;state.jsonPending=null;root.querySelector('.json-preview')?.remove();const status=id('json-file-name');if(status)status.textContent=file.name;notify('Fichier chargé. Vérifiez son aperçu.');}catch(e){fail(e);}
  }));
  document.querySelectorAll('[data-push-option]').forEach(input=>input.addEventListener('change',async()=>{
-  const type=input.dataset.pushOption;
+  const type=input.dataset.pushOption,checked=input.checked;
+  input.disabled=true;
   try{
-   await updatePushPreference(client,state.user.id,state.pushPrefs||{},type,input.checked);
-   state.pushPrefs={...state.pushPrefs,[type]:input.checked};
-   notify('Préférence enregistrée.');
-  }catch(err){input.checked=!input.checked;fail(err);}
+   await updatePushPreference(client,state.user.id,state.pushPrefs||{},type,checked);
+   state.pushPrefs={...state.pushPrefs,[type]:checked};
+   setNotificationFeedback('Préférence enregistrée.');
+  }catch(err){input.checked=!checked;fail(err);}finally{input.disabled=false;}
  }));
  const reviewNote=root.querySelector('#lr-review-comment');
  reviewNote?.addEventListener('input',()=>{
@@ -456,10 +478,18 @@ function authMessage(message){
  else{state.authNotice=message;showInlineError(message);}
 }
 function render(){
+ // Old navigation references now open the current calendar and personal bilans.
+ // Existing encrypted records remain intact; the retired journal forms stay closed.
+ if(['journal','personal-journal'].includes(state.tab)){
+  state.eveningCalendarBack='settings-page:confidentialite';state.tab='evening-calendar';
+ }
  if(!state.user||state.passwordRecovery||!verifiedLoveEmail(state.user)||!state.profile?.birthday_md){for(const dispose of diceCleanup)dispose();diceCleanup=[];diceView=null;renderToken++;root.className='';}
  if(!client){frame('<section class="card"><h2>Connexion cloud à configurer</h2>'+
   '<p>Un projet Supabase dédié et son adresse HTTPS sont requis avant d’activer les comptes et le partage.</p></section>');return;}
  const pendingInvite=pendingInviteReference(sessionStorage);
+ const invitationNotice=(title,body,attributes='')=>'<div class="auth-editorial auth-notice-editorial">'+
+  '<header class="entry-account-hero">'+ritualBrandHtml()+'</header>'+
+  '<section class="entry-auth-card invitation-notice-card"'+attributes+'><h1>'+safe(title)+'</h1>'+body+'</section></div>';
  // Discover always shows a visual tour, never a second sign-in page.
  // The approved premium discovery IS the first invitation screen.
  // Consent is mandatory before the connection controls appear.
@@ -483,21 +513,19 @@ function render(){
  if(pendingInvite&&state.user&&state.coupleId){
   const soloOwner=state.members.length===1&&state.members[0]?.user_id===state.user.id&&
    state.couple?.owner_user_id===state.user.id;
-  root.innerHTML='<header class="header"><div><h1>♡ LOVEROLL</h1><p>Votre invitation privée</p></div></header>'+
-   '<section class="auth-panel invite-switch-account invite-existing-space">'+
-   '<div class="eyebrow">♡ INVITATION ET COMPTE EXISTANT</div>'+
-   '<h2>'+(soloOwner?'Votre compte possède déjà un espace LoveRoll ♡':
-    'Ce compte fait déjà partie d’un couple ♡')+'</h2>'+
-   '<p>Compte connecté : <strong>'+safe(state.user.email||'un compte existant')+'</strong>.</p>'+
+  root.className='';
+  root.innerHTML=invitationNotice(soloOwner?'Rejoindre le duo':'Un duo est déjà associé',
+   '<p class="invitation-notice-account">Compte connecté : <strong>'+safe(state.user.email||'un compte existant')+'</strong>.</p>'+
    '<p>'+(soloOwner?
     'Cet espace ne contient que vous. Si vous êtes bien le destinataire de l’invitation, vous pouvez rejoindre votre partenaire sans créer un nouveau compte.':
     'Ce compte est déjà associé à un autre couple. Un changement automatique risquerait d’affecter votre partenaire actuel.')+'</p>'+
    (soloOwner?
-    '<p class="invite-archive-note">Vos cartes personnelles et votre historique intime sont archivés avant le changement. Les cartes de l’ancien espace ne sont pas ajoutées au nouveau couple.</p>'+
-    button('join-invite-from-solo','♡ REJOINDRE LE COUPLE INVITÉ'):'')+
-   (state.inviteError?'<p class="invite-auth-feedback" role="alert">'+safe(state.inviteError)+'</p>':'')+
-   button('switch-account-invite','Utiliser un autre compte','class="subtle"')+
-   button('invite-return','← Revoir l’invitation','class="subtle"')+'</section>';
+    '<p class="invitation-notice-archive">Vos cartes personnelles et votre historique intime sont archivés avant le changement. Les cartes de l’ancien espace ne sont pas ajoutées au nouveau couple.</p>':'')+
+   (state.inviteError?'<p class="entry-auth-feedback" role="alert">'+safe(state.inviteError)+'</p>':'')+
+   '<div class="invitation-notice-actions">'+
+   (soloOwner?button('join-invite-from-solo','Rejoindre le couple invité','class="entry-auth-submit"'):'')+
+   button('switch-account-invite','Utiliser un autre compte','class="entry-auth-resend"')+
+   button('invite-return','Revoir l’invitation','class="entry-auth-back"')+'</div>');
   bindActions();return;
  }
  if(!state.profile||!state.profile.birthday_md){
@@ -506,18 +534,19 @@ function render(){
   return;
  }
  if(state.inviteWelcome){
-  root.innerHTML='<div class="invite-welcome" role="status"><div>♡</div><h1>Bienvenue dans LoveRoll</h1>'+
-   '<p>Votre espace à deux est prêt !</p></div>';
+  root.className='';
+  root.innerHTML=invitationNotice('Bienvenue dans LoveRoll','<p>Votre espace à deux est prêt !</p>',' role="status"');
   state.inviteWelcome=false;
   setTimeout(()=>{state.tab='home';render();},1300);return;
  }
  if(pendingInvite&&state.inviteError&&!state.coupleId){
-  root.innerHTML='<div class="invite-account-screen"><section class="invite-auth-card invite-error-card">'+
-   '<h1>Invitation à vérifier ♡</h1><p>'+safe(state.inviteError)+'</p>'+
-   '<p>Compte connecté : '+safe(state.user.email||'')+'</p>'+
-   button('switch-account-invite','Utiliser un autre compte')+
-   button('retry-invite','Réessayer','class="subtle"')+
-   button('invite-return','← Revoir l’invitation','class="subtle"')+'</section></div>';
+  root.className='';
+  root.innerHTML=invitationNotice('Invitation à vérifier',
+   '<p class="entry-auth-feedback" role="alert">'+safe(state.inviteError)+'</p>'+
+   '<p class="invitation-notice-account">Compte connecté : '+safe(state.user.email||'')+'</p>'+
+   '<div class="invitation-notice-actions">'+button('switch-account-invite','Utiliser un autre compte','class="entry-auth-submit"')+
+   button('retry-invite','Réessayer','class="entry-auth-resend"')+
+   button('invite-return','Revoir l’invitation','class="entry-auth-back"')+'</div>');
   bindActions();return;
  }
  if(state.demoMode){
@@ -528,33 +557,36 @@ function render(){
   bindActions();return;
  }
  // No demonstration games without two linked accounts. The creator still
- // owns the private card editor and personal journal before any invitation.
+ // owns the private card editor and calendar before any invitation.
  if(!isSharedCoupleReady(state.coupleId,state.members)){
   if(!state.coupleId&&pendingInvite){
-   root.innerHTML='<div class="invite-account-screen"><section class="invite-auth-card invite-error-card">'+
-    '<h1>Votre invitation ♡</h1><p>'+safe(state.inviteError||'Association en attente.')+'</p>'+
-    button('retry-invite','Réessayer l’association')+
-    button('switch-account-invite','Utiliser un autre compte','class="subtle"')+'</section></div>';
+   root.className='';
+   root.innerHTML=invitationNotice('Votre invitation',
+    '<p>'+safe(state.inviteError||'Association en attente.')+'</p>'+
+    '<div class="invitation-notice-actions">'+button('retry-invite','Réessayer l’association','class="entry-auth-submit"')+
+    button('switch-account-invite','Utiliser un autre compte','class="entry-auth-resend"')+'</div>');
    bindActions();return;
   }
   if(state.tab==='invitation'&&state.coupleId)renderPartnerInvitation();
   else if(state.tab==='settings')renderSettings();
-  else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
+  else if(state.tab==='evening-calendar')renderEveningCalendar();
   else if(state.tab==='library'&&isLoveAdmin())renderCardLibrary();
   else if(state.tab==='monthly-library'&&isLoveAdmin())renderMonthlyLibrary();
   else if(state.tab==='advent-editor'&&isLoveAdmin())renderAdventEditor();
   else if(state.tab==='special-editor'&&isLoveAdmin())renderSpecialEventsEditor();
   else if(!state.coupleId){
    state.tab='home';
-   frame(matchHtml(state.profile.display_name,false),
-    '♡ NOTRE MATCH','Préparer vos cartes avant de jouer à deux');
+   frame('<section class="settings-editorial partner-editorial partner-create-page">'+editorialHeader('')+
+    '<div class="settings-editorial-content"><div class="editorial-title"><h1>Créer notre duo</h1></div>'+
+    '<article class="settings-detail-body partner-owner-scroll">'+matchHtml(state.profile.display_name,false)+'</article></div></section>',
+    'Créer notre duo','');
+   root.classList.add('loveroll-settings-page');
   }else{
    state.tab='home';renderWaitingPartner();
   }
   return;
  }
  if(state.tab==='home')renderHome();
- else if(state.tab==='personal-journal')renderPersonalJournal().catch(fail);
  else if(state.tab==='ideas')renderIdeas();
  else if(state.tab==='session')renderSession();
  else if(state.tab==='evening-calendar')renderEveningCalendar();
@@ -563,7 +595,6 @@ function render(){
  else if(state.tab==='advent')renderAdvent();
  else if(state.tab==='advent-editor')renderAdventEditor();
  else if(state.tab==='special-editor')renderSpecialEventsEditor();
- else if(state.tab==='journal')renderJournal().catch(fail);
  else if(state.tab==='settings')renderSettings();
  else if(state.tab==='library')renderCardLibrary();
  else if(state.tab==='monthly-library')renderMonthlyLibrary();
@@ -803,43 +834,40 @@ function renderInvitePanel(){
   new Date(latest.expires_at)>new Date();
  const draft=active?{id:latest.id,email:latest.invited_email,
   link:inviteLinkForId(CONFIG.siteUrl,latest.id)}:null;
- let html='<section class="card"><div class="eyebrow">VOTRE INVITATION</div><h3>♡ Statut de la demande</h3>'+
-  '<div class="invite-status"><strong>'+safe(status.title)+'</strong><p>'+safe(status.hint)+'</p></div>';
- if(latest)html+='<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+
-  ' · Préparée le '+safe(new Date(latest.created_at).toLocaleDateString('fr-CA'))+'</p>';
+ let html='<section class="partner-invite-panel" aria-label="Votre invitation">'+
+  '<div class="partner-invite-status" role="status"><span>'+editorialIcon(ready?'check':'mail')+'</span>'+
+  '<div><strong>'+safe(status.title)+'</strong><p>'+safe(status.hint)+'</p></div></div>';
  if(!ready){
-  html+='<label>Adresse courriel du compte de votre partenaire<input id="invite-email" type="email" autocomplete="email" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
-   '<p class="tiny-note">Cette adresse sert à vérifier que la bonne personne accepte, même si vous partagez le lien par texto.</p>'+
-   (active?
-    '<p class="tiny-note">Votre lien d’invitation demeure valable et peut être renvoyé sans être remplacé.</p>'+
-    button('invite','Remplacer le lien actuel','class="subtle"'):
-    button('invite','Créer mon invitation'));
+  html+='<div class="partner-invite-fields"><label>Courriel de votre partenaire<input id="invite-email" type="email" autocomplete="email" aria-describedby="invite-email-hint" placeholder="partenaire@exemple.com" value="'+safe(draft?.email||latest?.invited_email||'')+'"></label>'+
+   '<p id="invite-email-hint" class="tiny-note">Votre partenaire devra utiliser cette adresse pour accepter.</p>'+
+   (!active?button('invite','Créer mon invitation','class="settings-primary"'):'')+'</div>';
   if(active||!latest){
-   html+='<div class="invite-actions">'+
-    button('send-messenger','♡ Messenger')+
-    button('send-sms','💬 Texto SMS','class="subtle"')+
-    button('send-email','✉ Courriel','class="subtle"')+
-    (active?button('copy-invite','Copier le lien','class="subtle"'):'')+'</div>';
+   html+='<div class="partner-invite-share"><h2>Partager le lien</h2><div class="partner-invite-actions">'+
+    button('send-messenger','Messenger','class="settings-secondary"')+
+    button('send-sms','Texto SMS','class="settings-secondary"')+
+    button('send-email','Courriel','class="settings-secondary"')+
+    (active?button('copy-invite','Copier le lien','class="settings-secondary"'):'')+'</div>'+
+    '<p class="tiny-note">Choisissez le destinataire et confirmez l’envoi dans votre messagerie.</p></div>';
   }
-  if(latest&&!active)html+='<p class="tiny-note">Cette invitation est expirée, annulée ou déjà acceptée. Créez un nouveau lien seulement si le couple n’est pas encore associé.</p>';
+  if(latest&&!active)html+='<p class="tiny-note">Ce lien n’est plus actif. Créez une invitation si votre duo n’est pas encore associé.</p>';
   if(state.inviteCopyFallback&&draft)html+='<label class="invite-copy-manual">Lien à sélectionner et copier<input id="invite-manual-link" readonly aria-label="Lien d’invitation à copier" value="'+safe(draft.link)+'"></label>';
-  if(draft)html+='<details class="invite-preview"><summary>♡ Aperçu de votre invitation</summary>'+
-    invitationPreviewMarkup()+'</details>'+
-    button('confirm-invite-sent','✓ J’ai envoyé l’invitation','class="subtle"')+
-    '<p class="tiny-note">Choisissez Messenger, SMS ou courriel dans votre application, puis confirmez l’envoi ici.</p>';
-  else html+='<p class="tiny-note">Le partage utilise le lien valide existant, s’il y en a un. Seul « Remplacer le lien actuel » invalide le précédent. Aucun message n’est envoyé sans votre confirmation.</p>';
-  if(active)
-   html+=button('cancel-invite:'+latest.id,'Annuler cette invitation','class="subtle danger-action"');
+  if(draft)html+=button('confirm-invite-sent','J’ai envoyé l’invitation','class="settings-primary"');
  }
+ if(latest)html+='<details class="partner-invite-options"><summary>Détails et options du lien</summary><div class="partner-invite-option-body">'+
+  '<p class="tiny-note">Destinataire : '+safe(latest.invited_email)+'<br>Préparée le '+safe(new Date(latest.created_at).toLocaleDateString('fr-CA'))+'</p>'+
+  (active?'<p class="tiny-note">Vous pouvez partager le même lien tant qu’il est valide. Le remplacer rend le précédent inutilisable.</p>'+
+   button('invite','Remplacer le lien actuel','class="settings-secondary"')+
+   button('cancel-invite:'+latest.id,'Annuler cette invitation','class="settings-signout danger-action"'):'')+'</div></details>';
+ if(draft)html+='<details class="partner-invite-preview"><summary>Aperçu de votre invitation</summary>'+invitationPreviewMarkup()+'</details>';
  return html+'</section>';
 }
 function renderPartnerInvitation(){
  if(!state.coupleId){state.tab='settings';renderSettings();return;}
- frame('<section class="card invitation-intro"><div class="eyebrow">♡ NOTRE INVITATION</div>'+
-  '<p>Invitez votre conjoint ou votre conjointe avec un lien privé via Messenger ou courriel.</p></section>'+
-  renderInvitePanel()+
-  '<section class="card">'+button('tab:settings','← Retour aux réglages','class="subtle"')+'</section>',
-  'INVITER MON PARTENAIRE','Votre invitation privée LoveRoll');
+ frame('<section class="settings-editorial partner-editorial partner-invitation-page">'+editorialHeader('tab:settings','Réglages')+
+  '<div class="settings-editorial-content"><div class="editorial-title"><h1>Inviter mon partenaire</h1></div>'+
+  '<article class="settings-detail-body partner-owner-scroll">'+renderInvitePanel()+'</article></div></section>',
+  'Inviter mon partenaire','');
+ root.classList.add('loveroll-settings-page');
 }
 function renderCoupleOverview(){
  const started=state.occasionSettings?.relationship_started_on;
@@ -862,27 +890,23 @@ function renderCoupleOverview(){
 }
 function renderWaitingPartner(){
  const name=safe(state.profile.display_name);
- const latest=state.invitations?.find(x=>!x.cancelled_at)||state.invitations?.[0];
- const invited=!!latest;
- frame('<div class="waiting-hero"><div class="waiting-heart">♡</div>'+
-  '<div class="eyebrow">♡ VOTRE UNIVERS LOVEROLL</div>'+
-  '<h2>Votre espace est prêt, '+name+' !</h2>'+
-  '<p>Il ne reste qu’à inviter votre partenaire pour commencer vos premiers jeux à deux.</p>'+
-  '<div class="waiting-avatars"><span>♥ '+name+'</span><span class="waiting-connection">·····</span><span>♡ Partenaire</span></div>'+
-  '<div class="waiting-status">● '+(invited?'Invitation à compléter':'En attente de votre partenaire')+'</div>'+
-  button('tab:invitation','♡ Inviter mon partenaire')+'</div>'+
-  '<section class="card"><div class="eyebrow">LES 3 ÉTAPES</div>'+
-  '<div class="waiting-steps"><p><strong>✓ 1.</strong> Votre espace personnel est créé</p>'+
-  '<p><strong>2.</strong> Partager l’invitation par Messenger, SMS ou courriel</p>'+
-  '<p><strong>3.</strong> Dès qu’elle est acceptée, vos dés et soirées seront activés</p></div></section>'+
-  '<section class="card"><h3>♡ À préparer pendant l’attente</h3>'+
-  '<div class="waiting-actions">'+
-  button('tab:library','♡ Nos 200 défis')+
-  button('tab:monthly-library','✦ 20 activités du mois','class="subtle"')+
-  button('tab:special-editor','💘 Événements spéciaux','class="subtle"')+
-  button('tab:advent-editor','🎁 Calendrier de l’Avent','class="subtle"')+'</div>'+
-  '<p class="tiny-note">Importez ou exportez chaque bibliothèque en JSON pour renouveler vos idées.</p></section>'+
-  renderInvitePanel(),'MON ESPACE','Votre aventure à deux commence ici');
+ const latest=state.invitations?.find(x=>!x.cancelled_at&&!x.accepted_at&&new Date(x.expires_at)>new Date())||state.invitations?.[0];
+ const status=invitationStatus(latest,false);
+ frame('<section class="settings-editorial partner-editorial partner-waiting-page">'+editorialHeader('')+
+  '<div class="settings-editorial-content"><div class="editorial-title"><h1>Votre espace est prêt</h1></div>'+
+  '<article class="settings-detail-body partner-owner-scroll partner-waiting-content">'+
+  '<p>'+name+', votre aventure à deux commence ici.</p>'+
+  '<div class="partner-invite-status" role="status"><span>'+editorialIcon('heart')+'</span><div><strong>'+safe(status.title)+'</strong><p>'+safe(status.hint)+'</p></div></div>'+
+  button('tab:invitation',latest?'Ouvrir mon invitation':'Inviter mon partenaire','class="settings-primary"')+
+  '<ol class="partner-waiting-steps" aria-label="Les prochaines étapes"><li><span aria-hidden="true">1</span>Partagez votre lien privé</li><li><span aria-hidden="true">2</span>Votre partenaire accepte</li></ol>'+
+  '<p class="tiny-note">Vos dés et vos soirées s’activent dès que votre duo est associé.</p>'+
+  '<details class="partner-waiting-prepare"><summary>Préparer nos jeux pendant l’attente</summary><div>'+
+  editorialRow('Nos 200 défis','','tab:library','dice')+
+  editorialRow('20 activités du mois','','tab:monthly-library','star')+
+  editorialRow('Événements spéciaux','','tab:special-editor','heart')+
+  editorialRow('Calendrier de l’Avent','','tab:advent-editor','calendar')+
+  '</div></details></article></div></section>','Mon espace','');
+ root.classList.add('loveroll-settings-page');
 }
 function renderHome(){
  const members=state.members||[];
@@ -984,8 +1008,7 @@ function timerWidget(challenge,minutes){
 }
 function renderLegacySession(){
  let s=state.session; const p=other();
- let body='<section class="premium-intro"><div class="premium-eyebrow">🎲 NOTRE SOIRÉE À DEUX</div>'+
- '<h2>Les défis de notre soirée</h2><p>200 cartes à personnaliser : 100 Sensuel + 100 Sexuel.</p></section>'+
+ let body='<section class="legacy-session-intro"><p>200 cartes à personnaliser : 100 Sensuel + 100 Sexuel.</p></section>'+
  '<section class="card hero-game-card"><div class="premium-eyebrow">♡ LE DÉ DES DÉFIS</div>'+
  heroDice(null,100,'Nos 200 défis')+
  '<p class="tiny-note">Pour commencer, chacun lance son dé personnel pour découvrir combien de défis il recevra. Vos résultats sont révélés ensemble.</p>';
@@ -1075,7 +1098,11 @@ function renderLegacySession(){
   button('tab:journal','Ouvrir notre calendrier partagé','class="subtle"')+
   button('tab:personal-journal','Ouvrir mon calendrier personnel')+'</section>';
  if(!s&&state.sessions?.some(x=>x.finished_at&&x.counted))body+=renderCoupleOverview();
- frame(body,'VOTRE SOIRÉE',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
+ frame('<section class="settings-editorial legacy-session-editorial">'+editorialHeader('tab:home','Accueil')+
+  '<div class="settings-editorial-content"><div class="editorial-title"><h1>Notre soirée</h1></div>'+
+  '<article class="legacy-session-scroll" aria-label="Défis et commandes de notre soirée" tabindex="0">'+body+'</article></div></section>',
+  'Notre soirée',s?'Vos défis à offrir et à recevoir':'Un nouveau moment à deux');
+ root.classList.add('loveroll-settings-page');
 }
 function renderSession(){
  // Always show the same Soirée page, even when the weekly die is unrolled.
@@ -1167,6 +1194,9 @@ function renderSession(){
     session?state.challenges:state.challengesHistory,session?.id||last?.id||null)
  }), 'NOTRE SOIRÉE','Un jeu synchronisé sur nos deux comptes');
 }
+function eveningCalendarReturn(){
+ return state.eveningCalendarBack||(isSharedCoupleReady(state.coupleId,state.members)?'tab:session':'settings-page:confidentialite');
+}
 function renderEveningCalendar(){
  const mo=state.eveningCalendarMonth||month();
  const date=state.eveningCalendarDate?.startsWith(mo)?state.eveningCalendarDate:
@@ -1177,14 +1207,15 @@ function renderEveningCalendar(){
   sessions:state.sessions||[],members:state.members||[],
   stats:state.eveningHistoryStats||[],historyChallenges:state.eveningCalendarChallenges||[],
   reviews:state.eveningReviews||[],
-  me:state.user?.id,month:mo,selectedDate:date
+  me:state.user?.id,month:mo,selectedDate:date,
+  backAction:eveningCalendarReturn(),backLabel:eveningCalendarReturn().startsWith('settings-page:')?'Retour à la confidentialité':'Retour à Soirée'
  }), 'CALENDRIER DES SOIRÉES', 'Un souvenir de chaque moment à deux');
 }
 function optionalRolledTimer(roll){
  if(!roll?.timer_minutes)return '';
  const key='special-'+roll.id;
  return state.specialTimerKey===key?timerWidget({id:key},roll.timer_minutes):
-  button('special-timer:'+key,'⏱ Minuteur · '+roll.timer_minutes+' min','class="subtle"');
+  button('special-timer:'+key,editorialIcon('clock')+' Minuteur · '+roll.timer_minutes+' min','class="subtle occasion-timer"');
 }
 function renderSpecial(){
  const original=state.monthly||{},active=original.monthly_activity;
@@ -1217,13 +1248,13 @@ function renderOccasions(){
     year:due?.year||next?.year||year,daysLeft:due?.daysLeft??null});
   }
  }
- let body=(state.specialFocus?
-  '<section class="occasion-back-top">'+button('occasion-back','← Retour à Surprise','class="subtle"')+'</section>':
-  '<section class="premium-intro"><div class="premium-eyebrow">♥ NOS DATES IMPORTANTES</div><h2>Des occasions à célébrer</h2><p>Saint-Valentin, anniversaires et fêtes : chaque date réserve sa propre surprise.</p></section>')+ 
- '<section class="card"><h2>Les dés de nos événements</h2>'+
-  '<p>Pour les fêtes classiques, découvrez une surprise parmi 20 idées. Pour vos occasions personnalisées, un lancer choisit l’activité et un second ajoute une touche de surprise.</p>'+
-  '<p>Chaque idée est facultative : vous pouvez en discuter, la modifier ou la refuser.</p></section>';
- for(const ev of all.filter(e=>!state.specialFocus||(e.key===state.specialFocus.key&&e.actorId===state.specialFocus.owner)).sort((a,b)=>(a.daysLeft===null?1:0)-(b.daysLeft===null?1:0))){
+ const events=all.filter(e=>!state.specialFocus||(e.key===state.specialFocus.key&&e.actorId===state.specialFocus.owner))
+  .sort((a,b)=>(a.daysLeft===null?1:0)-(b.daysLeft===null?1:0));
+ const heading=events.length===1?surpriseTitle(settings,events[0].key,events[0].actorId,events[0].title):'Nos événements';
+ let body='<section class="settings-editorial occasion-editorial">'+editorialHeader('occasion-back','Surprise')+
+  '<div class="settings-editorial-content"><div class="editorial-title"><h1>'+safe(heading)+'</h1></div>'+
+  '<div class="occasion-detail-scroll">';
+ for(const ev of events){
   const k=ev.key+(ev.actorId?':'+ev.actorId:'');
   const presetKey=privateSpecialKey(ev.key,ev.actorId,state.couple?.owner_user_id);
   const prize=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='surprise');
@@ -1233,8 +1264,8 @@ function renderOccasions(){
   const modifier=state.occasionRolls.find(r=>r.occasion_key===k&&r.event_year===ev.year&&r.roll_type==='modifier');
   const displayName=ev.actorId?person(ev.actorId):'';
   const role=occasionRoles(ev,settings,state.members);
-  body+='<section class="card occasion-premium-card"><div class="eyebrow">♡ '+safe(surpriseTitle(settings,ev.key,ev.actorId,ev.title))+
-    (displayName?' · '+safe(displayName):'')+'</div>';
+  body+='<section class="occasion-premium-card">'+(events.length>1?'<h2>'+safe(surpriseTitle(settings,ev.key,ev.actorId,ev.title))+'</h2>':'')+
+   (displayName?'<div class="occasion-person">'+editorialIcon('heart')+safe(displayName)+'</div>':'');
   const eventDate=ev.date?new Intl.DateTimeFormat('fr-CA',{
    day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
   }).format(new Date(ev.date+'T12:00:00Z')):'Date non définie';
@@ -1244,20 +1275,20 @@ function renderOccasions(){
   if(!role.shared&&!role.receiver){
    body+='<p class="tag">Personne célébrée non renseignée. L’administrateur la désigne dans Réglages.</p>';
   }else if(role.shared){
-   body+='<div class="challenge-roles">♡ DÉFI COMMUN · À ORGANISER ENSEMBLE</div>'+
-    '<p>Un rendez-vous plus original que d’habitude, préparé ensemble et jamais imposé.</p>';
+   body+='<div class="challenge-roles">'+editorialIcon('heart')+' À préparer ensemble</div>';
   }else{
-   body+='<div class="challenge-roles">♡ '+safe(role.giver.name).toUpperCase()+
-    ' OFFRE → '+safe(role.receiver.name).toUpperCase()+' REÇOIT</div>';
+   body+='<div class="challenge-roles">'+editorialIcon('heart')+' '+safe(role.giver.name)+
+    ' offre · '+safe(role.receiver.name)+' reçoit</div>';
   }
   if(!ev.date)body+='<p>Ajoutez cette date dans Réglages pour activer le tirage.</p>';
-  else if(ev.daysLeft===null)body+='<p>Ouverture 14 jours avant la fête, fermeture 7 jours après. Cela laisse le temps de trouver une gardienne.</p>';
+  else if(ev.daysLeft===null)body+='<div class="occasion-availability">'+editorialIcon('calendar')+
+   '<div><strong>Votre surprise se prépare</strong><p>Disponible 14 jours avant cette date et jusqu’à 7 jours après.</p></div></div>';
   else if(custom){
    if(!activity){
     if(role.shared||role.receiver)
      body+='<div class="occasion-step-label">ÉTAPE 1 · NOTRE ACTIVITÉ</div>'+
        heroDice(null,6,'Activité surprise')+
-       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':activity','🎲 DÉCOUVRIR L’ACTIVITÉ');
+       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':activity','Découvrir l’activité','class="settings-primary"');
    }else{
     body+=heroDice(activity.face,6,'Activité surprise')+
       '<div class="card"><div class="eyebrow">ACTIVITÉ · FACE '+activity.face+'</div>'+
@@ -1266,7 +1297,7 @@ function renderOccasions(){
     if(!modifier){
      body+='<div class="occasion-step-label">ÉTAPE 2 · TOUCHE SURPRISE</div>'+
        heroDice(null,6,'Touche surprise')+
-       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','🎲 RÉVÉLER LA TOUCHE SURPRISE');
+       button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','Révéler la touche surprise','class="settings-primary"');
     }else{
      body+=heroDice(modifier.face,6,'Touche surprise')+
        '<div class="card"><div class="eyebrow">RÈGLE · FACE '+modifier.face+'</div>'+
@@ -1276,7 +1307,7 @@ function renderOccasions(){
   }
   else if(!prize){if(role.shared||role.receiver)body+='<div class="occasion-step-label">NOTRE SURPRISE</div>'+
     heroDice(null,20,'Dé de fête')+
-    button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','🎲 RÉVÉLER LA SURPRISE');}
+    button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':surprise','Révéler la surprise','class="settings-primary"');}
   else{
    const idea=prize.special_title?
     {title:prize.special_title,detail:prize.special_description,level:'Votre surprise du jour'}:
@@ -1287,7 +1318,7 @@ function renderOccasions(){
    if(prize.special_title){
     if(!modifier){
      body+='<p>Une deuxième surprise reste à révéler : révélez la touche surprise de ce moment.</p>'+
-      button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','🎲 RÉVÉLER LA TOUCHE SURPRISE');
+      button('occasion-roll:'+ev.key+':'+(ev.actorId||'-')+':modifier','Révéler la touche surprise','class="settings-primary"');
     }else{
      body+=heroDice(modifier.face,6,'Règle supplémentaire')+
       '<div class="card"><div class="eyebrow">SURPRISE · FACE '+modifier.face+'</div>'+
@@ -1305,8 +1336,12 @@ function renderOccasions(){
   }
   body+='</section>';
  }
- body+='<section class="card">'+button('tab:settings','⚙ Définir nos dates')+button('occasion-back','← Retour à Surprise','class="subtle"')+'</section>';
- frame(body,'FÊTES ET ANNIVERSAIRES','Un moment LoveRoll pensé pour chaque grande occasion');
+ body+='<details class="occasion-help"><summary>Comment se déroule la surprise ?</summary>'+
+  '<p>Pour les fêtes classiques, découvrez une surprise parmi 20 idées. Pour vos occasions personnalisées, un lancer choisit l’activité et un second ajoute une touche de surprise.</p>'+
+  '<p>Chaque idée est facultative : vous pouvez en discuter, la modifier ou la refuser.</p></details>'+
+  editorialRow('Nos dates importantes','Consulter notre anniversaire et les dates du duo','tab:settings','calendar')+
+  '</div></div></section>';
+ frame(body,heading,'');
 }
 function portableLibrary(kind){
  if(kind==='evening')return buildEveningLibrary(state.customCategory,state.customCards);
@@ -1562,6 +1597,7 @@ function openSettingsPage(section=''){
  const allowed=['','compte','couple','notifications','jeu','confidentialite','application','aide','aide-connexion','aide-des','aide-sync','admin'];
  if(!allowed.includes(section))return;
  if(section==='admin'&&!isLoveAdmin())throw Error('Options réservées au créateur du couple.');
+ if(section!==settingsOpenSection||state.tab!=='settings')notificationFeedback=null;
  settingsOpenSection=section;state.tab='settings';render();
  window.scrollTo({top:0,behavior:'instant'});
  if(section==='notifications')currentPushDevice(client,state.user?.id).then(device=>{state.pushDevice=device;if(state.tab==='settings'&&settingsOpenSection==='notifications')render();}).catch(()=>{});
@@ -1646,10 +1682,9 @@ function renderSettings(){
   editorialRow('Connexion et invitation','','settings-page:aide-connexion','help')+
   editorialRow('Dés et activités','','settings-page:aide-des','dice')+
   editorialRow('Synchronisation','','settings-page:aide-sync','sync')+'</section>';
- const privacy=(linked?editorialRow('Notre journal partagé','Consulter le calendrier et les notes','tab:journal','book'):'<p>Associez votre partenaire pour accéder au journal partagé.</p>')+
-  (linked?editorialRow(state.unlockKey?'Verrouiller le journal':'Journal verrouillé',state.unlockKey?'Protéger son accès sur cet appareil':'Votre phrase secrète protège les notes',state.unlockKey?'lock':'','lock'):'')+
+ const privacy=editorialRow('Calendrier et bilans','Retrouver les soirées et les bilans de chacun','evening-calendar:settings','calendar')+
   (nativeApp&&typeof window.LoveRollNativeAuth.openLegacyOffline==='function'?editorialRow('Anciennes données hors ligne','Sur cet appareil Android','native-legacy','phone'):'')+
-  '<p class="tiny-note editorial-separated">Votre espace privé, à votre rythme. Le chiffrement et les notes existantes sont conservés.</p>';
+  '<p class="tiny-note editorial-separated">Les bilans restent associés à leur auteur dans le calendrier commun. Votre historique et vos données existantes sont conservés.</p>';
  const helpEntries=[
   ['Association des comptes','Une invitation privée relie deux comptes distincts après acceptation.'],
   ['Dé hebdomadaire','Un seul tirage officiel par couple et par semaine, renouvelé le lundi.'],
@@ -1659,7 +1694,7 @@ function renderSettings(){
   ['Événements spéciaux','Les activités et variantes se gèrent dans Cartes et activités. Appuyez sur une tuile de Surprise pour modifier son nom ou sa date.'],
   ['Calendrier de l’Avent','Chaque lettre se débloque à sa date et reste ouvrable plus tard. Les lettres déjà ouvertes restent consultables.'],
   ['Synchronisation','Les données partagées se mettent à jour entre les comptes connectés.'],
-  ['Confidentialité','Le journal partagé reste protégé par votre phrase secrète. Les bilans de soirée restent associés à leur auteur.'],
+  ['Confidentialité','Les bilans de soirée restent associés à leur auteur dans le calendrier commun.'],
   ['Mises à jour','Vérifiez les versions Android et actualisez le contenu Web dans Application.']
  ];
  const support='<div class="settings-help-list">'+helpEntries.map(([title,answer])=>
@@ -1671,14 +1706,14 @@ function renderSettings(){
   application:{title:'Application et aide',body:appSettings},
   'aide-connexion':{title:'Connexion et invitation',body:'<p>Chaque personne utilise son propre compte. Confirmez votre courriel avant de rejoindre votre partenaire. L’invitation reste conservée pendant la connexion, Google et la récupération du mot de passe.</p><p>Dans Notre duo, le créateur prépare un lien privé. Le destinataire l’accepte avec le courriel auquel il a été invité.</p>'},
   'aide-des':{title:'Dés et activités',body:'<p>Le dé hebdomadaire est commun : un tirage par couple et par semaine. En Soirée, chacun brasse son D6 personnel ; les deux résultats déverrouillent les défis.</p><p>Sensuel et Sexuel : 88 % de la catégorie choisie, 12 % de l’autre. Au hasard : 50 / 50. Les emplacements vides sont exclus ; l’option anti-répétition conserve son cycle entre les soirées.</p><p>La Surprise du mois choisit une activité puis qui invite. L’Avent se débloque par date : une lettre oubliée reste ouvrable plus tard. Un défi non commencé peut être offert, jusqu’à trois fois par mois et par personne.</p>'},
-  'aide-sync':{title:'Synchronisation',body:'<p>Les résultats officiels proviennent du serveur et se retrouvent sur les deux comptes associés. Une connexion est nécessaire pour confirmer un lancer ou une ouverture.</p><p>Les listes personnelles de défis restent privées. Les bilans de soirée restent associés à leur auteur dans le calendrier commun. Le journal chiffré se déverrouille avec votre phrase secrète ; sa clé reste sur l’appareil.</p>'},
+  'aide-sync':{title:'Synchronisation',body:'<p>Les résultats officiels proviennent du serveur et se retrouvent sur les deux comptes associés. Une connexion est nécessaire pour confirmer un lancer ou une ouverture.</p><p>Les listes personnelles de défis restent privées. Les bilans de soirée restent associés à leur auteur dans le calendrier commun.</p>'},
   aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+(celebrants?'<details class="settings-help-item"><summary>Destinataires des occasions</summary>'+celebrants+'</details>':'')}};
  if(settingsOpenSection==='admin'&&!canEdit)settingsOpenSection='jeu';
  if(!pages[settingsOpenSection])settingsOpenSection='';
  const name=state.profile.display_name||'Mon profil',initial=Array.from(name)[0]||'♡';
  const items=[['couple','Notre duo',hasPartner?state.members.map(m=>m.name).join(' & '):linked?'Invitation en attente':'Inviter mon partenaire'],
   ['notifications','Notifications','Rappels et autorisations'],['jeu','Cartes et activités','Soirée, Surprise et Avent'],
-  ['confidentialite','Journal et confidentialité','Journal partagé et données'],['application','Application et aide','Versions et fonctionnement']];
+  ['confidentialite','Journal et confidentialité','Calendrier, bilans et données'],['application','Application et aide','Versions et fonctionnement']];
  const menu='<button class="settings-profile-row" data-action="settings-page:compte"><span class="settings-initial" aria-hidden="true">'+safe(initial)+'</span><span><strong>'+safe(name)+'</strong><small>Mon compte</small></span><b aria-hidden="true">›</b></button>'+
   '<nav class="settings-sections" aria-label="Rubriques des réglages">'+items.map(([key,label,detail])=>
    '<button data-action="settings-page:'+key+'" class="settings-section-row"><span class="settings-row-icon">'+settingsIcon(key)+'</span><span><strong>'+label+'</strong><small>'+safe(detail)+'</small></span><b aria-hidden="true">›</b></button>').join('')+'</nav>';
@@ -1689,6 +1724,7 @@ function renderSettings(){
   '<div class="editorial-title"><h1>'+safe(page?.title||'Réglages')+'</h1>'+(settingsOpenSection==='admin'?'<small class="editorial-badge">Créateur</small>':'')+'</div>'+
   (page?'<article class="settings-detail-body" data-settings-page="'+settingsOpenSection+'">'+page.body+'</article>':menu)+
   '</div></section>','Réglages','');
+ if(settingsOpenSection==='notifications'&&notificationFeedback)setNotificationFeedback(notificationFeedback.message,notificationFeedback.tone);
 }
 
 async function refreshAndShow(){await refreshShared();render();}
@@ -1897,6 +1933,7 @@ async function handle(action,element){
    const date=eveningLocalDay(session.started_at);
    state.eveningCalendarMonth=date?.slice(0,7)||month();
    state.eveningCalendarDate=date||today();
+   state.eveningCalendarBack='tab:session';
    state.tab='evening-calendar';
    await refreshAndShow();
   }catch(error){
@@ -1906,6 +1943,7 @@ async function handle(action,element){
  }
  if(verb==='evening-more'){state.eveningMore=!state.eveningMore;render();return;}
  if(verb==='evening-calendar'){
+  state.eveningCalendarBack=parts[0]==='settings'||state.tab==='settings'?'settings-page:confidentialite':'tab:session';
   state.eveningMore=false;state.confirmCancel=false;
   const date=state.session?eveningLocalDay(state.session.started_at):null;
   if(date){state.eveningCalendarDate=date;state.eveningCalendarMonth=date.slice(0,7);}
@@ -2063,30 +2101,32 @@ async function handle(action,element){
  if(verb==='push-enable'){
   await enablePush(client,state.user.id);
   state.pushPrefs={...(state.pushPrefs||{}),enabled:true};state.pushDevice=await currentPushDevice(client,state.user?.id);
-  render();notify('Notifications activées sur cet appareil ❤️');return;
+  render();setNotificationFeedback('Notifications activées sur cet appareil.');return;
  }
  if(verb==='push-disable'){
   await disablePush(client,state.user.id);
   state.pushPrefs={...(state.pushPrefs||{}),enabled:false};state.pushDevice=await currentPushDevice(client,state.user?.id);
-  render();notify('Notifications désactivées.');return;
+  render();setNotificationFeedback('Notifications désactivées sur cet appareil.');return;
  }
  if(verb==='push-test'){
   const result=await sendTestPush(client);
-  notify(result?'Demande de test acceptée. L’envoi et la réception restent à vérifier sur votre appareil.':'Demande de test refusée par le serveur.');
+  setNotificationFeedback(result?'Demande de test acceptée. Vérifiez si la notification arrive sur cet appareil.':'Demande de test refusée par le serveur.',result?'status':'error');
   return;
  }
  if(verb==='native-notify-enable'){
   if(!window.LoveRollNativeAuth?.enableWeeklyReminder)
    throw Error('Mettez à jour l’APK pour activer le rappel Android.');
   window.LoveRollNativeAuth.enableWeeklyReminder();
-  notify('Rappel hebdomadaire demandé à Android. Autorisez les notifications si nécessaire.');
+  setNotificationFeedback('Activation demandée. Autorisez les notifications dans la fenêtre Android si nécessaire.');
+  setTimeout(refreshNativeNotificationSettings,400);
   return;
  }
  if(verb==='native-notify-disable'){
   if(!window.LoveRollNativeAuth?.disableWeeklyReminder)
    throw Error('Mettez à jour l’APK pour désactiver le rappel Android.');
   window.LoveRollNativeAuth.disableWeeklyReminder();
-  notify('Rappel local désactivé.');return;
+  setNotificationFeedback('Désactivation du rappel local demandée.');
+  setTimeout(refreshNativeNotificationSettings,400);return;
  }
  if(verb==='invite-start'){
   const invite=pendingInviteReference(sessionStorage);
@@ -3253,7 +3293,13 @@ window.addEventListener('online',()=>{
  liveSync.request(350);
 });
 window.addEventListener('focus',()=>{
+ refreshNativeNotificationSettings();
  if(state.user)liveSync.probe(true).catch(console.warn);
+});
+window.addEventListener('loveroll-native-notification-state',event=>{
+ if(!isNotificationPage())return;
+ render();
+ setNotificationFeedback(event.detail?.message||(event.detail?.weeklyEnabled?'Rappel hebdomadaire activé.':'Rappel hebdomadaire désactivé.'));
 });
 document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&state.user){

@@ -49,10 +49,10 @@
 .lr-dialog-actions button:active{transform:scale(.97)}
 .lr-dialog-cancel{
  background:linear-gradient(135deg,#340b28,#491330);
- border:1px solid #db3c85!important;color:#ffacd2;
+ border:1px solid #db3c85;color:#ffacd2;
 }
 .lr-dialog-accept{
- border:1px solid #ffd4e9!important;color:#fff;
+ border:1px solid #ffd4e9;color:#fff;
  background:linear-gradient(115deg,#ff7ab6,#f53192 50%,#c71067);
  box-shadow:0 4px 22px #ee36886e,inset 0 2px 0 #ffe8f180;
 }

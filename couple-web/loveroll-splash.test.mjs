@@ -11,7 +11,7 @@ test('First paint has separate local glass, satin, live logo, caption and three 
  assert.match(markup,/Chargement de votre espace…/);
  assert.equal((markup.match(/<i><\/i>/g)||[]).length,3);
  assert.doesNotMatch(markup,/back-heart|lr-splash__ring|<svg|<button|<nav/);
- for(const image of ['loveroll-glass-heart-v123.webp','loveroll-splash-satin-v123.webp']){
+ for(const image of ['loveroll-glass-heart-v123.webp','loveroll-splash-satin-v123.webp','loveroll-wordmark-v127.svg','loveroll-loading-caption-v127.svg']){
   assert.match(html,new RegExp('rel="preload" as="image" href="./assets/'+image));
   assert.ok(readFileSync(new URL('./assets/'+image,import.meta.url)).length<150000);
   assert.ok(sw.includes('./assets/'+image));
@@ -39,9 +39,10 @@ test('Real initialization owns the destination; outgoing splash is nonblocking a
  assert.doesNotMatch(js,/minimumDuration|minDuration/);
 });
 test('Current boot assets and cache generation are coherent',()=>{
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.126');
- for(const file of ['loveroll-splash.css','boot-recovery.js'])assert.ok(html.includes(file+'?v=20261017-glass123'));
- assert.ok(html.includes('loveroll-splash.js?v=20261017-continuous126'));
- assert.match(sw,/loveroll-static-v126/);
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.127');
+ assert.ok(html.includes('loveroll-splash.css?v=20261017-complete127'));
+ assert.ok(html.includes('boot-recovery.js?v=20261017-glass123'));
+ assert.ok(html.includes('loveroll-splash.js?v=20261017-complete127'));
+ assert.match(sw,/loveroll-static-v127/);
  for(const name of ['loveroll-splash.css','loveroll-splash.js'])assert.ok(sw.includes('./'+name));
 });

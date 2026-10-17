@@ -36,7 +36,7 @@ test('Gift and dissociation are styled as premium accessible actions, not browse
  assert.match(styles,/\.lr-dialog-card/);
  assert.match(styles,/\.lr-dialog-icon/);
  assert.match(styles,/\.lr-dialog-accept\.lr-dialog-danger/);
- assert.match(html,/premium-dialogs\.css\?v=20261015-no-toast87/);
+ assert.match(html,/premium-dialogs\.css\?v=20261017-complete127/);
  assert.match(sw,/premium-dialogs\.mjs/);
 });
 test('No floating toast anywhere; real failures remain inline',()=>{

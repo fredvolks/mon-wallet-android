@@ -28,7 +28,7 @@ jobs:
           SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
           yes | "$SDKMGR" --licenses >/dev/null || true
           "$SDKMGR" --install 'platforms;android-35' 'build-tools;35.0.0'
-      - name: Compile Android 0.13.11 and test
+      - name: Compile Android 0.13.12 and test
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace
       - name: Verify Firebase service and APK metadata
         run: |
@@ -40,7 +40,7 @@ jobs:
           assert 'POST_NOTIFICATIONS' in manifest
           assert '.LoveRollFcmService' in manifest
           assert 'FirebaseMessagingService' in service
-          assert "versionName '0.13.11'" in build
+          assert "versionName '0.13.12'" in build
           assert Path('app/build/outputs/apk/debug/app-debug.apk').exists()
           assert Path('app/build/outputs/apk/release/app-release-unsigned.apk').exists()
           print('Android native FCM build & unit checks validated')

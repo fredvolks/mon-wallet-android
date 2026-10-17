@@ -1,4 +1,4 @@
-# LoveRoll — chargement en verre (Web 123 / Android 0.13.10)
+# LoveRoll — chargement en verre (Web 127 / Android 0.13.12)
 
 Deux illustrations ImageGen générées séparément : cœur en verre rose champagne sur fond transparent, et décor photographique bordeaux presque noir avec satin et marbre en bas. Référence de composition : visuel fourni par le propriétaire le 17 octobre 2026. Aucun mot, logo, bouton ni indicateur n’est intégré aux pixels.
 
@@ -7,7 +7,7 @@ Deux illustrations ImageGen générées séparément : cœur en verre rose champ
 - Les deux copies dans `app/src/main/res/drawable-nodpi/` sont identiques octet pour octet. Le chargement natif ne dépend pas du réseau. Les bitmaps sont décodés une seule fois.
 - Les exports WebP utilisent Pillow/Lanczos et qualité 88 (cœur), 82 (fond), méthode 6 ; aucune retouche picturale par script.
 
-Le cœur bat lentement (3 s, échelle 1 à 1,018). Le logo serif italique et la phrase exacte sont du texte HTML / Canvas Android, immobiles. Les trois points sont indépendants. Les animations sont désactivées avec `prefers-reduced-motion` et `ValueAnimator.areAnimatorsEnabled()`.
+Le cœur bat lentement (3 s, échelle 1 à 1,018). Le logo serif italique et la phrase exacte sont des tracés SVG communs au Web et au Canvas Android, immobiles. Les trois points sont indépendants. Les animations sont désactivées avec `prefers-reduced-motion` et `ValueAnimator.areAnimatorsEnabled()`.
 
 Le chargement se ferme au rendu de la vraie destination, sans durée minimale. La courte sortie de 200 ms n’intercepte pas les touches. Un échec de démarrage remplace le chargement par une erreur avec Réessayer ; la destination et les paramètres d’invitation restent conservés. Aucun compte, stockage de session ou historique n’est effacé.
 
@@ -32,3 +32,15 @@ Le chargement natif restait auparavant visible jusqu’au premier rendu WebView,
 L’observateur `app/src/main/assets/loveroll-native-startup.js` est livré dans l’APK. Il attend un contenu réel dans `#app` et la disparition de tous les calques de chargement, puis Android attend le rendu correspondant avant le fondu. Le délai de secours natif reste de 18 secondes et propose Réessayer si l’initialisation ne termine pas. Les événements de document et la disponibilité des fonctions de connexion restent distincts de cet état visuel.
 
 Le contrôle navigateur exécute cet observateur exact sur les destinations sans compte, avec session simulée et avec invitation, ainsi que sur les erreurs et les navigations successives. `.github/scripts/loveroll-startup-handoff.cjs` vérifie en plus le vrai APK de débogage dans l’émulateur : une page locale contrôlée termine son chargement HTML tout en conservant le cœur Web ; la capture doit toujours montrer le cœur natif. Après l’apparition du contenu ou de l’erreur récupérable, la WebView devient accessible et aucun second chargement ne doit apparaître. Ce contrôle ne contacte aucun compte et conserve ses captures dans l’artifact Android.
+
+## Lettrage partagé — Web 127 / Android 0.13.12
+
+Les deux chargements utilisent les mêmes tracés pour éviter les différences de largeur, de hauteur et de ligne de base entre les polices Android et celles du navigateur. `make-shared-lettering.py` convertit Nimbus Roman Italic (logo) et Nimbus Sans Regular (phrase) en un seul chemin par SVG et écrit deux copies identiques dans les ressources Web et les assets Android. La compilation n’a pas besoin de ces polices.
+
+- Logo : `loveroll-wordmark-v127.svg`, viewBox 4200 × 1150, couleur `#f5dcd8`.
+- Phrase : `loveroll-loading-caption-v127.svg`, viewBox 14000 × 1500, couleur `#ccb3bf`.
+- Le statut accessible garde le texte « Chargement de votre espace… » ; les tracés sont décoratifs.
+- Android lit chaque chemin une seule fois. Aucune police, aucun ajustement de texte au lancement.
+- La géométrie utilise la même densité, les mêmes proportions du viewport et les mêmes espacements. Le test dans l’émulateur enregistre à la fois le Canvas natif, la WebView réelle et les rectangles du cœur, du logo, des points et de la phrase.
+
+Le même contrôle Android ouvre la vraie fenêtre de mise à jour avec une entrée réservée aux builds de débogage. Il vérifie Télécharger, Plus tard, Retour et les longs textes dans une fenêtre basse ; ses callbacks de test ne téléchargent et n’installent aucun APK.

@@ -74,6 +74,12 @@ jobs:
           node couple-web/home-card-centering-browser-check.cjs
           node couple-web/app-icon-browser-check.cjs
           node couple-web/loveroll-splash-browser-check.cjs
+      - name: Notifications, invitations and every corrected secondary route
+        run: |
+          node couple-web/notification-design-v127-browser-check.cjs
+          node couple-web/waiting-invitation-browser-check.cjs
+          node couple-web/secondary-pages-v127-browser-check.cjs
+          node couple-web/web-dialogs-v127-browser-check.cjs
       - name: Preserve editorial and podium evidence
         if: always()
         uses: actions/upload-artifact@v4

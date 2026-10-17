@@ -125,26 +125,35 @@ export async function currentPushDevice(client=null,userId=null){
 export function notificationSettingsMarkup(prefs={},device=null){
  const e=pushEnvironment(),enabled=!!prefs.enabled;
  const active=enabled&&device?.registered===true&&(e.native?safeNativePushConfigured()&&!!safeNativePushToken():e.permission==='granted');
- const categories=[['weekly','Dé hebdomadaire','Quand le dé est prêt','dice'],['invitation','Invitation acceptée','Lorsque votre partenaire vous rejoint','heart'],['monthly','Activité du mois','Au début du mois','star'],['special','Événement spécial','À l’approche de vos dates','calendar']];
- let status='',detail='',actions='';
+ const categories=[['weekly','Dé hebdomadaire','Quand le dé est prêt','dice'],['invitation','Invitation acceptée','Votre partenaire vous rejoint','heart'],['monthly','Activité du mois','Au début du mois','star'],['special','Événements spéciaux','À l’approche de vos dates','calendar']];
+ const action=(key,label,secondary=false)=>'<button type="button" class="'+(secondary?'settings-signout':'settings-primary')+' notification-action" data-action="'+key+'">'+label+'</button>';
+ let status='',detail='',actions='',localReminder='',state='inactive',statusIcon='bell';
  if(e.native){
   const local=!!window.LoveRollNativeAuth?.weeklyReminderEnabled?.(),configured=safeNativePushConfigured();
-  status=active?'Inscription Android enregistrée':configured?'Autorisation ou inscription nécessaire':'Notifications distantes non disponibles';
-  detail=(configured?'Autorisations gérées par les réglages Android. ':'Une mise à jour de l’APK est nécessaire. ')+(local?'Rappel local du lundi 9 h actif.':'Rappel local inactif.');
-  actions=(configured?(active?'<button class="settings-primary" data-action="push-test">M’envoyer un test</button><button class="settings-signout" data-action="push-disable">Désactiver les notifications</button>':'<button class="settings-primary" data-action="push-enable">Activer les notifications</button>'):'')+
-   '<button class="settings-secondary" data-action="'+(local?'native-notify-disable':'native-notify-enable')+'">'+(local?'Désactiver':'Activer')+' le rappel local</button>';
+  state=active?'active':configured?'inactive':'update';
+  status=active?'Activées sur cet appareil':configured?'Un rappel au bon moment':'Mise à jour nécessaire';
+  detail=active?'Choisissez les moments pour lesquels recevoir une alerte.':configured?'Activez les alertes pour retrouver vos moments à deux.':'Mettez LoveRoll à jour pour recevoir toutes les alertes.';
+  actions=configured?(active?action('push-test','Envoyer un test')+action('push-disable','Désactiver',true):action('push-enable','Activer les notifications')):'';
+  localReminder='<div class="notification-local"><span class="notification-row-icon">'+editorialIcon('clock')+'</span>'+
+   '<span class="notification-choice-copy"><strong>Rappel du lundi</strong><small>À 9 h, sur ce téléphone</small></span>'+
+   '<button type="button" class="notification-local-switch" role="switch" aria-checked="'+local+'" aria-label="Rappel du lundi à 9 h" data-action="'+(local?'native-notify-disable':'native-notify-enable')+'"><span aria-hidden="true"></span></button></div>';
  }else if(e.apple&&!e.standalone){
-  status='Installation nécessaire sur iPhone / iPad';detail='Dans Safari : Partager → Sur l’écran d’accueil. Rouvrez LoveRoll pour activer les notifications.';
-  actions='<button class="settings-primary" data-action="show-install-guide">Voir les instructions</button>';
- }else if(!e.supported){status='Notifications indisponibles dans ce navigateur';detail='Utilisez un navigateur compatible ou LoveRoll installé sur l’écran d’accueil.';}
+  state='install';statusIcon='home';status='Ajoutez LoveRoll à l’accueil';detail='Sur iPhone ou iPad, ouvrez ensuite LoveRoll depuis son icône pour activer les alertes.';
+  actions=action('show-install-guide','Voir comment l’ajouter');
+ }else if(!e.supported){state='unsupported';statusIcon='phone';status='Indisponibles ici';detail='Ouvrez LoveRoll dans l’application ou dans un navigateur compatible avec les notifications.';}
  else{
-  status=active?'Activées sur cet appareil':e.permission==='denied'?'Autorisation refusée':enabled?'Cet appareil n’est pas inscrit':'Notifications désactivées';
-  detail=(e.standalone?'Application installée':'Navigateur')+' · '+(e.permission==='granted'?'autorisation accordée':e.permission==='denied'?'à modifier dans les réglages du navigateur':'autorisation non accordée');
-  actions=(active?'<button class="settings-primary" data-action="push-test">M’envoyer un test</button>':'<button class="settings-primary" data-action="push-enable">Activer sur cet appareil</button>')+
-   (enabled?'<button class="settings-signout" data-action="push-disable">Désactiver les notifications</button>':'');
+  state=active?'active':e.permission==='denied'?'denied':enabled?'device':'inactive';
+  status=active?'Activées sur cet appareil':state==='denied'?'Autorisation nécessaire':enabled?'À activer sur cet appareil':'Un rappel au bon moment';
+  detail=active?'Choisissez les moments pour lesquels recevoir une alerte.':state==='denied'?'Autorisez LoveRoll dans les réglages du navigateur, puis réessayez.':enabled?'Vos choix sont conservés. Activez les alertes ici pour les recevoir.':'Activez les alertes pour retrouver vos moments à deux.';
+  actions=(active?action('push-test','Envoyer un test'):action('push-enable',state==='denied'?'Réessayer l’activation':'Activer sur cet appareil'))+
+   (enabled?action('push-disable','Désactiver',true):'');
  }
- return '<div class="push-status" role="status"><span class="editorial-row-icon">'+editorialIcon('bell')+'</span><div><strong>'+status+'</strong><p>'+detail+'</p></div></div>'+
- '<div class="push-options">'+categories.map(([key,title,desc,icon])=>'<label class="push-option"><span class="editorial-row-icon">'+editorialIcon(icon)+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span>'+
- '<input type="checkbox" role="switch" data-push-option="'+key+'"'+(prefs[key]!==false?' checked':'')+(!active?' disabled':'')+' aria-label="'+title+'"></label>').join('')+'</div>'+
- '<div class="push-actions">'+actions+'</div><p class="tiny-note">Les alertes ne dévoilent pas les surprises. Une demande de test acceptée ne garantit pas sa réception.</p>';
+ return '<section class="notification-settings" data-notification-state="'+state+'">'+
+ '<div class="push-status notification-summary" role="status"><span class="notification-emblem">'+editorialIcon(statusIcon)+'</span><div><strong>'+status+'</strong><p>'+detail+'</p></div></div>'+
+ '<section class="notification-choices" aria-labelledby="notification-choices-title"><div class="notification-section-heading"><h2 id="notification-choices-title">Mes alertes</h2><span>'+(active?'À votre rythme':'Choix conservés')+'</span></div>'+
+ '<div class="push-options notification-options">'+categories.map(([key,title,desc,icon])=>'<label class="push-option notification-option"><span class="notification-row-icon">'+editorialIcon(icon)+'</span><span class="notification-choice-copy"><strong>'+title+'</strong><small>'+desc+'</small></span>'+
+ '<input class="notification-toggle" type="checkbox" role="switch" data-push-option="'+key+'"'+(prefs[key]!==false?' checked':'')+(!active?' disabled':'')+' aria-label="'+title+'"></label>').join('')+'</div></section>'+
+ localReminder+(actions?'<div class="push-actions notification-actions">'+actions+'</div>':'')+
+ '<p id="notification-feedback" class="notification-feedback" role="status" aria-live="polite" hidden></p>'+
+ '<p class="tiny-note notification-privacy">'+editorialIcon('lock')+'<span>Le contenu de vos surprises reste privé.</span></p></section>';
 }

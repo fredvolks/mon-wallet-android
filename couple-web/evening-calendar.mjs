@@ -18,7 +18,7 @@ const statusLabel=s=>({
 })[s]||'○ Non réalisé';
 const monthLabel=mo=>new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'})
  .format(new Date(mo+'-15T12:00:00Z'));
-export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyChallenges=[],reviews=[],me,month,selectedDate}={}){
+export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyChallenges=[],reviews=[],me,month,selectedDate,backAction='tab:session',backLabel='Retour à Soirée'}={}){
  const current=isoMonth(month)||'2026-10';
  const [year,m]=current.split('-').map(Number);
  const validDate=selectedDate&&/^\d{4}-\d\d-\d\d$/.test(selectedDate)?selectedDate:current+'-01';
@@ -97,6 +97,6 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
     '<span class="evening-cal-weekday" aria-label="'+['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i]+'">'+v+'</span>').join('')+
     cells+'</div></section>'+
   '<section class="evening-cal-history"><h3>'+safe(validDate)+' · Historique</h3>'+content+'</section>'+
-  '<button type="button" class="evening-cal-return" data-action="tab:session">← Retour à Soirée</button>'+
+  '<button type="button" class="evening-cal-return" data-action="'+safe(backAction)+'">← '+safe(backLabel)+'</button>'+
  '</div>';
 }

@@ -1,5 +1,6 @@
 // LoveRoll home-screen install: one optional invitation AFTER finishing signup,
 // plus a permanent Settings → Application entry. No duplicate APK/PWA installs.
+import {editorialIcon} from './editorial-ui.mjs';
 let deferredInstall=null;
 if(typeof window!=='undefined'){
  window.addEventListener('beforeinstallprompt',event=>{
@@ -64,22 +65,23 @@ export async function requestInstall(){
 }
 export function installOfferHtml(){
  const native=isAndroidNative();
- return '<div class="install-overlay" role="dialog" aria-modal="true" aria-label="Ajouter LoveRoll à l’écran d’accueil">'+
-  '<section class="install-modal"><div class="install-symbol" aria-hidden="true">♥</div>'+
-  '<div class="install-recommend">♡ VOTRE ESPACE EST PRÊT</div>'+
-  '<h2>LoveRoll à portée de main</h2>'+
-  '<p>'+(native?'L’application est installée. Ajoutez son icône à l’écran d’accueil pour retrouver vos surprises en un toucher.':
+ return '<div class="install-overlay" role="dialog" aria-modal="true" aria-labelledby="lr-install-title" aria-describedby="lr-install-description">'+
+  '<section class="install-modal"><div class="install-content"><div class="install-symbol" aria-hidden="true">'+editorialIcon('home')+'</div>'+
+  '<div class="install-recommend">VOTRE ESPACE EST PRÊT</div>'+
+  '<h2 id="lr-install-title">LoveRoll à portée de main</h2>'+
+  '<p id="lr-install-description">'+(native?'L’application est installée. Ajoutez son icône à l’écran d’accueil pour retrouver vos surprises en un toucher.':
    'Ajoutez LoveRoll à votre écran d’accueil pour retrouver vos jeux et vos surprises en un toucher. C’est gratuit et facultatif.')+'</p>'+
-  '<button type="button" data-action="install-home" class="install-primary">'+(native?'♡ Placer l’icône LoveRoll':'♡ Ajouter à l’écran d’accueil')+'</button>'+
-  '<button type="button" data-action="install-later" class="install-later">Plus tard</button></section></div>';
+  '</div><div class="install-actions"><button type="button" data-action="install-home" class="install-primary">'+(native?'Placer l’icône LoveRoll':'Ajouter à l’écran d’accueil')+'</button>'+
+  '<button type="button" data-action="install-later" class="install-later">Plus tard</button></div></section></div>';
 }
 export function installStepsHtml(){
  const steps=installSteps();
- return '<div class="install-overlay" role="dialog" aria-modal="true" aria-label="Installer LoveRoll">'+
-  '<section class="install-modal"><div class="install-symbol" aria-hidden="true">♥</div>'+
-  '<h2>'+(steps.system==='installed'?'LoveRoll est déjà installé':steps.system==='apk'?'Placer l’icône LoveRoll':'Ajouter LoveRoll à votre écran d’accueil')+'</h2>'+
-  '<p>'+steps.text+'</p>'+
+ return '<div class="install-overlay" role="dialog" aria-modal="true" aria-labelledby="lr-install-title" aria-describedby="lr-install-description">'+
+  '<section class="install-modal"><button type="button" data-action="install-later" class="install-close" aria-label="Fermer"><span aria-hidden="true">×</span></button>'+
+  '<div class="install-content"><div class="install-symbol" aria-hidden="true">'+editorialIcon(steps.system==='installed'?'check':'home')+'</div>'+
+  '<div class="install-recommend">ÉCRAN D’ACCUEIL</div>'+
+  '<h2 id="lr-install-title">'+(steps.system==='installed'?'LoveRoll est déjà installé':steps.system==='apk'?'Placer l’icône LoveRoll':'LoveRoll sur l’écran d’accueil')+'</h2>'+
+  '<p id="lr-install-description">'+steps.text+'</p></div><div class="install-actions">'+
   (steps.system==='embedded'?'<button type="button" data-action="install-copy-url" class="install-primary">Copier le lien LoveRoll</button>':'')+
-  '<button type="button" data-action="install-understood" class="install-primary">J’ai compris ♡</button>'+
-  '<button type="button" data-action="install-later" class="install-later">Fermer</button></section></div>';
+  '<button type="button" data-action="install-understood" class="'+(steps.system==='embedded'?'install-secondary':'install-primary')+'">J’ai compris</button></div></section></div>';
 }
