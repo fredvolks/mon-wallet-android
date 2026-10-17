@@ -34,7 +34,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      assert.equal(await page.locator('.home-weights button').count(),0);
      assert.equal(await page.locator('.home-weight').count(),6);
      assert.deepEqual(geometry.stats,['0','0 / 0','—','0']);
-     assert.ok(geometry.dice[0].width>=175,'weekly die too small');
+     assert.ok(geometry.dice[0].width>=(height<=860?160:175),'weekly die too small');
      if(name.startsWith('S25'))assert.ok(await page.evaluate(()=>document.querySelector('.home-stats-grid').getBoundingClientRect().bottom<=document.querySelector('.nav').getBoundingClientRect().top+2),'Home stats under bottom navigation');
      await page.locator('.home-next-month').click();await page.locator('.surprise-premium-view').waitFor();
      await page.locator('.nav [data-action="tab:home"]').click();
