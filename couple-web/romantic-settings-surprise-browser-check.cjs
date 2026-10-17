@@ -41,7 +41,9 @@ const client=`export function createClient(){
   });
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:8765/?'+(tab==='settings'?'settings=1':'open='+tab)+'&actor='+uid);
-  await page.locator(tab==='settings'?'.settings-editorial':'.surprise-ecrin').waitFor();return page;
+  await page.locator(tab==='settings'?'.settings-editorial':'.surprise-ecrin').waitFor();
+  if(!process.env.LOVEROLL_LAYOUT_ONLY&&tab==='special')await page.waitForFunction(()=>document.querySelector('.surprise-main-die-scene canvas')?.loveRollDie);
+  await page.waitForTimeout(200);return page;
  }
  const geometry=page=>page.evaluate(()=>{
   const rect=e=>e.getBoundingClientRect(),nav=rect(document.querySelector('.nav'));
@@ -82,7 +84,7 @@ const client=`export function createClient(){
   await a.evaluate(()=>window.__firstCanvas=document.querySelector('.surprise-main-die-scene canvas'));
   await a.locator('[data-action="roll:monthly_activity"]').evaluate(e=>{e.click();e.click()});
   await a.waitForFunction(()=>window.__firstCanvas?.dataset.spinning==='true');
-  assert.ok(await a.evaluate(()=>window.__firstCanvas.isConnected));assert.equal(world.calls.filter(c=>c.name==='roll_couple_once'&&c.args.p_kind==='monthly_activity').length,1);
+  assert.ok(await a.evaluate(()=>window.__firstCanvas.isConnected));assert.equal(await a.locator('.nav [data-action="tab:home"]').isDisabled(),true);assert.equal(world.calls.filter(c=>c.name==='roll_couple_once'&&c.args.p_kind==='monthly_activity').length,1);
   await a.waitForFunction(()=>window.__firstCanvas?.loveRollDie?.readState().spinning===false);
   assert.equal(await a.locator('[aria-label="Notre activité du mois"]').count(),0);
   assert.equal(await a.evaluate(()=>window.__firstCanvas.loveRollDie.readState().frontFace),19);
@@ -94,7 +96,7 @@ const client=`export function createClient(){
   await a.waitForFunction(()=>window.__hostCanvas?.dataset.spinning==='true');assert.ok(await a.evaluate(()=>window.__hostCanvas.isConnected));
   await a.waitForFunction(()=>window.__hostCanvas?.loveRollDie?.readState().spinning===false);
   assert.ok(await a.evaluate(()=>window.__hostCanvas.isConnected));assert.equal(await a.evaluate(()=>window.__hostCanvas.loveRollDie.readState().frontFace),4);
-  await a.locator('.surprise-host-winner').waitFor();assert.match(await a.locator('.surprise-host-winner').innerText(),/Camille invite/);
+  await a.locator('.surprise-host-winner').waitFor();assert.equal(await a.locator('.nav [data-action="tab:home"]').isDisabled(),false);assert.match(await a.locator('.surprise-host-winner').innerText(),/Camille invite/);
   assert.equal(world.calls.filter(c=>c.name==='roll_couple_once'&&c.args.p_kind==='monthly_host').length,1);
   await a.waitForFunction(()=>document.querySelector('.surprise-main-die-scene canvas')?.loveRollDie?.readState().frontFace===19);
   const q=await a.evaluate(()=>document.querySelector('.surprise-main-die-scene canvas').loveRollDie.readState().quaternion);await a.waitForTimeout(700);

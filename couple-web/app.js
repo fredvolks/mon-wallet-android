@@ -310,7 +310,7 @@ function nav(){
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
- '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions')||(key==='settings'&&['library','monthly-library','advent-editor','special-editor','journal'].includes(state.tab)))?'active':'')+'"><span>'+navIcon(key,icon)+
+ '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions')||(key==='settings'&&['library','monthly-library','advent-editor','special-editor','journal'].includes(state.tab)))?'active':'')+'"'+(state.diceStatus?' disabled':'')+'><span>'+navIcon(key,icon)+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
@@ -1867,6 +1867,7 @@ async function animateRoll(fn,kind='general'){
  const useLiveD100=!!activeD100?.loveRollDie?.rollTo;
  const useLiveMonthly=!!activeMonthly?.loveRollDie?.rollTo;
  state.rollAnimationKind=kind;state.diceStatus='pending';
+ for(const tab of root.querySelectorAll('.nav button'))tab.disabled=true;
  if(useLiveD100){
   // No DOM replacement while the server selects the official face.
   const button=root.querySelector('button[data-action="new-challenge"]');
@@ -2886,6 +2887,7 @@ async function handle(action,element){
   openSettingsPage(parts[0]||'');return;
  }
  if(verb==='tab'){
+  if(state.diceStatus)return;
   const ready=isSharedCoupleReady(state.coupleId,state.members);
   const allowed=ready?
    ['home','session','special','occasions','advent','settings','library',
