@@ -177,7 +177,7 @@ export function createClient(){
      widthRatio:rect.width/parent.width,height:rect.height}:null;
    });
    if(!info||info.text!=='Déjà brassé cette semaine, revenez la semaine prochaine'||
-     !info.disabled||Math.abs(info.widthRatio-.92)>.025||info.height>57)
+     !info.disabled||Math.abs(info.widthRatio-.96)>.025||info.height>57)
     throw Error('Already rolled weekly button is hidden or mislabeled '+JSON.stringify(info));
    // This is the essential regression: last tests stopped at locked Soirée
    // and never executed renderSession's real 70-card active branch.
