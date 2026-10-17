@@ -108,7 +108,7 @@ test('The five bottom tabs keep Settings while Journal and questionnaires move t
  assert.match(app,/Ouvrir notre calendrier partagé/);
  assert.match(app,/rpc\('save_love_evening_review'/);
  assert.doesNotMatch(app,/NOS AVIS APRÈS LA SOIRÉE|choose-feedback/);
- assert.match(app,/settingGroup\('Compte'/);
+ assert.match(app,/compte:\{title:'Mon compte'/);
 });
 
 test('Only the dedicated Supabase project and its publishable client key are configured',()=>{
@@ -262,7 +262,7 @@ test('New couple match uses two individual sign-ups',()=>{
 });
 test('Anniversary and dates are not re-entered in Settings',()=>{
  const fragment=app.slice(app.indexOf('function renderSettings()'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
- assert.match(fragment,/Modifier ma date d’anniversaire/);
+ assert.match(fragment,/Mon anniversaire/);
  assert.doesNotMatch(fragment,/loveroll-birthday|save-occasion-date:birthday/);
 });
 test('Database onboarding enforces profile birthday and revokes old bypasses',()=>{
@@ -313,7 +313,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v119/);
+ assert.match(sw,/loveroll-static-v120/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -905,10 +905,10 @@ test('Real-time server D35 odds mirror 88/12 preference and keep safeguards',()=
 
 test('Settings groups remain settings-only; after-party forms live under Soirée',()=>{
  const settings=app.slice(app.indexOf('function renderSettings(){'),app.indexOf('async function refreshAndShow()',app.indexOf('function renderSettings()')));
- assert.match(settings,/settingGroup\('Compte'/);
- assert.match(settings,/settingGroup\('Couple'/);
- assert.match(settings,/settingGroup\('Notifications'/);
- assert.match(settings,/settingGroup\('Application'/);
+ assert.match(settings,/compte:\{title:'Mon compte'/);
+ assert.match(settings,/couple:\{title:'Notre duo'/);
+ assert.match(settings,/notifications:\{title:'Notifications'/);
+ assert.match(settings,/application:\{title:'Application et aide'/);
  assert.doesNotMatch(settings,/button\('tab:feedback'/);
  assert.match(app,/if\(!s&&state\.sessions\?\.some/);
  assert.match(app,/if\(verb==='review-open'\)/);
@@ -931,7 +931,7 @@ test('Android APK and Web use one shared LoveRoll interface; iPad layout is adap
  assert.match(native,/web.loadUrl\(SITE\+suffix\)/);
  assert.match(native,/openLegacyOffline/);
  assert.match(native,/checkForUpdates/);
- assert.match(app,/settings-grid/);
+ assert.match(app,/settings-editorial/);
  assert.match(app,/native-legacy/);
  assert.match(app,/native-update/);
  assert.match(css,/@media \(min-width:768px\)/);

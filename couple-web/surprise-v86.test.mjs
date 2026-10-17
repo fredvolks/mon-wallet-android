@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {premiumSurpriseHtml} from './premium-surprise.mjs';
 const read=path=>readFileSync(new URL('./'+path,import.meta.url),'utf8');
-const app=read('app.js'),index=read('index.html'),css=read('surprise-responsive-v86.css');
+const app=read('app.js'),index=read('index.html'),css=read('surprise-refined-v104.css');
 const state={
  monthly:{monthly_activity:{face:11},monthly_host:{face:2}},
  activity:{title:'Massage surprise',description:'Prenez un moment ensemble.',timer_minutes:10},
@@ -28,18 +28,13 @@ test('Activity modal shows the server-confirmed title, description and timer and
  assert.match(html,/data-action="surprise-activity"/);
  assert.doesNotMatch(premiumSurpriseHtml({...state,showActivity:false}),/aria-modal="true"/);
 });
-test('v104 refines v86, is cached offline and preserves desktop scroll constraints',()=>{
+test('Ecrin has one stylesheet owner with Home tokens, visible overflow and a 3 by 2 grid',()=>{
  const sw=read('service-worker.js'),ver=JSON.parse(read('web-version.json'));
- assert.equal(ver.build,'2026-10-17.119');
- assert.match(sw,/loveroll-static-v119/);
- assert.match(sw,/\.\/surprise-responsive-v86\.css/);
- assert.match(index,/surprise-responsive-v86\.css\?v=20261017-advent119/);
- assert.ok(index.lastIndexOf('surprise-responsive-v86.css')>index.lastIndexOf('evening-focused-v84.css'));
- assert.ok(index.lastIndexOf('surprise-refined-v104.css')>index.lastIndexOf('surprise-responsive-v86.css'));
- assert.match(sw,/surprise-refined-v104\.css/);
- assert.match(css,/height:100dvh!important/);
- assert.match(css,/overflow:hidden!important/);
- assert.match(css,/\.evening-summary-die/);
- assert.match(css,/\.surprise-special-grid/);
- assert.match(css,/surprise-modal-content/);
+ assert.equal(ver.build,'2026-10-17.120');assert.match(sw,/loveroll-static-v120/);
+ assert.doesNotMatch(index,/href=".\/surprise-responsive-v86|href=".\/surprise-dice-layout-v73/);
+ assert.ok(index.lastIndexOf('surprise-refined-v104.css')>index.lastIndexOf('premium-theme.css'));
+ assert.match(css,/height:100dvh/);assert.doesNotMatch(css,/overflow:hidden|!important/);
+ assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/var\(--ritual-button\)/);assert.match(css,/surprise-modal-content/);
 });

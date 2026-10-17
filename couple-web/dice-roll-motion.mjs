@@ -26,7 +26,7 @@ export function makeForwardRoll(targetEuler,random=[.2,.4,.6],startEuler=null){
   ((Number(random[i%3])||0)*(.731+i*.413)+i*.193)%1))||0));
  const start=Array.isArray(startEuler)&&startEuler.length===3&&startEuler.every(Number.isFinite)?
  startEuler.slice():[0,1,2].map(i=>r(i)*TWO_PI);
- const turns=[0,1,2].map(i=>7+Math.floor(r(i+3)*7)); // 7–13 full revolutions
+ const turns=[0,1,2].map(i=>(i===2?2:5)+Math.floor(r(i+3)*(i===2?3:4))); // dominant tumble, quieter axial twist
  const finish=end.map((target,i)=>{
   let angle=target+TWO_PI*turns[i];
   while(angle<=start[i])angle+=TWO_PI;
@@ -35,7 +35,7 @@ export function makeForwardRoll(targetEuler,random=[.2,.4,.6],startEuler=null){
  const axes=[0,1,2].map(i=>({
   wave:2+Math.floor(r(i+6)*4), // distinct 2–5 flutter waves per axis
   phase:r((i+1)%3)*TWO_PI,
-  amplitude:.09+.20*r(i+3)
+  amplitude:.04+.10*r(i+3)
  }));
  return {start,finish,axes,
   // Only subtle, deterministic movement that settles exactly to the origin.
@@ -51,4 +51,19 @@ export function rollAngles(trajectory,elapsedMs){
    (Math.cos(axis.phase)-Math.cos(TWO_PI*axis.wave*p+axis.phase));
   return initial+(trajectory.finish[i]-initial)*(p+variation);
  });
+}
+
+// A launch, two smaller contacts and a short damped slide; all offsets and
+// velocities reach zero at rest. This affects presentation, never the outcome.
+export function rollOffset(trajectory,elapsedMs){
+ const t=Math.max(0,Math.min(1,(Number(elapsedMs)||0)/ROLL_TOTAL_MS));
+ const direction=Math.sin(trajectory.slidePhase)>=0?1:-1;
+ const envelope=Math.sin(Math.PI*t)**2*(1-t)**2;
+ const x=direction*.72*envelope*Math.sin(Math.PI*t*1.8);
+ const hop=(from,to,height)=>{
+  if(t<=from||t>=to)return 0;
+  return height*Math.sin(Math.PI*(t-from)/(to-from))**2;
+ };
+ return {x,y:hop(0,.42,.26)+hop(.42,.68,.10)+hop(.68,.84,.035),
+  contact:1-Math.min(1,hop(0,.42,1)+hop(.42,.68,.45)+hop(.68,.84,.18))};
 }

@@ -9,46 +9,19 @@ const css=read('./settings-premium.css');
 const push=read('./push-notifications.mjs');
 const native=read('../app/src/main/java/ca/desadeux/jeu/ConnectedLoveRollActivity.java');
 
-test('Eight settings groups remain present and collapsed unless remembered',()=>{
- for(const label of ['Compte','Couple','Notifications','Jeu et personnalisation',
-  'Administration','Application','Confidentialité','Aide'])
-  assert.ok(app.includes("settingGroup('"+label+"'"),label);
- assert.match(app,/isLoveAdmin\(\)\?settingGroup\('Administration'/);
- assert.match(app,/sessionStorage\.getItem\('loveroll-settings-section'\)/);
+test('Profile is separate from exactly five editorial settings routes',()=>{
+ const settings=app.slice(app.indexOf('function renderSettings(){'),app.indexOf('async function refreshAndShow()'));
+ for(const label of ['Notre duo','Notifications','Cartes et activités','Journal et confidentialité','Application et aide'])assert.ok(settings.includes(label),label);
+ assert.match(settings,/settings-profile-row/);assert.match(settings,/settings-sections/);
+ assert.doesNotMatch(settings,/settingGroup|Mon ressenti|wellbeingFields|save-wellbeing/);
+ assert.match(settings,/canEdit\?'<div class="settings-advanced">'/);
 });
-
-test('Opening a settings section closes the previous one and saves state',()=>{
- const start=app.indexOf('function initSettingsAccordion(){');
- const end=app.indexOf('\nfunction renderSettings(){',start);
- assert.ok(start!==-1&&end>start);
- const source=app.slice(start,end);
- const saved=new Map();
- const storage={setItem:(key,value)=>saved.set(key,value),
-  removeItem:key=>saved.delete(key)};
- const sections=['compte','couple','notifications','jeu','admin','application','confidentialite','aide'];
- const groups=sections.map(section=>{
-  const summary={addEventListener(_,callback){this.activate=callback;}};
-  return {dataset:{settingsSection:section},open:false,summary,
-   querySelector:key=>key==='summary'?summary:null};
- });
- const root={querySelectorAll:()=>groups};
- const module=new Function('root','sessionStorage','console','settingsOpenSection',
-  source+'\nreturn {initSettingsAccordion,getOpen:()=>settingsOpenSection};'
- )(root,storage,console,'');
- module.initSettingsAccordion();
- const click=group=>group.summary.activate({preventDefault(){}});
- assert.equal(groups.filter(group=>group.open).length,0);
- click(groups[0]);
- assert.equal(groups[0].open,true);
- assert.equal(saved.get('loveroll-settings-section'),'compte');
- click(groups[1]);
- assert.equal(groups[0].open,false);
- assert.equal(groups[1].open,true);
- assert.equal(groups.filter(group=>group.open).length,1);
- assert.equal(saved.get('loveroll-settings-section'),'couple');
- click(groups[1]);
- assert.equal(groups.filter(group=>group.open).length,0);
- assert.equal(saved.has('loveroll-settings-section'),false);
+test('Detail navigation retains creator guard, back route and dirty-form confirmation',()=>{
+ assert.match(app,/function openSettingsPage/);
+ assert.match(app,/section==='admin'&&!isLoveAdmin\(\)/);
+ assert.match(app,/button\('settings-page:','<span/);
+ assert.match(app,/verb==='settings-page'[\s\S]*?hasUnsavedForm\(\)/);
+ assert.match(app,/settingsOpenSection=section;state.tab='settings'/);
 });
 
 test('All existing settings actions are still wired',()=>{
@@ -63,14 +36,14 @@ test('All existing settings actions are still wired',()=>{
 });
 
 test('Settings theme is scoped and loaded last with cache revision',()=>{
- assert.match(index,/settings-premium\.css\?v=20261017-advent119/);
- assert.match(index,/app\.js\?v=20261017-advent119/);
+ assert.match(index,/settings-premium\.css\?v=20261017-ecrin120/);
+ assert.match(index,/app\.js\?v=20261017-ecrin120/);
  assert.match(css,/main#app\.loveroll-settings-page/);
- assert.match(css,/grid-template-columns:minmax\(0,1fr\)!important/);
- assert.match(css,/\.settings-group-icon/);
+ assert.match(css,/grid-template-rows:repeat\(5,minmax\(58px,1fr\)\)/);
+ assert.match(css,/\.settings-row-icon/);
  assert.match(css,/\.settings-link-row/);
  assert.match(css,/\.settings-actions/);
- assert.match(css,/\.nav button\.active/);
+ assert.match(css,/var\(--ritual-button\)/);
 });
 
 test('Native version is real and unavailable notifications are not marked as on',()=>{

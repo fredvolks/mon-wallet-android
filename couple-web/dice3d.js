@@ -1,5 +1,5 @@
 import * as THREE from 'https://esm.sh/three@0.167.1';
-import {ROLL_TOTAL_MS,makeForwardRoll,rollAngles,rollProgress} from './dice-roll-motion.mjs';
+import {ROLL_TOTAL_MS,makeForwardRoll,rollAngles,rollProgress,rollOffset} from './dice-roll-motion.mjs';
 import {RoundedBoxGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {ConvexGeometry} from 'https://esm.sh/three@0.167.1/examples/jsm/geometries/ConvexGeometry.js';
 /** Safari/Chrome WebGL die. Values come from the shared server, never from animation. */
@@ -268,7 +268,7 @@ export function dieOn(canvas,sides,value,rolling){
  const rim=new THREE.PointLight(0xff9fcb,22,9);rim.position.set(3,-1,1.9);scene.add(rim);
  const white=new THREE.DirectionalLight(0xfff0fa,2.3);white.position.set(1.3,3,4);scene.add(white);
  const neutral=canvas.dataset.diceUnrolled==='true'&&sides===6;
- const preview=canvas.dataset.dicePreview==='true'&&sides===6;
+ let preview=canvas.dataset.dicePreview==='true'&&sides===6;
  const built=geometry(sides,canvas.dataset.diceMarkers==='pips',neutral);scene.add(built.group);
  // A soft contact shadow stays on the stage while the die rises and settles.
  const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.08,40),
@@ -324,12 +324,8 @@ export function dieOn(canvas,sides,value,rolling){
    const angles=rollAngles(trajectory,elapsed);
    euler.set(angles[0],angles[1],angles[2]);
    built.group.quaternion.setFromEuler(euler);
-   const progress=rollProgress(elapsed),damping=1-progress;
-   // Subtle tumble on the satin stage, smoothly diminishing to rest.
-   const lift=.06*damping*(1+Math.sin(elapsed/255+trajectory.bouncePhase));
-   const contact=.065*damping*Math.pow(Math.sin(elapsed/190+trajectory.bouncePhase),2);
-   built.group.position.y=Math.max(0,lift+contact);
-   built.group.position.x=.065*damping*Math.sin(elapsed/540+trajectory.slidePhase);
+   const offset=rollOffset(trajectory,elapsed);
+   built.group.position.set(offset.x,offset.y,0);
   }else if(duration){
    // Keep the official 3D face locked after its last animation frame.
    built.group.quaternion.copy(target);built.group.position.set(0,0,0);
@@ -345,8 +341,9 @@ export function dieOn(canvas,sides,value,rolling){
    const dragFactor=Math.exp(-5*dt);vx*=dragFactor;vy*=dragFactor;
   }
   const elevation=built.group.position.y;
-  shadow.material.opacity=.30/(1+elevation*3);
-  shadow.scale.x=1+elevation*.6;
+  shadow.material.opacity=.32/(1+elevation*4);
+  shadow.scale.x=1+elevation*.9;
+  shadow.scale.y=.25+elevation*.14;
   shadow.position.x=built.group.position.x;
   renderer.render(scene,camera);
   renderedFrames++;
@@ -357,6 +354,7 @@ export function dieOn(canvas,sides,value,rolling){
   const selected=orientationFor(face);
   if(!selected)return false;
   target=selected;canvas.dataset.face=String(face);
+  preview=false;delete canvas.dataset.dicePreview;
   canvas.dataset.spinning='true';
   canvas.setAttribute('aria-label','Dé arrêté sur '+face+' après le brassage');
   duration=reduceMotion?0:ROLL_TOTAL_MS;

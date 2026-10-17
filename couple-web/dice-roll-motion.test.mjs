@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {FAST_ROLL_MS,SLOW_ROLL_MS,ROLL_TOTAL_MS,rollProgress,rollAngles,makeForwardRoll} from './dice-roll-motion.mjs';
+import {FAST_ROLL_MS,SLOW_ROLL_MS,ROLL_TOTAL_MS,rollProgress,rollAngles,makeForwardRoll,rollOffset} from './dice-roll-motion.mjs';
 const diceSource=readFileSync(new URL('./dice3d.js',import.meta.url),'utf8');
 const appSource=readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const TWO_PI=2*Math.PI;
@@ -34,7 +34,7 @@ test('All three axes move FORWARD continuously, never reverse or snap at the end
     assert.ok(path.finish[axis]>path.start[axis]);
     // Endpoint equals the target Euler angle modulo full forward revolutions.
     const n=Math.round((path.finish[axis]-target[axis])/TWO_PI);
-    assert.ok(n>=7);
+    assert.ok(n>=2);
     assert.ok(Math.abs(path.finish[axis]-target[axis]-n*TWO_PI)<1e-11);
    }
    let prior=rollAngles(path,0);
@@ -103,4 +103,16 @@ test('No numeric fallback behind actual WebGL dice',()=>{
  assert.doesNotMatch(evening,/valid\?esc\(face\):'♡'/);
  assert.match(overlay,/display:none!important;visibility:hidden!important;opacity:0!important/);
  assert.match(diceSource,/Uint32Array\(9\)/);
+});
+
+test('Launch and diminishing contacts settle with zero translation and velocity',()=>{
+ const path=makeForwardRoll([.1,.2,.3],[.2,.4,.6]);
+ assert.deepEqual(rollOffset(path,0),{x:0,y:0,contact:1});
+ assert.ok(rollOffset(path,850).y>.2);
+ assert.ok(rollOffset(path,2450).y<.11);
+ assert.ok(rollOffset(path,3400).y<.04);
+ const final=rollOffset(path,ROLL_TOTAL_MS);
+ assert.ok(Math.abs(final.x)<1e-12&&final.y===0);
+ assert.ok(Math.abs(rollOffset(path,ROLL_TOTAL_MS-1).x)<1e-10);
+ for(let t=0;t<=ROLL_TOTAL_MS;t+=16){const pose=rollOffset(path,t);assert.ok(Number.isFinite(pose.x)&&pose.y>=0&&pose.contact>=0&&pose.contact<=1);}
 });

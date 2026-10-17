@@ -49,7 +49,7 @@ test('D100 official number stays readable below the stationary 3D face on reload
  assert.match(html,/data-dice-sides="100" data-face="100"/);
  assert.match(html,/class="evening-d100-result" role="status" aria-live="polite">Résultat : 100<\/div>/);
  const app=read('app.js');
- assert.match(app,/activeD100\.loveRollDie\?\.rollTo\(confirmedFace\)/);
+ assert.match(app,/liveDie\.loveRollDie\?\.rollTo\(confirmedFace\)/);
  assert.match(app,/if\(savedStage\)savedStage\.remove\(\)/);
 });
 test('Random draw is performed on Supabase, with 50-50 preference and untouched security rules',()=>{

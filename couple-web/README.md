@@ -155,3 +155,11 @@ Une lettre se débloque à sa date complète, calculée avec l’horloge serveur
 La migration `migrations/20261017045614_loveroll_advent_catchup.sql` ajoute la variante `open_advent_day(p_couple,p_day,p_year)` et garde la variante à deux paramètres pour les clients installés. Elle conserve les protections d’identité vérifiée, d’appartenance au couple, la clé unique et le verrou de transaction du couple. Les droits publics et anonymes restent révoqués.
 
 `advent-postgres-check.py` ne s’exécute que dans la base de test isolée `loveroll_advent_test` créée par GitHub Actions. Il vérifie notamment deux connexions concurrentes, les accès interdits, les dates futures, les rattrapages et la conservation des instantanés. `advent-letters-browser-check.cjs` vérifie la vraie application avec deux identités et une API simulée, sans écriture dans les comptes réels.
+
+## Surprise et Réglages — Web 120
+
+Surprise utilise l’écrin romantique et les matériaux de l’Accueil, avec une seule scène D20 → activité → D6 pair/impair → D20. Les deux lancers mensuels réutilisent le canvas existant, affichent uniquement la face confirmée par le serveur et la laissent visible une seconde avant la transition. Les noms distincts restent identifiables même si les deux profils partagent un prénom. Les six événements restent modifiables, avec accès à leurs activités et à leur historique.
+
+Réglages présente le profil puis cinq rubriques, chacune avec une page de détail. Les formulaires, actions protégées, imports/exports, notifications et fonctions APK existants sont conservés. Le questionnaire de ressenti a été retiré de Réglages et de son aide ; aucune réponse historique n’est supprimée et les bilans de soirée sont inchangés. Les moteurs WebGL et leurs résultats officiels restent les mêmes ; seule la trajectoire visuelle a été adoucie.
+
+`romantic-settings-surprise-browser-check.cjs` teste la vraie application avec une API simulée : six formats, trois états mensuels, deux identités, face officielle, maintien du canvas, absence de double tirage, éditeur d’événement, profil, permissions et navigation des cinq rubriques. Les tests ne modifient pas les comptes réels.

@@ -13,7 +13,7 @@ test('Quebec dates are displayed as day/month/year, never date-only picker',()=>
  assert.match(html,/value="25\/12\/2026"/);
  assert.match(html,/surprise-date-hint/);
  assert.doesNotMatch(html,/id="surprise-event-date" type="date"/);
- assert.doesNotMatch(html,/Voir ses surprises|data-action="open-occasion:/);
+ assert.doesNotMatch(html,/Voir ses surprises/);
  assert.equal((html.match(/data-action="save-surprise-event"/g)||[]).length,1);
 });
 test('Numeric keyboard input is formatted as eight digits are entered or pasted',()=>{
@@ -53,6 +53,6 @@ test('Save keeps original annual month-day rules and rejects invalid typed dates
 });
 test('Only one full-width action remains in the event editor',()=>{
  const css=readFileSync(new URL('./surprise-refined-v104.css',import.meta.url),'utf8');
- assert.match(css,/surprise-event-editor \.surprise-edit-actions/);
- assert.match(css,/grid-template-columns:minmax\(0,1fr\)!important/);
+ assert.match(css,/\.surprise-edit-actions/);
+ assert.match(css,/grid-template-columns:1fr/);
 });
