@@ -4,11 +4,16 @@
 set -euo pipefail
 
 mkdir -p qa
-adb shell wm size 1440x3120
-adb shell wm density 560
+adb logcat -c
+adb logcat -v brief -s AndroidRuntime:E > qa/runtime-live.txt &
+logcat_pid=$!
+# Preserve emulator/host evidence even if adb disconnects.
+trap 'kill "$logcat_pid" 2>/dev/null || true; adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true; free -m > qa/host-memory.txt; df -h > qa/host-disk.txt' EXIT
+# Same 412dp-wide S25 proportions, FHD pixel buffers for stable CI software rendering.
+adb shell wm size 1080x2340
+adb shell wm density 420
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 # Test the native failure view on an isolated fresh emulator, without user accounts.
-trap 'adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true' EXIT
 adb shell cmd connectivity airplane-mode enable
 adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity
 sleep 20

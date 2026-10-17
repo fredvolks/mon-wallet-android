@@ -25,6 +25,12 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      assert.ok(Math.abs(result.meshBottom-result.contact)<=2,JSON.stringify(result));assert.ok(result.meshTop>=-2&&result.meshBottom<=result.sceneHeight+2,JSON.stringify(result));
      assert.ok(result.statsBottom<=result.navTop-3&&result.textFits,JSON.stringify(result));assert.ok(result.bodyHeight<=height+2&&result.horizontal<=1,JSON.stringify(result));
      if(face)assert.equal(result.face,String(face));assert.deepEqual(errors,[]);
+     const summary=await page.evaluate(()=>[...document.querySelectorAll('.home-challenge-stats>div')].map(column=>{
+      const value=column.querySelector('strong').getBoundingClientRect(),label=column.querySelector('small').getBoundingClientRect(),box=column.getBoundingClientRect();
+      return {top:value.top,labelCenter:(label.left+label.right-box.left-box.right)/2};
+     }));
+     assert.equal(summary.length,3);assert.ok(Math.max(...summary.map(x=>x.top))-Math.min(...summary.map(x=>x.top))<=1,'Partner name changed the value baseline '+JSON.stringify(summary));
+     assert.ok(summary.every(x=>Math.abs(x.labelCenter)<1.5),'Summary labels are not centered');
      // Regression: a live text refresh used to retain WebGL but drop the stage
      // transform. A size-only check misses this because the canvas is unchanged.
      await page.evaluate(()=>{window.__beforeRefresh=document.querySelector('.home-die-platform canvas');});

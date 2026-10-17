@@ -37,8 +37,8 @@ main#app.loveroll-real-home{
 #app .home-roll-button:not(:disabled)::after{content:"›";position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:24px;line-height:20px;font-weight:300;}
 #app .home-roll-button.is-used{opacity:1;font-size:12px;letter-spacing:0;color:#dec5cf;background:linear-gradient(145deg,#44202e,#24121c);border-color:#b77b8d60;}
 #app .home-roll-area p{font-size:11px;line-height:1.35;color:#c6aab4;max-width:365px;text-align:center;margin:0;}
-#app .home-challenge-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:12px 4px;border:1px solid #ba7e9145;border-radius:20px;background:linear-gradient(120deg,#29111bce,#170d14df);}
-#app .home-challenge-stats>div{display:grid;grid-template-columns:auto auto;grid-template-rows:26px auto;gap:5px 6px;padding:0 7px;justify-content:center;align-content:center;align-items:center;text-align:center;min-width:0;border-right:1px solid #a870843d;}
+#app .home-challenge-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:26px auto;row-gap:5px;padding:12px 4px;border:1px solid #ba7e9145;border-radius:20px;background:linear-gradient(120deg,#29111bce,#170d14df);}
+#app .home-challenge-stats>div{display:grid;grid-template-columns:auto auto;grid-row:1/span 2;grid-template-rows:subgrid;gap:5px 6px;padding:0 7px;justify-content:center;align-content:stretch;align-items:center;text-align:center;min-width:0;border-right:1px solid #a870843d;}
 #app .home-challenge-stats>div:last-child{border:0;}
 #app .home-challenge-stats span{color:#d786a1;font:26px/1 Georgia,serif;justify-self:end;}
 #app .home-challenge-stats strong{color:#f5d8dc;font-size:20px;font-weight:600;line-height:1.1;}
