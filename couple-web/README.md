@@ -215,3 +215,12 @@ La matière reprend le cœur du chargement : volume bordeaux transparent, bords 
 Les points des D6 concernés sont des cavités concaves avec un fond blanc opaque. Les chiffres D20, D35 et D100 sont creusés dans les faces, avec un fond blanc opaque sous la surface. Les contours numériques vectoriels locaux dérivent de DejaVu Sans Bold ; leur notice se trouve dans `assets/dice-numerals-LICENSE.txt`. Aucun chargement de police supplémentaire. Les D6 non tirés gardent leur symbole neutre.
 
 `crystal-glass-browser-check.cjs`, appelé par le contrôle des socles, vérifie le vrai WebGL sur les quatre géométries : gravures sous la surface, blanc opaque, transparence autour du modèle et réaction du verre à deux décors contrastés, sans rotation du résultat. Une mesure d’alpha seule serait incorrecte pour le verre physique, dont les pixels contiennent déjà le décor réfracté. Les contrôles de contact, de conservation du canvas, des 100 orientations du D100 et des lancers restent applicables. Les essais de parcours utilisent des données simulées.
+
+
+## Accueil « Deux colonnes » — Web 133
+
+L’Accueil reprend la proposition 9 choisie : dé hebdomadaire agrandi sur le socle existant, probabilités sous la scène, accès à la Surprise puis deux panneaux côte à côte « Ce soir » et « Nos statistiques ». Les sept indicateurs conservent leurs données réelles et leurs états sans données. Le gros titre est plus compact ; le logo et le rituel gardent l’ancre commune aux autres pages. Le matériau et les gravures approuvés en Web132 sont conservés sans modification.
+
+Les règles de disposition sont limitées à l’Accueil. Les huit règles de marque partagées préexistantes sont reprises à l’identique ; les autres onglets et sous-pages ne sont pas redessinés. Sur PC, la grande scène et ses contrôles occupent la gauche, et l’accès à la Surprise avec les deux panneaux occupent la droite. Le mode paysage compact garde aussi les informations et les contrôles à l’écran. Le bas de page se compacte uniquement si des noms longs dépassent réellement la place disponible.
+
+Les contrôles existants des sept indicateurs suivent la nouvelle disposition : valeurs alignées, texte complet, marges des rangées, colonnes de même hauteur et navigation dégagée. Le contrôle des socles vérifie le contact du grand modèle, son immobilité, le maintien du canvas au rafraîchissement et au redimensionnement. Le contrôle des cinq onglets conserve la vérification des en-têtes communs et des neuf formats. Les données de compte des parcours sont simulées.

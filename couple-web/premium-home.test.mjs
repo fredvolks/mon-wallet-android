@@ -164,7 +164,7 @@ test('Connected Home restores centered LoveRoll brand and preserves weekly statu
  assert.equal((html.match(/home-gift-icon/g)||[]).length,1);
  assert.match(html,/ritual-brand/);
  assert.match(css,/min-height:48px/);
- assert.match(css,/width:92%/);
+ assert.match(css,/width:96%/);
  assert.match(css,/home-calendar-icon svg/);
  assert.match(html,/aria-hidden="true">›/);
 });

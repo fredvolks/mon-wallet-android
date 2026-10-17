@@ -1,5 +1,5 @@
-// Measure the actual content and each rendered text line, not the full-width
-// label rectangle. The latter passed while the seven Home groups looked uneven.
+// Approved Home no. 9: aligned rows in two columns, real values, large die,
+// complete names and controls visible without scrolling.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
 const sizes=[['small',360,640],['Android',360,740],['S25',412,824],['S25-tall',412,915],['iPhone',393,852],['iPad',820,1180],['PC',1366,768]];
@@ -27,26 +27,19 @@ function homeWorld(kind){
 }
 async function measure(page){
  return page.evaluate(()=>{
-  const round=n=>Math.round(n*100)/100;
-  const rect=n=>n.getBoundingClientRect();
-  const union=nodes=>{const a=nodes.map(rect);return {left:Math.min(...a.map(r=>r.left)),right:Math.max(...a.map(r=>r.right)),top:Math.min(...a.map(r=>r.top)),bottom:Math.max(...a.map(r=>r.bottom))};};
+  const rect=n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
   const cards=[...document.querySelectorAll('.home-challenge-stats>div,.home-stat-card')].map((card,index)=>{
-   const ownBox=rect(card),summary=index<3,parentBox=rect(card.parentElement);
-   const box=summary?{left:ownBox.left,right:ownBox.right,top:parentBox.top,bottom:parentBox.bottom,height:parentBox.height}:ownBox;
-   const leaves=[...card.querySelectorAll(summary?'span,strong,small':'i,strong,span,small')];
-   const content=union(leaves);
-   const lines=leaves.filter(n=>n.matches('small')||!summary&&n.matches('strong,span')).flatMap(n=>{
-    const range=document.createRange();range.selectNodeContents(n);
-    return [...range.getClientRects()].filter(r=>r.width>1).map(r=>({text:n.textContent,dx:round((r.left+r.right-box.left-box.right)/2),inside:r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1}));
-   });
-   const value=summary?union([...card.querySelectorAll('span,strong')]):null;
-   return {index,text:card.textContent.trim(),dx:round((content.left+content.right-box.left-box.right)/2),dy:round((content.top+content.bottom-box.top-box.bottom)/2),valueDx:value?round((value.left+value.right-box.left-box.right)/2):null,
-    top:round(content.top-box.top),bottom:round(box.bottom-content.bottom),left:round(content.left-box.left),right:round(box.right-content.right),height:round(box.height),lines};
+   const box=rect(card),icon=card.querySelector(index<3?'.home-summary-value>span':'i');
+   const label=card.querySelector(index<3?'small':'span'),value=card.querySelector('strong');
+   const texts=[...card.querySelectorAll('strong,small,span')].filter(el=>el!==icon);
+   const lines=texts.flatMap(el=>{const range=document.createRange();range.selectNodeContents(el);return [...range.getClientRects()].filter(r=>r.width>1).map(r=>({text:el.textContent,inside:r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1}));});
+   const i=rect(icon),v=rect(value),l=rect(label),content=rect(card.querySelector(index<3?'.home-summary-content':'.home-stat-content'));
+   return {index,box,iconX:(i.left+i.right)/2,labelLeft:l.left,valueLeft:v.left,valueRight:v.right,contentTop:content.top,contentBottom:content.bottom,lines};
   });
-  const nav=rect(document.querySelector('.nav')),last=rect(document.querySelector('.home-stats-grid'));
-  const summary=rect(document.querySelector('.home-challenge-stats')),monthly=rect(document.querySelector('.home-next-month'));
-  return {cards,navTop:nav.top,lastBottom:last.bottom,surpriseButtonHeight:monthly.height,height:innerHeight,scroll:document.documentElement.scrollHeight-innerHeight,horizontal:document.documentElement.scrollWidth-innerWidth,
-   gaps:[round(monthly.top-summary.bottom),round(last.top-monthly.bottom)],values:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
+  const nav=rect(document.querySelector('.nav')),dashboard=rect(document.querySelector('.home-dashboard')),monthly=rect(document.querySelector('.home-next-month'));
+  const panels=[...document.querySelectorAll('.home-panel')].map(rect),canvas=document.querySelector('.home-die-platform canvas'),b=canvas.loveRollDie.projectedBounds(),c=rect(canvas);
+  return {cards,panels,navTop:nav.top,lastBottom:dashboard.bottom,surpriseButtonHeight:monthly.height,height:innerHeight,scroll:document.documentElement.scrollHeight-innerHeight,horizontal:document.documentElement.scrollWidth-innerWidth,
+   gap:dashboard.top-monthly.bottom,values:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent),meshWidth:(b.right-b.left)*c.width,meshHeight:(b.bottom-b.top)*c.height,zoom:getComputedStyle(document.querySelector('.home-bottom-stack')).zoom};
  });
 }
 (async()=>{
@@ -63,16 +56,28 @@ async function measure(page){
     assert.equal(result.cards.length,7);
     assert.deepEqual(result.values,kind==='empty'||kind.endsWith('unrolled')?['0','0 / 0','—','0']:['1','1 / 0','0 / 100 %','1']);
     if(kind==='assigned'||kind==='long-names')assert.deepEqual(await page.locator('.home-challenge-stats strong').allTextContents(),['10','4','6']);
+    assert.equal(result.panels.length,2);
+    assert.ok(Math.abs(result.panels[0].top-result.panels[1].top)<=1&&Math.abs(result.panels[0].bottom-result.panels[1].bottom)<=1,'Two panels must align');
+    assert.ok(result.panels[0].right+5<=result.panels[1].left,'Home panels must stay in separate columns');
     for(const card of result.cards){
-     assert.ok(Math.abs(card.dx)<=1&&Math.abs(card.dy)<=1,'Content group is not centered: '+JSON.stringify(card));
-     if(card.valueDx!==null)assert.ok(Math.abs(card.valueDx)<=1,'Icon and value row is off-center: '+JSON.stringify(card));
-     for(const line of card.lines)assert.ok(Math.abs(line.dx)<=1.5&&line.inside,'Text line is not centered or does not fit: '+JSON.stringify(line));
-     assert.ok(card.top>=5&&card.bottom>=5&&card.left>=1&&card.right>=1,'Uneven or missing content margins: '+JSON.stringify(card));
+     const panel=result.panels[card.index<3?0:1];
+     assert.ok(card.box.left>=panel.left&&card.box.right<=panel.right&&card.box.top>=panel.top&&card.box.bottom<=panel.bottom+1,'Row escapes its panel');
+     assert.ok(card.contentTop>=card.box.top+1&&card.contentBottom<=card.box.bottom-1,'Row lacks vertical margins');
+     for(const line of card.lines)assert.ok(line.inside,'Text does not fit: '+JSON.stringify(line));
+    }
+    for(const group of [result.cards.slice(0,3),result.cards.slice(3)]){
+     assert.ok(Math.max(...group.map(c=>c.iconX))-Math.min(...group.map(c=>c.iconX))<=1,'Icons drift between rows');
+     if(group[0].index===0){
+      assert.ok(Math.max(...group.map(c=>c.labelLeft))-Math.min(...group.map(c=>c.labelLeft))<=1,'Tonight text is not aligned');
+      assert.ok(Math.max(...group.map(c=>c.valueRight))-Math.min(...group.map(c=>c.valueRight))<=1,'Tonight values are not right aligned');
+     }else assert.ok(Math.max(...group.map(c=>c.valueLeft))-Math.min(...group.map(c=>c.valueLeft))<=1,'Statistic values are not aligned');
     }
     assert.ok(result.lastBottom<=result.navTop-3,'Cards overlap the navigation');
     assert.ok(result.surpriseButtonHeight>=44,'Surprise touch target is too short');
     assert.ok(result.scroll<=2&&result.horizontal<=1,'Home does not fit: '+JSON.stringify(result));
-    if(width<768)assert.ok(Math.abs(result.gaps[0]-result.gaps[1])<=1&&result.gaps[0]>=5.9,'Bottom section gaps differ');
+    assert.ok(result.gap>=5.9,'Surprise and dashboard need a clear gap');
+    if(name==='S25'&&kind==='unrolled')assert.ok(result.meshHeight>=145,'The approved Home requires a larger real die');
+    if(name==='S25-tall'&&kind==='unrolled')assert.ok(result.meshHeight>=180,'Tall phone must use its larger stage');
     if(name==='small'&&kind==='long-unrolled'){
      await page.evaluate(()=>{window.__homeBeforeResize=document.querySelector('.home-die-platform canvas');});
      await page.setViewportSize({width:412,height:824});
@@ -82,11 +87,7 @@ async function measure(page){
      await page.setViewportSize({width,height});
      await page.waitForFunction(()=>document.querySelector('.home-stats-grid').getBoundingClientRect().bottom<=document.querySelector('.nav').getBoundingClientRect().top-3);
     }
-    assert.deepEqual(errors,[]);console.log('HOME_CARDS_CENTERED',name,kind,JSON.stringify({
-     groupError:Math.max(...result.cards.flatMap(c=>[Math.abs(c.dx),Math.abs(c.dy),Math.abs(c.valueDx||0)])),
-     lineError:Math.max(...result.cards.flatMap(c=>c.lines.map(l=>Math.abs(l.dx)))),
-     margins:result.cards.map(c=>[c.top,c.bottom]),values:result.values,scroll:result.scroll,navigationGap:result.navTop-result.lastBottom
-    }));
+    assert.deepEqual(errors,[]);console.log('HOME_TWO_COLUMNS_OK',name,kind,JSON.stringify({values:result.values,scroll:result.scroll,navigationGap:result.navTop-result.lastBottom,meshHeight:result.meshHeight,zoom:result.zoom}));
    }catch(error){failures.push({name,kind,error:error.message});}
    finally{await context.close();}
   }

@@ -9,8 +9,8 @@ export const PIP_POSITIONS=Object.freeze({
 });
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
 let homeLayoutObserver=null;
-// Keep complete names and all seven cards visible when long labels outgrow a
-// short phone. Only the bottom cards compact; ordinary layouts retain scale 1.
+// Keep complete names and all seven rows visible in the two-column dashboard.
+// Only the lower panels compact when needed; the header and die keep their size.
 export function fitHomeLayout(root){
  homeLayoutObserver?.disconnect();homeLayoutObserver=null;
  const shell=root.querySelector('.real-home-shell'),stack=shell?.querySelector('.home-bottom-stack');
@@ -20,8 +20,11 @@ export function fitHomeLayout(root){
  const fit=()=>{
   if(!shell.isConnected){observer?.disconnect();return;}
   shell.style.removeProperty('--home-details-scale');shell.classList.remove('home-fit-compact');
-  if(!win.matchMedia('(max-width:767px)').matches)return;
-  const fits=()=>stack.getBoundingClientRect().bottom<=shell.getBoundingClientRect().bottom+.1;
+  const fits=()=>{
+   const nav=root.querySelector('.nav'),limit=Math.min(shell.getBoundingClientRect().bottom,nav?nav.getBoundingClientRect().top-6:Infinity);
+   return [stack,...stack.querySelectorAll('.home-panel,.home-next-month,h3,strong,small')]
+    .every(el=>el.getBoundingClientRect().bottom<=limit+.1);
+  };
   if(fits())return;
   shell.classList.add('home-fit-compact');
   let low=.75,high=1;
@@ -153,8 +156,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const pending=rolling||disabled;
  return '<section class="real-home-shell" aria-label="Tableau de bord du couple">'+
    '<div class="home-ritual">'+ritualHeadingHtml('NOTRE RITUEL DE LA SEMAINE')+
-   '<h2>'+escape(weeklyTitle)+'</h2><p>'+weeklySubtitle+'</p></div>'+
-   '<div class="home-weights" aria-label="Pondération des six faces du dé">'+weights+'</div>'+
+   '<div class="home-title"><h2>'+escape(weeklyTitle)+'</h2><p>'+weeklySubtitle+'</p></div></div>'+
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+
    '<div class="home-fabric-photo" aria-hidden="true"></div>'+
    '<div class="home-satin-orbit" aria-hidden="true"></div>'+
@@ -164,26 +166,32 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    'data-face="'+(rolling?rollFace:ready?weekly.face:1)+'" data-spinning="'+(rolling?'true':'false')+'" '+
    'data-dice-markers="pips" '+(!ready&&!rolling?'data-dice-preview="true" ':'')+
    'aria-label="Dé 3D, '+(rolling?'en cours de brassage':ready?'face '+weekly.face:'en attente du tirage')+'"></canvas></div></div>'+
+   '<div class="home-weights" aria-label="Pondération des six faces du dé">'+weights+'</div>'+
    '<div class="home-roll-area">'+
    (ready?
     '<button class="home-roll-button is-used" type="button" disabled>Déjà brassé cette semaine, revenez la semaine prochaine</button>':
     '<button class="home-roll-button" type="button" data-action="roll:weekly" '+(pending?'disabled':'')+'>'+
     (rolling?'Brassage 3D en cours…':disabled?'Préparation du brassage…':'🎲 BRASSER LE DÉ')+'</button>')+
    '</div>'+
-   '<div class="home-bottom-stack"><div class="home-challenge-stats">'+
-   summary('♢',stats.total,'Défis attribués<br>ce soir')+
-   summary('♡',stats.forFirst,'Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst))+
-   summary('♡',stats.forSecond,'Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond))+'</div>'+
+   '<div class="home-bottom-stack">'+
    '<button class="home-next-month" data-action="tab:special" type="button">'+
    '<span class="home-calendar-icon home-present" aria-hidden="true">'+iconSvg('surprises')+'</span>'+ 
    '<span><small>'+(activity?'Surprise du mois tirée':'Surprise du mois disponible')+'</small>'+
    '<strong>'+(activity?'Voir notre résultat':'Brasser notre surprise')+'</strong>'+
    '<em>'+(activity?'Prochaine surprise : '+escape(m.label):'Un tirage commun ce mois-ci')+'</em></span>'+
    '<span class="home-gift-icon" aria-hidden="true">›</span></button>'+ 
+   '<div class="home-dashboard">'+
+   '<section class="home-panel home-tonight-panel" aria-labelledby="home-tonight-title">'+
+   '<h3 id="home-tonight-title"><span aria-hidden="true">♢</span>Ce soir</h3><div class="home-challenge-stats">'+
+   summary('♢',stats.total,'Défis attribués<br>ce soir')+
+   summary('♡',stats.forFirst,'Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst))+
+   summary('♡',stats.forSecond,'Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond))+'</div></section>'+
+   '<section class="home-panel home-monthly-panel" aria-labelledby="home-statistics-title">'+
+   '<h3 id="home-statistics-title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M1 11h3v8H1zm5-7h3v15H6zm5 3h3v12h-3zm5-6h3v18h-3z"/></svg>Nos statistiques</h3>'+
    '<div class="home-stats-grid" aria-label="Statistiques réelles du couple">'+
    statistic(String(coupleStats.completed),'Défis réalisés','Ce mois · Couple','completed')+
    statistic(coupleStats.byPartner.join(' / '),'Répartition',nameA+' / '+nameB,'partners')+
    statistic(percent,'Sensuel / Sexuel','Ce mois','categories')+
    statistic(String(coupleStats.streak),'Semaines actives','Série actuelle','streak')+
-   '</div></div></section>';
+   '</div></section></div></div></section>';
 }
