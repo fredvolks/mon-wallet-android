@@ -41,7 +41,7 @@ jobs:
           arch: x86_64
           profile: pixel_7
           emulator-boot-timeout: 300
-          ram-size: 1536M
+          ram-size: 3072M
           heap-size: 256M
           emulator-options: -no-window -gpu swangle -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -show-kernel
           disable-animations: true

@@ -4,6 +4,18 @@
 set -euo pipefail
 
 mkdir -p qa
+# Changing navigation mode restarts System UI. Its accessibility root is
+# temporarily null; retry the capture, then keep every app assertion strict.
+capture_ui(){
+  local name="$1"
+  for capture_attempt in $(seq 1 6); do
+    adb shell rm -f "/sdcard/$name.xml"
+    adb shell uiautomator dump "/sdcard/$name.xml" || true
+    if adb pull "/sdcard/$name.xml" "qa/$name.xml"; then return 0; fi
+    sleep 2
+  done
+  return 1
+}
 adb logcat -c
 adb logcat -v brief -s AndroidRuntime:E > qa/runtime-live.txt &
 logcat_pid=$!
@@ -20,8 +32,7 @@ adb shell cmd wifi status > qa/wifi-before-airplane.txt
 adb shell cmd connectivity airplane-mode enable
 adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity
 sleep 20
-adb shell uiautomator dump /sdcard/loveroll-network-error.xml
-adb pull /sdcard/loveroll-network-error.xml qa/loveroll-network-error.xml
+capture_ui loveroll-network-error
 adb exec-out screencap -p > qa/loveroll-network-error.png
 python3 - <<'PY_NATIVE'
 import xml.etree.ElementTree as ET
@@ -51,8 +62,7 @@ sleep 3
 read -r retry_x retry_y < qa/retry-coordinate.txt
 adb shell input tap "$retry_x" "$retry_y"
 sleep 20
-adb shell uiautomator dump /sdcard/loveroll-after-retry.xml
-adb pull /sdcard/loveroll-after-retry.xml qa/loveroll-after-retry.xml
+capture_ui loveroll-after-retry
 python3 - <<'PY_NATIVE'
 import xml.etree.ElementTree as ET
 root=ET.parse('qa/loveroll-after-retry.xml').getroot()
@@ -84,9 +94,8 @@ adb shell dumpsys activity activities > qa/activities.txt
 grep 'ca.desadeux.jeu/.ConnectedLoveRollActivity' qa/activities.txt || grep 'ConnectedLoveRollActivity' qa/activities.txt
 # The user uses Android's three navigation buttons. Check those insets too.
 adb shell cmd overlay enable-exclusive --user 0 --category com.android.internal.systemui.navbar.threebutton
-sleep 3
-adb shell uiautomator dump /sdcard/loveroll-three-buttons.xml
-adb pull /sdcard/loveroll-three-buttons.xml qa/loveroll-three-buttons.xml
+sleep 6
+capture_ui loveroll-three-buttons
 adb exec-out screencap -p > qa/loveroll-three-buttons.png
 python3 - <<'PY_BARS'
 import xml.etree.ElementTree as ET,re
@@ -104,8 +113,7 @@ adb shell am force-stop ca.desadeux.jeu
 adb shell am start -n ca.desadeux.jeu/.ConnectedLoveRollActivity --es destination auth
 for attempt in $(seq 1 10); do
   sleep 2
-  adb shell uiautomator dump /sdcard/loveroll-account.xml
-  adb pull /sdcard/loveroll-account.xml qa/loveroll-account.xml
+  capture_ui loveroll-account
   if python3 - <<'PY_INPUT'
 import xml.etree.ElementTree as ET,re,json
 root=ET.parse('qa/loveroll-account.xml').getroot()
@@ -120,8 +128,7 @@ read -r email_x email_y < qa/email-coordinate.txt
 adb shell input tap "$email_x" "$email_y"
 adb shell input text 'test@example.invalid'
 sleep 3
-adb shell uiautomator dump /sdcard/loveroll-keyboard.xml
-adb pull /sdcard/loveroll-keyboard.xml qa/loveroll-keyboard.xml
+capture_ui loveroll-keyboard
 adb exec-out screencap -p > qa/loveroll-keyboard.png
 python3 - <<'PY_KEYBOARD'
 import xml.etree.ElementTree as ET,re
