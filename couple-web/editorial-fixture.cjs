@@ -44,7 +44,8 @@ async function setupEditorial(browser,world,{width=412,height=824,actor='a',quer
    if(method==='signInWithOAuth')data={url:'https://example.invalid/oauth-test-only'};
   }else if(req.table){
    const tables={couple_profiles:world.profiles,love_wellbeing:[],couple_members:world.profiles.filter(p=>['a','b'].includes(p.id)).map((p,i)=>({user_id:p.id,couple_id:'c',joined_at:'2026-10-0'+(i+1)})),couples:[world.couple],love_push_preferences:[world.prefs],couple_occasion_settings:[world.settings],love_custom_challenges:uid==='a'?world.customCards:[],love_monthly_activity_overrides:uid==='a'?world.monthly:[],love_advent_2026_config:uid==='a'?[{...world.calendar,couple_id:'c'}]:[],love_advent_2026_days:uid==='a'?world.calendar.days.map(d=>({...d,couple_id:'c'})):[],love_special_event_catalogue:uid==='a'?[{couple_id:'c',events:world.special}]:[],couple_rolls:world.rolls};
-   data=tables[req.table]||[];for(const [k,v] of req.filters)data=data.filter(r=>r[k]===v);
+   const homeRecords={couple_sessions:world.eveningSessions,couple_challenges:world.challenges,couple_personal_rolls:world.personalRolls};
+   data=homeRecords[req.table]||tables[req.table]||[];for(const [k,v] of req.filters)data=data.filter(r=>r[k]===v);
   }else{
    world.calls.push({uid,name,args});
    const ownerOnly=['save_love_card_with_roles','import_love_evening_library','import_love_monthly_library','import_love_advent_2026','import_love_special_events','reset_love_all_dice_admin'];
@@ -52,6 +53,8 @@ async function setupEditorial(browser,world,{width=412,height=824,actor='a',quer
    else{
     if(name==='my_love_evening_card_totals')data=[{sensual:25,sexual:25,total:50}];
     if(name==='love_advent_server_date')data='2026-10-17';
+    if(name==='love_evening_reviews_for_couple')data=world.reviews||[];
+    if(name==='my_love_evening_board'&&world.board)data=world.board;
     if(name==='save_love_card_with_roles'){world.customCards=world.customCards.filter(c=>c.category!==args.p_category||c.card_id!==args.p_card_id);world.customCards.push({couple_id:'c',category:args.p_category,card_id:args.p_card_id,title:args.p_title,description:args.p_description,timer_minutes:args.p_timer_minutes,drawer_role:args.p_drawer_role,recipient_role:args.p_recipient_role});data=true;}
     if(name==='import_love_evening_library'){world.customCards=world.customCards.filter(c=>c.category!==args.p_library.category).concat(args.p_library.cards.map(c=>({...c,category:args.p_library.category,couple_id:'c'})));data=true;}
     if(name==='set_love_draw_rule'){world.couple.no_repeat_challenges=args.p_no_repeat;data=true;}

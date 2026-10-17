@@ -114,8 +114,11 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const weeklyTitle=ready?weekly.face+' soirée'+(weekly.face===1?'':'s')+' de défi':'Prêts pour votre prochain rituel ?';
  const weeklySubtitle=ready?'cette semaine':'Brassez votre dé hebdomadaire';
  const statistic=(value,label,subtitle,cls='')=>
-  '<div class="home-stat-card '+cls+'"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
-  '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div>';
+  '<div class="home-stat-card '+cls+'"><div class="home-stat-content"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
+  '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div></div>';
+ const summary=(icon,value,label)=>'<div><div class="home-summary-content">'+
+  '<div class="home-summary-value"><span aria-hidden="true">'+icon+'</span><strong>'+shown(value)+'</strong></div>'+
+  '<small>'+label+'</small></div></div>';
  const displayNames=[0,1].map(i=>String(members[i]?.name||'Partenaire '+(i+1)).trim());
  const shortNames=displayNames.map(n=>n.split(/\s+/)[0]);
  const [nameA,nameB]=shortNames[0]===shortNames[1]?displayNames:shortNames;
@@ -141,9 +144,9 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
     (rolling?'Brassage 3D en cours…':disabled?'Préparation du brassage…':'🎲 BRASSER LE DÉ')+'</button>')+
    '</div>'+
    '<div class="home-bottom-stack"><div class="home-challenge-stats">'+
-   '<div><span aria-hidden="true">♢</span><strong>'+shown(stats.total)+'</strong><small>Défis attribués<br>ce soir</small></div>'+
-   '<div><span>♡</span><strong>'+shown(stats.forFirst)+'</strong><small>Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst)+'</small></div>'+
-   '<div><span>♡</span><strong>'+shown(stats.forSecond)+'</strong><small>Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond)+'</small></div></div>'+
+   summary('♢',stats.total,'Défis attribués<br>ce soir')+
+   summary('♡',stats.forFirst,'Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst))+
+   summary('♡',stats.forSecond,'Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond))+'</div>'+
    '<button class="home-next-month" data-action="tab:special" type="button">'+
    '<span class="home-calendar-icon home-present" aria-hidden="true">'+iconSvg('surprises')+'</span>'+ 
    '<span><small>'+(activity?'Surprise du mois tirée':'Surprise du mois disponible')+'</small>'+
