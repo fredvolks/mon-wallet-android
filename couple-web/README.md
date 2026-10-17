@@ -224,3 +224,10 @@ L’Accueil reprend la proposition 9 choisie : dé hebdomadaire agrandi sur le s
 Les règles de disposition sont limitées à l’Accueil. Les huit règles de marque partagées préexistantes sont reprises à l’identique ; les autres onglets et sous-pages ne sont pas redessinés. Sur PC, la grande scène et ses contrôles occupent la gauche, et l’accès à la Surprise avec les deux panneaux occupent la droite. Le mode paysage compact garde aussi les informations et les contrôles à l’écran. Le bas de page se compacte uniquement si des noms longs dépassent réellement la place disponible.
 
 Les contrôles existants des sept indicateurs suivent la nouvelle disposition : valeurs alignées, texte complet, marges des rangées, colonnes de même hauteur et navigation dégagée. Le contrôle des socles vérifie le contact du grand modèle, son immobilité, le maintien du canvas au rafraîchissement et au redimensionnement. Le contrôle des cinq onglets conserve la vérification des en-têtes communs et des neuf formats. Les données de compte des parcours sont simulées.
+
+
+## Proportions de l’Accueil 9 — Web 134
+
+Le titre du rituel non tiré garde deux lignes sur téléphone, quelle que soit la métrique de la police de la plateforme. La scène possède une hauteur minimale propre ; le socle est recadré plus bas, et le modèle conserve 24 px d’air au-dessus de lui (18 px sur les plus petits écrans, 10 px en paysage court). La marge optique est une option CSS de la scène d’Accueil : tous les autres socles conservent les 4 px précédents. Matière, gravures, orientations et animation ne changent pas.
+
+Les libellés « Attribués à », le nom et les défis restants occupent des lignes distinctes, comme sur la proposition choisie. Le panneau des statistiques garde les valeurs au-dessus de leurs libellés, y compris sur les écrans courts. Les en-têtes communs gardent leur ancre. Les contrôles du dé mesurent les marges au-dessus du modèle et la séparation avec le sous-titre, en plus du contact au socle. Les parcours de l’Accueil incluent aussi un viewport de 360 × 704, proche des proportions de la capture Android sans les barres système.

@@ -2,7 +2,7 @@
 // complete names and controls visible without scrolling.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
-const sizes=[['small',360,640],['Android',360,740],['S25',412,824],['S25-tall',412,915],['iPhone',393,852],['iPad',820,1180],['PC',1366,768]];
+const sizes=[['small',360,640],['Android-app',360,704],['Android',360,740],['S25',412,824],['S25-tall',412,915],['iPhone',393,852],['iPad',820,1180],['PC',1366,768]];
 function homeWorld(kind){
  const longNames=kind.startsWith('long-'),unrolled=kind.endsWith('unrolled');
  const world=createWorld(),now=new Date(),date=now.toISOString();
@@ -77,10 +77,10 @@ async function measure(page){
     assert.ok(result.scroll<=2&&result.horizontal<=1,'Home does not fit: '+JSON.stringify(result));
     assert.ok(result.gap>=5.9,'Surprise and dashboard need a clear gap');
     if(name==='S25'&&kind==='unrolled')assert.ok(result.meshHeight>=145,'The approved Home requires a larger real die');
-    if(name==='S25-tall'&&kind==='unrolled')assert.ok(result.meshHeight>=180,'Tall phone must use its larger stage');
+    if(name==='S25-tall'&&kind==='unrolled')assert.ok(result.meshHeight>measurements.find(m=>m.name==='S25'&&m.kind==='unrolled').meshHeight+2,'The taller stage must retain a larger die while preserving its breathing room');
     if(name==='small'&&kind==='long-unrolled'){
      await page.evaluate(()=>{window.__homeBeforeResize=document.querySelector('.home-die-platform canvas');});
-     await page.setViewportSize({width:412,height:824});
+     await page.setViewportSize({width:412,height:915});
      await page.waitForFunction(()=>getComputedStyle(document.querySelector('.home-bottom-stack')).zoom==='1');
      const larger=await measure(page);assert.ok(larger.lastBottom<=larger.navTop-3&&larger.scroll<=2);
      assert.ok(await page.evaluate(()=>window.__homeBeforeResize===document.querySelector('.home-die-platform canvas')),'Fitting replaced the real die');
