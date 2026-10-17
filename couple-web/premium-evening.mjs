@@ -157,8 +157,8 @@ export function premiumEveningHtml({
   '<strong>ÉTAPE 2 · DÉFI DU SOIR</strong>'+
   '<small>'+(!ready?'Compléter l’étape 1 pour brasser le dé':first?'♥ '+esc(first)+' commence !':'Premier joueur désigné au hasard')+'</small></div>'+
   '</div>'+
-  '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b></span>'+
-  '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b></span></div>'+
+  '<div class="evening-progress" aria-label="Progression de nos défis"><span title="'+esc(mine.name||'Moi')+'">'+esc(mine.name||'Moi')+'<b>'+count(me)+'</b><small>Dé personnel : '+esc(myRoll?.face??'—')+'</small></span>'+
+  '<span title="'+esc(partner.name||'Partenaire')+'">'+esc(partner.name||'Partenaire')+'<b>'+count(partner.user_id)+'</b><small>Dé personnel : '+esc(theirRoll?.face??'—')+'</small></span></div>'+
   '<div class="evening-play">'+
     '<div class="evening-choice" role="group" aria-label="Choisir la catégorie de ce défi">'+
        (showSensuel?'<div class="evening-choice-option">'+

@@ -7,7 +7,7 @@ import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261017-editorial117';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-editorial117';
-import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
+import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-editorial117';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
 import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise109';
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';

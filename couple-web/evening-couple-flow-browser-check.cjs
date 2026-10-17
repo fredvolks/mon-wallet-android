@@ -74,7 +74,9 @@ const client=`export function createClient(){
   }
   const [a,b]=pages;
   const session=async p=>{await p.reload();await p.locator('.real-home-shell').waitFor();await p.locator('[data-action="tab:session"]').click();};
-  await a.locator('[data-action="tab:session"]').click();await a.locator('[data-action="new-session"]').click();await a.locator('.is-waiting').waitFor();
+  fs.mkdirSync('design-captures',{recursive:true});
+  await a.locator('[data-action="tab:session"]').click();await a.screenshot({path:'design-captures/S25-editorial-intro.png'});
+  await a.locator('[data-action="new-session"]').click();await a.locator('.is-waiting').waitFor();await a.screenshot({path:'design-captures/S25-editorial-step1.png'});
   assert.ok(await a.locator('[data-action="new-challenge"]').isDisabled());
   await a.locator('[data-action="my-d6"]').click();await a.locator('.evening-face-result strong').waitFor();
   assert.equal(await a.locator('.evening-face-result strong').textContent(),'4');
@@ -82,12 +84,14 @@ const client=`export function createClient(){
   await b.locator('[data-action="my-d6"]').click();await b.locator('.evening-premium-view.is-ready').waitFor();
   await session(a);assert.equal(world.rolls.length,2);
   for(let i=0;i<3;i++){
-   await a.locator('[data-action="give-challenge"]').click();await a.locator('.lr-dialog-accept').click();await a.waitForTimeout(350);
+   await a.locator('[data-action="give-challenge"]').click();await a.locator('.lr-dialog-accept').click();
+   await a.waitForFunction(count=>document.querySelector('.evening-gift p')?.textContent.includes(count+'/3'),i+1);
   }
   assert.equal(world.gifts.length,3);assert.ok(await a.locator('[data-action="give-challenge"]').isDisabled());
   fs.mkdirSync('design-captures',{recursive:true});await a.screenshot({path:'design-captures/S25-editorial-step2.png'});
   for(const uid of ['a','b','b','b','b']){
    const page=uid==='a'?a:b;await session(page);
+   await page.waitForFunction(()=>document.querySelector('.evening-d35-col canvas')?.loveRollDie);
    for(const cat of ['SENSUEL','SEXUEL','HASARD'])await page.locator('[data-action="category:'+cat+'"]').click();
    await page.evaluate(()=>window.__beforeDraw=document.querySelector('.evening-d35-col canvas'));
    await page.locator('[data-action="new-challenge"]').click();
@@ -103,22 +107,27 @@ const client=`export function createClient(){
    const page=uid==='a'?a:b;await session(page);
    for(const c of world.cards.filter(c=>c.recipient===uid)){
     await page.locator('[data-action="evening-list"]').click();await page.locator('[data-action="evening-open:'+c.id+'"]').click();
-    await page.locator('[data-action="evening-start:'+c.id+'"]').click();await page.locator('#challenge-timer-toggle').click();
-    assert.ok((await page.locator('#challenge-timer-status').textContent()).includes('En cours'));
+    await page.locator('[data-action="evening-start:'+c.id+'"]').click();
+    await page.waitForFunction(()=>document.querySelector('#challenge-timer-status')?.textContent.includes('En cours'));
+    await page.locator('#challenge-timer-toggle').click();
+    assert.ok(!(await page.locator('#challenge-timer-status').textContent()).includes('En cours'));
+    await page.locator('#challenge-timer-toggle').click();
+    await page.waitForFunction(()=>document.querySelector('#challenge-timer-status')?.textContent.includes('En cours'));
     await page.screenshot({path:'design-captures/S25-editorial-challenge-'+uid+'.png'});
     await page.locator('[data-action="answer:'+c.id+':completed"]').click();
+    await page.locator('[data-action="answer:'+c.id+':completed"]').waitFor({state:'hidden'});
     if(!world.sessions[0].finished_at)await page.locator('[data-action="evening-close"]').click();
    }
   }
   assert.ok(world.sessions[0].finished_at);assert.ok(world.cards.every(c=>c.status==='completed'));
   for(const [i,page] of pages.entries()){
-   if(!await page.locator('.lr-review-modal').count())await session(page);
+   if(!await page.locator('.lr-review-modal').count())await page.reload();
    await page.locator('.lr-review-modal').waitFor();
    for(const key of ['overall','connection','appreciation','again'])await page.locator('[data-action="review-rate:'+key+':4"]').click();
    await page.locator('#lr-review-comment').fill(i===0?'Bilan de Camille':'Bilan de Noémie');
    await page.locator('[data-action="review-save"]').click();await page.locator('.lr-review-modal').waitFor({state:'hidden'});
   }
-  assert.equal(world.reviews.length,2);await a.locator('[data-action="evening-calendar"]').click();
+  assert.equal(world.reviews.length,2);await session(a);await a.locator('[data-action="evening-calendar"]').click();
   await a.locator('.evening-calendar-shell').waitFor();
   const groups=a.locator('.evening-cal-person-group');assert.equal(await groups.count(),2);
   await groups.nth(0).locator('summary').click();assert.ok((await groups.nth(0).innerText()).includes('Bilan de Camille'));
