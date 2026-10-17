@@ -34,12 +34,14 @@ const {glassState}=require('./crystal-glass-browser-check.cjs');
       assert.equal(result.translucency.optics.transmission,1);
       assert.ok(result.translucency.white>0,'Home white inlays are missing');
      }
-     const summary=await page.evaluate(()=>[...document.querySelectorAll('.home-challenge-stats>div')].map(column=>{
-      const content=column.querySelector('.home-summary-content').getBoundingClientRect(),value=column.querySelector('.home-summary-value').getBoundingClientRect(),box=column.getBoundingClientRect();
-      return {groupX:(content.left+content.right-box.left-box.right)/2,groupY:(content.top+content.bottom-box.top-box.bottom)/2,valueX:(value.left+value.right-box.left-box.right)/2};
+     const summary=await page.evaluate(()=>[...document.querySelectorAll('.home-challenge-stats>div')].map(row=>{
+      const label=row.querySelector('small').getBoundingClientRect(),value=row.querySelector('strong').getBoundingClientRect(),box=row.getBoundingClientRect();
+      return {labelLeft:label.left,valueRight:value.right,inside:label.bottom<=box.bottom+1&&value.bottom<=box.bottom+1};
      }));
      assert.equal(summary.length,3);
-     assert.ok(summary.every(x=>Math.abs(x.groupX)<=1&&Math.abs(x.groupY)<=1&&Math.abs(x.valueX)<=1),'Complete summary groups are not centered '+JSON.stringify(summary));
+     assert.ok(summary.every(x=>x.inside),'Tonight row is clipped');
+     assert.ok(Math.max(...summary.map(x=>x.labelLeft))-Math.min(...summary.map(x=>x.labelLeft))<=1,'Tonight labels are not aligned');
+     assert.ok(Math.max(...summary.map(x=>x.valueRight))-Math.min(...summary.map(x=>x.valueRight))<=1,'Tonight values are not aligned');
      // Regression: a live text refresh used to retain WebGL but drop the stage
      // transform. A size-only check misses this because the canvas is unchanged.
      await page.evaluate(()=>{window.__beforeRefresh=document.querySelector('.home-die-platform canvas');});

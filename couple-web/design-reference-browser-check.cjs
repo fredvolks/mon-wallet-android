@@ -61,20 +61,12 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      assert.equal(await page.locator('.home-weights button').count(),0);
      assert.equal(await page.locator('.home-weight').count(),6);
      assert.deepEqual(geometry.stats,['0','0 / 0','—','0']);
-     if(width<768){
-      const margins=await page.evaluate(()=>{
-       const cards=[...document.querySelector('.home-bottom-stack').children].map(e=>e.getBoundingClientRect());
-       return [cards[1].top-cards[0].bottom,cards[2].top-cards[1].bottom];
-      });
-      assert.ok(Math.abs(margins[0]-margins[1])<1&&margins[0]>=6,'bottom Home card margins differ');
-     }
+     const panels=await page.locator('.home-panel').evaluateAll(nodes=>nodes.map(e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};}));
+     assert.equal(panels.length,2);
+     assert.ok(Math.abs(panels[0].top-panels[1].top)<=1&&Math.abs(panels[0].bottom-panels[1].bottom)<=1&&panels[0].right<panels[1].left,'Home columns are not aligned');
      assert.ok(await page.evaluate(()=>[...document.querySelectorAll('.home-stat-card')].every(card=>{
-      const box=card.getBoundingClientRect();
-      return [...card.querySelectorAll('strong,span,small')].every(text=>{
-       const r=text.getBoundingClientRect();
-       return Math.abs((r.left+r.right-box.left-box.right)/2)<1.5 && r.bottom<=box.bottom+1;
-      });
-     })),'statistic text is off-center or outside its card');
+      const box=card.getBoundingClientRect();return [...card.querySelectorAll('strong,span,small')].every(text=>{const r=text.getBoundingClientRect();return r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1;});
+     })),'Statistic text is outside its row');
      assert.ok(geometry.dice[0].width>=(height<=860?160:175),'weekly die too small');
      if(name.startsWith('S25'))assert.ok(await page.evaluate(()=>document.querySelector('.home-stats-grid').getBoundingClientRect().bottom<=document.querySelector('.nav').getBoundingClientRect().top+2),'Home stats under bottom navigation '+JSON.stringify(geometry));
      await page.locator('.home-next-month').click();await page.locator('.surprise-premium-view').waitFor();
