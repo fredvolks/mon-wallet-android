@@ -155,3 +155,10 @@ test('Connected Home restores centered LoveRoll brand and preserves weekly statu
  assert.match(css,/home-calendar-icon svg/);
  assert.match(html,/aria-hidden="true">›/);
 });
+
+test('Partner statistics distinguish saved profiles with the same first name',()=>{
+ const h=premiumHomeHtml({members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Fred Messely'}]});
+ const partners=h.match(/class="home-stat-card partners"[\s\S]*?<\/div>/)?.[0];
+ assert.match(partners,/<small>Fred \/ Fred Messely<\/small>/);
+ assert.doesNotMatch(partners,/<small>Fred \/ Fred<\/small>/);
+});
