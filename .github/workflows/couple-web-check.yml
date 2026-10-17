@@ -80,6 +80,7 @@ jobs:
           PY
       - name: Validate HD invitation artwork and crisp SVG icons
         run: |
+          python3 design/loveroll-icon/check.py
           python3 - <<'PY'
           from pathlib import Path
           from PIL import Image

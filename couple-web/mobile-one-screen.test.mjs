@@ -19,7 +19,7 @@ test('Mobile main screens have fixed dynamic viewport; bottom navigation remains
 test('Home owns its responsive layout and retains a real canvas',()=>{
  const home=read('premium-home.css');
  assert.match(home,/height:100dvh/);
- assert.match(home,/transform:translateY\(-8%\)/);
+ assert.doesNotMatch(home,/transform:translateY\(-8%\)/);
  assert.match(home,/safe-area-inset-bottom/);
  // Navigation is shared; the Home content layout stays in premium-home.css.
  assert.doesNotMatch(css,/loveroll-real-home\s*(?:,|\{)/);
@@ -59,10 +59,10 @@ test('Advent 25 squares keep their screen space',()=>{
 });
 test('v74 loaded LAST in HTML and cached with updated worker; server version updated',()=>{
  const index=read('index.html'),sw=read('service-worker.js'),v=JSON.parse(read('web-version.json'));
- assert.equal(v.build,'2026-10-17.121');
+ assert.equal(v.build,'2026-10-17.122');
  assert.match(index,/mobile-one-screen-v74\.css\?v=20261017-editorial121/);
  assert.ok(index.lastIndexOf('mobile-one-screen-v74.css')>index.lastIndexOf('surprise-dice-layout-v73.css'));
- assert.match(sw,/loveroll-static-v121/);
+ assert.match(sw,/loveroll-static-v122/);
  assert.match(sw,/\.\/mobile-one-screen-v74\.css/);
 });
 
