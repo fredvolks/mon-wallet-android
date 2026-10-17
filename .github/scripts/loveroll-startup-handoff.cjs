@@ -1,6 +1,6 @@
 // Exercise the actual Android overlay and packaged observer through a debug
 // WebView. The trusted page is fulfilled locally; no account or auth calls occur.
-const {chromium}=require('playwright');
+const {_android:android}=require('playwright');
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
@@ -32,15 +32,17 @@ async function capture(name){
 }
 (async()=>{
  fs.mkdirSync('qa',{recursive:true});
- const pid=adb('shell','pidof','-s','ca.desadeux.jeu').trim();
- assert.match(pid,/^\d+$/,'A real LoveRoll activity must be running');
- adb('forward','tcp:9222','localabstract:webview_devtools_remote_'+pid);
- let browser;
+ let device;
  try{
-  browser=await chromium.connectOverCDP('http://127.0.0.1:9222');
-  const context=browser.contexts()[0];
-  const page=context.pages().find(p=>p.url().startsWith(site));
-  assert.ok(page,'The installed app must expose its trusted WebView in debug builds');
+  const devices=await android.devices();
+  assert.equal(devices.length,1,'The regression requires one isolated Android emulator');
+  device=devices[0];
+  const webview=await device.webView({pkg:'ca.desadeux.jeu'});
+  // Android's entry point avoids desktop-only browser-context commands that
+  // the actual WebView protocol intentionally does not implement.
+  const page=await webview.page();
+  const context=page.context();
+  assert.ok(page.url().startsWith(site),'The installed app must expose its trusted WebView in debug builds');
   const protocol=await context.newCDPSession(page);
   await protocol.send('Network.enable');
   await protocol.send('Network.setBypassServiceWorker',{bypass:true});
@@ -77,7 +79,6 @@ async function capture(name){
    console.log('LOVEROLL_NATIVE_SINGLE_STARTUP_OK',mode);
   }
  }finally{
-  if(browser)await browser.close();
-  adb('forward','--remove','tcp:9222');
+  if(device)await device.close();
  }
 })().catch(error=>{console.error(error);process.exitCode=1;});
