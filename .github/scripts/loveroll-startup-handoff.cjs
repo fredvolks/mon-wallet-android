@@ -82,6 +82,16 @@ const tap=rect=>adb('shell','input','tap',String(Math.round((rect.left+rect.righ
 const preview=kind=>adb('shell','am','start','--activity-single-top','-n',activity,'--es','loveroll_debug_dialog',kind);
 const callbackLog=()=>adb('logcat','-d','-v','brief','-s','LoveRollDialogQA:I','*:S');
 const callbackCount=(log,message)=>log.split(message).length-1;
+function dialogReadability(id){
+ const log=adb('logcat','-d','-v','brief','-s','LoveRollDialogLayout:I','*:S');
+ const readings=Array.from(log.matchAll(/\{[^\n]+\}/g),match=>JSON.parse(match[0]));
+ const reading=readings.filter(value=>id===undefined||value.id===id).at(-1);
+ assert.ok(reading,'The debug view must report its actual laid-out text lines');
+ return reading;
+}
+const swipeContent=rect=>adb('shell','input','swipe',
+ String(Math.round((rect.left+rect.right)/2)),String(Math.round(rect.top+rect.height*.88)),
+ String(Math.round((rect.left+rect.right)/2)),String(Math.round(rect.top+rect.height*.12)),'400');
 const updateFiles=()=>adb('shell','run-as',pkg,'find','cache','-maxdepth','2','-type','f')
  .split('\n').filter(name=>name.startsWith('cache/updates/')).sort();
 async function dialogPreviews(){
@@ -110,7 +120,7 @@ async function dialogPreviews(){
  // intent, and restore the original display even if an assertion fails.
  const displayBefore=adb('shell','wm','size');
  const previousOverride=displayBefore.match(/Override size:\s*(\d+x\d+)/)?.[1]||'reset';
- let longButtons,scrollBounds,shortSize;
+ let longButtons,scrollBounds,shortSize,reading;
  try{
   adb('shell','wm','size','1080x960');
   await capture('loveroll-native-short-screen',{check:xml=>{
@@ -127,6 +137,35 @@ async function dialogPreviews(){
   const scroll=nodes(long).find(n=>n.class==='android.widget.ScrollView'&&n.scrollable==='true');
   scrollBounds=bounds(scroll);
   assert.ok(scrollBounds.height>0&&scrollBounds.bottom<=longButtons.Continuer.top,'Long text must scroll above the fixed action buttons');
+  const initialReading=dialogReadability();
+  assert.equal(initialReading.scrollY,0,'The long dialog must open at the start of its text');
+  assert.equal(initialReading.firstFullyVisibleLine,0,'The first description line must be entirely readable');
+  assert.ok(initialReading.fullyVisibleLines>=2,'At least two nonempty description lines must be fully visible on opening');
+  assert.ok(initialReading.totalLines>initialReading.fullyVisibleLines&&initialReading.maxScrollY>0,'The long fixture must need real scrolling');
+
+  swipeContent(scrollBounds);
+  const scrolledName='loveroll-native-dialog-long-scrolled';
+  const scrolled=await capture(scrolledName);
+  const afterSwipe=dialogReadability(initialReading.id);
+  assert.ok(afterSwipe.scrollY>0&&afterSwipe.firstFullyVisibleLine>initialReading.firstFullyVisibleLine,
+   'A real swipe must expose later description lines');
+  assert.ok(afterSwipe.fullyVisibleLines>=2,'Later text must also have multiple complete readable lines');
+  assert.deepEqual(buttons(scrolled,scrolledName,['Continuer','Annuler']),longButtons,'Actions must stay fixed while content scrolls');
+
+  let endReading=afterSwipe,swipes=1;
+  for(;swipes<20&&endReading.lastFullyVisibleLine<endReading.totalLines-1;swipes++){
+   swipeContent(scrollBounds);await pause(150);
+   endReading=dialogReadability(initialReading.id);
+  }
+  const endName='loveroll-native-dialog-long-end';
+  const end=await capture(endName);
+  endReading=dialogReadability(initialReading.id);
+  assert.equal(endReading.lastFullyVisibleLine,endReading.totalLines-1,'The final description line must be reachable and entirely visible');
+  assert.ok(endReading.fullyVisibleLines>=2&&Math.abs(endReading.scrollY-endReading.maxScrollY)<=2,
+   'The entire long message must be readable down to its real scroll end');
+  assert.deepEqual(buttons(end,endName,['Continuer','Annuler']),longButtons,'Actions must stay fully accessible at the end of the message');
+  assert.equal(callbackCount(callbackLog(),'accept callback'),callbackCount(logBefore,'accept callback'),'Reading must not trigger an action');
+  reading={initial:initialReading,afterSwipe,end:endReading,swipes};
   tap(longButtons.Continuer);
   await capture('loveroll-native-dialog-long-accepted',{check:xml=>assert.ok(!xml.includes('text="Notifications LoveRoll"'))});
   assert.equal(callbackCount(callbackLog(),'accept callback'),callbackCount(logBefore,'accept callback')+1);
@@ -140,11 +179,11 @@ async function dialogPreviews(){
   adb('shell','wm','size',previousOverride);
  }
  fs.writeFileSync('qa/loveroll-native-dialog-metrics.json',JSON.stringify({
-  updateButtons,landscape:{size:shortSize,buttons:longButtons,scrollBounds},
+  updateButtons,landscape:{size:shortSize,buttons:longButtons,scrollBounds,reading},
   callbacks:{backDismissed:true,updateAccepted:true,longAccepted:true,longCancelled:true},
   apkDownloadsCreated:false
  },null,2));
- console.log('LOVEROLL_NATIVE_DIALOGS_OK update, Back, callbacks, short landscape');
+ console.log('LOVEROLL_NATIVE_DIALOGS_OK update, Back, callbacks, short landscape, complete text reading');
 }
 (async()=>{
  fs.mkdirSync('qa',{recursive:true});

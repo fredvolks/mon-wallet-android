@@ -12,6 +12,8 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.text.Layout;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,41 +63,43 @@ public final class PremiumDialog {
  private static void open(Activity a,String title,String message,String yes,Runnable accept,
   String no,Runnable cancel,String badge,boolean update){
   if(a.isFinishing()||a.isDestroyed())return;
+  boolean compact=visibleFrame(a).height()<=dp(a,450);
   DialogPanel popup=new DialogPanel(a);
-  popup.setPadding(dp(a,22),dp(a,24),dp(a,22),dp(a,18));
+  popup.setPadding(dp(a,22),dp(a,compact?14:24),dp(a,22),dp(a,compact?12:18));
   popup.setBackground(background(a,0xff241019,0xff120910,22,0x887d4a5b));
   ViewCompat.setAccessibilityPaneTitle(popup,title);
 
   LinearLayout content=new LinearLayout(a);
   content.setOrientation(LinearLayout.VERTICAL);content.setGravity(Gravity.CENTER_HORIZONTAL);
   Emblem emblem=new Emblem(a,update);
-  content.addView(emblem,new LinearLayout.LayoutParams(dp(a,116),dp(a,32)));
+  content.addView(emblem,new LinearLayout.LayoutParams(dp(a,compact?96:116),dp(a,compact?22:32)));
 
-  TextView headline=label(a,title,27,TEXT);
+  TextView headline=label(a,title,compact?22:27,TEXT);
   headline.setTypeface(Typeface.create("serif",Typeface.NORMAL));
-  headline.setLineSpacing(dp(a,2),1f);
+  headline.setLineSpacing(dp(a,compact?1:2),1f);
   ViewCompat.setAccessibilityHeading(headline,true);
-  content.addView(headline,row(a,16));
+  content.addView(headline,row(a,compact?8:16));
 
   if(badge!=null){
    TextView version=label(a,badge,12,ROSE);
-   version.setLetterSpacing(.035f);version.setPadding(dp(a,12),dp(a,6),dp(a,12),dp(a,6));
+   version.setLetterSpacing(.035f);version.setPadding(dp(a,12),dp(a,compact?4:6),dp(a,12),dp(a,compact?4:6));
    version.setBackground(background(a,0xff28151e,0xff201119,20,0x666c3e4f));
    LinearLayout.LayoutParams versionParams=new LinearLayout.LayoutParams(-2,-2);
-   versionParams.topMargin=dp(a,12);content.addView(version,versionParams);
+   versionParams.topMargin=dp(a,compact?8:12);content.addView(version,versionParams);
   }
   TextView description=label(a,message,15,MUTED);
   description.setLineSpacing(dp(a,4),1f);
-  content.addView(description,row(a,18));
+  content.addView(description,row(a,compact?12:18));
 
   BoundedScrollView scroll=new BoundedScrollView(a);
+  if(BuildConfig.DEBUG)scroll.description=description;
   scroll.setFillViewport(false);scroll.setVerticalScrollBarEnabled(false);
   scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
   scroll.addView(content,new ScrollView.LayoutParams(-1,-2));
   popup.content=scroll;popup.addView(scroll,new LinearLayout.LayoutParams(-1,-2));
 
   LinearLayout actions=new LinearLayout(a);actions.setOrientation(LinearLayout.VERTICAL);
-  actions.setPadding(0,dp(a,22),0,0);
+  actions.setPadding(0,dp(a,compact?12:22),0,0);
   popup.actions=actions;popup.addView(actions,new LinearLayout.LayoutParams(-1,-2));
   AlertDialog dialog=new AlertDialog.Builder(a).create();
   dialog.setView(popup,0,0,0,0);
@@ -166,12 +170,41 @@ public final class PremiumDialog {
  }
  private static final class BoundedScrollView extends ScrollView {
   private int maximumHeight=Integer.MAX_VALUE;
+  private TextView description;
   BoundedScrollView(Activity activity){super(activity);}
   @Override protected void onMeasure(int widthSpec,int heightSpec){
    int limit=maximumHeight;
    if(MeasureSpec.getMode(heightSpec)!=MeasureSpec.UNSPECIFIED)
     limit=Math.min(limit,MeasureSpec.getSize(heightSpec));
    super.onMeasure(widthSpec,MeasureSpec.makeMeasureSpec(limit,MeasureSpec.AT_MOST));
+  }
+  @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){
+   super.onLayout(changed,left,top,right,bottom);
+   reportReadability();
+  }
+  @Override protected void onScrollChanged(int left,int top,int oldLeft,int oldTop){
+   super.onScrollChanged(left,top,oldLeft,oldTop);
+   reportReadability();
+  }
+  /** Debug capture evidence comes from real laid-out text, without logging
+   * message contents or adding test descriptions to accessibility output. */
+  private void reportReadability(){
+   if(!BuildConfig.DEBUG||description==null)return;
+   Layout layout=description.getLayout();Rect visible=new Rect();
+   if(layout==null||!description.getLocalVisibleRect(visible))return;
+   int first=-1,last=-1,count=0,padding=description.getTotalPaddingTop();
+   for(int i=0;i<layout.getLineCount();i++){
+    boolean hasText=!description.getText().subSequence(layout.getLineStart(i),layout.getLineEnd(i)).toString().trim().isEmpty();
+    if(hasText&&layout.getLineTop(i)+padding>=visible.top&&layout.getLineBottom(i)+padding<=visible.bottom){
+     if(first<0)first=i;last=i;count++;
+    }
+   }
+   int maximum=Math.max(0,getChildAt(0).getHeight()-getHeight()+getPaddingTop()+getPaddingBottom());
+   Log.i("LoveRollDialogLayout","{\"id\":"+System.identityHashCode(this)+
+    ",\"scrollY\":"+getScrollY()+",\"maxScrollY\":"+maximum+
+    ",\"firstFullyVisibleLine\":"+first+",\"lastFullyVisibleLine\":"+last+
+    ",\"fullyVisibleLines\":"+count+",\"totalLines\":"+layout.getLineCount()+
+    ",\"descriptionVisibleHeightPx\":"+visible.height()+"}");
   }
  }
  /** Vector strokes keep the icon rose on every Android emoji/font setting. */

@@ -58,6 +58,13 @@ Les preuves locales de cette session sont sous `/tmp/loveroll-v127-audit/` : `pr
 
 La **soirée compatible** reste destinée à une session active dont `paired_turns` ou `self_draws` n’est pas activé. Elle n’est pas proposée comme nouvelle soirée par la navigation courante. Son ancien habillage a été remplacé dans `renderLegacySession()` (`app.js`) : marque commune, titre « Notre soirée », cartes et boutons harmonisés, défilement intérieur. L’ancien document de 1 920 px sur S25 et 1 879 px sur petit mobile tient désormais dans la fenêtre, avec toutes ses commandes accessibles. Ses liens Journal suivent la redirection vers le calendrier actuel. Les règles et les données de ces anciennes sessions restent inchangées.
 
-L’entrée Android **« Anciennes données hors ligne »** de Confidentialité est distincte. Elle apparaît si le pont natif expose `openLegacyOffline` et ouvre les archives locales natives. Les captures Web ne prouvent ni sa refonte ni celle de ses écrans internes. Sa validation doit être menée dans l’application Android, séparément des cinq onglets Web.
+L’entrée Android **« Anciennes données hors ligne »** de Confidentialité est distincte. Elle apparaît si le pont natif expose `openLegacyOffline` et ouvre `MainActivity` par `loveroll://offline`. La lecture de `MainActivity.java` confirme que **14 écrans historiques atteignables conservent l’ancien habillage** : fonds violets, boutons rose vif, titres sans-serif et glyphes/emoji. Le gabarit commun (`draw()`, `card()`, `addButton()`) et les fenêtres propres à `showResultDialog()` utilisent encore cette présentation.
+
+| Groupe | Écrans historiques atteignables |
+|---|---|
+| Cinq onglets | Accueil (`home`), Soirée (`game`), Défi spécial (`special`), Avent (`advent`), Réglages (`settings`). |
+| Neuf sous-pages | Événements (`occasions`), détail d’un événement (`occasion_detail`), journal (`journal`), nouvelle entrée (`intimacy`), questionnaires (`feedback`), réponse individuelle (`feedback_answer`), vie privée (`privacy`), règles (`rules`), mises à jour (`updater`). |
+
+Les fenêtres qui appellent les composants partagés `PremiumDialog` et `UpdateManager` bénéficient du nouveau style. Certains réglages renvoient aussi vers les pages connectées actuelles. L’archive native reste une application locale interactive, avec ses tirages et formulaires. **Les captures de cet audit ne valident pas l’affichage ni les interactions de ces 14 écrans natifs** : ce constat repose sur la lecture du code, sans extension de la refonte historique.
 
 Les fonctions résiduelles sans entrée UI repérée, notamment l’ancienne prévisualisation d’idées et le mode de démonstration, ne sont pas comptées comme parcours utilisateurs actuels. Cet audit ne remplace pas les contrôles Android, d’authentification réelle, de permissions système, de démarrage ou de reprise réseau.
