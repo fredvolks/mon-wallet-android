@@ -91,9 +91,9 @@
  main#app:has(> nav.nav)>.header h1{font-size:clamp(1.65rem,2.2vw,2.3rem);}
  /* No fixed S25 viewport math on desktop/tablet; document can scroll. */
  
- main#app.loveroll-evening-page:has(> nav.nav),
- main#app.loveroll-surprise-page:has(> nav.nav),
- main#app.loveroll-advent-page:has(> nav.nav){
+ main#app.loveroll-evening-page,
+ main#app.loveroll-surprise-page,
+ main#app.loveroll-advent-page{
   overflow:visible!important;height:auto!important;min-height:100dvh!important;
  }
  
@@ -465,14 +465,4 @@
   main#app .discover-v59 .discover-accept{
     min-height:48px!important;
   }
-}
-/* With navigation anchored below, long couple pages can scroll through every card. */
-@media(min-width:768px){
- main#app.loveroll-evening-page,
- main#app.loveroll-surprise-page,
- main#app.loveroll-advent-page{
-  height:auto!important;min-height:100dvh!important;
-  padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important;
-  overflow:visible!important;
- }
 }
