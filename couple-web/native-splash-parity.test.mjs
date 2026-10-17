@@ -46,7 +46,7 @@ test('Native loading screen never flashes an unfinished WebView frame',()=>{
  assert.match(activity,/settings\.setCacheMode\(WebSettings\.LOAD_NO_CACHE\)/);
  assert.match(activity,/web\.addJavascriptInterface\(new NativeAuthBridge\(\),"LoveRollNativeAuth"\)/);
 });
-test('Signed Android update version is 0.13.8',()=>{
- assert.match(gradle,/versionCode 130008; versionName '0\.13\.8'/);
+test('Signed Android update version is 0.13.9',()=>{
+ assert.match(gradle,/versionCode 130009; versionName '0\.13\.9'/);
  assert.equal((web.match(/lr-splash__heart/g)||[]).length>=1,true);
 });

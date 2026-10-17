@@ -281,7 +281,7 @@ export function dieOn(canvas,sides,value,rolling){
  // the initial mesh rotation after a live D100 throw.
  const tilt=new THREE.Quaternion().setFromEuler(sides===6?
   new THREE.Euler(.16,-.18,-.02):new THREE.Euler(.075,-.09,0));
- const podium=canvas.closest('.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero');
+ const podium=canvas.closest('.home-die-theater,.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero');
  const orientationFor=face=>{
   const normal=built.normals.get(Number(face));
   return normal?new THREE.Quaternion().setFromUnitVectors(normal,

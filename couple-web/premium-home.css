@@ -28,7 +28,7 @@ main#app.loveroll-real-home{
 #app .home-weight span{color:#cfaeb9;}
 #app .home-die-theater{position:relative;isolation:isolate;min-height:165px;display:grid;place-items:center;overflow:hidden;margin:-6px -16px -8px;background:url("./assets/ritual-satin-v115.webp") center 62%/cover no-repeat;mask-image:linear-gradient(transparent,#000 10%,#000 90%,transparent);}
 #app .home-fabric-photo,#app .home-satin-orbit{display:none;}
-#app .home-die-platform{width:clamp(180px,46vw,255px);height:clamp(180px,46vw,255px);position:relative;display:grid;place-items:center;transform:translateY(-8%);filter:drop-shadow(0 12px 12px #0009);}
+#app .home-die-platform{width:clamp(180px,46vw,255px);height:clamp(180px,46vw,255px);position:relative;display:grid;place-items:center;filter:drop-shadow(0 12px 12px #0009);}
 #app .home-die-platform .dice-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 #app .home-die-platform .dice-fallback{font:70px Georgia,serif;color:#f4bbcd;}
 #app .home-die-platform.webgl-ready .dice-fallback,#app .home-die-platform:has(canvas[data-spinning="true"]) .dice-fallback{visibility:hidden;opacity:0;}
@@ -99,17 +99,22 @@ main#app.loveroll-real-home{
  #app .home-stat-card span,#app .home-stat-card small{font-size:11px;line-height:1.2;}
 }
 @media(max-width:767px) and (max-height:700px){
- #app .real-home-shell{gap:5px;}
+ main#app.loveroll-real-home{padding-bottom:calc(60px + env(safe-area-inset-bottom,0px));}
+ #app .real-home-shell{gap:3px;}
  #app .home-ritual h2{font-size:26px;}
  #app .home-ritual>span{font-size:9px;}
  #app .home-ritual p{font-size:12px;}
- #app .home-die-theater{min-height:85px;}
+ #app .home-die-theater{min-height:60px;}
  #app .home-die-platform{width:165px;height:165px;}
  #app .home-bottom-stack{gap:6px;}
  #app .home-challenge-stats{padding:6px 2px;min-height:70px;}
  #app .home-next-month{min-height:62px;padding-block:7px;}
  #app .home-stats-grid{grid-template-rows:18px 18px minmax(24px,auto) minmax(27px,auto);row-gap:3px;}
  #app .home-stat-card{padding:6px 2px;row-gap:3px;}
+}
+@media(max-width:389px) and (min-height:701px) and (max-height:860px){
+ #app .real-home-shell{gap:5px;}
+ #app .home-die-theater{min-height:85px;}
 }
 @media(min-width:768px) and (max-width:899px){
  #app .real-home-shell{width:min(100%,820px);height:calc(100dvh - 112px);min-height:0;grid-template-rows:auto 42px minmax(190px,1fr) auto auto;}

@@ -103,17 +103,22 @@ export function createClient(){
    });
    if(!gift||gift.graphicWidth<20||Math.abs(gift.diff)>9)
     throw Error('Home gift not visually centered '+JSON.stringify(gift));
-   // The WebGL canvas is centered horizontally, but its visible cube sits
-   // lower within it. Verify that the platform is optically lifted on phone.
+   // Boot also works before the optional WebGL module finishes loading.
+   // Once present, measure the real mesh against the podium rather than
+   // requiring the old fixed CSS lift. Full geometry/resize coverage lives
+   // in home-podium-browser-check.cjs.
    const center=await page.evaluate(()=>{
     const t=document.querySelector('.home-die-theater')?.getBoundingClientRect();
     const p=document.querySelector('.home-die-platform')?.getBoundingClientRect();
+    const c=document.querySelector('.home-die-platform canvas');
+    const r=c?.getBoundingClientRect(),b=c?.loveRollDie?.projectedBounds();
     return t&&p?{x:(p.left+p.right)/2-(t.left+t.right)/2,
-      platformY:(p.top+p.bottom)/2, theaterY:(t.top+t.bottom)/2,
-      translate:getComputedStyle(document.querySelector('.home-die-platform')).transform}:null;
+      contact:b?Number(c.dataset.podiumContact):null,
+      meshBottom:b?r.top+b.bottom*r.height-t.top:null}:null;
    });
-   if(!center||Math.abs(center.x)>3||center.platformY>=center.theaterY-8||
-      center.translate==='none')throw Error('HOME_DIE_NOT_CENTERED '+JSON.stringify(center));
+   if(!center||Math.abs(center.x)>3||
+      (center.meshBottom!==null&&(!Number.isFinite(center.contact)||Math.abs(center.meshBottom-center.contact)>2)))
+    throw Error('HOME_DIE_NOT_ON_PODIUM '+JSON.stringify(center));
    console.log('HOME_DIE_CENTERED_OK',JSON.stringify(center));
    // Regression: tap Soirée after weekly reset. This used to throw
    // Cannot read properties of null (reading 'items') on Samsung.

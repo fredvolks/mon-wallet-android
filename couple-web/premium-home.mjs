@@ -151,7 +151,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    '<em>'+(activity?'Prochaine surprise : '+escape(m.label):'Un tirage commun ce mois-ci')+'</em></span>'+
    '<span class="home-gift-icon" aria-hidden="true">›</span></button>'+ 
    '<div class="home-stats-grid" aria-label="Statistiques réelles du couple">'+
-   statistic(String(coupleStats.completed),'Défis réalisés ce mois','Défis complétés par le couple','completed')+
+   statistic(String(coupleStats.completed),'Défis réalisés','Ce mois · Couple','completed')+
    statistic(coupleStats.byPartner.join(' / '),'Répartition',nameA+' / '+nameB,'partners')+
    statistic(percent,'Sensuel / Sexuel','Ce mois','categories')+
    statistic(String(coupleStats.streak),'Semaines actives','Série actuelle','streak')+
