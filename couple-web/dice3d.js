@@ -429,12 +429,15 @@ export function dieOn(canvas,sides,value,rolling){
   const sceneRect=podium.getBoundingClientRect(),rect=canvas.getBoundingClientRect();
   if(sceneRect.height<1||rect.height<1||rect.width<1){built.group.quaternion.copy(pose);built.group.position.copy(position);return;}
   const scale=Math.max(sceneRect.width/1536,sceneRect.height/1024);
-  const percent=parseFloat(getComputedStyle(podium).backgroundPositionY)/100||.62;
+  const podiumStyle=getComputedStyle(podium);
+  const percent=parseFloat(podiumStyle.backgroundPositionY)/100||.62;
+  // Home reserves visible air above the mesh; other podiums keep their 4px inset.
+  const headroom=Math.max(4,parseFloat(podiumStyle.getPropertyValue('--dice-headroom'))||4);
   // The center of the marble top is at y=678 in the existing 1536x1024 artwork.
   const contact=sceneRect.top+(sceneRect.height-1024*scale)*percent+678*scale;
   let bounds=projectedBounds();
   // Keep the entire real mesh above the marble, including short phone scenes.
-  camera.zoom=Math.min(1,(contact-sceneRect.top-4)/((bounds.bottom-bounds.top)*rect.height),
+  camera.zoom=Math.min(1,(contact-sceneRect.top-headroom)/((bounds.bottom-bounds.top)*rect.height),
    (sceneRect.width-12)/((bounds.right-bounds.left)*rect.width));
   camera.updateProjectionMatrix();bounds=projectedBounds();
   built.group.quaternion.copy(pose);built.group.position.copy(position);built.group.updateMatrixWorld(true);

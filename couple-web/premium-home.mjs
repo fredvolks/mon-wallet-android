@@ -141,6 +141,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const memberA=escape(members[0]?.name||'Partenaire 1');
  const memberB=escape(members[1]?.name||'Partenaire 2');
  const weeklyTitle=ready?weekly.face+' soirée'+(weekly.face===1?'':'s')+' de défi':'Prêts pour votre prochain rituel ?';
+ const titleMarkup=ready?escape(weeklyTitle):'Prêts pour votre prochain <span class="home-title-last">rituel ?</span>';
  const weeklySubtitle=ready?'cette semaine':'Brassez votre dé hebdomadaire';
  const statistic=(value,label,subtitle,cls='')=>
   '<div class="home-stat-card '+cls+'"><div class="home-stat-content"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
@@ -156,7 +157,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const pending=rolling||disabled;
  return '<section class="real-home-shell" aria-label="Tableau de bord du couple">'+
    '<div class="home-ritual">'+ritualHeadingHtml('NOTRE RITUEL DE LA SEMAINE')+
-   '<div class="home-title"><h2>'+escape(weeklyTitle)+'</h2><p>'+weeklySubtitle+'</p></div></div>'+
+   '<div class="home-title"><h2>'+titleMarkup+'</h2><p>'+weeklySubtitle+'</p></div></div>'+
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+
    '<div class="home-fabric-photo" aria-hidden="true"></div>'+
    '<div class="home-satin-orbit" aria-hidden="true"></div>'+
@@ -184,8 +185,8 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    '<section class="home-panel home-tonight-panel" aria-labelledby="home-tonight-title">'+
    '<h3 id="home-tonight-title"><span aria-hidden="true">♢</span>Ce soir</h3><div class="home-challenge-stats">'+
    summary('♢',stats.total,'Défis attribués<br>ce soir')+
-   summary('♡',stats.forFirst,'Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst))+
-   summary('♡',stats.forSecond,'Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond))+'</div></section>'+
+   summary('♡',stats.forFirst,'Attribués à<br>'+memberA+'<br>Restants : '+shown(stats.remainingFirst))+
+   summary('♡',stats.forSecond,'Attribués à<br>'+memberB+'<br>Restants : '+shown(stats.remainingSecond))+'</div></section>'+
    '<section class="home-panel home-monthly-panel" aria-labelledby="home-statistics-title">'+
    '<h3 id="home-statistics-title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M1 11h3v8H1zm5-7h3v15H6zm5 3h3v12h-3zm5-6h3v18h-3z"/></svg>Nos statistiques</h3>'+
    '<div class="home-stats-grid" aria-label="Statistiques réelles du couple">'+
