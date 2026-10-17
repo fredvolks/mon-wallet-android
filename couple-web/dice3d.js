@@ -280,7 +280,7 @@ function geometry(sides,pips=false,neutral=false){
  const surface=(corners,normal,value)=>{
   const carved=engravedFace(corners,normal,faceMarks(sides,value,pips,neutral));
   inkPositions.push(...carved.inkPositions);inkNormals.push(...carved.inkNormals);
-  engravings.push({face:value,depth:carved.depth,marks:carved.marks});return carved;
+  engravings.push({face:value,depth:carved.depth,marks:carved.marks,clearance:carved.clearance});return carved;
  };
  const custom=sides===35||sides===100?manySidedGeometry(sides):null;
  const original20=sides===20?new THREE.IcosahedronGeometry(1.16,0):null;

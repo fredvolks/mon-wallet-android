@@ -51,6 +51,21 @@ export function engravedFace(corners,normal,marks){
  const inverse=rotation.clone().invert();
  const outline=corners.map(p=>{const q=p.clone().sub(center).applyQuaternion(inverse);return new THREE.Vector2(q.x,q.y);});
  if(!THREE.ShapeUtils.isClockWise(outline))outline.reverse();
+ // Three-digit results and narrow irregular D100 faces need a measured fit.
+ // Keep every glyph inside its own face, with a visible glass margin.
+ const edges=outline.map((p,i)=>{const q=outline[(i+1)%outline.length],outward=new THREE.Vector2(p.y-q.y,q.x-p.x).normalize();return {outward,distance:outward.dot(p)};});
+ let fit=1;const margin=.012;
+ for(const mark of marks)for(const point of mark.getPoints(10))for(const edge of edges){
+  const projected=edge.outward.dot(point);if(projected>0)fit=Math.min(fit,(edge.distance-margin)/projected);
+ }
+ if(fit<1)marks=marks.map(mark=>{
+  const shape=new THREE.Shape(mark.getPoints(10).map(p=>p.multiplyScalar(fit)));
+  shape.holes=mark.holes.map(h=>new THREE.Path(h.getPoints(10).map(p=>p.multiplyScalar(fit))));
+  if(mark.userData?.pip)shape.userData={pip:true,x:mark.userData.x*fit,y:mark.userData.y*fit,radius:mark.userData.radius*fit};
+  return shape;
+ });
+ let clearance=Infinity;
+ for(const mark of marks)for(const point of mark.getPoints(10))for(const edge of edges)clearance=Math.min(clearance,edge.distance-edge.outward.dot(point));
  const face=new THREE.Shape(outline),islands=[];
  for(const mark of marks){
   face.holes.push(new THREE.Path(mark.getPoints(10)));
@@ -102,5 +117,5 @@ export function engravedFace(corners,normal,marks){
    }
   }
  }
- return {glassPositions,glassNormals,inkPositions,inkNormals,depth,marks:marks.length};
+ return {glassPositions,glassNormals,inkPositions,inkNormals,depth,marks:marks.length,clearance};
 }

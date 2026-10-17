@@ -38,6 +38,7 @@ async function verifyCrystalMaterials(browser){
    assert.equal(initial.optics.inkOpacity,1);assert.equal(initial.optics.inkTransparent,false);
    assert.equal(initial.optics.engravings.length,sides);
    assert.ok(initial.optics.engravings.every(e=>e.depth>0),'Every mark must sit below its face');
+   assert.ok(initial.optics.engravings.every(e=>e.clearance>=.0119),'Engraving must fit inside its own face, including result 100');
    if(sides===6){assert.equal(initial.optics.engravings.reduce((sum,e)=>sum+e.marks,0),21);assert.ok(initial.optics.engravings.every(e=>e.depth>=.04));}
    assert.ok(initial.white>12,'Opaque white inlays must appear in the actual framebuffer');
    assert.equal(initial.outsideAlpha,0,'The refraction backdrop must remain invisible outside the die');
