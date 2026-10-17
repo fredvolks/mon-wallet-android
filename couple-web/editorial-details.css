@@ -54,7 +54,7 @@ main#app.loveroll-settings-page .editorial-segments svg{width:24px;height:24px;c
 main#app.loveroll-settings-page .editorial-library-filters{display:grid;grid-template-columns:1fr;gap:8px;align-items:end;}
 main#app.loveroll-settings-page .editorial-search{position:relative;display:flex;min-width:0;}
 main#app.loveroll-settings-page .editorial-search svg{position:absolute;left:11px;bottom:13px;width:22px;height:22px;color:var(--ritual-rose);pointer-events:none;}
-main#app.loveroll-library-page .editorial-search input{padding-left:40px;}
+main#app.loveroll-settings-page .editorial-search input[type=search]{padding-left:40px;}
 main#app.loveroll-settings-page .visually-labelled{font-size:12px;}
 main#app.loveroll-settings-page .editorial-draw-rule{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border-bottom:1px solid var(--ritual-border);}
 main#app.loveroll-settings-page .editorial-draw-rule .push-option{border:0;min-height:46px;gap:8px;padding:4px 0;}

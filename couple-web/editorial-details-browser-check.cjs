@@ -18,6 +18,7 @@ async function editor(p,tab){await settings(p,'jeu');await click(p,'tab:'+tab);}
     assert.ok(measure.horizontal<=1&&!measure.smallInputs,JSON.stringify({label,name,measure}));
     if(short)assert.ok(measure.scroll<=2,JSON.stringify({label,name,measure}));
     if(measure.nav){assert.equal(await p.locator('.nav button.active').innerText(),'Réglages');assert.ok(measure.nav.bottom<=height+1);}
+    if(await p.locator('.editorial-search').count())assert.ok(await p.locator('.editorial-search').evaluate(e=>{const input=e.querySelector('input'),icon=e.querySelector('svg');return input.getBoundingClientRect().left+parseFloat(getComputedStyle(input).paddingLeft)>=icon.getBoundingClientRect().right+4;}),'Search text must clear its icon');
     for(const button of await p.locator('.editorial-content button,.settings-detail-body button').all()){
      if(!(await button.isVisible()))continue;await button.evaluate(e=>e.scrollIntoView({block:'center'}));const r=await button.boundingBox();
      const nav=await p.locator('.nav').boundingBox();assert.ok(r.y+r.height<=nav.y+2,JSON.stringify({label,name,button:await button.innerText(),r,nav}));
