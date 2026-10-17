@@ -2,7 +2,7 @@
    Réutilise les actions, le backend et les formulaires déjà présents. */
 main#app.loveroll-settings-page{
  width:min(100%,720px);max-width:720px;
- padding:calc(11px + env(safe-area-inset-top,0px)) 14px
+ padding:max(var(--ritual-page-top),env(safe-area-inset-top,0px)) 14px
  calc(102px + env(safe-area-inset-bottom,0px));
  color:#fff6fb;
 }
@@ -262,7 +262,7 @@ main#app.loveroll-settings-page .nav button.active{
  main#app.loveroll-settings-page .settings-split>*+*{border-left:0;border-top:1px solid #a34e77;padding:9px 0 0}
 }
 @media(min-width:768px){
- main#app.loveroll-settings-page{padding-inline:24px;padding-top:23px}
+ main#app.loveroll-settings-page{padding-inline:24px;padding-top:var(--ritual-page-top)}
  main#app.loveroll-settings-page .settings-grid{gap:10px}
  main#app.loveroll-settings-page .settings-group>summary{min-height:70px;padding:10px 16px}
  main#app.loveroll-settings-page .settings-group-heading strong{font-size:1.04rem}
@@ -308,3 +308,8 @@ main#app.loveroll-settings-page .settings-account-top .settings-inline-name{min-
   grid-column:1/-1;width:100%;
  }
 }
+
+main#app.loveroll-settings-page>.settings-page-header{display:flex;flex-direction:column;align-items:center;text-align:center;margin:0 auto 14px;padding:0;border:0;gap:calc(var(--ritual-brand-gap) + var(--ritual-kicker-offset));}
+main#app.loveroll-settings-page .settings-page-header .ritual-brand{margin:0;}
+main#app.loveroll-settings-page .settings-page-titles>span{display:block;font-size:10px;line-height:1.2;letter-spacing:.19em;color:var(--ritual-rose);}
+main#app.loveroll-settings-page .settings-page-titles h1{margin:5px 0;font:600 28px/1.05 Georgia,serif;color:var(--ritual-text);}

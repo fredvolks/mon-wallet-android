@@ -109,3 +109,17 @@ test('New session and new weekly roll trigger a refresh, but unrelated couples c
  assert.ok(LIVE_SYNC_INTERVALS.session<=4000);
  assert.ok(LIVE_SYNC_INTERVALS.other<=15000);
 });
+
+test('Advent fallback compares full calendar identities even without row IDs',()=>{
+ const local={advent:[{year:2026,day:3,opened_at:'2026-12-10T12:00:00Z',opened_by:'a'}]};
+ const remote={advent:[{year:2026,day:4,opened_at:'2026-12-10T12:00:00Z',opened_by:'a'}]};
+ assert.equal(coupleSyncChanged(local,remote,{tab:'advent'}),true);
+ assert.equal(coupleSyncChanged(local,{advent:[...local.advent]},{tab:'advent'}),false);
+});
+test('Realtime refresh waits until the official envelope animation has finished',async()=>{
+ const state={user:{id:'a'},coupleId:'c',members:[{},{}],tab:'advent',adventOpening:3,advent:[]};
+ let refreshed=0,renders=0;
+ const sync=createCoupleLiveSync({state,query:async()=>[],rpc:async()=>[],refresh:async()=>{refreshed++;state.advent=[{year:2026,day:3}];},render:()=>renders++,ready:()=>true,week:()=>'',month:()=>'',formDirty:()=>false,visible:()=>true,online:()=>true});
+ sync.request(0);await sleep(30);assert.equal(refreshed,0);assert.equal(renders,0);
+ state.adventOpening=null;sync.request(0);await sleep(40);assert.equal(refreshed,1);assert.equal(renders,1);
+});

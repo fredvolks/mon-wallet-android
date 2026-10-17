@@ -2,127 +2,91 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {sharedAdventState,adventPremiumHtml,torontoDay} from './premium-advent.mjs';
-const file=x=>readFileSync(new URL('./'+x,import.meta.url),'utf8');
-const db=file('migrations/20261014_advent_one_door_per_day.sql');
-const app=file('app.js');
-const couple=[{user_id:'partner-a',name:'Camille Louise'},{user_id:'partner-b',name:'Noémie Marie'}];
 const date=x=>new Date(x);
-test('Trusted Toronto December boundaries from November to January including timezone at midnight',()=>{
- assert.equal(torontoDay(date('2026-12-01T04:59:00Z')),'2026-11-30');
+const couple=[{user_id:'a',name:'Camille Louise'},{user_id:'b',name:'Noémie Marie'}];
+const row=(day,extra={})=>({couple_id:'couple',year:2026,day,opened_by:'b',opened_at:'2026-12-10T15:03:04Z',
+ advent_title:'Notre titre officiel',advent_type:'Romantique',advent_description:'Ligne 1.\n  Ligne 2 inchangée. ',...extra});
+test('Toronto midnight unlocks a full calendar date, never the phone timezone',()=>{
+ assert.equal(torontoDay(date('2026-12-01T04:59:59Z')),'2026-11-30');
  assert.equal(torontoDay(date('2026-12-01T05:00:00Z')),'2026-12-01');
- assert.equal(torontoDay(date('2026-12-02T04:59:00Z')),'2026-12-01');
- assert.equal(torontoDay(date('2026-12-02T05:01:00Z')),'2026-12-02');
- assert.equal(sharedAdventState([],date('2026-11-30T18:00:00Z')).days.filter(d=>d.canOpen).length,0);
- const first=sharedAdventState([],date('2026-12-01T15:00:00Z'));
- assert.deepEqual(first.days.filter(d=>d.canOpen).map(d=>d.day),[1]);
- const tenth=sharedAdventState([],date('2026-12-10T15:00:00Z'));
- assert.deepEqual(tenth.days.filter(d=>d.canOpen).map(d=>d.day),[10]);
- assert.equal(tenth.days[0].canOpen,false,'unopened past days cannot be caught up');
- assert.equal(tenth.days[10].status,'locked');
- assert.equal(sharedAdventState([],date('2026-12-26T15:00:00Z')).days.filter(d=>d.canOpen).length,0);
- assert.equal(sharedAdventState([],date('2027-01-01T15:00:00Z')).days.filter(d=>d.canOpen).length,0);
+ assert.equal(sharedAdventState([],date('2026-12-01T04:59:59Z')).days.filter(d=>d.canOpen).length,0);
+ assert.deepEqual(sharedAdventState([],date('2026-12-01T05:00:00Z')).days.filter(d=>d.canOpen).map(d=>d.day),[1]);
 });
-test('All 25 boxes in exact 5×5 layout, correct available day without early surprise leak',()=>{
- const html=adventPremiumHtml({when:date('2026-12-05T15:00:00Z'),members:couple});
- assert.equal((html.match(/class="advent-box /g)||[]).length,25);
- assert.equal((html.match(/class="advent-gold-lock"/g)||[]).length,24);
- assert.equal((html.match(/data-action="advent-open:5"/g)||[]).length,1);
- assert.equal((html.match(/class="advent-today-tag"/g)||[]).length,1);
- assert.equal((html.match(/data-action="advent-locked:/g)||[]).length,24);
- assert.match(html,/data-action="advent-locked:25"[^>]*disabled/);
- assert.doesNotMatch(html,/data-action="advent-open:1"/);
- assert.doesNotMatch(html,/class="advent-dialog-shade"/);
+test('On December 10 all unopened dates 1–10 are available; 11–25 stay locked',()=>{
+ const cal=sharedAdventState([row(2),row(6)],date('2026-12-10T16:00:00Z'));
+ assert.deepEqual(cal.days.filter(d=>d.canOpen).map(d=>d.day),[1,3,4,5,7,8,9,10]);
+ assert.equal(cal.days[0].status,'overdue');assert.equal(cal.days[9].status,'available');
+ assert.equal(cal.days[10].status,'locked');assert.equal(cal.days[1].status,'opened');
+ assert.equal(cal.days[9].date,'2026-12-10');assert.equal(cal.totalOpened,2);
 });
-test('Shared opening persists and displays same official content, author and timer',()=>{
- const record={couple_id:'couple-1',year:2026,day:5,opened_by:'partner-b',
-   opened_at:'2026-12-05T15:03:04Z',advent_title:'Un doux moment privé',
-   advent_type:'SENSUEL',advent_description:'Dix minutes à deux.',
-   advent_timer_minutes:10};
- const html=adventPremiumHtml({when:date('2026-12-05T16:00:00Z'),members:couple,
-   openings:[record],selectedDay:5});
- assert.match(html,/advent-box opened/);
- assert.match(html,/data-action="advent-view:5"/);
- assert.doesNotMatch(html,/data-action="advent-open:5"/);
- assert.match(html,/Ouverte par Noémie/);
- assert.match(html,/Un doux moment privé/);
- assert.match(html,/Dix minutes à deux/);
- assert.match(html,/Dix minutes à deux/);
- assert.match(html,/data-action="advent-close"/);
- const partnerView=adventPremiumHtml({when:date('2026-12-05T16:00:00Z'),
-   members:[couple[1],couple[0]],openings:[record],selectedDay:5});
- assert.match(partnerView,/Un doux moment privé/);
- assert.match(partnerView,/Ouverte par Noémie/);
+test('Catch-up remains possible after December 25 and into the next year',()=>{
+ for(const when of ['2026-12-26T16:00:00Z','2027-01-01T16:00:00Z','2027-10-14T16:00:00Z']){
+  const cal=sharedAdventState([row(3)],date(when),2026);
+  assert.equal(cal.days.filter(d=>d.canOpen).length,24);
+  assert.equal(cal.days[24].status,'overdue');assert.equal(cal.days[2].status,'opened');
+ }
+ assert.equal(sharedAdventState([],date('2027-01-01T16:00:00Z')).year,2026);
+ assert.equal(sharedAdventState([],date('2027-01-01T16:00:00Z'),2027).days.some(d=>d.canOpen),false);
 });
-test('Historical years are read-only and preserve all recorded doors',()=>{
- const last={year:2026,day:25,opened_by:'partner-a',opened_at:'2026-12-25T10:00:00Z',advent_title:'Noël ♥'};
- const data=sharedAdventState([last],date('2027-10-14T15:00:00Z'),2026);
- assert.equal(data.days[24].status,'opened');
- assert.equal(data.days.filter(d=>d.canOpen).length,0);
- const html=adventPremiumHtml({openings:[last],members:couple,
-  year:2026,when:date('2027-10-14T15:00:00Z'),showHistory:true});
- assert.match(html,/Décembre 2026/);
- assert.match(html,/Décembre 2027/);
- assert.match(html,/data-action="advent-year:2026"/);
- assert.match(html,/data-action="advent-year:2027"/);
- assert.doesNotMatch(html,/data-action="advent-open:/);
+test('Multiple caught-up letters do not consume the current day opening',()=>{
+ const when=date('2026-12-10T16:00:00Z');
+ const cal=sharedAdventState([row(1),row(4),row(9)],when);
+ assert.equal(cal.days[9].canOpen,true);
+ const after=sharedAdventState([row(1),row(4),row(9),row(10)],when);
+ assert.equal(after.days[9].canOpen,false);assert.equal(after.days[8].opened,true);
+ assert.equal(after.days[1].canOpen,true);
 });
-test('Surprise content is escaped rather than interpreted as markup',()=>{
- const row={year:2026,day:1,opened_by:'partner-a',
-  opened_at:'2026-12-01T15:00:00Z',advent_title:'<img src=x onerror=alert(1)>',
-  advent_description:'<script>attack()</script>'};
- const h=adventPremiumHtml({when:date('2026-12-01T16:00:00Z'),members:couple,openings:[row],selectedDay:1});
- assert.doesNotMatch(h,/<img src=x|<script>attack/);
- assert.match(h,/&lt;img src=x/);
- assert.match(h,/&lt;script&gt;attack/);
+test('The grid has exactly 25 numbered letters and distinct non-color states',()=>{
+ const h=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),members:couple,openings:[row(1)]});
+ assert.equal((h.match(/class="advent-box /g)||[]).length,25);
+ assert.equal((h.match(/class="advent-envelope"/g)||[]).length,25);
+ assert.match(h,/Les mots doux<br>de décembre/);assert.match(h,/Vingt-cinq lettres, une histoire à deux/);
+ assert.match(h,/À découvrir/);assert.match(h,/Aujourd’hui/);assert.match(h,/✓ Ouverte/);assert.match(h,/À venir/);
+ assert.match(h,/data-action="advent-open:2"/);assert.match(h,/data-action="advent-view:1"/);
+ assert.match(h,/data-action="advent-locked:11"[^>]*disabled/);
+ assert.doesNotMatch(h,/Jour manqué|sans rattrapage|Notre titre officiel|Ligne 1\./i);
 });
-test("Atomic SQL allows only today's exact door, no destructive deletion, uses same couple lock",()=>{
- assert.match(db,/p_day is distinct from extract\(day from d\)::int/);
- assert.match(db,/time zone 'America\/Toronto'/);
- assert.match(db,/perform 1 from public\.couples where id=p_couple for update/);
- assert.match(db,/where couple_id=p_couple and year=extract\(year from d\)::int and day=p_day/);
- assert.match(db,/if found then return rowout/);
- assert.match(db,/returning \* into rowout/);
- assert.match(db,/couple_private\.is_member\(p_couple\)/);
- assert.doesNotMatch(db,/\bdelete\s+from|\btruncate\b|\bdrop\s+table\b/i);
- assert.match(db,/grant execute on function public\.open_advent_day\(uuid,integer\) to authenticated/);
+test('Today primary action changes from opening to consulting the same snapshot',()=>{
+ const when=date('2026-12-10T16:00:00Z');
+ assert.match(adventPremiumHtml({when}),/data-action="advent-open:10">Ouvrir notre surprise du jour/);
+ const h=adventPremiumHtml({when,openings:[row(10)]});
+ assert.match(h,/data-action="advent-view:10">Relire notre surprise du jour/);
+ assert.doesNotMatch(h,/data-action="advent-open:10"/);
 });
-test('App uses server date, shared couple realtime, and refreshes only after RPC success',()=>{
- assert.match(app,/rpc\('love_advent_server_date'\)/);
- assert.match(app,/state\.adventServerDate=adventServerDate/);
- assert.match(app,/state\.adventOpening=day;render\(\)/);
- assert.match(app,/await rpc\('open_advent_day'/);
- assert.match(app,/await refreshShared\(\)/);
- assert.match(app,/state\.adventSelected=day/);
- assert.match(app,/'couple_advent','couple_intimacy'/);
- assert.match(app,/if\(verb==='advent-history'\)/);
+test('Both members see exact recorded content, full author, actual opened time and optional timer',()=>{
+ const record=row(3,{advent_timer_minutes:7});
+ for(const members of [couple,[...couple].reverse()]){
+  const h=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),members,openings:[record],selectedDay:3,timerHtml:'<div id="official-timer">7 min</div>'});
+  assert.match(h,/3 DÉCEMBRE 2026/);assert.match(h,/Notre titre officiel/);assert.match(h,/Ligne 1\.\n  Ligne 2 inchangée\. /);
+  assert.match(h,/Ouverte par Noémie Marie/);assert.match(h,/10 déc/);assert.match(h,/official-timer/);
+ }
+ const noTimer=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),openings:[row(3)],selectedDay:3,timerHtml:'DO_NOT_SHOW'});
+ assert.doesNotMatch(noTimer,/DO_NOT_SHOW/);
 });
-test('CSS includes exact 5 columns × 5 rows, one-screen shell, safe area, glow and reduced motion',()=>{
- const css=file('premium-advent.css');
- assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
- assert.match(css,/grid-template-rows:repeat\(5,minmax\(0,1fr\)\)/);
- assert.match(css,/100dvh/);
- assert.match(css,/safe-area-inset-top/);
- assert.match(css,/advent-box\.available/);
- assert.match(css,/prefers-reduced-motion:reduce/);
+test('No trusted server date disables opening but retains access to saved letters',()=>{
+ const h=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),dateTrusted:false,openings:[row(1)]});
+ assert.doesNotMatch(h,/data-action="advent-open:/);assert.match(h,/data-action="advent-view:1"/);
+ assert.match(h,/Connexion au calendrier/);
 });
-
-test('Missed Advent days never become openable after midnight; visible states are honest',()=>{
- const cal=sharedAdventState([],date('2026-12-10T16:00:00Z'));
- assert.equal(cal.days[0].status,'missed');
- assert.equal(cal.days[0].canOpen,false);
- assert.equal(cal.days[9].status,'available');
- assert.equal(cal.days[10].status,'locked');
- const markup=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),openings:[]});
- assert.match(markup,/Aujourd’hui/);
- assert.match(markup,/Jour manqué/);
- assert.match(markup,/0 \/ 25/);
- assert.match(markup,/data-action="advent-open:10"/);
- assert.doesNotMatch(markup,/data-action="advent-open:9"/);
+test('Pending and confirmed animation states block every letter and never reveal content early',()=>{
+ for(const revealing of [false,true]){
+  const h=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),openingDay:3,revealing,openings:revealing?[row(3)]:[]});
+  assert.equal((h.match(/class="advent-box [^>]+disabled/g)||[]).length,25);
+  assert.match(h,revealing?/opened opening"/:/overdue opening-pending"/);
+  assert.doesNotMatch(h,/advent-reveal"|Notre titre officiel/);
+ }
 });
-test('Per-day editor retains server-authenticated import of 25 validated items',()=>{
- assert.match(app,/if\(verb==='advent-editor-day'\)/);
- assert.match(app,/if\(verb==='save-advent-day'\)/);
- assert.match(app,/normalizeLibraryData\(calendar,'advent'\)/);
- assert.match(app,/rpc\('import_love_advent_2026'/);
- assert.match(file('import-private-advent-2026.sql'),/No changes to the current year's previously opened/);
+test('Historical calendar selector preserves past unopened dates and future years remain locked',()=>{
+ const h=adventPremiumHtml({when:date('2027-01-10T16:00:00Z'),year:2026,showHistory:true});
+ assert.match(h,/data-action="advent-year:2026"/);assert.match(h,/data-action="advent-year:2027"/);
+ assert.match(h,/data-action="advent-open:25"/);
+});
+test('Recorded text is escaped without rewording or executing HTML',()=>{
+ const h=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),openings:[row(3,{advent_title:'<img src=x onerror=alert(1)>',advent_description:'<script>attack()</script>'})],selectedDay:3});
+ assert.doesNotMatch(h,/<img src=x|<script>attack/);assert.match(h,/&lt;img/);assert.match(h,/&lt;script&gt;attack/);
+});
+test('Published migration is additive and retains explicit authenticated function grants',()=>{
+ const db=readFileSync(new URL('./migrations/20261017045614_loveroll_advent_catchup.sql',import.meta.url),'utf8');
+ assert.doesNotMatch(db,/\bdelete\s+from|\btruncate\b|\bdrop\s+table\b|update public\.couple_advent/i);
+ assert.match(db,/grant execute on function public\.open_advent_day\(uuid,integer,integer\) to authenticated/);
 });

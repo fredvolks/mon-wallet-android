@@ -49,7 +49,7 @@ main#app.loveroll-surprise-page .surprise-modal-content>.surprise-primary{
   box-sizing:border-box!important;
   width:min(100%,1360px)!important;max-width:1360px!important;
   height:100dvh!important;min-height:0!important;max-height:100dvh!important;
-  padding:12px clamp(12px,2.5vw,38px) 82px!important;
+  padding:var(--ritual-page-top) clamp(12px,2.5vw,38px) 82px!important;
   display:flex!important;flex-direction:column!important;
   overflow:hidden!important;margin:0 auto!important;
  }

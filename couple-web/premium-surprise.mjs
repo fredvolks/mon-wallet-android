@@ -1,4 +1,5 @@
 // LoveRoll — Rendez-vous Surprise, connected to real monthly and occasion draws.
+import {ritualBrandHtml} from './brand.mjs';
 import {occasionDate,dueOccasions} from './special-occasions.mjs';
 import {premiumPolyDie} from './premium-evening.mjs';
 import {surpriseSlot,surpriseCustom,surpriseTitle,displaySurpriseDate} from './surprise-event-config.mjs';
@@ -59,7 +60,7 @@ export function premiumSurpriseHtml({
  const partner=i=>esc(members[i]?.name?.split(' ')[0]||'Partenaire '+(i+1));
  const activityTitle=esc(activity?.title||'Notre rendez-vous');
  return '<div class="surprise-premium-view">'+
-  '<header class="surprise-header surprise-new-header">'+
+  '<header class="surprise-header surprise-new-header">'+ritualBrandHtml()+
    '<div class="surprise-eyebrow">♥ NOTRE RITUEL DE LA SURPRISE</div>'+
    '<h2>Nos surprises disponibles</h2>'+
    '<p>20 activités du mois · 6 événements à personnaliser</p></header>'+

@@ -158,3 +158,9 @@ main#app.loveroll-advent-page :is(.advent-intro h2 em,.advent-overline,.advent-t
 main#app.loveroll-advent-page .advent-box-shimmer{opacity:.2;}
 main#app.loveroll-advent-page .advent-top-heart,main#app.loveroll-advent-page .advent-intro::before,main#app.loveroll-advent-page .advent-intro::after{color:var(--ritual-rose);text-shadow:none;}
 @media(prefers-reduced-motion:reduce){#app *,#app *::before,#app *::after{animation-duration:0s;transition-duration:0s;scroll-behavior:auto;}}
+
+/* All ritual headers follow the Home vertical anchor and wordmark proportions. */
+:root{--ritual-page-top:8px;--ritual-brand-height:49px;--ritual-brand-gap:12px;--ritual-heart-size:26px;--ritual-heart-line:22px;--ritual-word-size:23px;--ritual-word-line:27px;--ritual-kicker-offset:6px;--ritual-inline-kicker-offset:0px;}
+@media(max-width:767px){:root{--ritual-page-top:6px;--ritual-brand-gap:6px;}}
+@media(max-width:767px) and (max-height:860px){:root{--ritual-brand-height:37px;--ritual-brand-gap:3px;--ritual-heart-size:18px;--ritual-heart-line:16px;--ritual-word-size:18px;--ritual-word-line:21px;--ritual-kicker-offset:7px;--ritual-inline-kicker-offset:1px;}}
+@media(min-width:768px){:root{--ritual-page-top:20px;}}

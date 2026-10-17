@@ -1,7 +1,7 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,profileGenderSelect,inviteWellbeingHtml,wellbeingHtml,wellbeingFields,bindWellbeingMenus,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261016-gender111';
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
-import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-person-review97';
+import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261017-advent119';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
@@ -9,7 +9,7 @@ import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261017-entry118
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-editorial117';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-editorial117';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261016-surprise109';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-advent119';
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -17,8 +17,9 @@ import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION
 import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-restore113';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
+import {ritualBrandHtml} from './brand.mjs';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261015-no-toast87';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261017-advent119';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-restore113';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs';
@@ -35,7 +36,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-17.118';
+const WEB_RELEASE='2026-10-17.119';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -47,7 +48,7 @@ const requestedSettingsSection=launchParams.get('section')||'';
 let settingsOpenSection=requestedSettingsSection||sessionStorage.getItem('loveroll-settings-section')||'';
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,monthlyActivities:[],monthlySlot:1,
- events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventServerDate:null,unlockKey:null,channel:null,
+ events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventRevealing:false,adventServerDate:null,unlockKey:null,channel:null,
  occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
@@ -209,6 +210,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  const eveningArchive=isCouple&&state.tab==='evening-calendar';
  const realSurprise=isCouple&&state.tab==='special';
  root.classList.toggle('loveroll-advent-page',isCouple&&state.tab==='advent');
+ root.classList.toggle('loveroll-advent-letters',isCouple&&state.tab==='advent');
  root.classList.toggle('loveroll-real-home',realHome);
  root.classList.toggle('loveroll-evening-page',realEvening);
  root.classList.toggle('loveroll-editorial',realEvening||eveningArchive);
@@ -240,7 +242,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  }
  const installation=connected&&(state.installModalOpen||state.forceInstallGuide)?
   (state.showInstallSteps?installStepsHtml():installOfferHtml()):'';
- const usualHeader='<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
+ const usualHeader=connected&&state.tab==='settings'?'<header class="header settings-page-header">'+ritualBrandHtml()+'<div class="settings-page-titles"><span>NOTRE ESPACE LOVEROLL</span><h1>'+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div></header>':'<header class="header"><div><h1>♡ '+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div>'+
   (state.user&&state.tab!=='settings'?'<button class="subtle" data-action="signout" aria-label="Se déconnecter">↪</button>':'')+'</header>';
  // The connected Home begins directly with the weekly ritual: no top logo or action buttons.
  const reviewing=state.reviewModalSessionId&&isCouple&&state.sessions?.some(x=>
@@ -249,7 +251,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   sessionId:state.reviewModalSessionId,draft:state.reviewDraft||{},
   saving:state.reviewSaving,partnerName:other()?.name?.split(' ')[0]||'ton partenaire'
  }):'';
- root.innerHTML=(realHome||realEvening||eveningArchive?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
+ root.innerHTML=(realHome||realEvening||eveningArchive||(isCouple&&state.tab==='advent')?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
  if(savedStage){
   const freshD100=root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]');
   const freshStage=freshD100?.closest('.love3d-stage');
@@ -1357,13 +1359,13 @@ function renderAdvent(){
  // The database's Toronto clock determines the UI's active day; only the
  // authenticated RPC can open a case, after checking server time again.
  const serverDate=state.adventServerDate||today();
- const selected=state.advent.find(r=>r.day===state.adventSelected&&
-  r.year===(state.adventYear||Number(serverDate.slice(0,4))));
+ const cal=sharedAdventState(state.advent,new Date(serverDate+'T16:00:00Z'),state.adventYear);
+ const selected=cal.days.find(d=>d.day===state.adventSelected)?.entry;
  frame(adventPremiumHtml({
   openings:state.advent,members:state.members,
   when:new Date(serverDate+'T16:00:00Z'),year:state.adventYear,
   selectedDay:state.adventSelected,
-  openingDay:state.adventOpening,showHistory:state.adventHistory,
+  openingDay:state.adventOpening,revealing:state.adventRevealing,dateTrusted:!!state.adventServerDate,showHistory:state.adventHistory,
   timerHtml:selected?.advent_timer_minutes?
    timerWidget({id:'advent-'+selected.year+'-'+selected.day},selected.advent_timer_minutes):''
  }), 'CALENDRIER DE L’AVENT','Votre rituel commun en décembre');
@@ -2899,7 +2901,7 @@ async function handle(action,element){
   if(state.tab!=='occasions')state.specialFocus=null;
   if(state.tab!=='session'){state.showEveningChallenge=false;state.showEveningChallenges=false;state.selectedEveningChallengeId=null;state.eveningMore=false;}
   if(state.tab!=='special'){state.showSurpriseActivity=false;state.surpriseEditSlot=null;}
-  if(state.tab!=='advent'){state.adventSelected=null;state.adventHistory=false;state.adventOpening=null;}
+  if(state.tab!=='advent'){state.adventSelected=null;state.adventHistory=false;}
   render();
   if(isSharedCoupleReady(state.coupleId,state.members))
    liveSync.probe(true).catch(console.warn);
@@ -3094,36 +3096,62 @@ async function handle(action,element){
   if(!isSharedCoupleReady(state.coupleId,state.members))
    throw Error('Le calendrier appartient à votre couple associé.');
   if(state.adventOpening!==null)return;
-  const day=Number(parts[0]),date=state.adventServerDate||today();
-  const year=Number(date.slice(0,4));
+  if(!state.adventServerDate)throw Error('La date officielle du calendrier est indisponible. Réessayez.');
+  const day=Number(parts[0]),date=state.adventServerDate;
   const cal=sharedAdventState(state.advent,new Date(date+'T16:00:00Z'),state.adventYear);
-  if(!cal.days[day-1]?.canOpen)throw Error('Seule la case du jour peut être ouverte.');
-  state.adventOpening=day;render();
+  if(!cal.days[day-1]?.canOpen)throw Error('Cette lettre n’est pas encore disponible.');
+  const year=cal.year,couple=state.coupleId;
+  state.adventOpening=day;state.adventRevealing=false;render();
   try{
-   // Only the server commits an opening; concurrent partners receive one row.
-   const opened=await rpc('open_advent_day',{p_couple:state.coupleId,p_day:day});
-   if(!opened||opened.year!==year||opened.day!==day)
+   const opened=await rpc('open_advent_day',{p_couple:couple,p_day:day,p_year:year});
+   if(!opened||opened.couple_id!==couple||opened.year!==year||opened.day!==day)
     throw Error('Ouverture non confirmée.');
-   await refreshShared();
-   await new Promise(resolve=>setTimeout(resolve,900));
-   state.adventOpening=null;state.adventSelected=day;state.adventHistory=false;render();
+   if(state.coupleId!==couple)return;
+   // Only animate the letter AFTER the server confirms its immutable snapshot.
+   state.advent=state.advent.filter(r=>r.year!==year||r.day!==day).concat(opened);
+   state.adventRevealing=true;render();
+   const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+   const animation=root.querySelector('.advent-box.opening .advent-letter-paper')?.getAnimations?.()
+    .find(a=>a.animationName==='advent-letter-rise');
+   if(reduced)await new Promise(resolve=>setTimeout(resolve,100));
+   else if(animation)await new Promise(resolve=>{
+    const timeout=setTimeout(resolve,2000);
+    animation.finished.catch(()=>{}).then(()=>{clearTimeout(timeout);resolve();});
+   });
+   else await new Promise(resolve=>setTimeout(resolve,1000));
+   state.adventRevealing=false;state.adventOpening=null;
+   if(state.tab==='advent'){
+    state.adventYear=year;state.adventSelected=day;state.adventHistory=false;
+   }
+   render();liveSync.request(0);
   }catch(error){
-   state.adventOpening=null;await refreshShared();render();throw error;
+   state.adventOpening=null;state.adventRevealing=false;
+   await refreshShared();render();throw error;
+  }finally{
+   state.adventOpening=null;state.adventRevealing=false;
   }
   return;
  }
  if(verb==='advent-view'){
-  const day=Number(parts[0]),year=state.adventYear||Number((state.adventServerDate||today()).slice(0,4));
+  if(state.adventOpening!==null)return;
+  const date=state.adventServerDate||today();
+  const year=sharedAdventState(state.advent,new Date(date+'T16:00:00Z'),state.adventYear).year;
+  const day=Number(parts[0]);
   if(!state.advent.some(row=>row.year===year&&row.day===day))
    throw Error('Cette surprise n’a pas encore été ouverte.');
   state.adventSelected=day;render();return;
  }
  if(verb==='advent-close'){state.adventSelected=null;render();return;}
- if(verb==='advent-history'){state.adventHistory=!state.adventHistory;render();return;}
+ if(verb==='advent-history'){
+  if(state.adventOpening!==null)return;
+  state.adventHistory=!state.adventHistory;render();return;
+ }
  if(verb==='advent-year'){
+  if(state.adventOpening!==null)return;
   const year=Number(parts[0]),current=Number((state.adventServerDate||today()).slice(0,4));
-  if(!Number.isInteger(year)||(year!==current&&!state.advent.some(row=>row.year===year)))
-   throw Error('Aucun calendrier enregistré pour cette année.');
+  const defaultYear=sharedAdventState(state.advent,new Date((state.adventServerDate||today())+'T16:00:00Z')).year;
+  const known=[2026,current,defaultYear,...state.advent.map(row=>row.year)];
+  if(!Number.isInteger(year)||!known.includes(year))throw Error('Aucun calendrier enregistré pour cette année.');
   state.adventYear=year;state.adventHistory=false;state.adventSelected=null;render();return;
  }
  if(verb==='unlock'){
@@ -3383,6 +3411,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261017-entry118',
+    navigator.serviceWorker.register('./service-worker.js?v=20261017-advent119',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }

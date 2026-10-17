@@ -147,3 +147,11 @@ L'ancienne adresse https://ejsrqfpkgwraorrznjpm.supabase.co/functions/v1/loverol
 - Sur le web, la landing utilise des sections compactes et la hauteur `dvh`, avec un test Playwright qui doit **prouver l'absence de scroll à 412 × 824 et 412 × 915 CSS pixels**; les petites tailles peuvent défiler.
 - Lien `loveroll://offline` déclaré dans le manifeste Android : permet depuis la PWA de retrouver les données locales **sans les réinitialiser** (si l'APK est installé).
 - Captures Playwright disponibles dans l'artifact GitHub `LoveRoll-landing-captures`; émulateur Android indépendant de la validation des dés 3D.
+
+## Avent — Les lettres de décembre (Web 119)
+
+Une lettre se débloque à sa date complète, calculée avec l’horloge serveur America/Toronto. Elle reste ouvrable après cette journée, après le 25 décembre et depuis son calendrier historique. Plusieurs rattrapages sont possibles dans la même journée. Une ouverture déjà enregistrée conserve son texte, sa minuterie, son auteur et son horodatage ; modifier ou réimporter les 25 journées ne modifie pas ces souvenirs.
+
+La migration `migrations/20261017045614_loveroll_advent_catchup.sql` ajoute la variante `open_advent_day(p_couple,p_day,p_year)` et garde la variante à deux paramètres pour les clients installés. Elle conserve les protections d’identité vérifiée, d’appartenance au couple, la clé unique et le verrou de transaction du couple. Les droits publics et anonymes restent révoqués.
+
+`advent-postgres-check.py` ne s’exécute que dans la base de test isolée `loveroll_advent_test` créée par GitHub Actions. Il vérifie notamment deux connexions concurrentes, les accès interdits, les dates futures, les rattrapages et la conservation des instantanés. `advent-letters-browser-check.cjs` vérifie la vraie application avec deux identités et une API simulée, sans écriture dans les comptes réels.

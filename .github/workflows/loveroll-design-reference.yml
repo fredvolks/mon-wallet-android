@@ -10,12 +10,30 @@ jobs:
   design:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: loveroll-test-only
+          POSTGRES_DB: loveroll_advent_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d loveroll_advent_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: node --test couple-web/*.test.mjs
+      - name: Real PostgreSQL Advent dates, authorization and simultaneous openings
+        env:
+          PGHOST: localhost
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGPASSWORD: loveroll-test-only
+          PGDATABASE: loveroll_advent_test
+        run: python3 couple-web/advent-postgres-check.py
       - run: node couple-web/check-shipped-js.cjs
       - run: npm install --no-save playwright@1.56.0
       - run: npx playwright install --with-deps chromium
@@ -23,7 +41,7 @@ jobs:
         run: |
           python3 -m http.server 8765 -d couple-web > /tmp/loveroll-design-http.log 2>&1 &
           check_status=0
-          for check in design-reference-browser-check evening-redesign-browser-check evening-d100-official-browser-check evening-couple-flow-browser-check surprise-desktop-v86-check mobile-entry-visual-check; do
+          for check in design-reference-browser-check evening-redesign-browser-check evening-d100-official-browser-check evening-couple-flow-browser-check surprise-desktop-v86-check mobile-entry-visual-check advent-letters-browser-check; do
             node "couple-web/$check.cjs" || check_status=1
           done
           exit "$check_status"

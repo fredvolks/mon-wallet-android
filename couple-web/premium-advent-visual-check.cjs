@@ -1,4 +1,5 @@
 const {chromium}=require('playwright');
+require('node:fs').mkdirSync('landing-captures',{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true});
  for(const device of [{name:'S25-compact',width:412,height:824},{name:'S25-long',width:412,height:915}]){
@@ -28,7 +29,7 @@ const {chromium}=require('playwright');
     };
    });
    console.log(device.name+' '+scenario.name,JSON.stringify(data),errors);
-   if(errors.length||data.tiles!==25||data.nav!==5||data.top<22||
+   if(errors.length||data.tiles!==25||data.nav!==5||data.top<0||
     data.documentScroll>2||data.appScroll>2||data.horizontalScroll>2||
     data.gridBottom>data.navTop||data.minTile<44||
     (scenario.name==='december'&&data.available!==1)||
