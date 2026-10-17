@@ -123,8 +123,8 @@ const iconSvg=(kind)=>{
  return '<svg viewBox="0 0 62 62" aria-hidden="true" focusable="false">'+paths[kind]+'</svg>';
 };
 
-export {ritualBrandHtml} from './brand.mjs';
-import {ritualBrandHtml} from './brand.mjs';
+export {ritualBrandHtml} from './brand.mjs?v=20261017-ritual130';
+import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
 export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,members=[],
   turn=null,monthly={},history=[],sessions=[],events=[],rollFace=1,now=new Date()}={}){
  const weights=WEEKLY_ODDS.map((pct,i)=>
@@ -152,7 +152,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
   coupleStats.sensualPercent+' / '+coupleStats.sexualPercent+' %';
  const pending=rolling||disabled;
  return '<section class="real-home-shell" aria-label="Tableau de bord du couple">'+
-   '<div class="home-ritual">'+ritualBrandHtml()+'<span>NOTRE RITUEL DE LA SEMAINE</span>'+
+   '<div class="home-ritual">'+ritualHeadingHtml('NOTRE RITUEL DE LA SEMAINE')+
    '<h2>'+escape(weeklyTitle)+'</h2><p>'+weeklySubtitle+'</p></div>'+
    '<div class="home-weights" aria-label="Pondération des six faces du dé">'+weights+'</div>'+
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+

@@ -12,9 +12,14 @@ async function editor(p,tab){await settings(p,'jeu');await click(p,'tab:'+tab);}
   // Capture the actual sixteen compositions with all controls and real saved values.
   for(const [label,width,height] of [['small',360,640],['S25',412,824],['S25-tall',412,915],['iPhone',393,852],['iPad',820,1180],['PC',1366,768]]){
    const {page:p,errors}=await open({width,height});
+   let referenceCaption;
    async function capture(name,{short=false}={}){
     await p.waitForTimeout(70);await p.evaluate(()=>scrollTo(0,0));
     const measure=await p.evaluate(()=>({horizontal:document.documentElement.scrollWidth-innerWidth,scroll:document.documentElement.scrollHeight-innerHeight,nav:document.querySelector('.nav')?.getBoundingClientRect().toJSON(),brand:document.querySelector('.ritual-brand')?.getBoundingClientRect().toJSON(),smallInputs:[...document.querySelectorAll('input:not([type=checkbox]):not([type=radio]),textarea')].filter(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).fontSize.replace('px','')<14).length}));
+    const caption=await p.locator('.ritual-kicker').evaluate(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {top:r.top,center:(r.left+r.right)/2,height:r.height,font:s.font,letterSpacing:s.letterSpacing,color:s.color};});
+    assert.ok(Math.abs(caption.center-width/2)<=1,'Secondary-page caption is off-center '+JSON.stringify({label,name,caption}));
+    if(!referenceCaption)referenceCaption=caption;
+    else assert.deepEqual(caption,referenceCaption,'Secondary-page caption moved or changed typography on '+label+'/'+name);
     assert.ok(measure.horizontal<=1&&!measure.smallInputs,JSON.stringify({label,name,measure}));
     if(short)assert.ok(measure.scroll<=2,JSON.stringify({label,name,measure}));
     if(measure.nav){assert.equal(await p.locator('.nav button.active').innerText(),'Réglages');assert.ok(measure.nav.bottom<=height+1);}

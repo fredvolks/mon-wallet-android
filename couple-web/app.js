@@ -1,17 +1,17 @@
 import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-complete127';
-import {editorialHeader,editorialRow,editorialIcon} from './editorial-ui.mjs?v=20261017-editorial121';
-import {cardLibraryHtml,monthlyEditorHtml,adventEditorHtml,specialEditorHtml,importEditorHtml} from './editorial-editors.mjs?v=20261017-editorial121';
+import {editorialHeader,editorialRow,editorialIcon} from './editorial-ui.mjs?v=20261017-ritual130';
+import {cardLibraryHtml,monthlyEditorHtml,adventEditorHtml,specialEditorHtml,importEditorHtml} from './editorial-editors.mjs?v=20261017-ritual130';
 import { discoverHtml } from './discover.mjs';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261017-advent119';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261017-glass129';
-import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-dice128';
-import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-complete127';
+import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261017-ritual130';
+import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-ritual130';
+import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-ritual130';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-editorial121';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-ritual130';
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
@@ -19,9 +19,9 @@ import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION
 import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-restore113';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
-import {ritualBrandHtml} from './brand.mjs';
+import {ritualBrandHtml} from './brand.mjs?v=20261017-ritual130';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
-import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261017-advent119';
+import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261017-ritual130';
 import {validateSpecialEventsJson,SPECIAL_EVENT_KEYS,privateSpecialKey} from './private-special-events.mjs';
 import {buildEveningLibrary,buildMonthlyLibrary,librarySummary,normalizeLibraryData,MAX_IMPORT_BYTES} from './json-libraries.mjs?v=20261016-restore113';
 import {jsonToolsPanel,jsonInputId,exportJsonFile} from './json-library-ui.mjs?v=20261017-editorial121';
@@ -38,7 +38,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-17.129';
+const WEB_RELEASE='2026-10-17.130';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -314,7 +314,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
  // never a fabricated pip result. Actual face comes from Supabase after rolling.
  const canvases=[...root.querySelectorAll('canvas[data-dice-sides]')];
  if(canvases.length){
-  import('./dice3d.js?v=20261017-glass129').then(({dieOn})=>{
+  import('./dice3d.js?v=20261017-ritual130').then(({dieOn})=>{
    if(token!==renderToken)return;
    for(const canvas of canvases){
     if(!canvas.isConnected||canvas.loveRollDie)continue;

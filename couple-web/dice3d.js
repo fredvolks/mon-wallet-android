@@ -264,11 +264,14 @@ float glassEdge = pow(1.0 - glassFacing, 1.65);
 outgoingLight += vec3(0.72,0.38,0.53) * glassEdge * 0.60;
 float glassLuma = dot(outgoingLight, vec3(0.2126,0.7152,0.0722));
 float glassHighlight = smoothstep(0.06,0.55,glassLuma);
-diffuseColor.a = clamp(0.055 + glassEdge * 0.66 + glassHighlight * 0.62, 0.04, 0.90);
+// Rose absorption stays visible against the dark satin, including front faces.
+// Add it after measuring reflections so the tint cannot turn into a white flare.
+outgoingLight += vec3(1.0,0.12,0.28) * (0.70 + glassEdge * 0.30);
+diffuseColor.a = clamp(0.40 + glassEdge * 0.42 + glassHighlight * 0.40, 0.04, 0.90);
 #include <opaque_fragment>
 `);
  };
- mat.customProgramCacheKey=()=> 'loveroll-rose-glass-v129';
+ mat.customProgramCacheKey=()=> 'loveroll-rose-glass-v130';
  group.add(new THREE.Mesh(geo,mat));
  // No wireframe: smooth bevel geometry and PBR specular highlights are the
  // only visible transitions between the glass faces on D6, D20 and D100.

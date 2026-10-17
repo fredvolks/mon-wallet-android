@@ -1,5 +1,5 @@
 // LoveRoll — Rendez-vous Surprise, connected to real monthly and occasion draws.
-import {ritualBrandHtml} from './brand.mjs';
+import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
 import {occasionDate,dueOccasions} from './special-occasions.mjs';
 import {premiumPolyDie} from './premium-evening.mjs';
 import {surpriseSlot,surpriseCustom,surpriseTitle,displaySurpriseDate} from './surprise-event-config.mjs';
@@ -61,9 +61,8 @@ export function premiumSurpriseHtml({
  const activityTitle=esc(activity?.title||'Notre rendez-vous');
  const monthLabel=new Intl.DateTimeFormat('fr-CA',{month:'long',timeZone:'America/Toronto'}).format(now);
  return '<div class="surprise-premium-view surprise-ecrin">'+
-  '<header class="surprise-header surprise-new-header">'+ritualBrandHtml()+
-   '<h2>Une surprise <br>à partager</h2>'+
-   '<div class="surprise-eyebrow">NOTRE RITUEL DE LA SURPRISE</div></header>'+
+  '<header class="surprise-header surprise-new-header">'+ritualHeadingHtml('NOTRE RITUEL DE LA SURPRISE')+
+   '<h2>Une surprise <br>à partager</h2></header>'+
   '<section class="surprise-month '+(a?'has-activity':'waiting-activity')+
     (needsHost?' host-pending':h?' host-complete':'')+'" aria-label="Notre écrin du mois">'+
    '<div class="surprise-month-label"><span>'+esc(monthLabel)+'</span></div>'+

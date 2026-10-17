@@ -1,4 +1,4 @@
-import {editorialPage,editorialRow,editorialIcon,editorButton,timerFields,roleChoice,escapeHtml as esc} from './editorial-ui.mjs';
+import {editorialPage,editorialRow,editorialIcon,editorButton,timerFields,roleChoice,escapeHtml as esc} from './editorial-ui.mjs?v=20261017-ritual130';
 import {editableCardSlots,playableEveningCount,EVENING_CATEGORIES} from './evening-challenges.mjs?v=20261016-restore113';
 import {editableMonthlyActivities} from './monthly-activities.mjs';
 import {calendarFromSaved} from './advent-calendar.mjs';

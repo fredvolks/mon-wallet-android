@@ -1,4 +1,4 @@
-import {ritualBrandHtml} from './brand.mjs';
+import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
 export const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function editorialIcon(key){
  const paths={heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-8.8 1.6 5.5 5.5 0 0 0-8.8-1.6c-4.1 4.2 1.2 10.2 8.8 15.4 7.6-5.2 12.9-11.2 8.8-15.4Z"/>',
@@ -28,7 +28,7 @@ export function editorialIcon(key){
  return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">'+(paths[key]||paths.heart)+'</svg>';
 }
 export function editorialHeader(action='settings-page:',parent='Réglages'){
- return '<header class="settings-page-header">'+(action?'<button class="settings-back" data-action="'+escapeHtml(action)+'"><span aria-hidden="true">‹</span><span>'+escapeHtml(parent)+'</span></button>':'')+ritualBrandHtml()+'</header>';
+ return '<header class="settings-page-header">'+(action?'<button class="settings-back" data-action="'+escapeHtml(action)+'"><span aria-hidden="true">‹</span><span>'+escapeHtml(parent)+'</span></button>':'')+ritualHeadingHtml('NOTRE RITUEL À DEUX')+'</header>';
 }
 export function editorialPage(title,body,{back='settings-page:jeu',parent='Cartes et activités',subtitle='',badge='',kind='form'}={}){
  return '<section class="settings-editorial editorial-workspace editorial-page-'+kind+'">'+editorialHeader(back,parent)+

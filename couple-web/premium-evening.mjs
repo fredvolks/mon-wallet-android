@@ -1,5 +1,5 @@
 // LoveRoll connected couple — production UI, not a demo. All results are provided by Supabase.
-import {ritualBrandHtml} from './brand.mjs';
+import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
 const bt=(action,text,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(action)+'"'+
  (action.startsWith('category:')?' aria-pressed="'+(cls.includes('selected')?'true':'false')+'"':'')+
@@ -140,9 +140,9 @@ export function premiumEveningHtml({
  return '<div class="evening-premium-view '+(session?(ready?'is-ready':'is-waiting'):'is-inactive is-finale')+'">'+
  '<div class="evening-toolbar">'+
   (session?'<button type="button" class="evening-back" data-action="tab:home" aria-label="Retour à l’accueil">‹</button>':'<span></span>')+
-  ritualBrandHtml()+
+  ritualHeadingHtml(session?(ready?'ÉTAPE 2 · DÉFI DU SOIR':'ÉTAPE 1 · NOMBRE DE DÉFIS'):'NOTRE RITUEL DE LA SOIRÉE')+
   (session?'<button type="button" class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée">⋯</button>':'<span></span>')+'</div>'+
- '<div class="evening-intro"><span>'+(session?(ready?'ÉTAPE 2 · DÉFI DU SOIR':'ÉTAPE 1 · NOMBRE DE DÉFIS'):'♥ NOTRE RITUEL DE LA SOIRÉE')+'</span>'+
+ '<div class="evening-intro">'+
  '<h2>'+(session?(ready?'Votre défi du soir':'À toi de brasser ton dé'):'Nos défis disponibles')+'</h2>'+
  '<p>'+(session?(ready?'Choisissez une catégorie ou laissez le hasard décider.':'Chaque partenaire brasse son propre dé.'):help)+'</p></div>'+
  (session?
