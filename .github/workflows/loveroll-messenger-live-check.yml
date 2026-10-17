@@ -23,8 +23,8 @@ jobs:
           html=Path('/tmp/loveroll-invite.html').read_text()
           version=json.loads(Path('/tmp/loveroll-web-version.json').read_text())
           image=Path('/tmp/loveroll-og.jpg').read_bytes()
-          assert version['build'].startswith('2026-10-14.'),version
-          assert int(version['build'].split('.')[-1])>=44,version
+          release_day, release_number=version['build'].rsplit('.', 1)
+          assert (release_day, int(release_number)) >= ('2026-10-14', 44), version
           assert 'loveroll-messenger-og-v43.jpg' in html
           assert '<meta property="og:image:type" content="image/jpeg">' in html
           assert len(image)>80000 and image[:2].hex()=='ffd8'
