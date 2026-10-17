@@ -68,7 +68,13 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
       assert.ok(await page.evaluate(()=>window.__keptDie===document.querySelector('.evening-d35-col canvas')),'category replaced D100');
      }
     }
-    if(tab==='advent')assert.equal(await page.locator('.advent-box').count(),25);
+    if(tab==='advent'){
+     assert.equal(await page.locator('.advent-box').count(),25);
+     assert.ok(await page.evaluate(()=>{
+      const h=document.querySelector('.advent-top').getBoundingClientRect(),intro=document.querySelector('.advent-intro').getBoundingClientRect();
+      return h.bottom<=intro.top+1 && [...document.querySelector('.advent-top').querySelectorAll('h1,p')].every(e=>e.getBoundingClientRect().bottom<=intro.top+1);
+     }),'Advent heading overlaps introduction');
+    }
     assert.deepEqual(errors,[],'page errors');
    }catch(error){failures.push(name+'/'+tab+': '+error.message);await page.screenshot({path:'design-captures/'+name+'-'+tab+'-FAIL.png',fullPage:true}).catch(()=>{});}
   }

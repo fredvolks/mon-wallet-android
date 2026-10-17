@@ -152,5 +152,9 @@ main#app:is(.loveroll-surprise-page,.loveroll-advent-page,.loveroll-settings-pag
 main#app.loveroll-surprise-page :is(.surprise-d20-scene,.surprise-main-die-scene){background:url('./assets/ritual-satin-v115.webp') center 62%/cover no-repeat;box-shadow:none;}
 main#app.loveroll-surprise-page :is(.surprise-primary,.surprise-invite-button){background:var(--ritual-button);box-shadow:var(--ritual-shadow);color:var(--ritual-text);}
 main#app.loveroll-surprise-page :is(.surprise-event-days,.surprise-host-option){background:var(--ritual-card);color:var(--ritual-muted);box-shadow:none;}
+main#app.loveroll-advent-page .advent-box{background:var(--ritual-card);color:var(--ritual-text);box-shadow:var(--ritual-shadow);}
+main#app.loveroll-advent-page .advent-box.available{background:var(--ritual-button);}
+main#app.loveroll-advent-page :is(.advent-intro h2 em,.advent-overline,.advent-today-tag){color:var(--ritual-rose);text-shadow:none;}
+main#app.loveroll-advent-page .advent-box-shimmer{opacity:.2;}
 main#app.loveroll-advent-page .advent-top-heart,main#app.loveroll-advent-page .advent-intro::before,main#app.loveroll-advent-page .advent-intro::after{color:var(--ritual-rose);text-shadow:none;}
 @media(prefers-reduced-motion:reduce){#app *,#app *::before,#app *::after{animation-duration:0s;transition-duration:0s;scroll-behavior:auto;}}
