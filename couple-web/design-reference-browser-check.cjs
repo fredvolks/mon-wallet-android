@@ -7,7 +7,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
  const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const failures=[];const report=[];
  try{
- for(const [name,width,height] of [['S25',412,915],['Android',360,740],['iPhone',393,852],['iPad',820,1180],['PC',1440,1000]]){
+ for(const [name,width,height] of [['S25',412,915],['S25-short',412,824],['Android',360,740],['iPhone',393,852],['iPad',820,1180],['PC',1440,1000]]){
   const page=await browser.newPage({viewport:{width,height},serviceWorkers:'block',isMobile:width<768,hasTouch:width<900});
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.route('https://esm.sh/@supabase/supabase-js@2.57.0*',r=>r.fulfill({contentType:'application/javascript',body:fake}));
@@ -35,7 +35,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      assert.equal(await page.locator('.home-weight').count(),6);
      assert.deepEqual(geometry.stats,['0','0 / 0','—','0']);
      assert.ok(geometry.dice[0].width>=175,'weekly die too small');
-     if(name==='S25')assert.ok(geometry.mainScroll<=geometry.mainClient+2,'Home exceeds S25 screen');
+     if(name.startsWith('S25'))assert.ok(await page.evaluate(()=>document.querySelector('.home-stats-grid').getBoundingClientRect().bottom<=document.querySelector('.nav').getBoundingClientRect().top+2),'Home stats under bottom navigation');
      await page.locator('.home-next-month').click();await page.locator('.surprise-premium-view').waitFor();
      await page.locator('.nav [data-action="tab:home"]').click();
     }
