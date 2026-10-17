@@ -44,7 +44,7 @@ test('First D6 is immediately FINAL, its unrolled partner stays blank, and Step 
  assert.match(css,/\.love3d-stage\.is-unrolled \.dice-canvas\{[\s\S]*?visibility:visible!important/);
  assert.doesNotMatch(app,/canvas\.dataset\.diceUnrolled!=='true'/);
  assert.match(die,/const neutral=canvas\.dataset\.diceUnrolled==='true'&&sides===6/);
- assert.match(die,/if\(neutral\)\{/);
+ assert.match(read('dice-engraving.mjs'),/if\(neutral\)return \[heartShape/);
  // A missing partner roll must remain neutral, not look like a real result.
  const secondView=premiumEveningHtml({session,members:people,me:'second',
   rolls:[],status:{both_ready:false,my_rolled:false,partner_rolled:true},
@@ -238,7 +238,7 @@ test('D20 and D100 are true glossy rounded polyhedra without pink wireframe',()=
  assert.doesNotMatch(die,/new THREE\.LineSegments|new THREE\.LineBasicMaterial|new THREE\.EdgesGeometry/);
  assert.match(die,/new THREE\.IcosahedronGeometry\(1\.16,0\)/);
  assert.ok(die.includes('function manySidedGeometry(count=35)'));
- assert.match(die,/digits\(value,sides===6,pips,neutral\)/);
+ assert.match(die,/faceMarks\(sides,value,pips,neutral\)/);
 });
 test('Mobile full-height layout with safe area and fixed existing tabs',()=>{
  assert.match(css,/100dvh/);

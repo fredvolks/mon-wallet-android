@@ -1,6 +1,7 @@
 // Real weekly die and production Home, with synthetic distinct partner names only.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
+const {glassState}=require('./crystal-glass-browser-check.cjs');
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const failures=[];fs.mkdirSync('design-captures',{recursive:true});
@@ -28,27 +29,10 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      assert.ok(result.statsBottom<=result.navTop-3&&result.textFits,JSON.stringify(result));assert.ok(result.bodyHeight<=height+2&&result.horizontal<=1,JSON.stringify(result));
      if(face)assert.equal(result.face,String(face));assert.deepEqual(errors,[]);
      if(name==='S25'){
-      result.translucency=await page.evaluate(()=>{
-       const c=document.querySelector('.home-die-platform canvas');
-       // Read in this same task: an unpreserved WebGL drawing buffer may clear later.
-       c.loveRollDie.refresh();
-       const gl=c.getContext('webgl2'),b=c.loveRollDie.projectedBounds();
-       if(!gl)throw Error('Home glass check requires the rendered WebGL2 context');
-       const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
-       // The inner 40% square excludes transparent background and edge antialiasing.
-       const side=Math.floor(.4*Math.min((b.right-b.left)*width,(b.bottom-b.top)*height));
-       const x=Math.round((b.left+b.right)*width/2-side/2);
-       const top=Math.round((b.top+b.bottom)*height/2-side/2),y=height-top-side;
-       if(side<8||x<0||y<0||x+side>width||y+side>height)throw Error('Invalid Home glass sample '+JSON.stringify({x,y,side,width,height,b}));
-       const pixels=new Uint8Array(side*side*4);
-       gl.readPixels(x,y,side,side,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
-       const error=gl.getError();if(error!==gl.NO_ERROR)throw Error('Home glass readPixels failed: '+error);
-       let translucent=0,opaque=0,clear=0,minAlpha=255,maxAlpha=0;
-       for(let i=3;i<pixels.length;i+=4){const a=pixels[i];minAlpha=Math.min(minAlpha,a);maxAlpha=Math.max(maxAlpha,a);if(a>10&&a<245)translucent++;else if(a>=245)opaque++;else clear++;}
-       const total=side*side;
-       return {translucentFraction:translucent/total,translucent,opaque,clear,total,minAlpha,maxAlpha,sample:{x,y,side,width,height}};
-      });
-      assert.ok(result.translucency.translucentFraction>.2,'Home die body is opaque '+JSON.stringify({face,translucency:result.translucency}));
+      await page.waitForFunction(()=>document.querySelector('.home-die-platform canvas')?.loveRollDie?.readState().optics.loaded);
+      result.translucency=await page.locator('.home-die-platform canvas').evaluate(glassState);
+      assert.equal(result.translucency.optics.transmission,1);
+      assert.ok(result.translucency.white>0,'Home white inlays are missing');
      }
      const summary=await page.evaluate(()=>[...document.querySelectorAll('.home-challenge-stats>div')].map(column=>{
       const content=column.querySelector('.home-summary-content').getBoundingClientRect(),value=column.querySelector('.home-summary-value').getBoundingClientRect(),box=column.getBoundingClientRect();

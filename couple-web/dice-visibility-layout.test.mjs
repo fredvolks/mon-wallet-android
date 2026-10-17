@@ -5,6 +5,7 @@ import {premiumEveningHtml} from './premium-evening.mjs';
 import {premiumHomeHtml} from './premium-home.mjs';
 const read=p=>readFileSync(new URL('./'+p,import.meta.url),'utf8');
 const homeCss=read('premium-home.css'),eveningCss=read('premium-couple-pages.css'),app=read('app.js'),engine=read('dice3d.js');
+const engraving=read('dice-engraving.mjs');
 test('Home D6 stays centered inside the satin theater, clear of the roll button',()=>{
  const css=homeCss;
  // home-podium-browser-check measures the real mesh against the marble.
@@ -35,8 +36,8 @@ test('Before any evening D6 roll only our die is rendered; partner has a status 
 });
 test('Decorative 3D D6 has identical heart on every face, not fake official pips',()=>{
  assert.match(engine,/const neutral=canvas\.dataset\.diceUnrolled==='true'&&sides===6/);
- assert.match(engine,/if\(neutral\)\{[\s\S]*?fillText\('♥',192,198\)/);
- assert.match(engine,/map:digits\(value,sides===6,pips,neutral\)/);
+ assert.match(engraving,/if\(neutral\)return \[heartShape\(0,0,\.78\)\]/);
+ assert.match(engine,/faceMarks\(sides,value,pips,neutral\)/);
  const people=[{user_id:'a',name:'Camille'},{user_id:'b',name:'Noémie'}];
  const page=premiumEveningHtml({session:{id:'session'},members:people,me:'a',
   rolls:[{user_id:'a',face:4}],status:{my_rolled:true},turn:{ready:false}});
