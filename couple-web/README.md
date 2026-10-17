@@ -203,4 +203,6 @@ Les trois résumés et les quatre statistiques centrent désormais leur contenu 
 
 Les anciennes contraintes de hauteur de la mise en page PC sont maintenant limitées à leur ancien écran. Le bloc cadeau de la Soirée actuelle prend la hauteur de son contenu et conserve un espace au-dessus du menu sur PC, tablette et téléphone. Les textes, les contrôles et le dé gardent leur taille ; la scène utilise l’espace restant.
 
+La grille des six événements Surprise utilise ses deux rangées actuelles, sans la troisième rangée vide imposée par l’ancienne feuille PC. Sur un téléphone de 660 px de hauteur ou moins, les boutons de navigation de Soirée et Surprise ont la même hauteur que ceux des trois autres onglets et gardent une cible tactile supérieure à 44 px.
+
 `design-reference-browser-check.cjs` contrôle aussi les limites de chaque bouton visible et le bas du bloc cadeau. Il couvre les cinq onglets sur neuf formats, dont 360 × 640, 1366 × 700 et 1366 × 768, afin de détecter un élément masqué par la navigation même si la page ne défile pas. Les données de couple restent simulées.
