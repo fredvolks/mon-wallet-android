@@ -37,7 +37,7 @@ main#app .evening-cal-day{
  min-height:clamp(33px,6.0dvh,47px)!important;height:auto!important;
  display:flex;flex-direction:column;align-items:center;justify-content:center;
  padding:2px 0!important;gap:0!important;
- border-radius:10px;border:1px solid #94386070!important;background:#310c29b2;
+ border-radius:10px;border:1px solid var(--ritual-border)!important;background:var(--ritual-card);
  font-size:clamp(.73rem,2.3vw,.94rem)!important;color:#f7deec;
 }
 main#app .evening-cal-day.has-evening{border-color:#ff85bc;background:#78204e}

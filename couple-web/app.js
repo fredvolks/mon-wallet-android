@@ -257,6 +257,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
    savedStage.classList.toggle('is-rolling',freshStage.classList.contains('is-rolling'));
    oldD100.dataset.spinning=freshD100.dataset.spinning;
    freshStage.replaceWith(savedStage);
+   oldD100.loveRollDie?.refresh?.();
   }else{
    savedDispose();diceCleanup=diceCleanup.filter(dispose=>dispose!==savedDispose);
   }
@@ -267,6 +268,7 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   if(fresh&&fresh.dataset.spinning!=='true'&&signature===dieSignature(fresh)){
    fresh.replaceWith(canvas);
    canvas.closest('.home-die-platform,.love3d-stage')?.classList.add('webgl-ready');
+   canvas.loveRollDie?.refresh?.();
   }else{canvas.loveRollCleanup();diceCleanup=diceCleanup.filter(fn=>fn!==canvas.loveRollCleanup);}
  }
  restoreDraft(draft);

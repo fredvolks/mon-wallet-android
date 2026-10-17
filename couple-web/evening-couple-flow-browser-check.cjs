@@ -18,7 +18,7 @@ const client=`export function createClient(){
  const board=()=>{const b=sharedEveningTurns(world.sessions[0],members,world.rolls,world.cards,world.gifts);return {...b,pending:null};};
  const stats=()=>members.map(m=>({session_id:'s',user_id:m.user_id,target:board().targets?.[m.user_id]||0,drawn:world.cards.filter(c=>c.recipient===m.user_id).length,completed:world.cards.filter(c=>c.recipient===m.user_id&&c.status==='completed').length}));
  const tables=uid=>({
-  couple_profiles:members.map(m=>({id:m.user_id,display_name:m.name,birthday_md:'04-12',gender:m.user_id==='a'?'male':'female'})),
+  couple_profiles:members.map(m=>({id:m.user_id,display_name:m.name,birthday_md:'04-12',gender:m.user_id==='a'?'him':'her'})),
   love_wellbeing:[{user_id:uid,relationship:'well',intimacy:'well'}],
   couple_members:members.map((m,i)=>({...m,couple_id:'c',joined_at:'2026-10-0'+(i+1)+'T00:00:00Z'})),
   couples:[{id:'c',owner_user_id:'a',journal_salt:'safe-test',show_sensuel_button:true,show_sexuel_button:true}],
@@ -73,7 +73,7 @@ const client=`export function createClient(){
    await page.goto('http://127.0.0.1:8765/?actor='+uid);await page.locator('.real-home-shell').waitFor();pages.push(page);
   }
   const [a,b]=pages;
-  const diceReady=async p=>p.waitForFunction(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().width>0&&c.getBoundingClientRect().height>0).every(c=>c.loveRollDie));
+  const diceReady=async p=>{await p.waitForFunction(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().width>0&&c.getBoundingClientRect().height>0).every(c=>c.loveRollDie?.readState().renderedFrames>0));await p.waitForTimeout(250);};
   const session=async p=>{await p.reload();await p.locator('.real-home-shell').waitFor();await p.locator('[data-action="tab:session"]').click();};
   fs.mkdirSync('design-captures',{recursive:true});
   await a.locator('[data-action="tab:session"]').click();await diceReady(a);await a.screenshot({path:'design-captures/S25-editorial-intro.png'});
@@ -124,6 +124,7 @@ const client=`export function createClient(){
   for(const [i,page] of pages.entries()){
    if(!await page.locator('.lr-review-modal').count())await page.reload();
    await page.locator('.lr-review-modal').waitFor();
+   await page.screenshot({path:'design-captures/S25-editorial-review-'+i+'.png'});
    for(const key of ['overall','connection','appreciation','again'])await page.locator('[data-action="review-rate:'+key+':4"]').click();
    await page.locator('#lr-review-comment').fill(i===0?'Bilan de Camille':'Bilan de Noémie');
    await page.locator('[data-action="review-save"]').click();await page.locator('.lr-review-modal').waitFor({state:'hidden'});
@@ -134,6 +135,7 @@ const client=`export function createClient(){
   await groups.nth(0).locator('summary').click();assert.ok((await groups.nth(0).innerText()).includes('Bilan de Camille'));
   assert.ok(!(await groups.nth(0).innerText()).includes('Bilan de Noémie'));
   await groups.nth(1).locator('summary').click();assert.ok((await groups.nth(1).innerText()).includes('Bilan de Noémie'));
+  await a.screenshot({path:'design-captures/S25-editorial-calendar.png'});
   console.log('EDITORIAL_TWO_IDENTITIES_OK create/resume, D6 sync, step lock, categories, private draws, 3 gifts, timers, closure, separate reviews');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

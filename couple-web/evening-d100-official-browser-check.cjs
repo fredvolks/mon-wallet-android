@@ -28,7 +28,9 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   const settled=await page.evaluate(()=>window.__officialDie.loveRollDie.readState());
   assert.equal(settled.frontFace,27);assert.equal(settled.face,27);assert.equal(settled.spinning,false);
   await page.locator('.evening-d100-result').evaluate(e=>e.textContent='Résultat : 27');
-  await page.evaluate(async()=>{const {updateEveningCategoryUi}=await import('/premium-evening.mjs');updateEveningCategoryUi(document.querySelector('#app'),'HASARD');window.dispatchEvent(new Event('resize'));});
+  const refreshed=await page.evaluate(async()=>{const {updateEveningCategoryUi}=await import('/premium-evening.mjs');updateEveningCategoryUi(document.querySelector('#app'),'HASARD');
+   const c=window.__officialDie,p=c.parentNode;c.remove();p.append(c);c.loveRollDie.refresh();window.dispatchEvent(new Event('resize'));return c.loveRollDie.readState();});
+  assert.ok(refreshed.renderedFrames>settled.renderedFrames,'Reattached canvas was not redrawn');
   await page.waitForTimeout(1200);
   assert.deepEqual(await page.evaluate(()=>window.__officialDie.loveRollDie.readState().quaternion),settled.quaternion,'Die returned to its initial orientation');
   fs.mkdirSync('design-captures',{recursive:true});await page.screenshot({path:'design-captures/S25-editorial-official-D100.png'});

@@ -142,6 +142,9 @@ main#app.loveroll-editorial{--nav-space:58px;box-sizing:border-box;width:100%;ma
 #app.loveroll-editorial :is(.evening-cal-challenge strong,.evening-review-person h4,.evening-cal-session header strong,.evening-review-score strong){color:var(--ritual-text);}
 /* Existing review semantics, rating controls and save actions are preserved. */
 #app .lr-review-modal{background:var(--ritual-page);border:1px solid var(--ritual-border);box-shadow:var(--ritual-shadow);color:var(--ritual-text);}
+#app .lr-review-modal h2{color:var(--ritual-text);}
+#app .lr-review-heart{background:transparent;box-shadow:none;}
+#app .lr-review-x{background:var(--ritual-card);color:var(--ritual-muted);}
 #app :is(.lr-review-question,.lr-review-note,.lr-review-icon){background:var(--ritual-card);border-color:var(--ritual-border);}
 #app :is(.lr-review-eyebrow,.lr-review-calendar-note,.lr-review-comment-label){color:var(--ritual-muted);}
 #app .lr-review-heart.is-lit>span{color:#efa4b7;text-shadow:0 0 6px #c54e7033;}

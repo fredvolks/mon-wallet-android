@@ -286,7 +286,7 @@ export function dieOn(canvas,sides,value,rolling){
  };
  let target=orientationFor(value)||orientationFor(1);
  built.group.quaternion.copy(target);
- let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true,lastFrame=0;
+ let frame=0,drag=false,x=0,y=0,vx=0,vy=0,shown=true,lastFrame=0,renderedFrames=0;
  let returnStart=null,returnTime=0;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
  let duration=rolling&&!reduceMotion?ROLL_TOTAL_MS:0,start=performance.now();
@@ -349,6 +349,7 @@ export function dieOn(canvas,sides,value,rolling){
   shadow.scale.x=1+elevation*.6;
   shadow.position.x=built.group.position.x;
   renderer.render(scene,camera);
+  renderedFrames++;
   if(t<1||drag||returnStart||Math.abs(vx)+Math.abs(vy)>.003||(preview&&!reduceMotion))request();
  }
  const request=()=>{if(!frame)frame=requestAnimationFrame(step);};
@@ -374,9 +375,9 @@ export function dieOn(canvas,sides,value,rolling){
    const facing=normal.clone().applyQuaternion(built.group.quaternion).z;
    if(facing>best){best=facing;frontFace=face;}
   }
-  return {face:Number(canvas.dataset.face),frontFace,quaternion:built.group.quaternion.toArray(),
+  return {face:Number(canvas.dataset.face),frontFace,quaternion:built.group.quaternion.toArray(),renderedFrames,
    spinning:canvas.dataset.spinning==='true'};
- }};
+ },refresh:()=>{resizeDie();renderer.render(scene,camera);renderedFrames++;request();}};
  const down=e=>{
   if(duration&&performance.now()-start<duration)return;
   drag=true;returnStart=null;x=e.clientX;y=e.clientY;vx=vy=0;
