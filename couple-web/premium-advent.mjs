@@ -1,5 +1,5 @@
 // Shared Advent letters. Only recorded server openings may reveal their contents.
-import {ritualBrandHtml} from './brand.mjs';
+import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
 export const ADVENT_ZONE='America/Toronto';
 export const torontoDay=(when=new Date())=>new Intl.DateTimeFormat('en-CA',{
  timeZone:ADVENT_ZONE,year:'numeric',month:'2-digit',day:'2-digit'
@@ -58,8 +58,8 @@ export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=n
   timeZone:ADVENT_ZONE,dateStyle:'medium',timeStyle:'short'
  }).format(new Date(openedAt)):null;
  return '<section class="advent-premium-view advent-letters" aria-label="Les lettres de décembre">'+
-  '<header class="advent-top">'+ritualBrandHtml()+'</header>'+
-  '<div class="advent-intro"><span>NOTRE RITUEL DE L’AVENT</span><h1>Les mots doux<br>de décembre.</h1>'+
+  '<header class="advent-top">'+ritualHeadingHtml('NOTRE RITUEL DE L’AVENT')+'</header>'+
+  '<div class="advent-intro"><h1>Les mots doux<br>de décembre.</h1>'+
   '<p>Vingt-cinq lettres, une histoire à deux.</p></div>'+
   '<div class="advent-month-row"><span>Décembre '+cal.year+'</span><strong>'+cal.totalOpened+' / 25</strong>'+
   button('advent-history','<span aria-hidden="true">⋯</span><span class="sr-only">Choisir un calendrier</span>','advent-history-trigger',busy)+'</div>'+

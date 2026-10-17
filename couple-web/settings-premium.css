@@ -2,7 +2,7 @@
 main#app.loveroll-settings-page{box-sizing:border-box;width:100%;max-width:none;min-height:100dvh;margin:0;padding:max(var(--ritual-page-top),env(safe-area-inset-top,0px)) 20px calc(82px + env(safe-area-inset-bottom,0px));background:var(--ritual-page);color:var(--ritual-text);}
 main#app.loveroll-settings-menu{height:100dvh;min-height:0;}
 main#app.loveroll-settings-page>.header{display:none;}
-main#app.loveroll-settings-page .settings-editorial{width:min(100%,680px);margin:0 auto;display:grid;grid-template-rows:var(--ritual-brand-height) minmax(0,1fr);gap:16px;}
+main#app.loveroll-settings-page .settings-editorial{width:min(100%,680px);margin:0 auto;display:grid;grid-template-rows:var(--ritual-heading-height) minmax(0,1fr);gap:16px;}
 main#app.loveroll-settings-menu .settings-editorial{height:100%;}
 main#app.loveroll-settings-page .settings-page-header{position:relative;display:grid;place-items:center;min-height:0;margin:0;padding:0;background:none;border:0;}
 main#app.loveroll-settings-page .settings-page-header .ritual-brand{margin:0;}

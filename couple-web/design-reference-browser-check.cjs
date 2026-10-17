@@ -13,7 +13,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
   await page.route('https://esm.sh/@supabase/supabase-js@2.57.0*',r=>r.fulfill({contentType:'application/javascript',body:fake}));
   await page.goto('http://127.0.0.1:8765/?boot_case=paired-active');
   await page.locator('.real-home-shell').waitFor();
-  let mobileNavHeight,homeWordTop,homeKickerTop;
+  let mobileNavHeight,homeWordTop,homeKicker;
   for(const tab of ['home','session','special','advent','settings']){
    try{
     if(tab!=='home')await page.locator('.nav [data-action="tab:'+tab+'"]').click();
@@ -22,6 +22,9 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     await page.screenshot({path:'design-captures/'+name+'-'+tab+'.png',fullPage:true});
     const geometry=await page.evaluate(()=>{
      const main=document.querySelector('main'),nav=document.querySelector('.nav').getBoundingClientRect();
+     const kicker=document.querySelector('.ritual-kicker'),caption=kicker?.getBoundingClientRect(),captionStyle=kicker&&getComputedStyle(kicker);
+     const textRange=document.createRange();if(kicker)textRange.selectNodeContents(kicker);
+     const textBox=kicker&&textRange.getBoundingClientRect();
      // A fixed nav can cover a card even when the root never scrolls. Measure
      // the actual controls and full gift border against the nav's top edge.
      const controls=[...main.querySelectorAll('button,a[href],input,textarea,select')].filter(e=>!e.closest('.nav')&&getComputedStyle(e).visibility!=='hidden').map(e=>{
@@ -31,13 +34,16 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      return {documentHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,mainScroll:main.scrollHeight,mainClient:main.clientHeight,navTop:nav.top,navBottom:nav.bottom,
       controlsOutside:controls.filter(r=>r.left< -1||r.right>innerWidth+1||r.top< -1||r.bottom>nav.top-3),giftGap:giftBox&&giftBox.height>0?nav.top-giftBox.bottom:null,
       sections:[...document.querySelectorAll('.real-home-shell > *')].map(e=>({class:e.className,top:Math.round(e.getBoundingClientRect().top),bottom:Math.round(e.getBoundingClientRect().bottom),height:Math.round(e.getBoundingClientRect().height)})),shell:{display:getComputedStyle(document.querySelector('.real-home-shell')||main).display,height:document.querySelector('.real-home-shell')?.getBoundingClientRect().height,top:document.querySelector('.real-home-shell')?.getBoundingClientRect().top},dice:[...document.querySelectorAll('canvas[data-dice-sides]')].map(c=>({side:c.dataset.diceSides,face:c.dataset.face,width:c.clientWidth,height:c.clientHeight,webgl:c.dataset.webglReady})),
-      wordTop:document.querySelector('.ritual-brand b')?.getBoundingClientRect().top,kickerTop:document.querySelector('.home-ritual>span,.evening-intro>span,.surprise-eyebrow,.advent-intro>span,.settings-page-titles>span')?.getBoundingClientRect().top,stats:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
+      wordTop:document.querySelector('.ritual-brand b')?.getBoundingClientRect().top,kicker:caption&&{top:caption.top,height:caption.height,font:captionStyle.font,letterSpacing:captionStyle.letterSpacing,color:captionStyle.color,center:(textBox.left+textBox.right)/2},stats:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
     });
     report.push({name,tab,width,height,...geometry});
-    if(tab==='home'){homeWordTop=geometry.wordTop;homeKickerTop=geometry.kickerTop;}
+    assert.ok(geometry.kicker,'Missing ritual caption');
+    assert.ok(Math.abs(geometry.kicker.center-width/2)<=2,'Ritual caption is off-center '+JSON.stringify({name,tab,kicker:geometry.kicker}));
+    if(tab==='home'){homeWordTop=geometry.wordTop;homeKicker=geometry.kicker;}
     else{
      assert.ok(Math.abs(geometry.wordTop-homeWordTop)<=1,'LoveRoll wordmark moved between tabs '+JSON.stringify({name,tab,homeWordTop,actual:geometry.wordTop}));
-     if(['session','advent'].includes(tab))assert.ok(Math.abs(geometry.kickerTop-homeKickerTop)<=2,'Ritual heading moved between tabs '+JSON.stringify({name,tab,homeKickerTop,actual:geometry.kickerTop}));
+     assert.ok(Math.abs(geometry.kicker.top-homeKicker.top)<=1,'Ritual caption moved between tabs '+JSON.stringify({name,tab,homeKicker,actual:geometry.kicker}));
+     for(const key of ['height','font','letterSpacing','color'])assert.equal(geometry.kicker[key],homeKicker[key],'Ritual caption typography differs on '+name+'/'+tab+': '+key);
     }
     assert.ok(geometry.scrollWidth<=width+1,'horizontal overflow');
     assert.ok(geometry.documentHeight<=height+2&&geometry.mainScroll<=geometry.mainClient+2,'primary page scrolls '+JSON.stringify({name,tab,...geometry}));

@@ -17,7 +17,6 @@ main#app.loveroll-real-home{
 #app .ritual-brand b{font:italic 23px/27px Georgia,serif;position:relative;font-weight:400;}
 #app .ritual-brand b::before,#app .ritual-brand b::after{content:"";position:absolute;top:50%;width:35px;height:1px;background:linear-gradient(90deg,transparent,#986472);right:calc(100% + 12px);}
 #app .ritual-brand b::after{left:calc(100% + 12px);transform:rotate(180deg);}
-#app .home-ritual>span{font-size:10px;letter-spacing:.26em;color:#d58ba3;font-weight:600;}
 #app .home-ritual h2{font:600 clamp(28px,7.4vw,42px)/1.02 Georgia,serif;letter-spacing:-.035em;color:#f5dcd8;max-width:490px;margin:7px auto;}
 #app .home-ritual p{font-size:14px;margin:0;color:#e5d5dc;}
 #app .home-weights{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:center;border:1px solid #d58e9c40;border-radius:18px;background:linear-gradient(110deg,#3c1521a0,#1d1017c0);overflow:hidden;}
@@ -66,16 +65,16 @@ main#app.loveroll-real-home{
 .weekly-admin-status{padding:12px;border:1px solid var(--love-border);border-radius:16px;}
 @media(min-height:880px) and (max-width:767px){#app .real-home-shell{gap:12px;}#app .home-die-theater{min-height:210px;}#app .home-stat-card{padding:14px 5px;}}
 @media(min-width:900px){
- #app .home-bottom-stack{display:contents;}
+ #app .home-bottom-stack{display:flex;flex-direction:column;justify-content:space-between;grid-column:2;grid-row:2/5;gap:16px;}
  main#app.loveroll-real-home{padding:28px 32px calc(96px + env(safe-area-inset-bottom));}
- #app .real-home-shell{width:min(100%,1200px);min-height:calc(100dvh - 124px);grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr);grid-template-rows:auto 48px minmax(250px,1fr) auto;column-gap:38px;row-gap:16px;align-content:center;}
- #app .home-ritual{grid-column:1;grid-row:1;}#app .home-weights{grid-column:1;grid-row:2;}
+ #app .real-home-shell{width:min(100%,1200px);min-height:calc(100dvh - 124px);grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr);grid-template-rows:auto 48px minmax(180px,1fr) auto;column-gap:38px;row-gap:16px;align-content:start;}
+ #app .home-ritual{grid-column:1/-1;grid-row:1;}#app .home-weights{grid-column:1;grid-row:2;}
  #app .home-die-theater{grid-column:1;grid-row:3;margin:0 -15px;}#app .home-die-platform{width:300px;height:300px;}
  #app .home-roll-area{grid-column:1;grid-row:4;}
- #app .home-challenge-stats{grid-column:2;grid-row:1/3;align-self:end;padding:25px 8px;}
- #app .home-next-month{grid-column:2;grid-row:3;align-self:center;min-height:145px;grid-template-columns:90px 1fr 36px;}
+ #app .home-challenge-stats{align-self:stretch;padding:20px 8px;}
+ #app .home-next-month{align-self:stretch;min-height:115px;grid-template-columns:90px 1fr 36px;}
  #app .home-calendar-icon svg{width:85px;height:85px;}
- #app .home-stats-grid{grid-column:2;grid-row:4;align-self:end;min-height:145px;}
+ #app .home-stats-grid{align-self:stretch;min-height:130px;}
  #app .home-stat-card span,#app .home-challenge-stats small{font-size:13px;}#app .home-stat-card small{font-size:12px;}
  #app .home-ritual h2{font-size:48px;}#app .home-weight b,#app .home-weight span{font-size:13px;}
 }

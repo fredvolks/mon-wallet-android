@@ -2,7 +2,7 @@
 // through the member-checked calendar RPC; the live game's RLS stays personal.
 import {resolvedCard} from './evening-challenges.mjs';
 import {eveningPersonReviewMarkup} from './evening-review.mjs';
-import {ritualBrandHtml} from './brand.mjs';
+import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
 const safe=x=>String(x??'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[k]));
 const isoMonth=v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(v||'')?v:null;
 export function eveningLocalDay(iso){
@@ -84,7 +84,7 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
    '</article>';
  }).join(''):'<p class="evening-cal-empty">Aucune soirée enregistrée pour cette journée.</p>';
  return '<div class="evening-calendar-shell">'+
-  '<div class="evening-cal-head">'+ritualBrandHtml()+'<span>♡ NOS SOIRÉES</span><h2>Notre calendrier</h2>'+
+  '<div class="evening-cal-head">'+ritualHeadingHtml('NOS SOIRÉES À DEUX')+'<h2>Notre calendrier</h2>'+
    '<p>Toutes les soirées, avec les défis réalisés et non réalisés.</p></div>'+
   '<div class="evening-cal-stats"><span><strong>'+history+'</strong> soirées clôturées</span>'+
    '<span><strong>'+done+'</strong> défis réalisés</span>'+

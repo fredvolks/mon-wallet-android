@@ -36,8 +36,8 @@ test('All existing settings actions are still wired',()=>{
 });
 
 test('Settings theme is scoped and loaded last with cache revision',()=>{
- assert.match(index,/settings-premium\.css\?v=20261017-editorial121/);
- assert.match(index,/app\.js\?v=20261017-glass129/);
+ assert.match(index,/settings-premium\.css\?v=20261017-ritual130/);
+ assert.match(index,/app\.js\?v=20261017-ritual130/);
  assert.match(css,/main#app\.loveroll-settings-page/);
  assert.match(css,/grid-template-rows:repeat\(5,minmax\(58px,1fr\)\)/);
  assert.match(css,/\.settings-row-icon/);
