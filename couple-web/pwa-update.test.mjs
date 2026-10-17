@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),sw=read('service-worker.js');
 const release=JSON.parse(read('web-version.json'));
@@ -34,10 +35,18 @@ test('LoveRoll build versions agree between endpoint, app, HTML and imported mod
 test('PWA bypasses stale Android network caches while preserving offline fallback',()=>{
  assert.match(sw,/loveroll-static-v123/);
  assert.match(sw,/fetch\(req,\{cache:'no-store'\}\)/);
- assert.match(sw,/caches\.match\(fallback\.href\)/);
+ assert.match(sw,/cache\.match\(fallback\.href\)/);
+ assert.match(sw,/const cache=await caches\.open\(CACHE\)/);
  assert.match(sw,/\.\/web-version\.json/);
  assert.match(app,/updateViaCache:'none'/);
  assert.match(app,/reloadWebAssets\(\)\.catch\(console\.warn\)/);
+});
+test('Updating LoveRoll retains caches owned by Mon Wallet and other applications',async()=>{
+ const events={},deleted=[];
+ const self={registration:{scope:'https://example.test/mon-wallet-android/'},clients:{claim:async()=>{}},addEventListener:(type,callback)=>{events[type]=callback;}};
+ vm.runInNewContext(sw,{URL,self,caches:{keys:async()=>['loveroll-static-v121','loveroll-static-v122','loveroll-static-v123','mon-wallet-offline-v9','other-app-data'],delete:async key=>{deleted.push(key);}}});
+ let work;events.activate({waitUntil:promise=>{work=promise;}});await work;
+ assert.deepEqual(deleted,['loveroll-static-v121','loveroll-static-v122']);
 });
 test('LoveRoll can force reload from Settings without touching user or challenge data',()=>{
  assert.match(app,/Actualiser LoveRoll/);

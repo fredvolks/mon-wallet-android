@@ -6,7 +6,7 @@ const SHELL=['./assets/loveroll-glass-heart-v123.webp','./assets/loveroll-splash
 const root=new URL('./',self.registration.scope);
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(names=>
- Promise.all(names.filter(n=>n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())));
+ Promise.all(names.filter(n=>n.startsWith('loveroll-static-')&&n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
  const req=e.request,u=new URL(req.url);
  if(req.method!=='GET'||u.origin!==root.origin)return;
@@ -20,7 +20,8 @@ self.addEventListener('fetch',e=>{
   return response;
  }).catch(async()=>{
   const fallback=new URL(isHome?'./index.html':u.pathname,root);
-  return (await caches.match(fallback.href))||Response.error();
+  const cache=await caches.open(CACHE);
+  return (await cache.match(fallback.href))||Response.error();
  }));
 });
 // Incoming Web Push notifications (iOS/iPadOS home-screen PWA and supported browsers).
