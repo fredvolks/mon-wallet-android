@@ -59,10 +59,10 @@ test('Advent 25 squares keep their screen space',()=>{
 });
 test('v74 loaded LAST in HTML and cached with updated worker; server version updated',()=>{
  const index=read('index.html'),sw=read('service-worker.js'),v=JSON.parse(read('web-version.json'));
- assert.equal(v.build,'2026-10-17.126');
+ assert.equal(v.build,'2026-10-17.127');
  assert.match(index,/mobile-one-screen-v74\.css\?v=20261017-editorial121/);
  assert.ok(index.lastIndexOf('mobile-one-screen-v74.css')>index.lastIndexOf('surprise-dice-layout-v73.css'));
- assert.match(sw,/loveroll-static-v126/);
+ assert.match(sw,/loveroll-static-v127/);
  assert.match(sw,/\.\/mobile-one-screen-v74\.css/);
 });
 

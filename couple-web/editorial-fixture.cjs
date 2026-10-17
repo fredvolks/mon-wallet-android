@@ -22,7 +22,7 @@ async function setupEditorial(browser,world,{width=412,height=824,actor='a',quer
  if(process.env.LOVEROLL_LOCAL_FILES)await context.route('http://127.0.0.1:8765/**',async route=>{
   let name=new URL(route.request().url()).pathname;if(name==='/')name='/index.html';const f=path.join(process.cwd(),'couple-web',name);
   if(!fs.existsSync(f))return route.fulfill({status:404,body:''});
-  const types={'.html':'text/html','.css':'text/css','.js':'application/javascript','.mjs':'application/javascript','.json':'application/json','.webp':'image/webp','.png':'image/png'};
+  const types={'.html':'text/html','.css':'text/css','.js':'application/javascript','.mjs':'application/javascript','.json':'application/json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png'};
   await route.fulfill({contentType:types[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)});
  });
  await context.route('https://esm.sh/@supabase/supabase-js@2.57.0*',r=>r.fulfill({contentType:'application/javascript',body:fixtureClient}));

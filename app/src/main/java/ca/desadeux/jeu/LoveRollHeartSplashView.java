@@ -7,12 +7,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
-import android.graphics.Typeface;
 import android.os.SystemClock;
+import android.util.Xml;
 import android.view.View;
+import androidx.core.graphics.PathParser;
+import org.xmlpull.v1.XmlPullParser;
+import java.io.InputStream;
 
 /** Immediate offline first frame, sharing the exact Web artwork. Decode once,
  * animate only the glass heart and three dots; auth/session logic stays outside. */
@@ -23,12 +27,10 @@ final class LoveRollHeartSplashView extends View {
  private final Bitmap heart,decor;
  private final RectF frame=new RectF(),sprite=new RectF();
  private final float density;
- private final Typeface logo=Typeface.create("serif",Typeface.ITALIC);
- private final Typeface text=Typeface.create("sans-serif",Typeface.NORMAL);
+ private final SharedLettering logo,caption;
  private boolean visibleAnimation=true;
  private RadialGradient glow;
  private LinearGradient decorFade,marbleFade;
- private final Paint.FontMetrics fontMetrics=new Paint.FontMetrics();
 
  LoveRollHeartSplashView(Context context){
   super(context);
@@ -36,8 +38,44 @@ final class LoveRollHeartSplashView extends View {
   BitmapFactory.Options options=new BitmapFactory.Options();options.inScaled=false;
   heart=BitmapFactory.decodeResource(getResources(),R.drawable.loveroll_glass_heart,options);
   decor=BitmapFactory.decodeResource(getResources(),R.drawable.loveroll_splash_satin,options);
+  logo=new SharedLettering(context,"loveroll-wordmark-v127.svg");
+  caption=new SharedLettering(context,"loveroll-loading-caption-v127.svg");
   setContentDescription(CAPTION);
   setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+ }
+ /** The same outlined SVGs are used by the Web loader. Parse each once so
+  * neither platform chooses its own font, tracking or text baseline. */
+ private static final class SharedLettering {
+  final Path path;
+  final float width,height;
+  final int color;
+  SharedLettering(Context context,String asset){
+   Path outline=null;float viewWidth=0,viewHeight=0;int fill=0;
+   try(InputStream input=context.getAssets().open(asset)){
+    XmlPullParser xml=Xml.newPullParser();xml.setInput(input,"UTF-8");
+    for(int event=xml.getEventType();event!=XmlPullParser.END_DOCUMENT;event=xml.next()){
+     if(event!=XmlPullParser.START_TAG)continue;
+     if("svg".equals(xml.getName())){
+      String[] box=xml.getAttributeValue(null,"viewBox").trim().split("\\s+");
+      if(box.length!=4||Float.parseFloat(box[0])!=0||Float.parseFloat(box[1])!=0)
+       throw new IllegalArgumentException("Unsupported lettering viewport");
+      viewWidth=Float.parseFloat(box[2]);viewHeight=Float.parseFloat(box[3]);
+     }else if("path".equals(xml.getName())){
+      if(outline!=null)throw new IllegalArgumentException("Lettering must use one shared path");
+      outline=PathParser.createPathFromPathData(xml.getAttributeValue(null,"d"));
+      fill=android.graphics.Color.parseColor(xml.getAttributeValue(null,"fill"));
+     }
+    }
+    if(outline==null||viewWidth<=0||viewHeight<=0)throw new IllegalArgumentException("Incomplete lettering");
+   }catch(Exception error){throw new IllegalStateException("Invalid packaged LoveRoll lettering: "+asset,error);}
+   path=outline;width=viewWidth;height=viewHeight;color=fill;
+  }
+ }
+ private void drawLettering(Canvas canvas,SharedLettering lettering,float cx,float top,float height){
+  float scale=height/lettering.height;
+  canvas.save();canvas.translate(cx-lettering.width*scale/2f,top);canvas.scale(scale,scale);
+  brush.setShader(null);brush.setAlpha(255);brush.setColor(lettering.color);
+  canvas.drawPath(lettering.path,brush);canvas.restore();
  }
  private void cover(Canvas canvas,Bitmap image,float left,float top,float width,float height,int alpha,float positionY){
   float scale=Math.max(width/image.getWidth(),height/image.getHeight());
@@ -66,32 +104,32 @@ final class LoveRollHeartSplashView extends View {
   long now=SystemClock.uptimeMillis();
   float size=Math.min(w*.44f,Math.min(h*.23f,236*density));
   float font=Math.max(42*density,Math.min(w*.108f,62*density));
-  if(h/density<=450){size=Math.min(h*.32f,145*density);font=34*density;}
-  float total=size+12*density+font*1.15f+23*density+8*density+13*density+24*density;
+  boolean shortScreen=h/density<=450;
+  if(shortScreen){size=Math.min(h*.32f,145*density);font=34*density;}
+  float captionFont=Math.max(14*density,Math.min(w*.028f,16*density));
+  float logoGap=(shortScreen?4:12)*density,dotsTop=(shortScreen?13:23)*density;
+  float dotsBottom=(shortScreen?8:13)*density,logoHeight=font*1.15f,captionHeight=captionFont*1.5f;
+  float total=size+logoGap+logoHeight+dotsTop+8*density+dotsBottom+captionHeight;
   float top=h*(landscape?.47f:.48f)-total/2f;
   float beat=animate?1f+.018f*(1f-(float)Math.cos((now%BEAT_MS)*Math.PI*2/BEAT_MS))/2f:1f;
-  float cx=w*.5f,cy=top+size*.5f;
+  float cx=w*.5f,cy=top+size*.56f+(size*.5f-size*.56f)*beat;
   sprite.set(cx-size*beat/2f,cy-size*beat/2f,cx+size*beat/2f,cy+size*beat/2f);
   brush.setAlpha(255);canvas.drawBitmap(heart,null,sprite,brush);
-  float logoTop=top+size+12*density;
-  brush.setTypeface(logo);brush.setTextSize(font);brush.setTextAlign(Paint.Align.CENTER);brush.setColor(0xfff5dcd8);
-  brush.getFontMetrics(fontMetrics);Paint.FontMetrics fm=fontMetrics;
-  float baseline=logoTop+(font*1.15f-fm.bottom-fm.top)/2f;
-  canvas.drawText("LoveRoll",cx,baseline,brush);
-  float word=brush.measureText("LoveRoll"),gap=16*density,line=Math.max(28*density,Math.min(w*.1f,58*density));
+  float logoTop=top+size+logoGap;
+  drawLettering(canvas,logo,cx,logoTop,logoHeight);
+  float word=font*4.2f,gap=16*density,line=Math.max(28*density,Math.min(w*.1f,58*density));
   brush.setColor(0x99d58ba3);brush.setStrokeWidth(density);
   float rule=logoTop+font*.575f;
   canvas.drawLine(cx-word/2f-gap-line,rule,cx-word/2f-gap,rule,brush);
   canvas.drawLine(cx+word/2f+gap,rule,cx+word/2f+gap+line,rule,brush);
-  float dots=logoTop+font*1.15f+27*density;
+  float dots=logoTop+logoHeight+dotsTop+4*density;
   for(int i=0;i<3;i++){
    float phase=((now+1800L-i*600L)%1800L)/1800f;
    float light=animate?.28f+.72f*Math.max(0f,1f-Math.abs(phase-.3f)/.3f):(i==1?1f:.28f);
    brush.setColor(0xffe8a0b5);brush.setAlpha(Math.round(light*255));
    canvas.drawCircle(cx+(i-1)*18*density,dots,4*density,brush);
   }
-  brush.setAlpha(255);brush.setTypeface(text);brush.setTextSize(Math.max(14*density,Math.min(w*.028f,16*density)));
-  brush.setColor(0xffccb3bf);canvas.drawText(CAPTION,cx,dots+34*density,brush);
+  drawLettering(canvas,caption,cx,dots+4*density+dotsBottom,captionHeight);
   if(animate&&isShown())postInvalidateDelayed(33);
  }
  void resumeHeart(){visibleAnimation=true;setAlpha(1f);setVisibility(VISIBLE);invalidate();}

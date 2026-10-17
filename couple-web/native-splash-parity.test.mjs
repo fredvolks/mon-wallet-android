@@ -30,11 +30,26 @@ test('Native launch keeps the same dark ground and glass emblem before WebView p
  assert.doesNotMatch(activity,/nativeSplash\.postDelayed/);
  assert.match(activity,/settings\.setCacheMode\(WebSettings\.LOAD_NO_CACHE\)/);
 });
+test('Both loading stages draw the identical outlined logo and caption without platform fonts',()=>{
+ for(const asset of ['loveroll-wordmark-v127.svg','loveroll-loading-caption-v127.svg']){
+  const web=readFileSync(new URL('./assets/'+asset,import.meta.url));
+  const apk=readFileSync(new URL('../app/src/main/assets/'+asset,import.meta.url));
+  assert.deepEqual(web,apk);
+  assert.equal((web.toString().match(/<path\b/g)||[]).length,1);
+  assert.doesNotMatch(web.toString(),/<text\b|font-family|transform=/);
+  assert.ok(read('index.html').includes('./assets/'+asset));
+  assert.ok(native.includes('new SharedLettering(context,"'+asset+'")'));
+ }
+ assert.doesNotMatch(native,/Typeface|drawText\(/);
+ assert.match(native,/PathParser\.createPathFromPathData/);
+ assert.match(read('loveroll-splash.css'),/--splash-logo-size:clamp\(42px,10\.8vw,62px\)/);
+ assert.match(native,/Math\.max\(42\*density,Math\.min\(w\*\.108f,62\*density\)\)/);
+});
 test('Native document/network failure stops animation and offers retry without deleting data',()=>{
  assert.match(activity,/onReceivedError\(WebView view,WebResourceRequest request/);
  assert.match(activity,/request\.isForMainFrame\(\)\)showNativeLoadFailure/);
  assert.match(activity,/retry\.setText\("Réessayer"\)/);
  assert.match(activity,/web\.loadUrl\(retryDestination==null\?SITE:retryDestination\)/);
  assert.doesNotMatch(activity,/removeAllCookies|deleteDatabase|clearData/);
- assert.match(read('../app/build.gradle'),/versionCode 130011; versionName '0\.13\.11'/);
+ assert.match(read('../app/build.gradle'),/versionCode 130012; versionName '0\.13\.12'/);
 });

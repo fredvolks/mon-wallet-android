@@ -134,6 +134,7 @@ async function open(browser,mode,extra=''){
  // An existing valid invite must retain its UUID through reload without creating another.
  {
   const {page,errors}=await open(browser,'owner');
+  await page.locator('.partner-waiting-page [data-action="tab:invitation"]').click();
   await page.locator('[data-action="copy-invite"]').waitFor({timeout:20000});
   const link='https://fredvolks.github.io/mon-wallet-android/?invite_id=123e4567-e89b-42d3-a456-426614174003';
   await page.evaluate(()=>{
@@ -146,6 +147,11 @@ async function open(browser,mode,extra=''){
   const calls=await page.evaluate(()=>window.__fakeCalls);
   if(calls.createInvite.length||calls.markSent.length)throw Error('Copy mutated invite/delivery state');
   await page.reload({waitUntil:'domcontentloaded'});
+  // Reload restores the native clipboard; keep the same simulated refusal.
+  await page.evaluate(()=>{
+   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard disabled for test')}}});
+  });
+  await page.locator('.partner-waiting-page [data-action="tab:invitation"]').click();
   await page.locator('[data-action="copy-invite"]').waitFor();
   await page.locator('[data-action="copy-invite"]').click();
   await page.locator('#invite-manual-link').waitFor();
@@ -162,7 +168,11 @@ async function open(browser,mode,extra=''){
   const {page,errors}=await open(browser,'wrong','&invite_id=123e4567-e89b-42d3-a456-426614174003');
   await page.locator('[data-action="invite-start"]').waitFor();
   await page.locator('[data-action="invite-start"]').click();
-  await page.locator('.invite-error-card').waitFor({timeout:20000});
+  const refusal=page.locator('.invitation-notice-card [role="alert"]');
+  await refusal.waitFor({timeout:20000});
+  if(!(await refusal.innerText()).includes('une autre adresse')||
+      !(await page.locator('.invitation-notice-card [data-action="switch-account-invite"]').isVisible()))
+   throw Error('Wrong recipient must see the refusal and account-switch action');
   const calls=await page.evaluate(()=>window.__fakeCalls);
   if(calls.accept.length!==1)throw Error('Wrong recipient did not reach server guard');
   if(errors.length)throw Error('Wrong recipient JS errors '+JSON.stringify(errors));
@@ -174,7 +184,10 @@ async function open(browser,mode,extra=''){
   const {page,errors}=await open(browser,'right','&invite_id=123e4567-e89b-42d3-a456-426614174003');
   await page.locator('[data-action="invite-start"]').waitFor();
   await page.locator('[data-action="invite-start"]').click();
-  await page.locator('.invite-welcome').waitFor({timeout:20000});
+  const welcome=page.locator('.invitation-notice-card[role="status"]');
+  await welcome.waitFor({timeout:20000});
+  if(await welcome.locator('h1').innerText()!=='Bienvenue dans LoveRoll')
+   throw Error('Accepted invitation did not show the welcome status');
   const calls=await page.evaluate(()=>window.__fakeCalls);
   if(calls.accept.length!==1)throw Error('Correct recipient not passed to server exactly once');
   if(errors.length)throw Error('Right recipient errors '+JSON.stringify(errors));

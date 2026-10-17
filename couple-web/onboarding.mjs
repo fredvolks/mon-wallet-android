@@ -144,14 +144,13 @@ function profileScreen(user,profile,invitation){
 export function inviteProfileHtml(user,profile){return profileScreen(user,profile,true);}
 export function profileHtml(user,profile){return profileScreen(user,profile,false);}
 export function matchHtml(name,invitation){
- return '<div class="auth-panel"><div class="eyebrow">ÉTAPE 2 SUR 2 · NOTRE MATCH</div>'+
- '<h2>Bienvenue '+esc(name)+' ♡</h2>'+
+ return '<div class="partner-create-form"><p>Bienvenue '+esc(name)+'.</p>'+
  (invitation?
  '<p>Votre invitation sera associée automatiquement après la vérification du compte.</p>':
  '<p>Créez votre duo, puis invitez votre partenaire par courriel. Elle ou il remplira son propre profil.</p>'+
- '<h3>🥂 Anniversaire de votre couple</h3>'+
- monthDayInputs('signup-couple','',true)+
- button('prepare-cards','♡ Préparer mes défis avant l’invitation')+
- button('create-couple','♡ Créer notre espace à deux'))+
+ '<fieldset class="partner-create-date"><legend>Anniversaire du couple</legend>'+
+ monthDayInputs('signup-couple','',true)+'</fieldset>'+
+ button('create-couple','Créer notre espace à deux','settings-primary')+
+ button('prepare-cards','Préparer mes défis avant l’invitation','settings-secondary'))+
  '</div>';
 }

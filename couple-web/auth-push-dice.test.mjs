@@ -62,7 +62,7 @@ test('Disabled native Firebase never fakes push availability',()=>{
  globalThis.window={LoveRollNativeAuth:{weeklyReminderEnabled:()=>true,nativePushConfigured:()=>false,nativePushToken:()=>''}};
  Object.defineProperty(globalThis,'navigator',{configurable:true,value:{userAgent:'Android',platform:'Android',maxTouchPoints:1,standalone:false}});
  const html=notificationSettingsMarkup({enabled:false});
- assert.match(html,/Une mise à jour de l’APK est nécessaire/);
+ assert.match(html,/Mettez LoveRoll à jour pour recevoir toutes les alertes/);
  assert.doesNotMatch(html,/data-action="push-enable"/);
  assert.match(html,/data-action="native-notify-disable"/);
  assert.match(html,/data-push-option="weekly"[^>]*disabled/);

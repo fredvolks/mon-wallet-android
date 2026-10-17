@@ -1,6 +1,5 @@
 package ca.desadeux.jeu;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -63,10 +62,8 @@ public final class UpdateManager {
     if(!url.startsWith("https://github.com/"+REPO+"/releases/download/"+PREFIX))
      throw new SecurityException("source de mise à jour inconnue");
     String finalVersion=version;
-    a.runOnUiThread(()->PremiumDialog.choice(a,
-      "♥ Nouvelle version "+finalVersion,
-      "Une nouvelle version de LoveRoll est disponible. Voulez-vous la télécharger maintenant ?",
-      "TÉLÉCHARGER",()->download(a,url,expected),"PLUS TARD",null));
+    a.runOnUiThread(()->PremiumDialog.updateAvailable(a,finalVersion,
+      ()->download(a,url,expected)));
    }catch(Exception e){if(!quiet)toast(a,"Vérification impossible : "+e.getMessage());}
    finally{working=false;}
   }).start();

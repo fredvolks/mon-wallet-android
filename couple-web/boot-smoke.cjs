@@ -67,7 +67,7 @@ export function createClient(){
  const browser=await chromium.launch({headless:true});
  for(const [name,query,expected] of [
   ['anonymous','?boot_case=anonymous','.love-discover'],
-  ['google-return','?boot_case=existing&code=simulated-oauth-code','.auth-panel'],
+  ['google-return','?boot_case=existing&code=simulated-oauth-code','.partner-create-page'],
   ['existing-paired','?boot_case=paired','.loveroll-real-home'],
   ['active-evening','?boot_case=paired-active','.loveroll-real-home'],
   ['step1-partner-pending','?boot_case=paired-pending','.loveroll-real-home'],
@@ -84,6 +84,12 @@ export function createClient(){
   const text=await page.locator('#app').innerText();
   if(await page.locator('[data-lr-boot]').count()||await page.locator('.lr-splash--overlay').count()||errors.length)
    throw Error(name+' failed: '+JSON.stringify({text:text.slice(0,250),errors}));
+  if(name==='google-return'){
+   if(!(await page.locator('.partner-create-page [data-action="create-couple"]').isVisible())||
+      !(await page.locator('.partner-create-page [data-action="prepare-cards"]').isVisible())||
+      await page.locator('[data-action="google"]').count())
+    throw Error('Verified Google return must reach the create-duo page with its existing account actions');
+  }
   if(name==='anonymous'){
    await page.locator('.discover-login').click();
    await page.locator('[data-action="google"]').first().click();

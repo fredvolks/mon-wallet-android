@@ -30,14 +30,14 @@ test('All existing settings actions are still wired',()=>{
   assert.ok(app.includes("if(verb==='"+name+"')"),name);
  }
  for(const name of ['tab:library','tab:monthly-library','tab:advent-editor',
-  'tab:special-editor','tab:journal','native-legacy']){
+  'tab:special-editor','evening-calendar:settings','native-legacy']){
   assert.ok(app.includes("'"+name+"'"),name);
  }
 });
 
 test('Settings theme is scoped and loaded last with cache revision',()=>{
  assert.match(index,/settings-premium\.css\?v=20261017-editorial121/);
- assert.match(index,/app\.js\?v=20261017-continuous126/);
+ assert.match(index,/app\.js\?v=20261017-complete127/);
  assert.match(css,/main#app\.loveroll-settings-page/);
  assert.match(css,/grid-template-rows:repeat\(5,minmax\(58px,1fr\)\)/);
  assert.match(css,/\.settings-row-icon/);
@@ -63,7 +63,7 @@ test('Couple menu removes fictional preview and directs the invitation CTA to th
  assert.doesNotMatch(waiting,/button\('demo-enter'/);
  assert.match(app,/function renderPartnerInvitation\(\)/);
  assert.match(app,/if\(state\.tab==='invitation'&&state\.coupleId\)renderPartnerInvitation\(\)/);
- assert.match(app,/button\('tab:invitation','♡ Inviter mon partenaire'\)/);
+ assert.match(waiting,/button\('tab:invitation',[^\n]*class="settings-primary"/);
  const action=app.slice(app.indexOf("if(verb==='start-couple'){"),app.indexOf("if(verb==='end-couple'){"));
  assert.match(action,/rpc\('create_love_match',\{p_anniversary_md:null\}\)/);
  assert.match(action,/state\.tab='invitation'/);

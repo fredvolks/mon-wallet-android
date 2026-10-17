@@ -37,7 +37,7 @@ async function assertNativeReady(page,serial){
     const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};};
     return {width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,
      heart:bounds(document.querySelector('.lr-splash__heart')),logo:bounds(document.querySelector('.lr-splash__logo')),caption:bounds(document.querySelector('.lr-splash__caption')),
-     text:document.querySelector('.lr-splash__caption').innerText,dots:document.querySelectorAll('.lr-splash__dots i').length,
+     text:document.querySelector('.lr-splash').getAttribute('aria-label'),dots:document.querySelectorAll('.lr-splash__dots i').length,
      obsolete:document.querySelectorAll('.lr-splash__ring,.lr-splash__back-heart').length,buttons:document.querySelectorAll('button,nav').length,
      loaded:[...document.images].every(i=>i.complete&&i.naturalWidth>0),animation:getComputedStyle(document.querySelector('.lr-splash__heart')).animationName};
    });

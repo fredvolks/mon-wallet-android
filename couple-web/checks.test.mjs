@@ -314,7 +314,7 @@ test('Premade art and CSS are available, web cache contains the artwork',()=>{
  assert.match(stylesheet,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(sw,/assets\/loveroll-hero\.webp/);
- assert.match(sw,/loveroll-static-v126/);
+ assert.match(sw,/loveroll-static-v127/);
 });
 
 test('Compact v2 keeps exactly six zones and all essential content',()=>{
@@ -425,16 +425,18 @@ test('Unpaired members only see invitation, personal account, calendar and priva
  assert.ok(app.includes("Cette action nécessite deux comptes associés."));
  assert.ok(!readFileSync(new URL('./service-worker.js',import.meta.url),'utf8').includes('solo-mode.mjs'));
 });
-test('Before invitation the account retains its private cards and notes',()=>{
+test('Before invitation the account retains its private cards and current calendar',()=>{
  assert.ok(app.includes("p_anniversary_md:null"));
  assert.ok(app.includes("if(!state.coupleId)await rpc('create_love_match'"));
  assert.ok(app.includes("isLoveAdmin()"));
  assert.ok(app.includes("if(state.couple?.owner_user_id===state.user.id)"));
  assert.ok(app.includes("save_love_card_with_roles"));
- assert.ok(app.includes("button('tab:library','♡ Nos 200 défis')"));
+ assert.ok(app.includes("editorialRow('Nos 200 défis','','tab:library','dice')"));
  assert.ok(app.includes("renderInvitePanel()"));
  assert.ok(app.includes("button('invite','Remplacer le lien actuel'"));
- assert.ok(app.includes("renderPersonalJournal().catch(fail)"));
+ assert.ok(app.includes("if(['journal','personal-journal'].includes(state.tab))"));
+ assert.ok(app.includes("else if(state.tab==='evening-calendar')renderEveningCalendar()"));
+ assert.ok(!app.includes("renderPersonalJournal().catch(fail)"));
  assert.ok(app.includes("button('tab:personal-journal','Ouvrir mon calendrier personnel')"));
  assert.ok(!app.includes("if(verb==='skip-couple')"));
 });
@@ -452,7 +454,7 @@ test('Creator-only access and private draws are enforced server side',()=>{
  assert.ok(sql.includes('card_title,card_description,card_timer_minutes'));
  assert.ok(app.includes("function isLoveAdmin()"));
  assert.ok(app.includes("function renderCardLibrary()"));
- assert.ok(app.includes("button('tab:library'"));
+ assert.ok(app.includes("editorialRow('Nos 200 défis','','tab:library','dice')"));
  assert.ok(app.includes("Seul l’administrateur")||app.includes("Accès réservé à l’administrateur"));
  assert.ok(app.includes('state.rollStatus?.both_ready'));
  assert.ok(app.includes("p_card_id:state.customSlot"));
@@ -460,8 +462,8 @@ test('Creator-only access and private draws are enforced server side',()=>{
  assert.ok(app.includes("state.tab==='library')renderCardLibrary()"));
  assert.ok(app.includes("' · CARTE N° '+safe(active.face)"));
  assert.equal(app.includes("' · CARTE '+"),false);
- assert.ok(app.includes("REÇOIT"));
- assert.ok(app.includes("OFFRE"));
+ assert.ok(app.includes("safe(role.giver.name)"));
+ assert.ok(app.includes("' offre · '+safe(role.receiver.name)+' reçoit"));
  assert.ok(app.includes('Sans minuteur'));
 });
 
@@ -866,8 +868,8 @@ test('Server protects future D6 options, uses only random 1..6, and preserves pr
  assert.ok(app.includes("function renderSpecialEventsEditor()"));
  assert.ok(app.includes("heroDice(activity.face,6,"));
  assert.ok(app.includes("heroDice(modifier.face,6,"));
- assert.ok(app.includes("':activity','🎲 DÉCOUVRIR L’ACTIVITÉ'"));
- assert.ok(app.includes("':modifier','🎲 RÉVÉLER LA TOUCHE SURPRISE'"));
+ assert.ok(app.includes("':activity','Découvrir l’activité','class=\"settings-primary\"'"));
+ assert.ok(app.includes("':modifier','Révéler la touche surprise','class=\"settings-primary\"'"));
  assert.ok(app.includes("previewPortableJson('special')"));
  assert.ok(app.includes('state.specialEventsConfig=specialSettings[0]?.events||null'));
  assert.ok(worker.includes("'./private-special-events.mjs'"));

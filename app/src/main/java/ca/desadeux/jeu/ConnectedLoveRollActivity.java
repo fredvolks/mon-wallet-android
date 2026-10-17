@@ -193,6 +193,20 @@ public final class ConnectedLoveRollActivity extends Activity {
       JSONObject.quote(token)+"}}));",null);
   });
  }
+ private void publishWeeklyReminderState(String message,boolean failure){
+  // Permission results and reminder actions run on the UI thread. Refresh the
+  // trusted page inline, using the same stored preference as the bridge getter.
+  if(web!=null&&pageReady){
+   String url=web.getUrl();
+   if(url!=null&&isTrusted(Uri.parse(url))){
+    boolean enabled=LoveRollWeeklyReminderReceiver.isEnabled(this);
+    web.evaluateJavascript("window.dispatchEvent(new CustomEvent('loveroll-native-notification-state',{detail:{weeklyEnabled:"+
+      enabled+",message:"+JSONObject.quote(message)+"}}));",null);
+    return;
+   }
+  }
+  if(failure&&!isFinishing()&&!isDestroyed())show(message);
+ }
  private final class NativeAuthBridge {
   // This is presentation readiness only; document/auth readiness stays separate.
   @JavascriptInterface public void splashReady(long serial){
@@ -295,12 +309,16 @@ public final class ConnectedLoveRollActivity extends Activity {
      requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},6831);
     }else{
      LoveRollWeeklyReminderReceiver.setEnabled(ConnectedLoveRollActivity.this,true);
-     show("Rappel LoveRoll activé chaque lundi à 9 h.");
+     publishWeeklyReminderState("Rappel LoveRoll activé chaque lundi à 9 h.",false);
     }
    });
   }
   @JavascriptInterface public void disableWeeklyReminder(){
-   runOnUiThread(()->LoveRollWeeklyReminderReceiver.setEnabled(ConnectedLoveRollActivity.this,false));
+   runOnUiThread(()->{
+    if(web==null||!pageReady||!isTrusted(Uri.parse(web.getUrl())))return;
+    LoveRollWeeklyReminderReceiver.setEnabled(ConnectedLoveRollActivity.this,false);
+    publishWeeklyReminderState("Rappel LoveRoll désactivé.",false);
+   });
   }
   @JavascriptInterface public boolean weeklyReminderEnabled(){
    return LoveRollWeeklyReminderReceiver.isEnabled(ConnectedLoveRollActivity.this);
@@ -500,17 +518,41 @@ public final class ConnectedLoveRollActivity extends Activity {
    return;
   }
   if(requestCode==6831){
-   if(grants.length>0&&grants[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)
+   if(grants.length>0&&grants[0]==android.content.pm.PackageManager.PERMISSION_GRANTED){
     LoveRollWeeklyReminderReceiver.setEnabled(this,true);
-   else show("Notifications non autorisées. Modifiez les réglages Android.");
+    publishWeeklyReminderState("Rappel LoveRoll activé chaque lundi à 9 h.",false);
+   }else publishWeeklyReminderState("Notifications non autorisées. Modifiez les réglages Android.",true);
   }
  }
  @Override protected void onNewIntent(Intent intent){
   super.onNewIntent(intent);
   setIntent(intent);
+  if(previewNativeDialog(intent))return;
   String section=intent.getStringExtra("push_section");
   if(web!=null&&section!=null&&section.matches("home|session|special|advent"))
    web.loadUrl(SITE+"?open="+section+"&apk_build="+BuildConfig.VERSION_CODE);
+ }
+ // An emulator-only entry point exercises the real native dialog layout and
+ // callbacks without release lookup, downloads, installations or account writes.
+ private boolean previewNativeDialog(Intent intent){
+  if(!BuildConfig.DEBUG||intent==null)return false;
+  String preview=intent.getStringExtra("loveroll_debug_dialog");
+  if("update".equals(preview)){
+   String version=intent.getStringExtra("loveroll_debug_version");
+   PremiumDialog.updateAvailable(this,version==null?BuildConfig.VERSION_NAME:version,
+    ()->android.util.Log.i("LoveRollDialogQA","download callback"));
+  }else if("info".equals(preview)){
+   PremiumDialog.info(this,"Notifications LoveRoll",
+    "Retrouvez les rappels de votre espace à deux dans les paramètres de notifications.");
+  }else if("long".equals(preview)){
+   String paragraph="Vous pouvez choisir les rappels de votre espace à deux et ajuster vos préférences dans les réglages de LoveRoll.\n\n";
+   StringBuilder message=new StringBuilder();
+   for(int i=0;i<8;i++)message.append(paragraph);
+   PremiumDialog.choice(this,"Notifications LoveRoll",message.toString().trim(),
+    "Continuer",()->android.util.Log.i("LoveRollDialogQA","accept callback"),
+    "Annuler",()->android.util.Log.i("LoveRollDialogQA","cancel callback"));
+  }else return false;
+  return true;
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
   super.onActivityResult(requestCode,resultCode,data);
