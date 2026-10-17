@@ -16,7 +16,7 @@
   width:100%!important;max-width:680px!important;height:100%!important;max-height:100%!important;
   min-width:0!important;min-height:0!important;overflow:hidden!important;
   overscroll-behavior:none!important;padding:clamp(8px,1.6dvh,15px)!important;
-  border-radius:20px!important;gap:clamp(4px,.8dvh,9px)!important;
+  border-radius:20px;gap:clamp(4px,.8dvh,9px)!important;
  }
  main#app.loveroll-evening-page .evening-queue-content.is-detail>.eyebrow{
   flex:none!important;font-size:clamp(.65rem,2.5vw,.8rem)!important;line-height:1.1!important;
@@ -52,7 +52,7 @@
  main#app.loveroll-evening-page .evening-queue-content.is-detail .timer-panel{
   flex:0 1 auto!important;min-height:0!important;margin:0!important;
   padding:clamp(7px,1.15dvh,12px)!important;overflow:hidden!important;
-  border-radius:14px!important;
+  border-radius:14px;
  }
  main#app.loveroll-evening-page .evening-queue-content.is-detail .timer-panel>.eyebrow{
   font-size:clamp(.65rem,2.5vw,.85rem)!important;line-height:1.12!important;letter-spacing:.07em!important;

@@ -1,337 +1,74 @@
-
-/* LoveRoll — TRUE COUPLE HOME ONLY. Reference-focused; other screens untouched. */
+/* Design 2 — single owner of Home layout; superseded Home rules removed from
+   responsive sheets. All displayed values still come from premium-home.mjs. */
 main#app.loveroll-real-home{
- max-width:none!important;width:100%;height:100dvh;min-height:0;overflow:hidden;
- padding:0 12px 0!important;display:flex;flex-direction:column;
- background:radial-gradient(ellipse at 50% 46%,#850f3d85,transparent 50%),
-  radial-gradient(ellipse at 5% 75%,#4d092a,transparent 50%),
-  linear-gradient(180deg,#080408 0%,#1b0614 66%,#090409 100%);
+ width:100%;max-width:none;height:100dvh;min-height:0;overflow:auto;
+ padding:max(8px,env(safe-area-inset-top)) 16px calc(76px + env(safe-area-inset-bottom));
+ background:radial-gradient(ellipse at 0% 25%,#58132950,transparent 55%),#10070c;
 }
-.loveroll-real-home .home-brandbar{
- display:flex;justify-content:space-between;align-items:center;flex:none;
- height:clamp(60px,8.8dvh,78px);padding:6px 10px 5px;
+#app .real-home-shell{
+ width:min(100%,580px);min-height:calc(100dvh - 92px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+ margin:auto;display:grid;grid-template-rows:auto 42px minmax(165px,1fr) auto auto auto auto;
+ gap:9px;align-content:start;
 }
-.loveroll-real-home .home-brand{
- min-width:0;display:flex;flex-direction:column;gap:0;text-align:left
+#app .home-ritual{text-align:center;min-width:0;}
+#app .ritual-brand{display:flex;flex-direction:column;align-items:center;margin-bottom:12px;color:#f2cfcd;}
+#app .ritual-brand i{font:26px/22px Georgia,serif;color:#cb8499;}
+#app .ritual-brand b{font:italic 23px/27px Georgia,serif;position:relative;font-weight:400;}
+#app .ritual-brand b::before,#app .ritual-brand b::after{content:"";position:absolute;top:50%;width:35px;height:1px;background:linear-gradient(90deg,transparent,#986472);right:calc(100% + 12px);}
+#app .ritual-brand b::after{left:calc(100% + 12px);transform:rotate(180deg);}
+#app .home-ritual>span{font-size:10px;letter-spacing:.26em;color:#d58ba3;font-weight:600;}
+#app .home-ritual h2{font:600 clamp(28px,7.4vw,42px)/1.02 Georgia,serif;letter-spacing:-.035em;color:#f5dcd8;max-width:490px;margin:7px auto;}
+#app .home-ritual p{font-size:14px;margin:0;color:#e5d5dc;}
+#app .home-weights{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:center;border:1px solid #d58e9c40;border-radius:18px;background:linear-gradient(110deg,#3c1521a0,#1d1017c0);overflow:hidden;}
+#app .home-weight{display:grid;grid-template-columns:19px auto;column-gap:5px;justify-content:center;align-items:center;border-right:1px solid #b77c8c35;color:#efdcdf;line-height:1.15;}
+#app .home-weight:last-child{border:0;}
+#app .home-pip-svg{width:19px;height:19px;grid-row:1/3;}
+#app .home-weight b,#app .home-weight span{font-size:11px;font-weight:400;}
+#app .home-weight span{color:#cfaeb9;}
+#app .home-die-theater{position:relative;isolation:isolate;min-height:165px;display:grid;place-items:center;overflow:hidden;margin:-6px -16px -8px;background:url("./assets/ritual-satin-v115.webp") center 62%/cover no-repeat;mask-image:linear-gradient(transparent,#000 10%,#000 90%,transparent);}
+#app .home-fabric-photo,#app .home-satin-orbit{display:none;}
+#app .home-die-platform{width:clamp(180px,46vw,255px);height:clamp(180px,46vw,255px);position:relative;display:grid;place-items:center;transform:translateY(-8%);filter:drop-shadow(0 12px 12px #0009);}
+#app .home-die-platform .dice-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+#app .home-die-platform .dice-fallback{font:70px Georgia,serif;color:#f4bbcd;}
+#app .home-die-platform.webgl-ready .dice-fallback,#app .home-die-platform:has(canvas[data-spinning="true"]) .dice-fallback{visibility:hidden;opacity:0;}
+#app .home-roll-area{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
+#app .home-roll-button{width:92%;min-height:48px;border-radius:999px;border:1px solid #efc3cb;background:linear-gradient(155deg,#efa4b7,#b73863 55%,#6b183d);box-shadow:inset 0 1px 2px #ffe4e888,0 5px 22px #c54e7029;color:#fff2f2;font-size:15px;font-weight:650;letter-spacing:.10em;padding:12px 22px;}
+#app .home-roll-button:not(:disabled)::after{content:"›";position:absolute;right:11%;font-size:24px;line-height:20px;font-weight:300;}
+#app .home-roll-button.is-used{opacity:1;font-size:12px;letter-spacing:0;color:#dec5cf;background:linear-gradient(145deg,#44202e,#24121c);border-color:#b77b8d60;}
+#app .home-roll-area p{font-size:11px;line-height:1.35;color:#c6aab4;max-width:365px;text-align:center;margin:0;}
+#app .home-challenge-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:12px 4px;border:1px solid #ba7e9145;border-radius:20px;background:linear-gradient(120deg,#29111bce,#170d14df);}
+#app .home-challenge-stats>div{display:grid;grid-template-columns:24px 1fr;gap:2px 4px;padding:0 7px;align-items:start;min-width:0;border-right:1px solid #a870843d;}
+#app .home-challenge-stats>div:last-child{border:0;}
+#app .home-challenge-stats span{grid-row:1/3;color:#d786a1;font:26px Georgia,serif;}
+#app .home-challenge-stats strong{color:#f5d8dc;font-size:20px;font-weight:600;line-height:1.1;}
+#app .home-challenge-stats small{grid-column:2;font-size:11px;line-height:1.3;color:#ccb3bf;overflow-wrap:anywhere;}
+#app .home-next-month{display:grid;grid-template-columns:65px 1fr 31px;gap:9px;align-items:center;min-height:79px;padding:9px 12px;border:1px solid #c67f955c;border-radius:20px;background:radial-gradient(ellipse at 10% 80%,#8d284d60,transparent 55%),linear-gradient(110deg,#34121f,#1c0d15 66%,#571b32);box-shadow:inset 0 1px #f7ccd320;text-align:left;}
+#app .home-next-month>span:nth-child(2){display:flex;flex-direction:column;gap:3px;min-width:0;}
+#app .home-next-month small{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#e1b0bf;font-weight:500;}
+#app .home-next-month strong{font:500 clamp(19px,4.8vw,27px)/1.1 Georgia,serif;color:#f3d5d7;}
+#app .home-next-month em{font:normal 11px/1.25 system-ui;color:#cfb0bf;}
+#app .home-calendar-icon{display:grid;place-items:center;filter:drop-shadow(0 7px 7px #0008);}
+#app .home-calendar-icon svg{width:62px;height:62px;transform:rotate(-9deg);}
+#app .home-gift-icon{display:grid;place-items:center;border:1px solid #d998ac80;border-radius:50%;width:31px;height:38px;color:#f4cbd8;font:30px Georgia,serif;background:linear-gradient(130deg,#ac4765,#58152e);}
+#app .home-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+#app .home-stat-card{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;min-width:0;padding:10px 4px;border:1px solid #b47b8a40;border-radius:18px;background:linear-gradient(140deg,#2b151cba,#190e13ed);text-align:center;}
+#app .home-stat-card i{font:21px/22px Georgia,serif;color:#d98ba6;font-style:normal;}
+#app .home-stat-card strong{font-size:18px;line-height:1.1;color:#efb4c6;font-weight:650;overflow-wrap:anywhere;}
+#app .home-stat-card span{font-size:11px;line-height:1.2;color:#f0dce3;}
+#app .home-stat-card small{font-size:10px;line-height:1.2;color:#bfa0ae;overflow-wrap:anywhere;}
+.weekly-admin-status{padding:12px;border:1px solid var(--love-border);border-radius:16px;}
+@media(min-height:880px) and (max-width:767px){#app .real-home-shell{gap:12px;}#app .home-die-theater{min-height:210px;}#app .home-stat-card{padding:14px 5px;}}
+@media(min-width:900px){
+ main#app.loveroll-real-home{padding:28px 32px calc(96px + env(safe-area-inset-bottom));}
+ #app .real-home-shell{width:min(100%,1200px);min-height:calc(100dvh - 124px);grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr);grid-template-rows:auto 48px minmax(250px,1fr) auto;column-gap:38px;row-gap:16px;align-content:center;}
+ #app .home-ritual{grid-column:1;grid-row:1;}#app .home-weights{grid-column:1;grid-row:2;}
+ #app .home-die-theater{grid-column:1;grid-row:3;margin:0 -15px;}#app .home-die-platform{width:300px;height:300px;}
+ #app .home-roll-area{grid-column:1;grid-row:4;}
+ #app .home-challenge-stats{grid-column:2;grid-row:1/3;align-self:end;padding:25px 8px;}
+ #app .home-next-month{grid-column:2;grid-row:3;align-self:center;min-height:145px;grid-template-columns:90px 1fr 36px;}
+ #app .home-calendar-icon svg{width:85px;height:85px;}
+ #app .home-stats-grid{grid-column:2;grid-row:4;align-self:end;min-height:145px;}
+ #app .home-stat-card span,#app .home-challenge-stats small{font-size:13px;}#app .home-stat-card small{font-size:12px;}
+ #app .home-ritual h2{font-size:48px;}#app .home-weight b,#app .home-weight span{font-size:13px;}
 }
-.loveroll-real-home .home-brand b{
- color:#fff5fa;font:italic 800 clamp(1.75rem,6vw,2.7rem)/.97 Georgia,serif;
- letter-spacing:-.075em;text-shadow:0 0 14px #f0277a55;
- white-space:nowrap;
-}
-.loveroll-real-home .home-brand em{font-style:normal;color:#fd368d}
-.loveroll-real-home .home-brand small{
- color:#eeb5d0;font-weight:900;letter-spacing:.14em;
- font-size:clamp(.48rem,1.7vw,.68rem);white-space:nowrap;margin-left:4px;margin-top:4px;
-}
-.loveroll-real-home .home-brand-actions{display:flex;gap:7px}
-.loveroll-real-home .home-brand-actions button{
- display:grid;place-items:center;min-width:45px;height:45px;padding:0;
- border-radius:13px;border:1px solid #d85b8e9c;
- background:linear-gradient(140deg,#3d162c,#120816);
- box-shadow:inset 0 1px #ffc2db30,0 0 15px #df378333;
- font-size:1.32rem;color:#ffd2e5;
-}
-.loveroll-real-home .home-brand-actions button b{
- width:7px;height:7px;background:#fe3c97;border-radius:50%;
- position:absolute;margin:-23px 0 0 20px;box-shadow:0 0 6px #ff3b96;
-}
-.loveroll-real-home .real-home-shell{
- flex:1;min-height:0;
- margin:0 auto calc(80px + env(safe-area-inset-bottom));
- width:min(100%,860px);
- display:grid;grid-template-rows:
-  minmax(52px,.85fr)
-  minmax(32px,.48fr)
-  minmax(112px,2.3fr)
-  minmax(61px,.9fr)
-  minmax(68px,1.05fr)
-  minmax(67px,1fr)
-  minmax(88px,1.35fr);
- row-gap:clamp(3px,.65dvh,7px);
-}
-.loveroll-real-home .home-ritual{text-align:center;display:flex;justify-content:center;flex-direction:column}
-.loveroll-real-home .home-ritual>span{
- color:#ffb2d5;font-size:clamp(.61rem,2.1vw,.86rem);font-weight:800;letter-spacing:.21em;
-}
-.loveroll-real-home .home-ritual h2{
- font-family:Georgia,serif;color:#fff8fc;font-size:clamp(1.35rem,5.15vw,2.2rem);
- letter-spacing:-.035em;line-height:1.07;margin:2px 0 0;
-}
-.loveroll-real-home .home-ritual p{font-size:clamp(.72rem,2.5vw,.95rem);margin:0;color:#ffe2ef}
-.loveroll-real-home .home-weights{
- display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(3px,1.1vw,9px);align-items:stretch;
-}
-.loveroll-real-home .home-weight{
- display:flex;align-items:center;justify-content:center;min-width:0;gap:clamp(2px,.5vw,5px);
- color:#fff2f9;background:linear-gradient(145deg,#430a29dc,#190514dd);
- border:1px solid #f7619bb0;border-radius:13px;
- box-shadow:0 0 11px #fa267344,inset 0 1px #ffc8e143;
- padding:3px 2px;
-}
-.loveroll-real-home .home-pip-svg{
- display:block;flex:none;width:clamp(15px,3.8vw,26px);height:clamp(15px,3.8vw,26px);
-}
-.loveroll-real-home .home-weight b{font-size:clamp(.58rem,2.1vw,.82rem)}
-.loveroll-real-home .home-weight span{font-size:clamp(.51rem,1.75vw,.78rem)}
-.loveroll-real-home .home-die-theater{
- position:relative;min-height:0;overflow:hidden;
- display:grid;place-items:center;isolation:isolate;border-radius:27px;
- background:
-  radial-gradient(ellipse at 50% 79%,#fe2b805c,transparent 44%),
-  radial-gradient(ellipse at 50% 28%,#6b0e4080,transparent 67%),
-  repeating-radial-gradient(ellipse at 48% 100%,transparent 0 21px,#d3276b1b 23px 26px,transparent 29px 51px);
-}
-.loveroll-real-home .home-die-theater:before{
- content:'';position:absolute;inset:15% -8% -44%;z-index:-1;
- background:radial-gradient(ellipse at 48% 42%,#9c0e41 5%,#2b0813 31%,#6a1735 35%,#150610 48%,#4a0926 56%,#1a0411 73%);
- border-radius:42%;transform:rotate(-9deg);filter:blur(7px);
-}
-.loveroll-real-home .home-die-theater:after{
- content:'♡';position:absolute;right:6%;top:4%;pointer-events:none;
- color:#ff3c9677;font:5rem Georgia,serif;text-shadow:0 0 16px #ff369c,0 0 26px #ff3376;
-}
-.loveroll-real-home .home-satin-orbit{
- position:absolute;width:min(85vw,350px);height:48%;bottom:-3%;
- border:2px solid #ff3e8d95;border-radius:50%;transform:rotate(-12deg);
- box-shadow:0 0 18px #f62987bb,inset 0 0 14px #fc327566;pointer-events:none
-}
-.loveroll-real-home .home-die-platform{
- width:min(100%,240px);height:100%;position:relative;display:grid;place-items:center;
- filter:drop-shadow(0 13px 12px #12000f) drop-shadow(0 0 20px #ff2b8d66);
-}
-.loveroll-real-home .home-die-platform .dice-canvas{
- display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;
-}
-.loveroll-real-home .home-die-platform .dice-fallback{
- font:900 4rem Georgia,serif;color:#ff89c2;text-shadow:0 0 30px #fb1e90;
-}
-.loveroll-real-home .home-die-platform:has(canvas[data-spinning="true"]){
- filter:drop-shadow(0 0 24px #f62089a0)
-}
-.loveroll-real-home .home-roll-area{display:flex;flex-direction:column;min-height:0;gap:2px}
-.loveroll-real-home .home-roll-button{
- width:85%;margin:auto auto 0;min-height:0;flex:1;max-height:55px;
- color:white;font-weight:900;font-size:clamp(.85rem,3.2vw,1.16rem);
- border:1px solid #ffb8d5!important;border-radius:999px!important;
- background:linear-gradient(155deg,#fe78ad,#f8378b 52%,#c20a63)!important;
- box-shadow:0 0 14px #f53c9a88,inset 0 2px #ffe4efa8!important;text-shadow:0 1px 2px #700034;
-}
-.loveroll-real-home .home-roll-button.is-used{
- opacity:.81;color:#f9d1e6;background:linear-gradient(155deg,#5f2948,#431432)!important;
-}
-.loveroll-real-home .home-roll-area p{
- margin:1px 0 0;text-align:center;color:#e8b8d1;
- font-size:clamp(.57rem,1.85vw,.72rem);line-height:1.13;min-height:15px
-}
-.loveroll-real-home .home-challenge-stats{
- display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;
- border:1px solid #ec36818f;border-radius:17px;
- background:linear-gradient(110deg,#2d0a1ec7,#0f0718cb 54%,#2b0920);
- box-shadow:inset 0 1px #fb88ba44;
-}
-.loveroll-real-home .home-challenge-stats>div{
- display:grid;grid-template-columns:30% 70%;align-items:center;grid-template-rows:auto auto;
- padding:3px 5px;min-width:0;border-right:1px solid #9d39635a;
-}
-.loveroll-real-home .home-challenge-stats>div:last-child{border:0}
-.loveroll-real-home .home-challenge-stats span{
- grid-row:1/3;text-align:center;font-size:clamp(1.2rem,3.8vw,1.9rem);color:#ff70ac;
-}
-.loveroll-real-home .home-challenge-stats strong{
- display:block;font:800 clamp(1.15rem,4.4vw,2.15rem)/1 Georgia,serif;text-align:center;color:#fff0f8
-}
-.loveroll-real-home .home-challenge-stats small{
- grid-column:2;font-size:clamp(.55rem,1.75vw,.72rem);text-align:center;line-height:1.13;color:#ead3df
-}
-.loveroll-real-home .home-next-month{
- display:grid;grid-template-columns:19% 1fr 21%;align-items:center;text-align:left;
- min-height:0;padding:4px 10px;border:1px solid #e76e9baa!important;border-radius:18px;
- background:linear-gradient(110deg,#3c102cb3,#1d091ccf)!important;color:#fff1f8;
- box-shadow:inset 0 1px #ffe0f63a,0 0 12px #e72c7f22!important;
-}
-.loveroll-real-home .home-next-month>span:nth-child(2){display:flex;flex-direction:column;min-width:0}
-.loveroll-real-home .home-next-month small{font:700 clamp(.78rem,2.7vw,1.11rem) Georgia,serif}
-.loveroll-real-home .home-next-month strong{font:800 clamp(1.25rem,4.8vw,2.25rem)/1.02 Georgia,serif;color:#fc4ea3}
-.loveroll-real-home .home-next-month em{font:normal clamp(.63rem,1.85vw,.8rem) system-ui;color:#e7bbd2}
-.loveroll-real-home .home-calendar-icon{color:#ff6bb1;display:grid;place-items:center;font-size:1.65rem}
-.loveroll-real-home .home-calendar-icon b{font-size:1.3rem;grid-area:1/1;text-shadow:0 0 9px #fc3d98}
-.loveroll-real-home .home-calendar-icon::first-letter{color:#ff78b1}
-.loveroll-real-home .home-gift-icon{text-align:right;font-size:clamp(1.75rem,5vw,2.7rem);filter:drop-shadow(0 0 13px #ee3387)}
-.loveroll-real-home .home-shortcuts{
- display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(4px,1.3vw,12px);min-height:0
-}
-.loveroll-real-home .home-shortcut{
- display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;
- padding:4px 3px;color:#fff1f9;text-align:center;
- border:1px solid #df478d8a!important;border-radius:17px;
- background:linear-gradient(145deg,#48152ecb,#140a19e8)!important;
- box-shadow:inset 0 1px #ffe2f134,0 4px 13px #0a0614aa!important;
-}
-.loveroll-real-home .home-shortcut-icon{
- font-size:clamp(1.5rem,4.5vw,2.1rem);line-height:1.1;
- filter:drop-shadow(0 0 9px #f62a8a)
-}
-.loveroll-real-home .home-shortcut-name{
- font:700 clamp(.75rem,2.4vw,1.07rem)/1.05 Georgia,serif;
- color:#fff5fb;
-}
-.loveroll-real-home .home-shortcut small{
- font-size:clamp(.55rem,1.65vw,.7rem);line-height:1.15;color:#e7c5d7;max-width:100%
-}
-.loveroll-real-home .nav{
- position:fixed;bottom:0;left:0;right:0;z-index:5000;
- background:linear-gradient(180deg,#200918f5,#08040dec);
- border-top:1px solid #fa66a04d;box-shadow:0 -8px 18px #18050f;
-}
-.loveroll-real-home .nav-inner button.active{
- background:linear-gradient(145deg,#b42168,#611d43)!important;
- border:1px solid #ed458dd4;box-shadow:inset 0 1px #ffc4e080,0 0 13px #f32b8c55!important
-}
-@media(max-height:735px){
- .loveroll-real-home .home-brandbar{height:58px}
- .loveroll-real-home .real-home-shell{
-  margin-bottom:calc(72px + env(safe-area-inset-bottom));
-  grid-template-rows:minmax(42px,.85fr) minmax(29px,.55fr) minmax(100px,2.5fr) minmax(51px,.85fr) minmax(56px,1fr) minmax(55px,1fr) minmax(75px,1.4fr);
-  row-gap:3px;
- }
- .loveroll-real-home .home-roll-area p{font-size:.57rem}
- .loveroll-real-home .home-next-month strong{font-size:1.25rem}
- .loveroll-real-home .nav button{min-height:55px}
-}
-@media(max-width:360px){
- .loveroll-real-home .home-brand-actions button{min-width:38px;height:40px}
- .loveroll-real-home .home-weight{gap:1px}
- .loveroll-real-home .home-pip-svg{width:14px;height:14px}
- .loveroll-real-home .home-shortcut small{font-size:.52rem}
-}
-
-.loveroll-real-home .home-notification-popover{
- position:fixed;z-index:4999;top:65px;right:12px;width:min(340px,92vw);
- padding:15px;border:1px solid #f58cbac7;border-radius:17px;
- background:linear-gradient(145deg,#501d3c,#190817);
- box-shadow:0 14px 36px #090109ee;max-height:47dvh;overflow:auto;
-}
-.loveroll-real-home .home-notification-popover strong{color:#ffcbe1}
-.loveroll-real-home .home-notification-popover p{
- font-size:.8rem;color:#f0cade;padding:7px 0;border-bottom:1px solid #8a486850;
-}
-.loveroll-real-home .home-notification-popover button{width:100%;min-height:40px}
-.weekly-admin-status{border:1px solid #aa4d7899;border-radius:15px;
- background:linear-gradient(145deg,#3c1933,#1f1026);padding:11px 13px;margin:10px 0}
-.weekly-admin-status p{font-size:.82rem;margin:5px 0;color:#f4d2e2}
-.weekly-admin-status strong{color:#ffa2cc}
-.real-home-shell .home-die-platform{aspect-ratio:1;height:min(100%,240px)}
-
-.loveroll-real-home .home-shortcut-icon svg{
- display:block;width:clamp(30px,5.3vw,46px);height:clamp(30px,5.3vw,46px);
- filter:drop-shadow(0 0 5px #ff499a) drop-shadow(0 0 10px #ef177466);
-}
-.loveroll-real-home .home-calendar-icon svg{
- width:clamp(36px,6vw,62px);height:clamp(36px,6vw,62px);
- filter:drop-shadow(0 0 10px #f93593);
-}
-.loveroll-real-home .home-gift-icon svg{
- width:clamp(42px,8vw,82px);height:clamp(42px,8vw,82px);
- filter:drop-shadow(0 0 11px #f3268f);
-}
-.loveroll-real-home .home-shortcut-icon{height:clamp(34px,5.7vw,48px);display:grid;place-items:center}
-
-/* Android edge-to-edge status bar: safe area applies only to true couple home.
-   Non-overlay Chrome receives a little extra breathing room, never hidden content. */
-@media (max-width:650px){
- main#app.loveroll-real-home{
-  padding-top:max(32px,env(safe-area-inset-top,0px))!important;
- }
- .loveroll-real-home .home-brandbar{
-  height:clamp(52px,7.3dvh,70px);
-  padding-top:2px;
- }
- .loveroll-real-home .home-brand b{font-size:clamp(1.6rem,5.4vw,2.3rem)}
- .loveroll-real-home .real-home-shell{
-  grid-template-rows:minmax(45px,.85fr) minmax(30px,.48fr)
-   minmax(100px,2.3fr) minmax(55px,.9fr) minmax(61px,1.05fr)
-   minmax(59px,1fr) minmax(71px,1.35fr);
- }
-}
-@media (max-width:650px) and (max-height:740px){
- main#app.loveroll-real-home{padding-top:max(28px,env(safe-area-inset-top,0px))!important}
- .loveroll-real-home .real-home-shell{
-  grid-template-rows:minmax(36px,.8fr) minmax(27px,.48fr)
-   minmax(91px,2.4fr) minmax(46px,.85fr) minmax(49px,1fr)
-   minmax(49px,1fr) minmax(62px,1.35fr);
-  margin-bottom:calc(69px + env(safe-area-inset-bottom));
- }
-}
-/* Don't show the fallback face through a transparent WebGL canvas.
-   Also prevent the server result flashing as text before the animation finishes. */
-.loveroll-real-home .home-die-platform.webgl-ready .dice-fallback,
-.loveroll-real-home .home-die-platform:has(canvas[data-spinning="true"]) .dice-fallback{
- visibility:hidden!important;opacity:0!important;
-}
-.loveroll-real-home .home-stats-grid{
- display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
- gap:clamp(4px,1.2vw,11px);min-height:0;
-}
-.loveroll-real-home .home-stat-card{
- min-width:0;min-height:0;display:flex;flex-direction:column;
- align-items:center;justify-content:center;gap:3px;
- border:1px solid #fa5899aa;border-radius:clamp(12px,3.6vw,19px);
- background:radial-gradient(ellipse at 50% 0%,#96306066,transparent 70%),
-  linear-gradient(150deg,#47142edb,#1a0a1ddf);
- box-shadow:inset 0 1px #ffc9e247,0 0 12px #f5367a22;
- padding:4px 2px;color:#ffe4f1;text-align:center;
- overflow:hidden;
-}
-.loveroll-real-home .home-stat-card strong{
- color:#ff77b8;font-size:clamp(.94rem,3.2vw,1.4rem);
- line-height:1.04;font-weight:850;
- max-width:100%;overflow-wrap:anywhere;
- text-shadow:0 0 15px #fd499566;
-}
-.loveroll-real-home .home-stat-card span{
- color:#fff2f8;font-size:clamp(.57rem,1.95vw,.87rem);
- font-weight:750;line-height:1.08;
-}
-.loveroll-real-home .home-stat-card small{
- color:#e9bcd4;font-size:clamp(.49rem,1.62vw,.7rem);
- line-height:1.06;overflow-wrap:anywhere;
-}
-
-/* S25 Ultra: center the real WebGL die within the satin theater instead of
-   letting its bottom edge disappear behind the weekly roll button. */
-.loveroll-real-home .home-die-theater{
- align-items:center;justify-items:center;
-}
-.loveroll-real-home .home-die-platform{
- justify-self:center;align-self:center;
- transform:translate3d(0,-11%,0);
- transform-origin:50% 50%;
-}
-@media (max-width:650px) and (max-height:740px){
- .loveroll-real-home .home-die-platform{transform:translate3d(0,-8%,0)}
-}
-
-/* LoveRoll v92 — simpler connected Home, unchanged weekly CTA dimensions. */
-/* The global header is no longer rendered on Home. Keep the weekly content
-   naturally at the top; no placeholder height or additional scroll region. */
-main#app.loveroll-real-home .real-home-shell{min-width:0!important}
-/* Text-only label: same 85% wide, same flexible row and max 55px height. */
-main#app.loveroll-real-home .home-roll-button.is-used{
- font-size:clamp(.69rem,2.45vw,.89rem)!important;
- line-height:1.15!important;white-space:normal!important;
- text-wrap:balance;overflow-wrap:normal;
- padding:5px clamp(8px,2vw,14px)!important;
-}
-/* Center the gift on its real SVG box, not the text line baseline.
-   A tiny downward optical correction balances the calendar icon at left. */
-main#app.loveroll-real-home .home-next-month .home-gift-icon{
- display:grid!important;place-items:center!important;
- align-self:stretch!important;justify-self:stretch!important;
- min-width:0!important;min-height:0!important;line-height:0!important;
- text-align:center!important;
-}
-main#app.loveroll-real-home .home-next-month .home-gift-icon svg{
- display:block!important;justify-self:center!important;align-self:center!important;
- transform:translateY(3px);
-}
+@media(prefers-reduced-motion:reduce){#app .real-home-shell *{scroll-behavior:auto;animation:none;transition:none;}}

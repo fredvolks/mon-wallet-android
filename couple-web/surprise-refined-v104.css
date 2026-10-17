@@ -15,14 +15,14 @@ main#app.loveroll-surprise-page .surprise-header.surprise-new-header{
 }
 main#app.loveroll-surprise-page .surprise-new-header .surprise-eyebrow{
  font:850 clamp(.66rem,2vw,.83rem)/1.12 system-ui,sans-serif!important;
- color:#f399be!important;letter-spacing:.15em!important;
+ color:#f399be;letter-spacing:.15em!important;
 }
 main#app.loveroll-surprise-page .surprise-new-header h2{
  margin:0!important;font:800 clamp(1.55rem,5vw,2.2rem)/1.05 Georgia,serif!important;
- color:#fff8fc!important;text-shadow:none!important;
+ color:#fff8fc;text-shadow:none;
 }
 main#app.loveroll-surprise-page .surprise-new-header p{
- margin:0!important;color:#e8c3d6!important;
+ margin:0!important;color:#e8c3d6;
  font-size:clamp(.7rem,2.3vw,.91rem)!important;line-height:1.13!important;
 }
 main#app.loveroll-surprise-page .surprise-premium-view>.surprise-month{
@@ -32,7 +32,7 @@ main#app.loveroll-surprise-page .surprise-premium-view>.surprise-month{
  box-sizing:border-box!important;overflow:hidden!important;
  padding:clamp(10px,1.7dvh,17px)!important;
  gap:clamp(5px,.65dvh,10px)!important;
- border-radius:clamp(20px,4vw,30px)!important;
+ border-radius:clamp(20px,4vw,30px);
 }
 main#app.loveroll-surprise-page .surprise-month>.surprise-d20-scene{
  flex:1 1 auto!important;min-height:70px!important;
@@ -65,11 +65,11 @@ main#app.loveroll-surprise-page .surprise-special>.surprise-headline{flex:0 0 au
 main#app.loveroll-surprise-page .surprise-special>p{flex:0 0 auto!important}
 main#app.loveroll-surprise-page .surprise-event-card{
  min-width:0!important;height:100%!important;min-height:0!important;
- background:linear-gradient(140deg,#4a1131,#23091f)!important;
+ background:linear-gradient(140deg,#4a1131,#23091f);
 }
 main#app.loveroll-surprise-page .surprise-event-chevron{
  position:static!important;font:850 clamp(.88rem,3vw,1.3rem)/1 sans-serif!important;
- color:#ffa4ce!important;
+ color:#ffa4ce;
 }
 main#app.loveroll-surprise-page .surprise-bottom-info{
  flex:0 0 auto!important;min-height:0!important;max-height:24px!important;
@@ -79,8 +79,8 @@ main#app.loveroll-surprise-page .surprise-invite-inside{
  box-sizing:border-box!important;flex:0 1 auto!important;min-height:0!important;
  display:flex!important;flex-direction:column!important;
  padding:clamp(7px,1.1dvh,13px)!important;gap:clamp(3px,.5dvh,7px)!important;
- border:1px solid #da6b9ca3!important;border-radius:16px!important;
- background:linear-gradient(145deg,#5a153a,#270b26da)!important;
+ border:1px solid #da6b9ca3!important;border-radius:16px;
+ background:linear-gradient(145deg,#5a153a,#270b26da);
 }
 main#app.loveroll-surprise-page .surprise-invite-heading{
  color:#ff9dca;font-weight:850;text-align:center;
@@ -142,7 +142,7 @@ main#app.loveroll-surprise-page .surprise-event-editor{
  width:min(93vw,460px)!important;display:flex!important;flex-direction:column!important;
  gap:11px!important;padding:clamp(16px,3vw,24px)!important;
  max-height:min(90dvh,700px)!important;overflow-y:auto!important;
- border-radius:23px!important;
+ border-radius:23px;
 }
 main#app.loveroll-surprise-page .surprise-edit-top{
  display:flex;align-items:center;justify-content:space-between;
@@ -158,9 +158,9 @@ main#app.loveroll-surprise-page .surprise-event-editor label{
 }
 main#app.loveroll-surprise-page .surprise-event-editor input{
  box-sizing:border-box;width:100%!important;min-height:47px!important;
- padding:9px 13px!important;border-radius:12px!important;
- border:1px solid #e77eb1!important;background:#240a20!important;
- color:#fff1f9!important;font-size:1rem!important;
+ padding:9px 13px!important;border-radius:12px;
+ border:1px solid #e77eb1!important;background:#240a20;
+ color:#fff1f9;font-size:1rem!important;
 }
 main#app.loveroll-surprise-page .surprise-event-editor input::-webkit-calendar-picker-indicator{
  filter:invert(1);opacity:.9;
@@ -173,12 +173,12 @@ main#app.loveroll-surprise-page .surprise-edit-actions{
  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;
 }
 main#app.loveroll-surprise-page .surprise-edit-actions button{
- min-height:45px!important;margin:0!important;border-radius:15px!important;
+ min-height:45px!important;margin:0!important;border-radius:15px;
  padding:7px!important;font-size:.9rem!important;
 }
 main#app.loveroll-surprise-page .surprise-secondary,
 main#app.loveroll-surprise-page .surprise-edit-close{
- border:1px solid #c975a0!important;background:#34112e!important;color:#ffe2ed!important;
+ border:1px solid #c975a0!important;background:#34112e;color:#ffe2ed;
 }
 main#app.loveroll-surprise-page .surprise-edit-close{
  border-radius:12px;min-width:36px;min-height:36px;
@@ -368,7 +368,7 @@ main#app.loveroll-surprise-page .surprise-host-winner{
   flex:1 1 0!important;min-height:40px!important;
  }
  main#app.loveroll-surprise-page .surprise-host-option{
-  min-height:38px!important;padding:3px!important;border-radius:12px!important;
+  min-height:38px!important;padding:3px!important;border-radius:12px;
  }
  main#app.loveroll-surprise-page .surprise-host-legend{
   width:min(96%,500px);grid-template-columns:minmax(0,1fr) 19px minmax(0,1fr);gap:3px;
@@ -392,7 +392,7 @@ main#app.loveroll-surprise-page .surprise-event-editor #surprise-event-date{
  font-variant-numeric:tabular-nums;caret-color:#ff91be;
 }
 main#app.loveroll-surprise-page .surprise-event-editor .surprise-date-hint{
- display:block;color:#f3b6d2!important;font-size:clamp(.75rem,2.5vw,.86rem)!important;
+ display:block;color:#f3b6d2;font-size:clamp(.75rem,2.5vw,.86rem)!important;
  margin:-5px 1px 2px!important;
 }
 main#app.loveroll-surprise-page .surprise-event-editor .surprise-edit-actions{

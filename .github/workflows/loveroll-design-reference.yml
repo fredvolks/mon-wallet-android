@@ -1,0 +1,31 @@
+name: LoveRoll design 2 verification
+on:
+  pull_request:
+    branches: [des-a-deux-apk-20261013]
+    paths: ['couple-web/**', '.github/workflows/loveroll-design-reference.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  design:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test couple-web/*.test.mjs
+      - run: node couple-web/check-shipped-js.cjs
+      - run: npm install --no-save playwright@1.56.0
+      - run: npx playwright install --with-deps chromium
+      - name: Production UI at five device sizes, real WebGL, safe simulated couple
+        run: |
+          python3 -m http.server 8765 -d couple-web > /tmp/loveroll-design-http.log 2>&1 &
+          node couple-web/design-reference-browser-check.cjs
+      - name: Preserve screenshots and geometry even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LoveRoll-design-2
+          path: design-captures/

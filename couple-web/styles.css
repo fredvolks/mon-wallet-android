@@ -88,7 +88,7 @@ textarea{min-height:95px}label{font-size:.88rem;color:#eed3e4}
 .checkline{display:flex!important;align-items:flex-start;gap:9px;font-size:.83rem}
 .checkline input[type=checkbox]{width:21px;height:21px;min-height:21px;margin:0;accent-color:#ff519c;flex-shrink:0}
 .login-divider{text-align:center;margin:20px 0 9px;color:#d9b9cb}
-.tiny-note{font-size:.76rem!important;color:#b9a3b6!important;margin:11px 0}
+.tiny-note{font-size:.76rem!important;color:#b9a3b6;margin:11px 0}
 @media(max-width:360px){.landing-features{grid-template-columns:1fr}.brand-mark{width:112px;height:109px}}
 @media(min-width:650px){.landing-hero{padding:35px 35px}.landing-features{gap:14px}.feature-card{padding:19px}}
 
@@ -152,7 +152,7 @@ body:has(.marketing-shell){background:#0b0510;min-height:100dvh}
 .love-trust>span{display:flex;align-items:center;gap:6px;flex-direction:column;text-align:center}
 .love-trust svg{width:24px;height:24px}
 .love-trust small{font-size:.64rem;color:#ecd2e2;line-height:1.2}
-.love-legal{margin:15px 0 0!important;font-size:.68rem!important;color:#b49aac!important}
+.love-legal{margin:15px 0 0!important;font-size:.68rem!important;color:#b49aac}
 @media(max-width:380px){.love-scene{height:231px}.love-wordmark{font-size:2.85rem}.love-hero-art{top:55px}.love-feature{padding:12px 11px}.love-feature h3{font-size:.93rem}.love-benefit-icon{height:39px;width:39px}.love-benefit small{font-size:.56rem}}
 @media(min-width:650px){.love-hero{padding-inline:35px}.love-hero-copy{text-align:center}.love-scene{height:310px}.love-hero-art{top:57px;width:540px}.love-hero-copy h1 em{display:inline}.love-features{gap:16px;padding-inline:25px}}
 @media(prefers-reduced-motion:reduce){.love-cta-group button{transition:none}}
@@ -277,7 +277,7 @@ button.love-answer-dismiss{margin-top:15px;width:100%;background:transparent;
 
 
 /* Creator-only LoveRoll challenge catalogue and precise offer -> receive label. */
-.challenge-present{border-color:#bb5f98!important;background:linear-gradient(145deg,#35162f,#1f1027)!important}
+.challenge-present{border-color:#bb5f98;background:linear-gradient(145deg,#35162f,#1f1027)}
 .challenge-roles{color:#ffd6eb;font-weight:850;letter-spacing:.04em;font-size:.85rem;
  border:1px solid #ab558c;background:linear-gradient(95deg,#5e244b,#2e1733);
  border-radius:12px;padding:12px 14px;margin:11px 0 13px;line-height:1.6}
@@ -635,7 +635,7 @@ button:focus-visible,.nav button:focus-visible,summary:focus-visible{
 .premium-invite-hero h2{font-size:clamp(1.3rem,5.4vw,2rem);margin:8px auto 9px;
  max-width:440px;letter-spacing:-.04em}
 .premium-invite-hero>p{max-width:430px;margin:0 auto 10px;font-size:.87rem;line-height:1.45}
-.premium-invite-note{font-size:.74rem!important;color:#f0b5d0!important}
+.premium-invite-note{font-size:.74rem!important;color:#f0b5d0}
 .premium-auth-panel{padding:17px;margin:10px 0 12px}
 .premium-auth-panel>h2{font-size:clamp(1.22rem,4.6vw,1.6rem);margin:7px 0 4px}
 .premium-auth-panel>p{font-size:.81rem;margin:5px 0 12px}
@@ -690,8 +690,8 @@ button:focus-visible,.nav button:focus-visible,summary:focus-visible{
 .calendar .calendar-weekday{display:grid;place-items:center;min-height:28px;
  color:#f7b5d7;font-weight:800;font-size:.76rem;text-transform:uppercase}
 .calendar button.today{outline:2px solid #ffd3e9;outline-offset:-3px}
-.calendar button.selected{background:linear-gradient(135deg,#f84e99,#8e135b)!important;
- border:2px solid #ffd8eb!important;color:#fff!important;font-weight:800}
+.calendar button.selected{background:linear-gradient(135deg,#f84e99,#8e135b);
+ border:2px solid #ffd8eb!important;color:#fff;font-weight:800}
 .calendar button.today.selected{box-shadow:0 0 13px #ff529a99}
 .settings-birthday-edit{margin:10px 0;padding:10px;border:1px solid #a75d83;
  border-radius:13px;background:#271224}

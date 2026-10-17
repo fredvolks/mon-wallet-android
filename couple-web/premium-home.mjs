@@ -112,7 +112,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const weeklyTitle=ready?weekly.face+' soirée'+(weekly.face===1?'':'s')+' de défi':'Prêts pour votre prochain rituel ?';
  const weeklySubtitle=ready?'cette semaine':'Brassez votre dé hebdomadaire';
  const statistic=(value,label,subtitle,cls='')=>
-  '<div class="home-stat-card '+cls+'"><strong>'+escape(value)+'</strong>'+
+  '<div class="home-stat-card '+cls+'"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
   '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div>';
  const nameA=String(members[0]?.name||'Joueur 1').split(' ')[0];
  const nameB=String(members[1]?.name||'Joueur 2').split(' ')[0];
@@ -120,7 +120,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
   coupleStats.sensualPercent+' / '+coupleStats.sexualPercent+' %';
  const pending=rolling||disabled;
  return '<section class="real-home-shell" aria-label="Tableau de bord du couple">'+
-   '<div class="home-ritual"><span>NOTRE RITUEL DE LA SEMAINE</span>'+
+   '<div class="home-ritual"><div class="ritual-brand" aria-label="LoveRoll"><i aria-hidden="true">♡</i><b>LoveRoll</b></div><span>NOTRE RITUEL DE LA SEMAINE</span>'+
    '<h2>'+escape(weeklyTitle)+'</h2><p>'+weeklySubtitle+'</p></div>'+
    '<div class="home-weights" aria-label="Pondération des six faces du dé">'+weights+'</div>'+
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+
@@ -145,11 +145,11 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
    '<div><span>♡</span><strong>'+shown(stats.forFirst)+'</strong><small>Attribués à '+memberA+'<br>Restants : '+shown(stats.remainingFirst)+'</small></div>'+
    '<div><span>♡</span><strong>'+shown(stats.forSecond)+'</strong><small>Attribués à '+memberB+'<br>Restants : '+shown(stats.remainingSecond)+'</small></div></div>'+
    '<button class="home-next-month" data-action="tab:special" type="button">'+
-   '<span class="home-calendar-icon" aria-hidden="true">'+iconSvg('dates')+'</span>'+ 
+   '<span class="home-calendar-icon home-present" aria-hidden="true">'+iconSvg('surprises')+'</span>'+ 
    '<span><small>'+(activity?'Surprise du mois tirée':'Surprise du mois disponible')+'</small>'+
    '<strong>'+(activity?'Voir notre résultat':'Brasser notre surprise')+'</strong>'+
    '<em>'+(activity?'Prochaine surprise : '+escape(m.label):'Un tirage commun ce mois-ci')+'</em></span>'+
-   '<span class="home-gift-icon" aria-hidden="true">'+iconSvg('surprises')+'</span></button>'+ 
+   '<span class="home-gift-icon" aria-hidden="true">›</span></button>'+ 
    '<div class="home-stats-grid" aria-label="Statistiques réelles du couple">'+
    statistic(String(coupleStats.completed),'Défis réalisés ce mois','Défis complétés par le couple','completed')+
    statistic(coupleStats.byPartner.join(' / '),'Répartition',nameA+' / '+nameB,'partners')+

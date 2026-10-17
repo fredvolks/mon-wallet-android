@@ -29,14 +29,14 @@ test('JSON accepts screenshot card 40 her->him and both / both without renumberi
     description:'Un moment à deux après accord des partenaires.',
     timer_minutes:id===41?5:null,drawer_role,recipient_role};
  }
- assert.equal(validateEveningLibrary(a),a);
+ assert.deepEqual(validateEveningLibrary(a),a);
  assert.equal(a.cards[39].drawer_role,'her');
  assert.equal(a.cards[39].recipient_role,'him');
  const old=structuredClone(a);
  old.cards=old.cards.slice(0,35);
  old.cards[0].drawer_role='owner';
  old.cards[0].recipient_role='partner';
- assert.equal(validateEveningLibrary(old),old);
+ assert.deepEqual(validateEveningLibrary(old),old);
 });
 test('invalid card genders are rejected before sending to server',()=>{
  const invalid=buildEveningLibrary('SEXUEL');

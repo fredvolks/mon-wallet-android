@@ -108,7 +108,7 @@ main#app.loveroll-evening-page .evening-step.two .evening-choice{
 main#app.loveroll-evening-page .evening-step.two .evening-choice-btn{
  flex:1 1 0!important;max-width:210px;
  min-height:34px!important;height:100%;
- border-radius:999px!important;
+ border-radius:999px;
 }
 main#app.loveroll-evening-page .evening-step.two .evening-die-row{
  grid-row:2;min-width:0;min-height:0;
@@ -169,7 +169,7 @@ main#app.loveroll-evening-page .evening-step.two .evening-roll-actions{
 main#app.loveroll-evening-page .evening-step.two .evening-roll-actions button{
  display:grid!important;place-items:center;margin:0!important;
  width:100%!important;min-width:0!important;min-height:0!important;
- padding:4px 9px!important;border-radius:16px!important;
+ padding:4px 9px!important;border-radius:16px;
  font-size:clamp(.8rem,2.8vw,1.07rem)!important;
 }
 main#app.loveroll-evening-page .evening-step.two .evening-roll-actions .evening-queue-open-btn{
@@ -177,7 +177,7 @@ main#app.loveroll-evening-page .evening-step.two .evening-roll-actions .evening-
  background:linear-gradient(120deg,#4e1232b3,#230a20dc);
 }
 main#app.loveroll-evening-page .evening-step.two .evening-roll-actions .evening-primary:disabled{
- opacity:.45!important;box-shadow:none!important;cursor:not-allowed!important;
+ opacity:.45!important;box-shadow:none;cursor:not-allowed!important;
 }
 main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.two{
  justify-content:center!important;
@@ -185,7 +185,7 @@ main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.tw
 main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.two .evening-progress,
 main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.two .evening-play{display:none!important}
 main#app.loveroll-evening-page .evening-premium-view.is-waiting .evening-step.two .evening-step-label small{
- font-size:clamp(.68rem,2.45vw,.94rem)!important;color:#ffb7d8!important;
+ font-size:clamp(.68rem,2.45vw,.94rem)!important;color:#ffb7d8;
  line-height:1.16!important;
 }
 @media(max-width:767px){

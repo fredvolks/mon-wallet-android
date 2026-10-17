@@ -48,22 +48,22 @@
 }
 .lr-dialog-actions button:active{transform:scale(.97)}
 .lr-dialog-cancel{
- background:linear-gradient(135deg,#340b28,#491330)!important;
- border:1px solid #db3c85!important;color:#ffacd2!important;
+ background:linear-gradient(135deg,#340b28,#491330);
+ border:1px solid #db3c85!important;color:#ffacd2;
 }
 .lr-dialog-accept{
- border:1px solid #ffd4e9!important;color:#fff!important;
- background:linear-gradient(115deg,#ff7ab6,#f53192 50%,#c71067)!important;
+ border:1px solid #ffd4e9!important;color:#fff;
+ background:linear-gradient(115deg,#ff7ab6,#f53192 50%,#c71067);
  box-shadow:0 4px 22px #ee36886e,inset 0 2px 0 #ffe8f180;
 }
-.lr-dialog-accept.lr-dialog-danger{background:linear-gradient(110deg,#c33b75,#a81658)!important}
+.lr-dialog-accept.lr-dialog-danger{background:linear-gradient(110deg,#c33b75,#a81658)}
 .lr-dialog-copy{margin:0 auto 12px;}
 .lr-dialog-copy textarea{
  display:block;box-sizing:border-box;width:100%;font-size:.82rem;color:#fff;
  padding:12px;resize:none;background:#210a20;border:1px solid #ad4c86;
  border-radius:12px;overflow-wrap:anywhere;
 }
-.lr-dialog-copy-hint{font-size:.72rem!important;color:#dda5c4!important;margin:6px 0!important}
+.lr-dialog-copy-hint{font-size:.72rem!important;color:#dda5c4;margin:6px 0!important}
 .lr-dialog-card :focus-visible{outline:2px solid #fff2bb;outline-offset:3px}
 @keyframes lrDialogAppear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:360px){

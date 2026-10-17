@@ -97,7 +97,7 @@ export function createClient(){
     throw Error('Connected Home still displays removed top header');
    const gift=await page.evaluate(()=>{
     const button=document.querySelector('.home-next-month')?.getBoundingClientRect();
-    const graphic=document.querySelector('.home-gift-icon svg')?.getBoundingClientRect();
+    const graphic=document.querySelector('.home-calendar-icon svg')?.getBoundingClientRect();
     return button&&graphic?{diff:(graphic.top+graphic.bottom)/2-(button.top+button.bottom)/2,
       graphicWidth:graphic.width,buttonHeight:button.height}:null;
    });

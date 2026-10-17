@@ -5,7 +5,7 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261016-person-rev
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261015-home92';
+import {premiumHomeHtml,nextMonday} from './premium-home.mjs?v=20261016-design115';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261016-d100114';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261016-person-review97';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
@@ -35,7 +35,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261015-no-toast87';
 
 
-const WEB_RELEASE='2026-10-16.114';
+const WEB_RELEASE='2026-10-16.115';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -197,6 +197,7 @@ document.addEventListener('keydown',event=>{
  }
 });
 
+let diceView=null;
 function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous deux'){
  const openerAction=document.activeElement?.dataset?.action||null;
  const draft=lastFormTab===state.tab?snapshotDraft():[];
@@ -219,8 +220,14 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   oldD100.closest('.love3d-stage'):null;
  const savedDispose=savedStage?oldD100.loveRollCleanup:null;
  if(savedStage)savedStage.remove();
- for(const dispose of diceCleanup)if(dispose!==savedDispose)dispose();
- diceCleanup=savedDispose?[savedDispose]:[];
+ // Keep settled WebGL canvases when this view only refreshes text/data.
+ // Signature includes all visual inputs; a new roll or changed result remounts.
+ const dieSignature=c=>['diceSides','face','diceUnrolled','diceMarkers','diceZoom','dicePreview'].map(k=>c.dataset[k]||'').join('|');
+ const settled=diceView===state.tab?[...root.querySelectorAll('canvas[data-dice-sides]')].map((canvas,index)=>({canvas,index,signature:dieSignature(canvas)})).filter(({canvas})=>canvas.loveRollDie&&canvas.loveRollCleanup&&canvas.dataset.spinning!=='true'):[];
+ const kept=new Set(settled.map(({canvas})=>canvas.loveRollCleanup));
+ if(savedDispose)kept.add(savedDispose);
+ for(const dispose of diceCleanup)if(!kept.has(dispose))dispose();
+ diceCleanup=[...kept];diceView=state.tab;
  const token=++renderToken;
  // Offer only after completing a NEW account. Never interrupt ordinary logins.
  if(connected&&state.installAfterSignup){
@@ -253,6 +260,14 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
    savedDispose();diceCleanup=diceCleanup.filter(dispose=>dispose!==savedDispose);
   }
  }
+ const freshCanvases=[...root.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c!==oldD100);
+ for(const {canvas,index,signature} of settled){
+  const fresh=freshCanvases[index];
+  if(fresh&&fresh.dataset.spinning!=='true'&&signature===dieSignature(fresh)){
+   fresh.replaceWith(canvas);
+   canvas.closest('.home-die-platform,.love3d-stage')?.classList.add('webgl-ready');
+  }else{canvas.loveRollCleanup();diceCleanup=diceCleanup.filter(fn=>fn!==canvas.loveRollCleanup);}
+ }
  restoreDraft(draft);
  bindActions();
  focusInlineLoveDialog(root,openerAction);
@@ -275,6 +290,10 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   }).catch(error=>console.warn('Animation 3D indisponible, résultat textuel maintenu',error));
  }
 }
+function navIcon(key,fallback){
+ const paths={home:'<path d="m3 10 9-7 9 7v10H3z M9 20v-7h6v7"/>',session:'<path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/>',special:'<path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6Z"/>',advent:'<path d="M3 9h18v4H3z M5 13v8h14v-8 M12 9v12"/><path d="M12 9C2 9 5 0 9 4L12 9c10 0 7-9 3-5Z"/>',settings:'<path d="m10 3 4 0 1 3 3 1 3 3-2 3 0 3-3 3-3-1-3 1-3-3 0-3-2-3 3-3 3-1Z"/><circle cx="12" cy="12" r="3"/>'};
+ return paths[key]?'<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[key]+'</svg>':fallback;
+}
 function nav(){
  const tabs=isSharedCoupleReady(state.coupleId,state.members)?
  [['home','⌂','Accueil'],['session','🎲','Soirée'],['special','✦','Surprise'],
@@ -282,7 +301,7 @@ function nav(){
  [['home','⌂','Accueil'],...(isLoveAdmin()?[['library','♡','Mes cartes']]:[]),
   ['personal-journal','♥','Calendrier'],['settings','⚙','Réglages']];
  return '<nav class="nav"><div class="nav-inner" style="grid-template-columns:repeat('+tabs.length+',minmax(0,1fr))">'+tabs.map(([key,icon,label])=>
- '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+icon+
+ '<button data-action="tab:'+key+'" class="'+((state.tab===key||(key==='session'&&state.tab==='evening-calendar')||(key==='special'&&state.tab==='occasions'))?'active':'')+'"><span>'+navIcon(key,icon)+
  '</span>'+safe(label)+'</button>').join('')+'</div></nav>';
 }
 function bindActions(){
@@ -3360,6 +3379,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261016-d100114',
+    navigator.serviceWorker.register('./service-worker.js?v=20261016-design115',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
