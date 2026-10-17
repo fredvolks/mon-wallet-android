@@ -27,6 +27,12 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      assert.equal(boxes[0].sides,'100','Evening podium must use the original D100');
      assert.ok(Math.abs(boxes[0].meshCenterX-boxes[0].sceneWidth/2)<=2,'D100 mesh is not centered on the podium '+JSON.stringify({name,box:boxes[0]}));
      assert.equal(await page.locator('.evening-finale-heart').count(),0);
+     const layout=await page.evaluate(()=>{
+      const hero=document.querySelector('.evening-finale-hero').getBoundingClientRect(),panel=document.querySelector('.evening-aftercare').getBoundingClientRect(),nav=document.querySelector('.nav').getBoundingClientRect();
+      return {width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,heroBottom:hero.bottom,panelTop:panel.top,panelBottom:panel.bottom,navTop:nav.top};
+     });
+     assert.ok(layout.scrollWidth<=layout.width+1&&layout.scrollHeight<=layout.height+2&&layout.panelBottom<=layout.navTop-2,'Evening podium layout clips its controls '+JSON.stringify({name,layout}));
+     if(width>=768&&height>width)assert.ok(layout.panelTop>=layout.heroBottom+8,'Portrait tablet must place the panel below the podium '+JSON.stringify({name,layout}));
     }
     await page.evaluate(()=>{window.__stableCanvases=[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0);});
     await page.locator('.nav [data-action="tab:'+(['d20','host'].includes(phase)?'special':'session')+'"]').click();await page.waitForTimeout(80);
