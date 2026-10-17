@@ -23,6 +23,7 @@ jobs:
         run: |
           python3 -m http.server 8765 -d couple-web > /tmp/loveroll-design-http.log 2>&1 &
           node couple-web/design-reference-browser-check.cjs
+          node couple-web/surprise-desktop-v86-check.cjs
       - name: Preserve screenshots and geometry even on failure
         if: always()
         uses: actions/upload-artifact@v4
