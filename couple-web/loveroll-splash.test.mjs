@@ -4,46 +4,43 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('./'+p,import.meta.url),'utf8');
 const html=read('index.html'),css=read('loveroll-splash.css'),js=read('loveroll-splash.js');
 const boot=read('boot-recovery.js'),app=read('app.js'),sw=read('service-worker.js');
-test('Immediate loading markup contains one accessible no-text heart and no old sentence',()=>{
- assert.match(html,/<main id="app"><div class="lr-splash lr-splash--boot" data-lr-boot/);
- assert.match(html,/class="lr-splash__heart"/);
- assert.equal((html.match(/class="lr-splash__heart"/g)||[]).length,1);
- assert.match(html,/class="lr-splash__back-heart/);
- assert.match(html,/class="lr-splash__ring"/);
- assert.doesNotMatch(html,/Ouverture de votre espace privé/);
- assert.doesNotMatch(html,/data-lr-boot[^>]*>[\s\S]*?Chargement\.\.\./);
+test('First paint has separate local glass, satin, live logo, caption and three dots',()=>{
+ const markup=html.match(/<main id="app">([\s\S]*?)<\/main>/)[1];
+ assert.match(markup,/data-lr-boot role="status"/);
+ for(const name of ['heart','decor','logo','caption','dots'])assert.match(markup,new RegExp('lr-splash__'+name));
+ assert.match(markup,/Chargement de votre espace…/);
+ assert.equal((markup.match(/<i><\/i>/g)||[]).length,3);
+ assert.doesNotMatch(markup,/back-heart|lr-splash__ring|<svg|<button|<nav/);
+ for(const image of ['loveroll-glass-heart-v123.webp','loveroll-splash-satin-v123.webp']){
+  assert.match(html,new RegExp('rel="preload" as="image" href="./assets/'+image));
+  assert.ok(readFileSync(new URL('./assets/'+image,import.meta.url)).length<150000);
+  assert.ok(sw.includes('./assets/'+image));
+ }
 });
-test('Heart has realistic double-beat, pulsing rings, responsive viewport and reduced-motion support',()=>{
- assert.match(css,/@keyframes lr-splash-beat/);
- assert.match(css,/9%\{transform:scale\(1\.11\)\}/);
- assert.match(css,/29%\{transform:scale\(1\.17\)\}/);
- assert.match(css,/@keyframes lr-splash-wave/);
+test('Slow subtle movement is isolated from stationary typography, with reduced motion',()=>{
+ assert.match(css,/lr-splash-beat 3s ease-in-out/);
+ assert.match(css,/scale\(1\.018\)/);
+ assert.match(css,/lr-splash-dot 1\.8s/);
  assert.match(css,/height:100dvh/);
- assert.match(css,/overflow:hidden/);
- assert.match(css,/min-width:768px/);
- assert.match(css,/max-width:767px/);
+ assert.match(css,/safe-area-inset/);
  assert.match(css,/prefers-reduced-motion:reduce/);
+ assert.doesNotMatch(css,/lr-splash-wave|lr-splash-dust/);
 });
-test('Shared loader waits before covering real async work; boot errors still recover',()=>{
- assert.match(js,/const wait=Number\.isFinite/);
+test('Real initialization owns the destination; outgoing splash is nonblocking and errors recover',()=>{
  assert.match(js,/function begin\(delay=150\)/);
  assert.match(js,/function end\(id\)/);
  assert.match(js,/finally\{end\(id\);\}/);
- assert.match(js,/window\.LoveRollLoader=\{begin,end,during\}/);
  assert.match(app,/window\.LoveRollLoader\?\.begin\(150\)/);
  assert.match(app,/window\.LoveRollLoader\?\.end\(loaderTicket\)/);
- assert.match(boot,/\[data-lr-boot\]/);
+ assert.match(css,/lr-splash--leaving\{opacity:0;pointer-events:none/);
+ assert.match(boot,/loveroll:boot-error/);
  assert.match(boot,/Réessayer/);
  assert.match(boot,/setTimeout\(show,18000\)/);
+ assert.doesNotMatch(js,/minimumDuration|minDuration/);
 });
-test('v80 caches all boot dependencies, retains mobile v79 and uses coherent version',()=>{
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.122');
- for(const f of ['loveroll-splash.css','loveroll-splash.js'])
-  assert.match(html,new RegExp(f.replaceAll('.','\\.')+'\\?v=20261015-no-toast87'));
- assert.match(html,/mobile-entry-v79\.css\?v=20261017-entry118/);
- assert.match(sw,/loveroll-static-v122/);
- assert.match(sw,/\.\/loveroll-splash\.css/);
- assert.match(sw,/\.\/loveroll-splash\.js/);
- assert.doesNotMatch(html,/mobile-entry-v7[678]\.css|entry-viewport-v78\.js/);
- assert.match(html,/boot-recovery\.js\?v=20261015-no-toast87/);
+test('Current boot assets and cache generation are coherent',()=>{
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.123');
+ for(const file of ['loveroll-splash.css','loveroll-splash.js','boot-recovery.js'])assert.ok(html.includes(file+'?v=20261017-glass123'));
+ assert.match(sw,/loveroll-static-v123/);
+ for(const name of ['loveroll-splash.css','loveroll-splash.js'])assert.ok(sw.includes('./'+name));
 });

@@ -1,4 +1,4 @@
-/* LoveRoll v80 – one reusable splash, independent of Supabase and app.js.
+/* One reusable glass-heart splash, independent of Supabase and app.js.
    The boot splash is literal HTML so it paints before JS loads.
    Secondary loads wait 150 ms to avoid flashing on fast navigation. */
 (function(){
@@ -10,6 +10,33 @@
  const pending=new Map();
  let overlay=null;
  let leaving=null;
+ let failed=false;
+ function removeAfterFade(target){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){target.remove();return;}
+  target.classList.add('lr-splash--leaving');
+  target.setAttribute('aria-hidden','true');
+  const remove=()=>target.remove();
+  target.addEventListener('transitionend',remove,{once:true});
+  window.setTimeout(remove,260);
+ }
+ // Fade AFTER real initialization renders its destination. No minimum wait;
+ // the outgoing layer never intercepts touches on the application underneath.
+ if(boot){
+  const observer=new MutationObserver(()=>{
+   if(boot.isConnected)return;
+   observer.disconnect();
+   if(failed||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+   boot.removeAttribute('data-lr-boot');boot.classList.remove('lr-splash--boot');
+   document.body.appendChild(boot);removeAfterFade(boot);
+  });
+  observer.observe(root,{childList:true});
+ }
+ window.addEventListener('loveroll:boot-error',()=>{
+  failed=true;
+  for(const ticket of pending.values())window.clearTimeout(ticket.timer);
+  pending.clear();overlay?.remove();leaving?.remove();overlay=null;leaving=null;
+  document.querySelectorAll('.lr-splash--leaving').forEach(el=>el.remove());
+ });
  function createOverlay(){
   if(!template)return null;
   const host=document.createElement('div');host.innerHTML=template;
@@ -21,6 +48,7 @@
   return el;
  }
  function reveal(){
+  if(failed)return;
   if(document.querySelector('[data-lr-boot]'))return;
   if(overlay)return;
   if(leaving){leaving.remove();leaving=null;}

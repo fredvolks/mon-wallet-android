@@ -10,6 +10,7 @@
  function show(){
   if(reported||!stillLoading())return;
   reported=true;
+  window.dispatchEvent(new Event('loveroll:boot-error'));
   var node=document.querySelector('#app');
   node.textContent='';
   var card=document.createElement('section');

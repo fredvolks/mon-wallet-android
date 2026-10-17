@@ -281,7 +281,8 @@ export function dieOn(canvas,sides,value,rolling){
  // the initial mesh rotation after a live D100 throw.
  const tilt=new THREE.Quaternion().setFromEuler(sides===6?
   new THREE.Euler(.16,-.18,-.02):new THREE.Euler(.075,-.09,0));
- const podium=canvas.closest('.home-die-theater,.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero');
+ const podiumSelector='.home-die-theater,.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero';
+ let podium=canvas.closest(podiumSelector);
  const orientationFor=face=>{
   const normal=built.normals.get(Number(face));
   return normal?new THREE.Quaternion().setFromUnitVectors(normal,
@@ -305,6 +306,13 @@ export function dieOn(canvas,sides,value,rolling){
   return {left,right,top,bottom};
  }
  function alignPodium(){
+  // UI refreshes retain this canvas but replace its surrounding DOM.
+  // Rebind the photograph even when the canvas size has not changed.
+  const current=canvas.closest(podiumSelector);
+  if(current!==podium){
+   if(podium)podiumObserver?.unobserve(podium);
+   podium=current;if(podium)podiumObserver?.observe(podium);
+  }
   if(!podium)return;
   const stage=canvas.parentElement,pose=built.group.quaternion.clone(),position=built.group.position.clone();
   built.group.quaternion.copy(target);built.group.position.set(0,0,0);
@@ -414,7 +422,7 @@ export function dieOn(canvas,sides,value,rolling){
   }
   return {face:Number(canvas.dataset.face),frontFace,quaternion:built.group.quaternion.toArray(),renderedFrames,
    spinning:canvas.dataset.spinning==='true'};
- },projectedBounds,refresh:()=>{resizeDie();renderer.render(scene,camera);renderedFrames++;request();}};
+ },projectedBounds,refresh:()=>{resizeDie();alignPodium();renderer.render(scene,camera);renderedFrames++;request();}};
  const down=e=>{
   if(duration&&performance.now()-start<duration)return;
   drag=true;returnStart=null;x=e.clientX;y=e.clientY;vx=vy=0;

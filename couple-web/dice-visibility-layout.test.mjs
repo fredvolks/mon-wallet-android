@@ -9,7 +9,8 @@ test('Home D6 stays centered inside the satin theater, clear of the roll button'
  const css=homeCss;
  // home-podium-browser-check measures the real mesh against the marble.
  assert.doesNotMatch(css,/transform:translateY\(-8%\)/);
- assert.match(engine,/canvas\.closest\('\.home-die-theater,/);
+ assert.ok(engine.includes("podiumSelector='.home-die-theater,"));
+ assert.match(engine,/const current=canvas\.closest\(podiumSelector\)/);
  const page=premiumHomeHtml({weekly:{face:1},members:[{name:'Moi'},{name:'Partenaire'}]});
  const theater=page.indexOf('class="home-die-theater"'),canvas=page.indexOf('canvas class="dice-canvas"',theater);
  const control=page.indexOf('class="home-roll-area"',theater);

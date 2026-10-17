@@ -22,8 +22,11 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
      return {sides:c.dataset.diceSides,q:c.loveRollDie.readState().quaternion,frames:c.loveRollDie.readState().renderedFrames,contact,meshBottom:r.top+b.bottom*r.height-s.top,meshTop:r.top+b.top*r.height-s.top,sceneHeight:s.height,sceneWidth:s.width};
     }));
     assert.ok(boxes.length);for(let i=0;i<boxes.length;i++){const box=boxes[i];assert.deepEqual(box.q,before[i].q,name+' '+phase+' idle die moved');assert.ok(Math.abs(box.meshBottom-box.contact)<=2,JSON.stringify({name,phase,box}));assert.ok(box.meshTop>=-2&&box.meshBottom<=box.sceneHeight+2,JSON.stringify({name,phase,box}));}
+    await page.evaluate(()=>{window.__stableCanvases=[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0);});
+    await page.locator('.nav [data-action="tab:'+(['d20','host'].includes(phase)?'special':'session')+'"]').click();await page.waitForTimeout(80);
+    assert.ok(await page.evaluate(()=>window.__stableCanvases.every(c=>c.isConnected&&Math.abs(c.getBoundingClientRect().top+c.loveRollDie.projectedBounds().bottom*c.getBoundingClientRect().height-c.closest('.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero').getBoundingClientRect().top-Number(c.dataset.podiumContact))<2)),'Refresh lost die or podium '+name+' '+phase);
     if(phase==='host')assert.equal(await page.locator('.surprise-host-legend').count(),1);
-    assert.deepEqual(errors,[]);await page.screenshot({path:'design-captures/podium121-'+name+'-'+phase+'.png'});console.log('DICE_PODIUM_OK',name,phase,JSON.stringify(boxes));await context.close();
+    assert.deepEqual(errors,[]);await page.screenshot({path:'design-captures/podium123-'+name+'-'+phase+'.png'});console.log('DICE_PODIUM_OK',name,phase,JSON.stringify(boxes));await context.close();
    }
   }
   const {page,context}=await setupEditorial(browser,world,{query:'open=home'});await page.locator('.home-ritual').waitFor();
