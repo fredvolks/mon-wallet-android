@@ -78,7 +78,7 @@ const d6=(m,roll,localUser,canRoll,ready,rolling,rollFace,effectiveTarget=null)=
    '<small>défi'+(displayCount>1?'s':'')+' ce soir</small>'+
    (adjusted?'<span class="evening-original-d6">Dé initial : '+esc(roll.face)+'</span>':'')+'</div>':
    '<div class="evening-face-result is-empty" aria-hidden="true"></div>')+
-  (canRoll?bt('my-d6','Brasser mon dé','evening-small-roll'):'')+
+  bt('my-d6',canRoll?'🎲 Brasser mon dé':rolling&&localUser?'Brassage en cours…':'Lancer enregistré','evening-small-roll',!canRoll)+
   '</article>';
 };
 const partnerStatusCard=(partner,roll)=>{

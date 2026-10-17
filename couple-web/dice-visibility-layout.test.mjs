@@ -51,7 +51,7 @@ test('Surprise D20 and D6 stay inside the scene, not over their buttons',()=>{
  assert.match(css,/\.surprise-d20-scene,\.surprise-host-die\{[\s\S]*?overflow:hidden/);
  assert.match(css,/\.surprise-d20-scene \.dice-canvas,\.surprise-host-die \.dice-canvas\{[\s\S]*?position:absolute!important/);
  assert.match(fixture,/dice-no-overlay\.css/);
- assert.match(fixture,/evening-private-queue\.css/);
+ assert.match(fixture,/evening-editorial\.css/);
  assert.match(visual,/surpriseDice/);
  assert.match(visual,/noButtonOverlap/);
 });

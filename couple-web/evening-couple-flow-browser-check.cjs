@@ -73,10 +73,11 @@ const client=`export function createClient(){
    await page.goto('http://127.0.0.1:8765/?actor='+uid);await page.locator('.real-home-shell').waitFor();pages.push(page);
   }
   const [a,b]=pages;
+  const diceReady=async p=>p.waitForFunction(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().width>0&&c.getBoundingClientRect().height>0).every(c=>c.loveRollDie));
   const session=async p=>{await p.reload();await p.locator('.real-home-shell').waitFor();await p.locator('[data-action="tab:session"]').click();};
   fs.mkdirSync('design-captures',{recursive:true});
-  await a.locator('[data-action="tab:session"]').click();await a.screenshot({path:'design-captures/S25-editorial-intro.png'});
-  await a.locator('[data-action="new-session"]').click();await a.locator('.is-waiting').waitFor();await a.screenshot({path:'design-captures/S25-editorial-step1.png'});
+  await a.locator('[data-action="tab:session"]').click();await diceReady(a);await a.screenshot({path:'design-captures/S25-editorial-intro.png'});
+  await a.locator('[data-action="new-session"]').click();await a.locator('.is-waiting').waitFor();await diceReady(a);await a.screenshot({path:'design-captures/S25-editorial-step1.png'});
   assert.ok(await a.locator('[data-action="new-challenge"]').isDisabled());
   await a.locator('[data-action="my-d6"]').click();await a.locator('.evening-face-result strong').waitFor();
   assert.equal(await a.locator('.evening-face-result strong').textContent(),'4');
