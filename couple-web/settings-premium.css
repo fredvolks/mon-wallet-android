@@ -68,6 +68,24 @@ main#app.loveroll-settings-page :is(.tiny-note,.settings-item p,.settings-footer
 main#app.loveroll-settings-page .settings-help-item{border-bottom:1px solid var(--ritual-border);}
 main#app.loveroll-settings-page .settings-help-item>summary{display:flex;justify-content:space-between;align-items:center;min-height:50px;font-size:15px;cursor:pointer;}
 main#app.loveroll-settings-page .settings-help-item>p{font-size:14px;line-height:1.5;color:var(--ritual-muted);margin:4px 0 16px;}
+
+/* Options avancées only. Reuse the existing list/dividers, switches and buttons.
+   The LoveRoll Home and Soirée styles remain completely untouched. */
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-section{min-width:0;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-section>summary{gap:12px;color:var(--ritual-text);}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-section>summary small{font-size:12px;font-weight:400;color:var(--ritual-muted);white-space:nowrap;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-editor{display:grid;gap:14px;padding:4px 0 20px;min-width:0;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-editor .push-option{margin:0;min-height:60px;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px;min-width:0;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-face{display:grid;gap:6px;min-width:0;font-size:13px;color:var(--ritual-muted);}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-input{position:relative;display:block;min-width:0;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-input input[type="number"]{min-height:46px;padding:8px 25px 8px 6px;text-align:center;font-size:16px;font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-input input[type="number"]::-webkit-inner-spin-button{appearance:none;margin:0;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-input>span{position:absolute;top:50%;right:11px;transform:translateY(-50%);font-size:13px;color:var(--ritual-muted);pointer-events:none;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-save{width:100%;margin:0;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-feedback:empty{display:none;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-feedback:not(:empty){color:var(--ritual-rose);font-size:13px;}
+
 main#app.loveroll-settings-page>.nav{position:fixed;inset:auto 0 0;box-sizing:border-box;min-height:0;padding:2px 3px calc(3px + env(safe-area-inset-bottom,0px));}
 main#app.loveroll-settings-page>.nav .nav-inner{width:min(100%,960px);gap:4px;}
 main#app.loveroll-settings-page>.nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;padding:3px 1px;line-height:1.03;font-size:clamp(.58rem,2.3vw,.76rem);}
