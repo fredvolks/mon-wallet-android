@@ -1,6 +1,7 @@
-// Real shared-couple home UI. Only server-sourced weekly rolls and session cards
-// are shown here; the weights are labels matching roll_couple_once() on Supabase.
-export const WEEKLY_ODDS=Object.freeze([50,25,12,8,4,1]);
+// Real shared-couple Home UI. Official faces and per-couple odds come from Supabase.
+// Preserve the approved HTML/CSS; change only the six visible odds numbers.
+import {WEEKLY_DEFAULT_WEIGHTS,effectiveDicePercentages,displayedDicePercent} from './dice-weighting.mjs?v=20261018-weights146';
+export const WEEKLY_ODDS=WEEKLY_DEFAULT_WEIGHTS;
 export const PIP_POSITIONS=Object.freeze({
   1:[[50,50]],2:[[29,29],[71,71]],3:[[29,29],[50,50],[71,71]],
   4:[[29,29],[71,29],[29,71],[71,71]],
@@ -129,10 +130,11 @@ const iconSvg=(kind)=>{
 export {ritualBrandHtml} from './brand.mjs?v=20261017-ritual130';
 import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
 export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,members=[],
-  turn=null,monthly={},history=[],sessions=[],events=[],rollFace=1,now=new Date()}={}){
- const weights=WEEKLY_ODDS.map((pct,i)=>
-  '<span class="home-weight" title="'+(i+1)+' soirée'+(i===0?'':'s')+' : '+pct+' %">'+pipFace(i+1)+
-  '<b>'+(i+1)+'x</b><span>'+pct+'%</span></span>').join('');
+  turn=null,monthly={},history=[],sessions=[],events=[],rollFace=1,now=new Date(),
+  weeklyWeights=WEEKLY_ODDS,weeklyWeightsEnabled=true}={}){
+ const weights=effectiveDicePercentages(weeklyWeights,weeklyWeightsEnabled,WEEKLY_ODDS).map((pct,i)=>
+  '<span class="home-weight" title="'+(i+1)+' soirée'+(i===0?'':'s')+' : '+displayedDicePercent(pct)+' %">'+pipFace(i+1)+
+  '<b>'+(i+1)+'x</b><span>'+displayedDicePercent(pct)+'%</span></span>').join('');
  const stats=assignedTonight(turn,members),m=nextMonthly(now);
  const activity=monthly?.monthly_activity||null;
  const shown=value=>value===null?'—':String(value);
