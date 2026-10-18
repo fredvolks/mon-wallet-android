@@ -831,6 +831,16 @@ function subscribe(){
   filter:'couple_id=eq.'+state.coupleId},async()=>{
    try{await reload();if(state.coupleId&&state.members.length===2)notify('♡ Votre partenaire a accepté le match !');}catch(e){fail(e);}
  });
+ // Settings only: sync new odds to the other device without changing Soirée
+ // visuals or resetting dice. Couples UPDATE is filtered by RLS membership.
+ channel=channel.on('postgres_changes',{event:'UPDATE',schema:'public',table:'couples',
+  filter:'id=eq.'+state.coupleId},payload=>{
+  const updated=payload?.new;
+  if(!updated||updated.id!==state.coupleId||!state.couple)return;
+  state.couple={...state.couple,...updated};
+  if(state.tab==='home'||(state.tab==='settings'&&settingsOpenSection==='admin'&&!hasUnsavedForm()))
+   render();
+ });
  if(state.members.length<2){
   state.channel=channel.subscribe(status=>{if(status==='SUBSCRIBED')liveSync.request(200);});
   return;
