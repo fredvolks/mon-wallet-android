@@ -59,7 +59,8 @@ main#app.loveroll-real-home{
 #app.loveroll-real-home .home-summary-value>span{grid-column:1;grid-row:1;font:24px/1 Georgia,serif;color:#df94b1;text-align:center;}
 #app.loveroll-real-home .home-summary-value>strong{grid-column:3;grid-row:1;color:#f5d8dc;font-size:16px;line-height:1.1;font-weight:600;text-align:right;}
 #app.loveroll-real-home .home-summary-content small{grid-column:2;grid-row:1;font-size:10px;line-height:1.25;color:#d7bec9;overflow-wrap:anywhere;}
-#app.loveroll-real-home .home-stat-content{display:grid;grid-template-columns:20px minmax(0,1fr);column-gap:6px;row-gap:0;align-items:center;align-content:center;width:100%;min-width:0;}
+#app.loveroll-real-home .home-monthly-panel h3{justify-content:center;}
+#app.loveroll-real-home .home-stat-content{display:grid;grid-template-columns:20px minmax(0,1fr);column-gap:6px;row-gap:0;align-items:center;align-content:center;width:100%;min-width:0;text-align:center;}
 #app.loveroll-real-home .home-stat-card{padding-block:2px;}
 #app.loveroll-real-home .home-stat-card i{grid-column:1;grid-row:1/4;font:20px/1 Georgia,serif;font-style:normal;color:#df94b1;text-align:center;}
 #app.loveroll-real-home .home-stat-card strong{grid-column:2;grid-row:1;color:#efb4c6;font-size:15px;line-height:1.1;font-weight:650;white-space:nowrap;}
