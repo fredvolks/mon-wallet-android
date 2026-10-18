@@ -100,12 +100,12 @@ test('Surprise one-screen CSS keeps the same generous stage on phone and desktop
  assert.match(css,/@media\(max-width:767px\)/);
  assert.match(css,/@media\(min-width:768px\)/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.match(app,/premium-surprise\.mjs\?v=20261017-titles136/);
+ assert.match(app,/premium-surprise\.mjs\?v=20261017-frames137/);
  assert.match(app,/if\(kind==='monthly_activity'\)state\.showSurpriseActivity=!!state\.monthly\?\.monthly_activity/);
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
  assert.match(html,/surprise-refined-v104\.css\?v=20261017-ritual130/);
- assert.match(sw,/loveroll-static-v136/);
+ assert.match(sw,/loveroll-static-v137/);
 });
 
 test('Partners sharing a first name keep their distinct saved names in parity and winner',()=>{
@@ -114,8 +114,10 @@ test('Partners sharing a first name keep their distinct saved names in parity an
  const waiting=make(null,{members:[{user_id:'a',name:'Camille'},{user_id:'b',name:'Camille André'}]});
  assert.match(waiting,/<strong>Camille André<\/strong>/);
 });
-test('Month heading uses Toronto month at the UTC boundary',()=>{
+test('Month remains in the photo and uses Toronto month at the UTC boundary',()=>{
  const html=premiumSurpriseHtml({members,now:new Date('2026-11-01T02:00:00Z')});
  assert.match(html,/surprise-month-label"><span>octobre<\/span>/);
+ assert.ok(html.indexOf('surprise-main-die-scene')<html.indexOf('surprise-month-label'));
+ assert.doesNotMatch(html,/surprise-month-title|surprise-ecrin-note|Appuie pour modifier/);
  assert.doesNotMatch(html,/host-winner|host-legend/);
 });

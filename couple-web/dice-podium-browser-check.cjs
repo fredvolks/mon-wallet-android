@@ -21,9 +21,14 @@ const {glassState,verifyCrystalMaterials}=require('./crystal-glass-browser-check
     await page.waitForTimeout(500);
     const boxes=await page.evaluate(()=>[...document.querySelectorAll('canvas[data-dice-sides]')].filter(c=>c.getBoundingClientRect().height>0).map(c=>{
      const scene=c.closest('.surprise-main-die-scene,.evening-user-die>.love3d,.evening-die-row,.evening-finale-hero'),r=c.getBoundingClientRect(),s=scene.getBoundingClientRect(),b=c.loveRollDie.projectedBounds(),contact=Number(c.dataset.podiumContact);
-     return {sides:c.dataset.diceSides,q:c.loveRollDie.readState().quaternion,frames:c.loveRollDie.readState().renderedFrames,contact,meshBottom:r.top+b.bottom*r.height-s.top,meshTop:r.top+b.top*r.height-s.top,meshCenterX:r.left+(b.left+b.right)*r.width/2-s.left,sceneHeight:s.height,sceneWidth:s.width};
+     const style=getComputedStyle(scene),month=scene.querySelector('.surprise-month-label')?.getBoundingClientRect();
+     return {sides:c.dataset.diceSides,q:c.loveRollDie.readState().quaternion,frames:c.loveRollDie.readState().renderedFrames,contact,meshBottom:r.top+b.bottom*r.height-s.top,meshTop:r.top+b.top*r.height-s.top,meshCenterX:r.left+(b.left+b.right)*r.width/2-s.left,sceneHeight:s.height,sceneWidth:s.width,border:parseFloat(style.borderTopWidth),borderColor:style.borderTopColor,radius:parseFloat(style.borderTopLeftRadius),overflow:style.overflow,photo:style.backgroundImage,monthBottom:month?month.bottom-s.top:null};
     }));
-    assert.ok(boxes.length);for(let i=0;i<boxes.length;i++){const box=boxes[i];assert.deepEqual(box.q,before[i].q,name+' '+phase+' idle die moved');assert.ok(Math.abs(box.meshBottom-box.contact)<=2,JSON.stringify({name,phase,box}));assert.ok(box.meshTop>=-2&&box.meshBottom<=box.sceneHeight+2,JSON.stringify({name,phase,box}));}
+    assert.ok(boxes.length);for(let i=0;i<boxes.length;i++){const box=boxes[i];assert.deepEqual(box.q,before[i].q,name+' '+phase+' idle die moved');assert.ok(Math.abs(box.meshBottom-box.contact)<=2,JSON.stringify({name,phase,box}));assert.ok(box.meshTop>=-2&&box.meshBottom<=box.sceneHeight+2,JSON.stringify({name,phase,box}));
+     assert.equal(box.border,1);assert.equal(box.radius,20);assert.equal(box.overflow,'hidden');assert.ok(box.photo.includes('ritual-satin-v115.webp'));
+     if(box.monthBottom!==null)assert.ok(box.meshTop>=box.monthBottom+5,'Month overlaps the die '+JSON.stringify({name,phase,box}));
+    }
+    if(['d20','host'].includes(phase))assert.ok(await page.locator('.surprise-main-die-scene canvas').evaluate(c=>Math.abs(c.getBoundingClientRect().width-c.getBoundingClientRect().height)<1),'The Surprise die canvas must remain square');
     if(name==='S25'){
      // Refraction includes the photographed background in the framebuffer;
      // its optical response is verified above instead of testing CSS alpha.

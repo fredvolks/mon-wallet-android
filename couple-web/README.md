@@ -245,3 +245,12 @@ La tuile « 100 + 100 » affiche désormais les défis complétés parmi les 200
 L’Accueil propose « Cette semaine, on joue ? » avant le tirage, puis affiche toujours le nombre officiel de soirées obtenu. Les cinq onglets partagent la même hauteur de titre, la même police et un centrage sur la page. Les sous-titres des introductions sont retirés ; Surprise et Avent n’imposent plus de saut de ligne dans leur titre. Les instructions des cartes et les indications des étapes restent dans leurs sections respectives.
 
 La feuille commune `ritual-titles.css` est chargée après les dispositions existantes et préchargée hors ligne. Elle adapte aussi l’ancrage des titres en paysage compact et sur l’Avent PC. Le contrôle des cinq onglets compare les lignes de texte réellement rendues, leur centrage, leur hauteur et leur typographie, en plus des vérifications de navigation et de contenu existantes.
+
+
+## Cadres photo communs — Web 137
+
+Accueil, Soirée et Surprise encadrent leur photographie avec les mêmes coins arrondis et le même fin trait rosé. L’Accueil utilise la largeur intérieure de la page ; son ancien fondu sur les bords est retiré. La photo de Surprise remplit son cadre, tandis que les commandes de tirage restent juste dessous.
+
+Le mois reste centré dans la partie haute de la photo de Surprise. Une marge optique propre à cette scène réserve sa place au-dessus du dé. La question, les descriptions génériques et la consigne de modification des événements sont retirées. Le nom et la description de l’activité restent accessibles dans sa fenêtre, le tirage de l’invitation conserve les repères pair/impair et son résultat, et les six événements restent modifiables.
+
+La feuille commune `ritual-scenes.css` est préchargée hors ligne. Le moteur existant recalcule le contact avec le socle quand les cadres changent de taille ; les géométries, les gravures, les matières, les probabilités et les résultats officiels sont conservés.

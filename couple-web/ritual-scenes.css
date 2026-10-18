@@ -1,0 +1,23 @@
+/* The original photo and live WebGL dice share the same rounded frame. */
+main#app.loveroll-real-home .home-die-theater,
+main#app.loveroll-evening-page :is(.evening-finale-hero,.evening-user-die>.love3d,.evening-die-row),
+main#app.loveroll-surprise-ecrin .surprise-main-die-scene{
+ box-sizing:border-box;border:1px solid var(--ritual-border);border-radius:20px;
+ overflow:hidden;isolation:isolate;
+}
+main#app.loveroll-real-home .home-die-theater{
+ margin:0;mask-image:none;-webkit-mask-image:none;
+}
+main#app.loveroll-surprise-ecrin .surprise-month{
+ padding:0;border:0;border-radius:0;background:none;box-shadow:none;gap:8px;
+}
+main#app.loveroll-surprise-ecrin .surprise-main-die-scene{
+ width:100%;min-height:0;margin:0;--dice-headroom:36px;container-type:size;
+}
+main#app.loveroll-surprise-ecrin .surprise-main-die-scene .love3d-stage{
+ width:min(100cqw,100cqh);height:min(100cqw,100cqh);max-height:100%;
+}
+main#app.loveroll-surprise-ecrin .surprise-month-label{
+ position:absolute;inset:10px 12px auto;z-index:2;min-height:14px;
+ margin:0;pointer-events:none;text-shadow:0 1px 5px #10070c;
+}
