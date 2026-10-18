@@ -9,7 +9,7 @@ test('Invitation and public welcome retain their actual separate actions',()=>{
  assert.match(invited,/data-action="invite-start"/);
  assert.match(invited,/discover-editorial-die/);
  assert.match(invited,/discover-editorial-list/);
- assert.match(invited,/loveroll-invitation-hero-hd\.webp/);
+ assert.match(invited,/loveroll-invitation-scene-v139\.webp/);
  assert.doesNotMatch(invited,/data-action="show-auth:signup"/);
  assert.match(publicPage,/data-action="show-auth:signup"/);
  assert.match(publicPage,/data-action="show-auth:signin"/);
@@ -40,8 +40,8 @@ test('v79 fixes both invitation visual and registration without full-page scalin
  assert.doesNotMatch(html,/entry-viewport-v78\.js/);
  assert.doesNotMatch(html,/mobile-entry-v76\.css|mobile-entry-v77\.css|mobile-entry-v78\.css/);
  assert.doesNotMatch(html,/loveroll-entry-viewport-safety/);
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.138');
- assert.match(sw,/loveroll-static-v138/);
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.139');
+ assert.match(sw,/loveroll-static-v139/);
  assert.match(sw,/\.\/mobile-entry-v79\.css/);
  assert.doesNotMatch(sw,/entry-viewport-v78\.js/);
 });

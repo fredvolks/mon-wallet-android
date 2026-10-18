@@ -18,9 +18,9 @@ export function messengerExternalBrowserHtml(url,{ios=false}={}){
   '<button type="button" class="messenger-browser-primary" data-action="copy-invite-for-browser">'+
   (ios?'↗ Copier pour Safari':'↗ Copier le lien pour le navigateur')+'</button>';
  return '<aside class="messenger-browser-handoff" aria-label="Ouvrir l’invitation hors de Messenger">'+
-  '<strong>♡ Continuer dans votre navigateur</strong>'+
+  '<strong>Votre invitation, dans votre navigateur</strong>'+
   main+
-  '<details><summary>Ça ne s’ouvre pas ?</summary>'+
+  '<details><summary><span class="messenger-help-label">Ça ne s’ouvre pas ?</span><span aria-hidden="true">?</span></summary>'+
   '<p>'+ (ios?
    'Safari ne peut pas être ouvert automatiquement depuis Messenger. Copiez le lien, puis ouvrez Safari et collez-le dans la barre d’adresse.':
    'Si Messenger bloque Chrome, ouvrez le menu ⋯ de Messenger et choisissez « Ouvrir dans le navigateur ». Sinon, copiez le lien et collez-le dans Chrome.')+'</p>'+

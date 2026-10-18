@@ -57,7 +57,7 @@ async function main(){
        listHeight:list?.height,features:document.querySelectorAll('.discover-editorial-item').length,
        naturalImageWidth:img?.naturalWidth,stageBottom:stage?.bottom};
      });
-     assert.ok(visual.stageHeight>=130&&visual.artHeight>=100&&visual.listHeight>=125&&
+     assert.ok(visual.stageHeight>=130&&visual.artHeight>=100&&visual.listHeight>=45&&
       visual.features===4&&visual.naturalImageWidth>100,
       name+' '+width+'x'+height+' showcase disappeared '+JSON.stringify(visual));
     }

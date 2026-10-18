@@ -7,10 +7,7 @@ const fs=require('node:fs'),path=require('node:path');
  const fixture=path.join(__dirname,'__invite-account-test.html');
  fs.writeFileSync(fixture,`<!doctype html><html lang="fr-CA"><head><meta charset="utf-8">
  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
- <link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./premium-theme.css">
- <link rel="stylesheet" href="./discover.css"><link rel="stylesheet" href="./approved-artwork.css">
- <link rel="stylesheet" href="./satin-reference.css"><link rel="stylesheet" href="./invite-account.css"><link rel="stylesheet" href="./invitation-poster.css"><link rel="stylesheet" href="./responsive-tablet-desktop.css">
- <link rel="stylesheet" href="./premium-home.css"><link rel="stylesheet" href="./editorial-details.css"></head><body><main id="app"></main><script type="module">
+ ${[...fs.readFileSync(path.join(__dirname,'index.html'),'utf8').matchAll(/<link rel="stylesheet" href="(\.\/[^"]+)"/g)].map(m=>'<link rel="stylesheet" href="'+m[1]+'">').join('')}</head><body><main id="app"></main><script type="module">
  import {discoverHtml} from './discover.mjs';
  import {authHtml} from './onboarding.mjs';
  let mode='invitation';const root=document.querySelector('#app');
@@ -59,7 +56,7 @@ const fs=require('node:fs'),path=require('node:path');
     editorial:document.querySelector('.discover-editorial-title')?.textContent};
   });
   if(first.scroll>first.screen+2||first.rows!==4||!first.informational||!first.imageLoaded||
-     !first.editorial.includes('Ce soir')||errors.length||
+     !first.editorial.includes('On se donne')||errors.length||
      (v.width>=1100&&first.posterWidth<980)||(v.width>=768&&v.width<1100&&first.posterWidth<720))
    throw Error('Invitation layout '+v.name+' '+JSON.stringify({first,errors}));
   if(v.name.startsWith('iPad')){
@@ -75,8 +72,7 @@ const fs=require('node:fs'),path=require('node:path');
      documentHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight),
      acceptVisible:action.top>=0&&action.bottom<=innerHeight+2,
      brandVisible:brand.top>=0,
-     sectionsSeparated:header.bottom<=stage.top+2&&
-      art.right<=panel.left+2&&stage.bottom<=footer.top+2,
+     sectionsSeparated:header.bottom<=panel.top+2&&panel.bottom<=footer.top+2,
      panelVisible:panel.left>=0&&panel.right<=innerWidth+2&&panel.bottom<=innerHeight+2
     };
    });

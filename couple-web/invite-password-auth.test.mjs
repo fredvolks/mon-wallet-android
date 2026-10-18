@@ -11,15 +11,15 @@ const app=read('app.js'),sql=read('migrations/20261014_invite_auto_match_idempot
 const inviteId='72aa640b-2644-4d0d-bcf7-575587d27f31';
 test('First invitation screen preserves visual, only one consent action',()=>{
  const html=discoverHtml(true);
- assert.match(html,/UNE INVITATION POUR VOTRE COUPLE/);
- for(const label of ['Soirée','Surprise','Avent','Couple','ACCEPTER L’INVITATION'])assert.ok(html.includes(label),label);
+ assert.match(html,/UNE INVITATION POUR NOUS DEUX/);
+ for(const label of ['Soirées','surprise','Avent','événements à deux','ACCEPTER L’INVITATION'])assert.ok(html.includes(label),label);
  assert.match(html,/data-action="invite-start"/);
  assert.doesNotMatch(html,/CONFIRMER NOTRE MATCH/);
 });
 test('Second page has signup and signin tabs with real password form and Google',()=>{
  const signup=authHtml(true),signin=authHtml(true,'signin');
  for(const html of [signup,signin]){
-  assert.match(html,/Love/);assert.match(html,/Votre compte/);
+  assert.match(html,/Love/);assert.match(html,/entry-access-screen/);
   assert.match(html,/data-action="auth-mode:signup"/);
   assert.match(html,/data-action="auth-mode:signin"/);
   assert.match(html,/type="email"/);

@@ -1,7 +1,7 @@
-import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-complete127';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-entry139';
 import {editorialHeader,editorialRow,editorialIcon} from './editorial-ui.mjs?v=20261017-ritual130';
 import {cardLibraryHtml,monthlyEditorHtml,adventEditorHtml,specialEditorHtml,importEditorHtml} from './editorial-editors.mjs?v=20261017-ritual130';
-import { discoverHtml } from './discover.mjs';
+import { discoverHtml } from './discover.mjs?v=20261017-entry139';
 import {ROLL_TOTAL_MS} from './dice-roll-motion.mjs';
 import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261017-advent119';
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
@@ -15,7 +15,7 @@ import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=202
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
-import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs';
+import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs?v=20261017-entry139';
 import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-restore113';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
@@ -33,12 +33,12 @@ import { CONFIG } from './config.js';
 import {normalizeInviteEmail,composeInviteEmail} from './invite-email.mjs';
 import {enablePush,disablePush,updatePushPreference,sendTestPush,notificationSettingsMarkup,safeNativePushToken,currentPushDevice} from './push-notifications.mjs?v=20261017-complete127';
 import {shouldOfferInstall,markInstallOffered,dismissInstall,requestInstall,installOfferHtml,installStepsHtml,installStatus,isEmbeddedBrowser,isIos} from './home-install.mjs?v=20261017-complete127';
-import {messengerExternalBrowserHtml} from './messenger-browser.mjs';
+import {messengerExternalBrowserHtml} from './messenger-browser.mjs?v=20261017-entry139';
 import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invitationMessengerText,invitationPreviewMarkup} from './couple-dashboard.mjs';
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-17.138';
+const WEB_RELEASE='2026-10-17.139';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -505,7 +505,7 @@ function render(){
   if(!state.user&&!state.showAuth){root.innerHTML=discoverHtml(false);bindActions();}
   else{
    root.innerHTML=authHtml(!!pendingInvite,state.passwordRecovery?'recover':state.authMode,
-    state.authNotice||'',state.authDraftEmail,state.authNeedsEmailConfirmation,{google:CONFIG.oauthProviders?.includes('google')===true})+inviteBrowserHelp();
+    state.authNotice||'',state.authDraftEmail,state.authNeedsEmailConfirmation,{google:CONFIG.oauthProviders?.includes('google')===true,browserHelp:inviteBrowserHelp()});
    bindActions();
   }
   return;
