@@ -254,3 +254,10 @@ Accueil, Soirée et Surprise encadrent leur photographie avec les mêmes coins a
 Le mois reste centré dans la partie haute de la photo de Surprise. Une marge optique propre à cette scène réserve sa place au-dessus du dé. La question, les descriptions génériques et la consigne de modification des événements sont retirées. Le nom et la description de l’activité restent accessibles dans sa fenêtre, le tirage de l’invitation conserve les repères pair/impair et son résultat, et les six événements restent modifiables.
 
 La feuille commune `ritual-scenes.css` est préchargée hors ligne. Le moteur existant recalcule le contact avec le socle quand les cadres changent de taille ; les géométries, les gravures, les matières, les probabilités et les résultats officiels sont conservés.
+
+
+## Scènes identiques — Web 138
+
+Surprise et la présentation de Soirée utilisent la même grille photo : même emplacement, mêmes dimensions, même image, même cadrage et même socle. Les commandes, le résultat de l’invitation et les événements restent dans un espace distinct pour que le décor ne change plus de taille pendant le parcours D20/D6. Le mois reste superposé en haut de la photo.
+
+Le haut du contour rosé et les deux côtés sont alignés entre Accueil, Soirée et Surprise. La largeur maximale, les marges et l’espace sous le titre sont communs, y compris sur tablette et ordinateur. Les dés, les gravures et leurs résultats officiels utilisent toujours le moteur existant.

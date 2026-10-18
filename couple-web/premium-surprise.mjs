@@ -63,14 +63,16 @@ export function premiumSurpriseHtml({
  return '<div class="surprise-premium-view surprise-ecrin">'+
   '<header class="surprise-header surprise-new-header">'+ritualHeadingHtml('NOTRE RITUEL DE LA SURPRISE')+
    '<h2 class="ritual-page-title">Une surprise à partager</h2></header>'+
-  '<section class="surprise-month '+(a?'has-activity':'waiting-activity')+
-    (needsHost?' host-pending':h?' host-complete':'')+'" aria-label="Notre écrin du mois">'+
+  '<div class="surprise-gallery ritual-gallery">'+
    '<div class="surprise-d20-scene surprise-main-die-scene" aria-label="'+
       (needsHost?'Dé à six faces pour déterminer qui invite':'Dé à vingt faces pour choisir l’activité')+'">'+
     '<div class="surprise-month-label"><span>'+esc(monthLabel)+'</span></div>'+
     (needsHost?premiumPolyDie(6,hostFaceVisible?rollFace:null,'Dé six faces : pair ou impair',rollingHost,true):
        premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity))+
    '</div>'+
+  '<div class="surprise-details">'+
+  '<section class="surprise-month '+(a?'has-activity':'waiting-activity')+
+    (needsHost?' host-pending':h?' host-complete':'')+'" aria-label="Notre écrin du mois">'+
    (needsHost?'<div class="surprise-host-legend" aria-label="Règle du dé : pair ou impair">'+
      '<div class="surprise-host-option"><span>PAIR</span><strong>'+partner(0)+'</strong></div>'+
      '<div class="surprise-host-option"><span>IMPAIR</span><strong>'+partner(1)+'</strong></div></div>':'')+
@@ -90,7 +92,7 @@ export function premiumSurpriseHtml({
        (e.daysLeft===null?'Choisir la date':e.availability?'Disponible':e.daysLeft+' jours')+
       '</span></span>',
      'surprise-event-card '+(i===0?'couple':'')+(e.daysLeft===null?' no-date':''),rolling)).join('')+
-   '</div></section>'+
+   '</div></section></div></div>'+
   (editEvent?
    '<div class="surprise-modal surprise-edit-modal" role="dialog" aria-modal="true" aria-label="Modifier un événement spécial">'+
     '<div class="surprise-modal-content surprise-event-editor">'+

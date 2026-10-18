@@ -200,7 +200,7 @@ export function premiumEveningHtml({
    bt('give-challenge','♡ Donner 1 défi à '+esc(partner.name?.split(' ')[0]||'mon partenaire'),
     'evening-gift-btn',!canGive||rolling)+'</section>'
   :
-  '<section class="evening-empty is-finale">'+
+  '<section class="evening-empty is-finale ritual-gallery">'+
   '<div class="evening-finale-hero" aria-hidden="true">'+
     '<span class="evening-finale-velvet"></span>'+
     '<div class="evening-finale-dice">'+premiumPolyDie(100,null,'Dé 100 faces décoratif',false,true)+'</div></div>'+
