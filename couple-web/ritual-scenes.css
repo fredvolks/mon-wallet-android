@@ -114,3 +114,9 @@ main#app.loveroll-surprise-ecrin .surprise-month-label{
  main#app.loveroll-surprise-ecrin .surprise-details{overflow-y:auto;}
  main#app.loveroll-surprise-ecrin .surprise-event-card{min-height:44px;}
 }
+@media(orientation:portrait),(max-height:720px){
+ main#app.loveroll-evening-page .evening-aftercare:has(.evening-finale-status){gap:3px;padding:8px;}
+ main#app.loveroll-evening-page .evening-aftercare:has(.evening-finale-status) .evening-finale-status{gap:3px;font-size:10px;line-height:1.15;}
+ main#app.loveroll-evening-page .evening-aftercare:has(.evening-finale-status) .evening-finale-person{padding:3px;}
+ main#app.loveroll-evening-page .evening-aftercare:has(.evening-finale-status) .evening-finale-actions{gap:6px;}
+}
