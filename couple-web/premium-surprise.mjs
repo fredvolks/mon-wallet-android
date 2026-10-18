@@ -65,14 +65,9 @@ export function premiumSurpriseHtml({
    '<h2 class="ritual-page-title">Une surprise à partager</h2></header>'+
   '<section class="surprise-month '+(a?'has-activity':'waiting-activity')+
     (needsHost?' host-pending':h?' host-complete':'')+'" aria-label="Notre écrin du mois">'+
-   '<div class="surprise-month-label"><span>'+esc(monthLabel)+'</span></div>'+
-   '<div class="surprise-month-title">'+
-    (needsHost?'<strong>Qui invite ce mois-ci ?</strong><small>Activité '+esc(a.face)+' · '+activityTitle+'</small>':
-     a?'<strong>'+activityTitle+'</strong><small>Activité '+esc(a.face)+'</small>':
-      '<strong>Quelle sera notre prochaine activité ?</strong><small>20 activités · 1 tirage commun ce mois-ci</small>')+
-   '</div>'+
    '<div class="surprise-d20-scene surprise-main-die-scene" aria-label="'+
       (needsHost?'Dé à six faces pour déterminer qui invite':'Dé à vingt faces pour choisir l’activité')+'">'+
+    '<div class="surprise-month-label"><span>'+esc(monthLabel)+'</span></div>'+
     (needsHost?premiumPolyDie(6,hostFaceVisible?rollFace:null,'Dé six faces : pair ou impair',rollingHost,true):
        premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity))+
    '</div>'+
@@ -84,10 +79,9 @@ export function premiumSurpriseHtml({
       button('roll:monthly_activity','Brasser le dé','surprise-primary',rolling))+
    (h&&!needsHost?'<div class="surprise-host-winner" role="status">♥ '+esc(h?names[h.face%2===0?0:1]:'Partenaire')+
      ' invite cette fois-ci !</div>':'')+
-   '<p class="surprise-ecrin-note">20 activités · Un moment pour nous</p>'+
   '</section>'+
   '<section class="surprise-special">'+
-   '<div class="surprise-events-heading"><h3>Nos événements</h3><p>Appuie pour modifier le nom ou la date</p></div>'+
+   '<div class="surprise-events-heading"><h3>Nos événements</h3></div>'+
    '<div class="surprise-special-grid">'+cards.map((e,i)=>
     button('edit-surprise-event:'+e.key+':'+(e.owner||'-'),
      '<span class="surprise-event-symbol" aria-hidden="true">'+eventSymbol(e.key)+'</span>'+

@@ -151,7 +151,7 @@ test('Before D20 roll, Surprise has no separate host bubble and exactly six edit
   'The D6 appears only after the monthly activity is chosen');
  assert.match(html,/data-action="roll:monthly_activity">Brasser le dé<\/button>/);
  assert.doesNotMatch(html,/roll:monthly_host|surprise-invite-inside/);
- assert.match(html,/20 activités · 1 tirage commun ce mois-ci/);
+ assert.doesNotMatch(html,/Quelle sera notre prochaine activité|20 activités · 1 tirage commun|Un moment pour nous|Appuie pour modifier/);
  assert.match(html,/Fête des Mères/);
  assert.match(html,/Fête des Pères/);
  assert.match(html,/Anniversaire couple/);
