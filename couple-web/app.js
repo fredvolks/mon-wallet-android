@@ -448,6 +448,31 @@ function finishInviteReference(){
  history.replaceState(null,'',clean.pathname+clean.search);
  state.inviteAccepted=false;state.inviteError=null;state.inviteAttemptKey=null;
 }
+// Resolve the signup route on the server, not from a fragile browser tab.
+// This lookup checks the confirmed recipient email and never exposes tokens.
+function rememberVerifiedInvitation(invitationId){
+ const value=String(invitationId||'');
+ if(!parseInvitationFromUrl(new URL('?invite_id='+encodeURIComponent(value),location.href).href).id)
+  throw Error('Référence d’invitation invalide.');
+ sessionStorage.setItem('pendingInviteId',value);
+ sessionStorage.removeItem('pendingInvite');
+ sessionStorage.removeItem('loverollInviteAccepted');
+ // An invitation discovered by email requires explicit acceptance.
+ // Never copy approval from an unrelated cached invitation.
+ for(const key of ['pendingInviteId','loverollInviteUntil','loverollInviteAccepted']){
+  try{localStorage.removeItem(key);}catch(error){}
+ }
+ state.inviteAccepted=false;state.showDiscover=false;state.showAuth=false;
+ state.inviteError=null;state.inviteAttemptKey=null;
+}
+async function resolveVerifiedSignup(createOwner=false){
+ const result=await rpc('resolve_love_signup',{p_create_owner:!!createOwner});
+ if(result?.status==='invitation'){
+  if(!result.invitation_id)throw Error('Référence d’invitation manquante.');
+  rememberVerifiedInvitation(result.invitation_id);
+ }
+ return result;
+}
 async function autoAcceptPendingInvite(){
  const invite=pendingInviteReference(sessionStorage);
  if(!invite||!state.inviteAccepted||!state.user||state.passwordRecovery||
@@ -639,6 +664,15 @@ async function reload(){
  const membership=await query('couple_members',{eq:{user_id:state.user.id}});
  const previousCouple=state.coupleId;
  state.coupleId=membership[0]?.couple_id||null;
+ if(!state.coupleId&&!pendingInviteReference(sessionStorage)){
+  // A verification email may open in a different browser; find the pending
+  // invitation from the authenticated recipient before showing "Créer un duo".
+  const resolution=await resolveVerifiedSignup(false);
+  if(resolution?.status==='linked'){
+   const latest=await query('couple_members',{eq:{user_id:state.user.id}});
+   state.coupleId=latest[0]?.couple_id||null;
+  }
+ }
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;state.gifts=[];
@@ -2708,6 +2742,11 @@ async function handle(action,element){
   if(!id('age-confirm')?.checked)throw Error('LoveRoll est réservé aux personnes de 18 ans et plus.');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
   await rpc('save_my_gender',{p_gender:gender});
+  // Invitation => accept existing duo. No invitation => own new admin duo.
+  // Both decisions are authenticated and checked in one server transaction.
+  // An account already linked to a duo is never duplicated.
+  if(!pendingInviteReference(sessionStorage))
+   await resolveVerifiedSignup(true);
   state.installAfterSignup=true;
   await reload();return;
  }
