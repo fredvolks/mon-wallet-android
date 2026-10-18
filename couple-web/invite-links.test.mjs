@@ -55,3 +55,26 @@ test('Client guards against premature sign-in and wrong-account pairing',()=>{
  assert.match(sql,/return public\.accept_love_match\(v_hash\)/);
  assert.doesNotMatch(sql,/delete from public\.couple_members/);
 });
+
+test('Invitation survives a fresh browser tab but expires from local backup',()=>{
+ const transient={getItem:()=>null};
+ const store=new Map([
+  ['pendingInviteId',id],
+  ['loverollInviteUntil',String(Date.now()+60000)]
+ ]);
+ const durable={getItem:key=>store.get(key)||null};
+ assert.deepEqual(pendingInviteReference(transient,durable),{kind:'id',value:id});
+ store.set('loverollInviteUntil',String(Date.now()-1000));
+ assert.equal(pendingInviteReference(transient,durable),null);
+ store.set('loverollInviteUntil',String(Date.now()+60000));
+ store.set('pendingInviteId','invalid');
+ assert.equal(pendingInviteReference(transient,durable),null);
+});
+test('Account creation keeps invite and returning matched accounts do not see expired invitation',()=>{
+ const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
+ assert.match(app,/localStorage\.setItem\('pendingInviteId',value\)/);
+ assert.match(app,/localStorage\.setItem\('loverollInviteAccepted','id:'\+invite\.value\)/);
+ assert.match(app,/completedInvite\?\.kind==='id'/);
+ assert.match(app,/i\.accepted_at&&!i\.cancelled_at\)\)finishInviteReference\(\)/);
+ assert.match(app,/if\(pendingInviteReference\(sessionStorage\)\)throw Error\('Une invitation est en attente\.'\)/);
+});
