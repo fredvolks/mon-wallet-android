@@ -7,7 +7,8 @@ import {createCoupleLiveSync} from './couple-live-sync.mjs?v=20261017-advent119'
 import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
-import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261017-titles136';
+import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261018-weights146';
+import {DICE_WEIGHT_CONFIG,configuredDiceWeights,parseDiceWeightInputs} from './dice-weighting.mjs?v=20261018-weights146';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-scenes138';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-ritual130';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
@@ -959,6 +960,8 @@ function renderHome(){
   state.eveningBoard||sharedEveningTurns(activeEvening,members,state.personal,state.challenges,state.gifts):null;
  frame(premiumHomeHtml({
   weekly:state.weekly,
+  weeklyWeights:state.couple?.weekly_face_weights,
+  weeklyWeightsEnabled:state.couple?.weekly_weights_enabled!==false,
   rolling:state.diceStatus==='rolling',
   disabled:!!state.diceStatus,
   members,
@@ -1638,6 +1641,33 @@ function renderCoupleDateSetting(){
   '<div class="settings-date-field"><strong>Date de début</strong><p>'+safe(formatCoupleDate(started))+'</p></div>')+
   '<p class="tiny-note settings-date-hint">Anniversaire : '+safe(frenchMonthDay(state.occasionSettings?.anniversary_md))+'</p>';
 }
+function adminDiceWeightEditor(kind){
+ const config=DICE_WEIGHT_CONFIG[kind];
+ if(!config)return '';
+ const enabled=state.couple?.[config.enabled]??(kind==='weekly');
+ const values=configuredDiceWeights(state.couple?.[config.weights],config.defaults);
+ const note=kind==='weekly'?
+  'Les chiffres de l’Accueil afficheront exactement ces chances.':
+  'Ces chances concernent les D6 personnels (1 à 6 défis), sans affichage dans Soirée.';
+ const grid=values.map((value,i)=>
+  '<label class="admin-dice-weight-face" for="admin-weight-'+kind+'-'+(i+1)+'">'+
+  '<span>Face '+(i+1)+'</span>'+
+  '<span class="admin-dice-weight-input"><input type="number" inputmode="numeric" min="0" max="100" step="1" '+
+  'id="admin-weight-'+kind+'-'+(i+1)+'" value="'+value+'" aria-label="Chance de la face '+(i+1)+' en pourcentage">'+
+  '<span aria-hidden="true">%</span></span></label>').join('');
+ return '<details class="settings-help-item admin-dice-weight-section" data-dice-weight="'+kind+'">'+
+  '<summary>'+safe(config.label)+'<small>'+(enabled?'Activée':'Désactivée')+'</small></summary>'+
+  '<div class="admin-dice-weight-editor">'+
+  '<label class="push-option"><span><strong>Activer la pondération</strong>'+
+  '<small>Sinon, les six faces ont chacune 1 chance sur 6.</small></span>'+
+  '<input type="checkbox" role="switch" id="admin-weight-'+kind+'-enabled"'+(enabled?' checked':'')+'></label>'+
+  '<p class="tiny-note">'+note+'</p>'+
+  '<div class="admin-dice-weight-grid">'+grid+'</div>'+
+  '<p class="tiny-note">Répartissez 100 % sur les 6 faces (0 % exclut une face). Les tirages déjà enregistrés ne changent pas.</p>'+
+  '<p class="admin-dice-weight-feedback" role="status" aria-live="polite"></p>'+
+  button('save-dice-weights:'+kind,'Enregistrer les pondérations','class="settings-primary admin-dice-weight-save"')+
+  '</div></details>';
+}
 function openSettingsPage(section=''){
  const allowed=['','compte','couple','notifications','jeu','confidentialite','application','aide','aide-connexion','aide-des','aide-sync','admin'];
  if(!allowed.includes(section))return;
@@ -1751,7 +1781,9 @@ function renderSettings(){
   'aide-connexion':{title:'Connexion et invitation',body:'<p>Chaque personne utilise son propre compte. Confirmez votre courriel avant de rejoindre votre partenaire. L’invitation reste conservée pendant la connexion, Google et la récupération du mot de passe.</p><p>Dans Notre duo, le créateur prépare un lien privé. Le destinataire l’accepte avec le courriel auquel il a été invité.</p>'},
   'aide-des':{title:'Dés et activités',body:'<p>Le dé hebdomadaire est commun : un tirage par couple et par semaine. En Soirée, chacun brasse son D6 personnel ; les deux résultats déverrouillent les défis.</p><p>Sensuel et Sexuel : 88 % de la catégorie choisie, 12 % de l’autre. Au hasard : 50 / 50. Les emplacements vides sont exclus ; l’option anti-répétition conserve son cycle entre les soirées.</p><p>La Surprise du mois choisit une activité puis qui invite. L’Avent se débloque par date : une lettre oubliée reste ouvrable plus tard. Un défi non commencé peut être offert, jusqu’à trois fois par mois et par personne.</p>'},
   'aide-sync':{title:'Synchronisation',body:'<p>Les résultats officiels proviennent du serveur et se retrouvent sur les deux comptes associés. Une connexion est nécessaire pour confirmer un lancer ou une ouverture.</p><p>Les listes personnelles de défis restent privées. Les bilans de soirée restent associés à leur auteur dans le calendrier commun.</p>'},
-  aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+(celebrants?'<details class="settings-help-item"><summary>Destinataires des occasions</summary>'+celebrants+'</details>':'')}};
+  aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+
+   adminDiceWeightEditor('weekly')+adminDiceWeightEditor('evening')+
+   (celebrants?'<details class="settings-help-item"><summary>Destinataires des occasions</summary>'+celebrants+'</details>':'')}};
  if(settingsOpenSection==='admin'&&!canEdit)settingsOpenSection='jeu';
  if(!pages[settingsOpenSection])settingsOpenSection='';
  const name=state.profile.display_name||'Mon profil',initial=Array.from(name)[0]||'♡';
@@ -2090,6 +2122,26 @@ async function handle(action,element){
 
  if(verb==='reload-web'){
   await reloadWebAssets(true);return;
+ }
+ if(verb==='save-dice-weights'){
+  const kind=parts[0],config=DICE_WEIGHT_CONFIG[kind];
+  if(!config||!isLoveAdmin())throw Error('Pondérations réservées à l’administrateur du duo.');
+  const values=parseDiceWeightInputs(Array.from({length:6},(_,i)=>id('admin-weight-'+kind+'-'+(i+1))?.value));
+  const switchInput=id('admin-weight-'+kind+'-enabled');
+  if(!switchInput)throw Error('Interrupteur de pondération introuvable.');
+  const enabled=switchInput.checked;
+  await rpc('save_love_dice_weights',{
+   p_couple:state.coupleId,p_kind:kind,p_enabled:enabled,p_weights:values
+  });
+  settingsOpenSection='admin';
+  await reload();
+  const panel=root.querySelector('[data-dice-weight="'+kind+'"]');
+  if(panel){
+   panel.open=true;
+   const status=panel.querySelector('.admin-dice-weight-feedback');
+   if(status)status.textContent='Pondérations enregistrées pour vos prochains tirages.';
+  }
+  return;
  }
  if(verb==='admin-reset-all-dice'){
   if(!isLoveAdmin()||!isSharedCoupleReady(state.coupleId,state.members))
