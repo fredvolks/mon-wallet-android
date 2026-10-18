@@ -2,6 +2,22 @@
 // and safe synthetic Supabase responses. No live users, quotas or DB writes.
 const {chromium}=require('playwright');
 const site=process.env.LOVEROLL_TEST_URL||'http://127.0.0.1:8765/';
+// Live refresh can replace the navigation between pointer-down and pointer-up.
+// Verify the tap selected its tab before waiting for that tab's content. Retry
+// only a missed selection; a disabled tab, dialog or missing view still fails.
+async function selectTab(page,tab){
+ const target=page.locator('.nav [data-action="tab:'+tab+'"]');
+ const selected=page.locator('.nav [data-action="tab:'+tab+'"].active');
+ await target.click();
+ try{await selected.waitFor({timeout:1500});}
+ catch(error){
+  if(await target.isDisabled()||await page.locator('[role="alertdialog"]:visible,[role="dialog"]:visible').count())throw error;
+  const previous=await page.locator('.nav .active').getAttribute('data-action');
+  console.log('NAV_TAP_REPLACED_RETRY',JSON.stringify({from:previous,to:tab}));
+  await target.click();
+  await selected.waitFor({timeout:10000});
+ }
+}
 const fakeSupabase=`
 const user={id:'test-user-1',email:'example1@test.invalid',email_confirmed_at:'2026-10-12T14:00:00Z'};
 const second={id:'test-user-2',email:'example2@test.invalid',email_confirmed_at:'2026-10-12T14:00:00Z'};
@@ -128,7 +144,7 @@ export function createClient(){
    console.log('HOME_DIE_CENTERED_OK',JSON.stringify(center));
    // Regression: tap Soirée after weekly reset. This used to throw
    // Cannot read properties of null (reading 'items') on Samsung.
-   await page.locator('.nav [data-action="tab:session"]').click();
+   await selectTab(page,'session');
    await page.locator('.evening-premium-view.is-finale').waitFor({timeout:10000});
    const copy=await page.locator('.evening-premium-view.is-finale').innerText();
    if(!copy.includes('200 défis à vivre à deux')||copy.includes('Brassez le dé et découvrez votre prochain défi.')||
@@ -147,7 +163,7 @@ export function createClient(){
    console.log('SOIREE_ONE_PAGE_OK','Samsung viewport: shared premium page, disabled weekly start, no old screen');
   }
   if(name==='step1-partner-pending'||name==='step1-partner-result'){
-   await page.locator('.nav [data-action="tab:session"]').click();
+   await selectTab(page,'session');
    await page.locator('.evening-step.one.is-incomplete').waitFor({timeout:10000});
    const layout=await page.evaluate(()=>{
     const own=document.querySelector('.evening-step.one.is-incomplete .evening-user-die');
@@ -181,7 +197,7 @@ export function createClient(){
     throw Error('Already rolled weekly button is hidden or mislabeled '+JSON.stringify(info));
    // This is the essential regression: last tests stopped at locked Soirée
    // and never executed renderSession's real 70-card active branch.
-   await page.locator('.nav [data-action="tab:session"]').click();
+   await selectTab(page,'session');
    await page.locator('.evening-premium-view').waitFor({timeout:10000});
    const evening=await page.locator('.evening-premium-view').innerText();
    if(!evening.includes('Votre défi du soir')||!evening.includes('Voir mes défis')||errors.length)
@@ -189,9 +205,9 @@ export function createClient(){
    const warnings=await page.locator('.toast.visible').allInnerTexts();
    if(warnings.some(t=>/pending is not defined|not defined|impossible/i.test(t)))
     throw Error('S25 active Soirée still shows JS exception '+JSON.stringify(warnings));
-   await page.locator('.nav [data-action="tab:special"]').click();
+   await selectTab(page,'special');
    await page.locator('.surprise-premium-view').waitFor({timeout:10000});
-   await page.locator('.nav [data-action="tab:session"]').click();
+   await selectTab(page,'session');
    await page.locator('.evening-premium-view').waitFor({timeout:10000});
    if(errors.length)throw Error('Returning from Surprise to Soirée caused exception '+JSON.stringify(errors));
    console.log('SOIREE_ACTIVE_ACCESS_OK','two confirmed dice, shared live board, queue button, tab revisit');
