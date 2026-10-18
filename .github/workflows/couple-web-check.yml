@@ -69,14 +69,14 @@ jobs:
           scene=Path('couple-web/assets/loveroll-premium-scene.png')
           with Image.open(scene) as graphic: assert graphic.size==(1200,630)
           assert scene.stat().st_size>30000
-          card=Path('couple-web/assets/loveroll-messenger-og-v43.jpg')
+          card=Path('couple-web/assets/loveroll-messenger-og-v139.png')
           with Image.open(card) as image:
               assert image.size==(1200,630)
-              assert image.format=='JPEG'
+              assert image.format=='PNG'
           assert card.stat().st_size>80000
           page=Path('couple-web/index.html').read_text(encoding='utf8')
-          assert 'loveroll-messenger-og-v43.jpg' in page
-          assert 'og:image:type" content="image/jpeg"' in page
+          assert 'loveroll-messenger-og-v139.png' in page
+          assert 'og:image:type" content="image/png"' in page
           PY
       - name: Validate HD invitation artwork and crisp SVG icons
         run: |
@@ -84,20 +84,20 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           from PIL import Image
-          asset=Path('couple-web/assets/loveroll-invitation-hero-hd.webp')
+          asset=Path('couple-web/assets/loveroll-invitation-scene-v139.webp')
           with Image.open(asset) as im:
               im.verify()
           with Image.open(asset) as im:
               assert im.width>=900 and im.height>=450 and im.format=='WEBP'
           assert asset.stat().st_size>80000, 'Invitation must use a high-resolution asset'
           page=Path('couple-web/discover.mjs').read_text(encoding='utf8')
-          styles=Path('couple-web/invitation-poster.css').read_text(encoding='utf8')
-          assert 'loveroll-invitation-hero-hd.webp' in page
-          assert 'editorialIcons[icon]' in page
-          assert 'discover-v59' in page
-          assert '.discover-v59 .discover-editorial-icon svg' in styles
-          assert '.discover-v59 .discover-accept' in styles
-          assert 'invitation-poster.css' in Path('couple-web/index.html').read_text()
+          styles=Path('couple-web/entry-ritual-v139.css').read_text(encoding='utf8')
+          assert 'loveroll-invitation-scene-v139.webp' in page
+          assert 'editorialIcon(icon)' in page
+          assert 'discover-ritual' in page
+          assert '.discover-ritual .discover-editorial-icon svg' in styles
+          assert '.discover-ritual .discover-accept' in styles
+          assert 'entry-ritual-v139.css' in Path('couple-web/index.html').read_text()
           PY
       - name: Static security and logic contracts
         run: node --test couple-web/reset-ghost-session.test.mjs couple-web/all-dice-reset.test.mjs couple-web/dice-roll-motion.test.mjs couple-web/checks.test.mjs couple-web/couple-dashboard.test.mjs couple-web/json-libraries.test.mjs couple-web/push-and-invite.test.mjs couple-web/evening-turns.test.mjs couple-web/discover-flow.test.mjs couple-web/invite-links.test.mjs couple-web/demo-couple.test.mjs couple-web/email-auth.test.mjs couple-web/premium-home.test.mjs couple-web/force-weekly-reset.test.mjs couple-web/pwa-update.test.mjs couple-web/premium-couple-pages.test.mjs couple-web/dice-visibility-layout.test.mjs couple-web/settings-premium.test.mjs couple-web/invite-password-auth.test.mjs couple-web/auth-push-dice.test.mjs couple-web/email-confirm-existing-google.test.mjs couple-web/existing-account-profile.test.mjs couple-web/native-bridge-login-recovery.test.mjs couple-web/android-native-bridge-thread.test.mjs couple-web/premium-advent.test.mjs couple-web/premium-dialogs.test.mjs couple-web/audit-journal-regressions.test.mjs couple-web/boot-hotfix.test.mjs
@@ -331,6 +331,8 @@ jobs:
       - name: Verify REAL account and invite behaviors against mocked Supabase API
         run: node couple-web/auth-behavior-v58.cjs
 
+      - name: Verify rendez-vous and account fit in Messenger on Android and iPhone
+        run: node couple-web/entry-rendezvous-browser-check.cjs
       - name: Verify REAL public discover and invitation on Android / iPhone responsive widths
         run: node couple-web/actual-discover-visual-check.cjs
 
