@@ -231,3 +231,10 @@ Les contrôles existants des sept indicateurs suivent la nouvelle disposition : 
 Le titre du rituel non tiré garde deux lignes sur téléphone, quelle que soit la métrique de la police de la plateforme. La scène possède une hauteur minimale propre ; le socle est recadré plus bas, et le modèle conserve 24 px d’air au-dessus de lui (18 px sur les plus petits écrans, 10 px en paysage court). La marge optique est une option CSS de la scène d’Accueil : tous les autres socles conservent les 4 px précédents. Matière, gravures, orientations et animation ne changent pas.
 
 Les libellés « Attribués à », le nom et les défis restants occupent des lignes distinctes, comme sur la proposition choisie. Le panneau des statistiques garde les valeurs au-dessus de leurs libellés, y compris sur les écrans courts. Les en-têtes communs gardent leur ancre. Les contrôles du dé mesurent les marges au-dessus du modèle et la séparation avec le sous-titre, en plus du contact au socle. Les parcours de l’Accueil incluent aussi un viewport de 360 × 704, proche des proportions de la capture Android sans les barres système.
+
+
+## Statistiques centrées et progression des défis — Web 135
+
+Le panneau « Nos statistiques » de l’Accueil centre les chiffres, les libellés et leurs précisions tout en conservant les icônes et les valeurs existantes. L’introduction de Soirée devient « 200 défis à vivre à deux », suivie de « Brassez le dé et découvrez votre prochain défi. ». Les titres des étapes d’une soirée active restent contextuels.
+
+La tuile « 100 + 100 » affiche désormais les défis complétés parmi les 200 emplacements Sensuel et Sexuel. La progression réunit les historiques déjà chargés pour les deux partenaires et les cartes de la soirée courante. Chaque emplacement catégorie/numéro complété compte une fois, même après plusieurs réalisations ; les défis simplement pigés, commencés ou passés ne comptent pas. Les essais vérifient les doublons, les états incomplets, la limite de 200 et la même progression depuis les deux comptes simulés.

@@ -1,6 +1,7 @@
 // Editorial primary screens must fit the viewport; long cards use separate panels.
 const {chromium}=require('playwright');
 const fs=require('node:fs'),assert=require('node:assert/strict');
+const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
 (async()=>{
  const {premiumEveningHtml}=await import('./premium-evening.mjs');
  const origin='http://127.0.0.1:8765/';
@@ -31,6 +32,30 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
    if(ready)assert.equal(g.result,'Résultat : 47');
    console.log('EDITORIAL_VIEWPORT_OK',w,h,mode);await p.close();
   }
+ }
+ // Exercise app.js with separate private and shared history sources. Both
+ // accounts must see the same unique progress after a fresh page load.
+ for(const [width,height] of [[360,640],[412,824],[1366,768]])for(const actor of ['a','b']){
+  const world=createWorld();
+  world.challenges=[
+   {couple_id:'c',category:'SENSUEL',face:8,status:'completed',recipient:'a'},
+   {couple_id:'c',category:'SEXUEL',face:8,status:'accepted',recipient:'a'}
+  ];
+  world.calendarChallenges=[
+   {...world.challenges[0]},
+   {category:'SEXUEL',face:8,status:'completed',recipient:'b'},
+   {category:'SENSUEL',face:100,status:'completed',recipient:'b'},
+   {category:'SENSUEL',face:8,status:'completed',recipient:'b'},
+   {category:'SEXUEL',face:99,status:'passed',recipient:'b'}
+  ];
+  const {page,context,errors}=await setupEditorial(browser,world,{width,height,actor,query:'open=session'});
+  try{
+   await page.locator('.evening-premium-view.is-inactive').waitFor();
+   assert.equal(await page.locator('.evening-intro h2').innerText(),'200 défis à vivre à deux');
+   assert.equal(await page.locator('.evening-finale-tiles>div').nth(1).innerText(),'3 / 200\nDéfis complétés');
+   assert.deepEqual(errors,[]);
+   console.log('EVENING_SHARED_PROGRESS_OK',width,height,actor);
+  }finally{await context.close();}
  }
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

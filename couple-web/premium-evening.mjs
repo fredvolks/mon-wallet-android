@@ -4,6 +4,20 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const bt=(action,text,cls='',disabled=false)=>'<button type="button" class="'+cls+'" data-action="'+esc(action)+'"'+
  (action.startsWith('category:')?' aria-pressed="'+(cls.includes('selected')?'true':'false')+'"':'')+
  (disabled?' disabled':'')+'>'+text+'</button>';
+// Progress through the 200 library slots is shared by the couple. A repeated
+// completion, or the same record loaded from two history views, counts once.
+export function completedEveningLibraryCount(history=[]){
+ const slots=new Set();
+ for(const challenge of history||[]){
+  if(challenge?.status!=='completed')continue;
+  const raw=String(challenge.category||'').toUpperCase();
+  const category=raw==='COQUIN'?'SEXUEL':raw;
+  const face=Number(challenge.face);
+  if(!['SENSUEL','SEXUEL'].includes(category)||!Number.isInteger(face)||face<1||face>100)continue;
+  slots.add(category+':'+face);
+ }
+ return slots.size;
+}
 export function premiumPolyDie(sides,face=null,caption='',spinning=false,preview=false){
  const valid=Number.isInteger(face)&&face>=1&&face<=sides;
  // A missing D6 value is NOT 1. Until the official result is known,
@@ -111,7 +125,7 @@ export function premiumEveningHtml({
  challengeOverlay='',showMore=false,confirmCancel=false,rollFace=null,rollingKind=null,
  lastEvening=null,lastD35Face=null,playable=null,ownChallengeCount=0,canStartEvening=true,
  weeklyReady=true,weeklyCount=0,weeklyLimit=1,dailyLocked=false,
- showSensuel=true,showSexuel=true
+ showSensuel=true,showSexuel=true,challengeHistory=[]
 }={}){
  const mine=members.find(m=>m.user_id===me)||members[0]||{},
  partner=members.find(m=>m.user_id!==me)||members[1]||{},
@@ -125,7 +139,6 @@ export function premiumEveningHtml({
   Number(turn.remaining?.[me]||0)>0&&turn.next===me;
  const canGive=ready&&turn.ready&&giftCount<3&&Number(turn.remaining?.[me])>0;
  const challengeText=pending?'♡ Voir notre défi en cours':turn.finished?'Tous les défis terminés':!ready?'En attente des deux D6':canDraw?'À toi de jouer':'En attente de '+esc(partner.name?.split(' ')[0]||'ton partenaire');
- const help='100 Sensuel + 100 Sexuel = 200 cartes · '+(playable?playable.total+' idées jouables':'idées personnalisables')+'; résultats synchronisés';
  const stateText=ready?'✓ Étape 2 débloquée':status?.my_rolled?'Ton lancer est enregistré. Attends ton partenaire.':status?.partner_rolled?'Le résultat de '+esc(partner.name?.split(' ')[0]||'ton partenaire')+' est prêt. À toi de brasser le dé.':'Chaque partenaire brasse son propre dé.';
  const currentStatus=turn.finished?'♡ Tous les défis sont réalisés':turn.drawsFinished?'♡ Tous les défis sont pigés':canDraw?'♥ C’est ton tour !':ready?'Au tour de '+esc(partner.name?.split(' ')[0]||'ton partenaire'):'Étape 2 verrouillée';
  // An official challenge is persisted in Supabase; never show a provisional
@@ -143,8 +156,8 @@ export function premiumEveningHtml({
   ritualHeadingHtml(session?(ready?'ÉTAPE 2 · DÉFI DU SOIR':'ÉTAPE 1 · NOMBRE DE DÉFIS'):'NOTRE RITUEL DE LA SOIRÉE')+
   (session?'<button type="button" class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée">⋯</button>':'<span></span>')+'</div>'+
  '<div class="evening-intro">'+
- '<h2>'+(session?(ready?'Votre défi du soir':'À toi de brasser ton dé'):'Nos défis disponibles')+'</h2>'+
- '<p>'+(session?(ready?'Choisissez une catégorie ou laissez le hasard décider.':'Chaque partenaire brasse son propre dé.'):help)+'</p></div>'+
+ '<h2>'+(session?(ready?'Votre défi du soir':'À toi de brasser ton dé'):'200 défis à vivre à deux')+'</h2>'+
+ '<p>'+(session?(ready?'Choisissez une catégorie ou laissez le hasard décider.':'Chaque partenaire brasse son propre dé.'):'Brassez le dé et découvrez votre prochain défi.')+'</p></div>'+
  (session?
   '<section class="evening-step one '+(ready?'is-complete':'is-incomplete')+'"><div class="evening-step-label"><span class="step-number">1</span><div>'+
   '<strong>ÉTAPE 1 · NOMBRE DE DÉFIS</strong><small>Chacun lance son dé depuis son propre compte.</small></div></div>'+
@@ -218,8 +231,8 @@ export function premiumEveningHtml({
       '<div class="evening-finale-tiles" role="group" aria-label="Informations des soirées">'+
        '<div><strong>'+esc(weeklyCount)+' / '+(weeklyReady?esc(weeklyLimit):'—')+
          '</strong><span>Soirées cette semaine</span></div>'+
-       '<div><strong>100 + 100'+
-         '</strong><span>Sensuel / Sexuel</span></div>'+
+       '<div><strong>'+completedEveningLibraryCount(challengeHistory)+' / 200'+
+         '</strong><span>Défis complétés</span></div>'+
        '<div><strong>'+esc(weeklyCount)+'</strong><span>Soirées terminées</span></div></div>')+
     '<div class="evening-finale-actions">'+
       bt('new-session','♡ COMMENCER NOTRE SOIRÉE','evening-finale-start',!canStartEvening)+

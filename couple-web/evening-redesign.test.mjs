@@ -1,12 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {premiumEveningHtml} from './premium-evening.mjs';
+import {premiumEveningHtml,completedEveningLibraryCount} from './premium-evening.mjs';
 const read=path=>readFileSync(new URL('./'+path,import.meta.url),'utf8');
 const members=[{user_id:'one',name:'Fred Messely'},{user_id:'two',name:'Alex Fred'}];
 const base={session:{id:'s1'},members,me:'one',giftCount:0,
  turn:{ready:false,remaining:{one:2,two:3},targets:{one:2,two:3},completed:{one:0,two:0}},
  playable:{sensual:25,sexual:25,total:50}};
+test('Library progress counts completed slots once across both partners and sessions',()=>{
+ const completed=(category,face,recipient='one')=>({category,face,recipient,status:'completed'});
+ assert.equal(completedEveningLibraryCount(),0);
+ assert.equal(completedEveningLibraryCount([
+  completed('SENSUEL',7),completed('SENSUEL',7,'two'),
+  {...completed('SENSUEL',7),session_id:'another'},
+  completed('SEXUEL',7),completed('COQUIN',7,'two'),
+  completed('SENSUEL','100'),
+  ...['proposed','accepted','passed','refused'].map(status=>({...completed('SEXUEL',9),status})),
+  ...[0,101,-1,1.5,null,'invalid'].map(face=>completed('SEXUEL',face)),
+  completed('UNKNOWN',1),null
+ ]),3);
+ const all=['SENSUEL','SEXUEL'].flatMap(category=>Array.from({length:100},(_,i)=>completed(category,i+1)));
+ assert.equal(completedEveningLibraryCount([...all,...all]),200);
+});
+test('Inactive Soirée invites a roll and shows actual progress through 200 challenges',()=>{
+ for(const [challengeHistory,count] of [
+  [[],0],
+  [[{category:'SENSUEL',face:1,status:'completed'},
+    {category:'SEXUEL',face:1,status:'completed'},
+    {category:'SENSUEL',face:2,status:'accepted'}],2]
+ ]){
+  const html=premiumEveningHtml({members,challengeHistory});
+  assert.match(html,/<h2>200 défis à vivre à deux<\/h2><p>Brassez le dé et découvrez votre prochain défi.<\/p>/);
+  assert.ok(html.includes('<strong>'+count+' / 200</strong><span>Défis complétés</span>'));
+  assert.doesNotMatch(html,/Nos défis disponibles|100 \+ 100|idées jouables|résultats synchronisés/);
+ }
+});
 test('Soirée removes oversized header and old top Options, but retains contextual session management',()=>{
  const html=premiumEveningHtml({...base,status:{both_ready:false}});
  assert.doesNotMatch(html,/<header class="evening-topline">/);

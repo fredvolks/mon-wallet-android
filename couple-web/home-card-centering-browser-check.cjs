@@ -32,7 +32,7 @@ async function measure(page){
    const box=rect(card),icon=card.querySelector(index<3?'.home-summary-value>span':'i');
    const label=card.querySelector(index<3?'small':'span'),value=card.querySelector('strong');
    const texts=[...card.querySelectorAll('strong,small,span')].filter(el=>el!==icon);
-   const lines=texts.flatMap(el=>{const range=document.createRange();range.selectNodeContents(el);return [...range.getClientRects()].filter(r=>r.width>1).map(r=>({text:el.textContent,inside:r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1}));});
+   const lines=texts.flatMap(el=>{const range=document.createRange();range.selectNodeContents(el);const target=rect(el);return [...range.getClientRects()].filter(r=>r.width>1).map(r=>({text:el.textContent,centerError:Math.abs((r.left+r.right-target.left-target.right)/2),inside:r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1}));});
    const i=rect(icon),v=rect(value),l=rect(label),content=rect(card.querySelector(index<3?'.home-summary-content':'.home-stat-content'));
    return {index,box,iconX:(i.left+i.right)/2,labelLeft:l.left,valueLeft:v.left,valueRight:v.right,contentTop:content.top,contentBottom:content.bottom,lines};
   });
@@ -63,7 +63,10 @@ async function measure(page){
      const panel=result.panels[card.index<3?0:1];
      assert.ok(card.box.left>=panel.left&&card.box.right<=panel.right&&card.box.top>=panel.top&&card.box.bottom<=panel.bottom+1,'Row escapes its panel');
      assert.ok(card.contentTop>=card.box.top+1&&card.contentBottom<=card.box.bottom-1,'Row lacks vertical margins');
-     for(const line of card.lines)assert.ok(line.inside,'Text does not fit: '+JSON.stringify(line));
+     for(const line of card.lines){
+      assert.ok(line.inside,'Text does not fit: '+JSON.stringify(line));
+      if(card.index>=3)assert.ok(line.centerError<=1,'Statistics text is not centered: '+JSON.stringify(line));
+     }
     }
     for(const group of [result.cards.slice(0,3),result.cards.slice(3)]){
      assert.ok(Math.max(...group.map(c=>c.iconX))-Math.min(...group.map(c=>c.iconX))<=1,'Icons drift between rows');
