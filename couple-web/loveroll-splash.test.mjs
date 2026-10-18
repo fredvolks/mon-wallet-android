@@ -39,10 +39,10 @@ test('Real initialization owns the destination; outgoing splash is nonblocking a
  assert.doesNotMatch(js,/minimumDuration|minDuration/);
 });
 test('Current boot assets and cache generation are coherent',()=>{
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.139');
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.140');
  assert.ok(html.includes('loveroll-splash.css?v=20261017-complete127'));
  assert.ok(html.includes('boot-recovery.js?v=20261017-glass123'));
  assert.ok(html.includes('loveroll-splash.js?v=20261017-complete127'));
- assert.match(sw,/loveroll-static-v139/);
+ assert.match(sw,/loveroll-static-v140/);
  for(const name of ['loveroll-splash.css','loveroll-splash.js'])assert.ok(sw.includes('./'+name));
 });
