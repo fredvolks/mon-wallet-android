@@ -72,7 +72,7 @@ test('Invitation survives a fresh browser tab but expires from local backup',()=
 });
 test('Account creation keeps invite and returning matched accounts do not see expired invitation',()=>{
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.match(app,/localStorage\.setItem\('pendingInviteId',value\)/);
+ assert.match(app,/localStorage\.setItem\('pendingInviteId',invite\.value\)/);
  assert.match(app,/localStorage\.setItem\('loverollInviteAccepted','id:'\+invite\.value\)/);
  assert.match(app,/completedInvite\?\.kind==='id'/);
  assert.match(app,/i\.accepted_at&&!i\.cancelled_at\)\)finishInviteReference\(\)/);
