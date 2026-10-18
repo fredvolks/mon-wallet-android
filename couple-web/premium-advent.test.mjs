@@ -40,7 +40,7 @@ test('The grid has exactly 25 numbered letters and distinct non-color states',()
  const h=adventPremiumHtml({when:date('2026-12-10T16:00:00Z'),members:couple,openings:[row(1)]});
  assert.equal((h.match(/class="advent-box /g)||[]).length,25);
  assert.equal((h.match(/class="advent-envelope"/g)||[]).length,25);
- assert.match(h,/Les mots doux<br>de décembre/);assert.match(h,/Vingt-cinq lettres, une histoire à deux/);
+ assert.match(h,/Les mots doux de décembre/);assert.doesNotMatch(h,/Vingt-cinq lettres, une histoire à deux/);
  assert.match(h,/À découvrir/);assert.match(h,/Aujourd’hui/);assert.match(h,/✓ Ouverte/);assert.match(h,/À venir/);
  assert.match(h,/data-action="advent-open:2"/);assert.match(h,/data-action="advent-view:1"/);
  assert.match(h,/data-action="advent-locked:11"[^>]*disabled/);

@@ -67,6 +67,8 @@ test('Production home uses actual saved weekly result, disabled state and live c
  assert.match(h,/tab:special/);
  assert.doesNotMatch(h,/data-action="roll:weekly"/);
  const waiting=premiumHomeHtml({...args,weekly:null});
+ assert.match(waiting,/<h2 class="ritual-page-title">Cette semaine, on joue \?<\/h2>/);
+ assert.doesNotMatch(waiting,/Prêts pour votre prochain|home-title-last|Brassez votre dé hebdomadaire/);
  assert.match(waiting,/data-action="roll:weekly"/);
  assert.match(waiting,/data-dice-markers="pips"/);
  assert.match(waiting,/data-dice-preview="true"/);

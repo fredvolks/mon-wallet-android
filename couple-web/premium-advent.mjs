@@ -59,8 +59,7 @@ export function adventPremiumHtml({openings=[],members=[],when=new Date(),year=n
  }).format(new Date(openedAt)):null;
  return '<section class="advent-premium-view advent-letters" aria-label="Les lettres de décembre">'+
   '<header class="advent-top">'+ritualHeadingHtml('NOTRE RITUEL DE L’AVENT')+'</header>'+
-  '<div class="advent-intro"><h1>Les mots doux<br>de décembre.</h1>'+
-  '<p>Vingt-cinq lettres, une histoire à deux.</p></div>'+
+  '<div class="advent-intro"><h1 class="ritual-page-title">Les mots doux de décembre.</h1></div>'+
   '<div class="advent-month-row"><span>Décembre '+cal.year+'</span><strong>'+cal.totalOpened+' / 25</strong>'+
   button('advent-history','<span aria-hidden="true">⋯</span><span class="sr-only">Choisir un calendrier</span>','advent-history-trigger',busy)+'</div>'+
   '<div class="advent-tiles" role="group" aria-label="Les 25 enveloppes de décembre '+cal.year+'">'+grid+'</div>'+

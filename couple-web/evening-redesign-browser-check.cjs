@@ -23,10 +23,15 @@ const {createWorld,setupEditorial}=require('./editorial-fixture.cjs');
     const nav=rect(document.querySelector('.nav'));
     const visible=[...document.querySelectorAll('.evening-premium-view button')].filter(e=>e.getBoundingClientRect().height>0);
     const die=document.querySelector('.is-ready .evening-d35-col .love3d-stage,.is-waiting .evening-my-die .love3d-stage');
-    return {docH:document.documentElement.scrollHeight,docW:document.documentElement.scrollWidth,rootH:document.querySelector('#app').scrollHeight,
+    const title=document.querySelector('.ritual-page-title'),range=document.createRange();range.selectNodeContents(title);
+    return {titleLines:[...range.getClientRects()].filter(r=>r.width>1).length,titleBox:rect(title),titleText:range.getBoundingClientRect().toJSON(),subtitle:document.querySelector('.evening-intro p')?.textContent,
+     docH:document.documentElement.scrollHeight,docW:document.documentElement.scrollWidth,rootH:document.querySelector('#app').scrollHeight,
      nav,die:rect(die),buttons:visible.map(e=>({action:e.dataset.action,...rect(e)})),result:document.querySelector('.evening-d100-result')?.textContent};
    });
    assert.ok(g.docH<=h+2&&g.rootH<=h+2&&g.docW<=w+1,'Primary screen scroll '+JSON.stringify({w,h,mode,g}));
+   assert.equal(g.titleLines,1,'Primary title must stay on one line');
+   assert.ok(g.titleText.left>=g.titleBox.left-1&&g.titleText.right<=g.titleBox.right+1,'Primary title is clipped');
+   assert.equal(g.subtitle,undefined);
    for(const b of g.buttons)assert.ok(b.top>=0&&b.bottom<=g.nav.top+2&&b.left>=0&&b.right<=w+1,'Action obscured '+JSON.stringify({w,h,mode,b,g}));
    if(session){assert.ok(g.die.width>=130&&Math.abs(g.die.width-g.die.height)<2,'Die distorted or too small '+JSON.stringify({w,h,mode,g}));}
    if(ready)assert.equal(g.result,'Résultat : 47');

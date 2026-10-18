@@ -142,7 +142,7 @@ test('Before D20 roll, Surprise has no separate host bubble and exactly six edit
  const html=premiumSurpriseHtml({members:people,settings:{anniversary_md:'08-20',
    birthday_by_user:{first:'01-10',second:'11-25'}},now:new Date('2026-10-14T17:00:00Z')});
  assert.match(html,/class="surprise-header surprise-new-header"/);
- assert.match(html,/Une surprise <br>à partager/);
+ assert.match(html,/Une surprise à partager/);
  assert.doesNotMatch(html,/surprise-top-icons|surprise-header-symbol|surprise-host-grid/);
  assert.equal((html.match(/class="surprise-event-card /g)||[]).length,6);
  assert.equal((html.match(/data-action="edit-surprise-event:/g)||[]).length,6);

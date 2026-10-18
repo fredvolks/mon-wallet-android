@@ -131,7 +131,7 @@ export function createClient(){
    await page.locator('.nav [data-action="tab:session"]').click();
    await page.locator('.evening-premium-view.is-finale').waitFor({timeout:10000});
    const copy=await page.locator('.evening-premium-view.is-finale').innerText();
-   if(!copy.includes('200 défis à vivre à deux')||!copy.includes('Brassez le dé et découvrez votre prochain défi.')||
+   if(!copy.includes('200 défis à vivre à deux')||copy.includes('Brassez le dé et découvrez votre prochain défi.')||
      !(await page.locator('.evening-finale-start').isDisabled())||errors.length)
     throw Error('S25 Soirée access after reset broke '+JSON.stringify({copy:copy.slice(0,200),errors}));
    if((await page.locator('.toast.visible').allInnerTexts()).some(t=>/reading ['"]items['"]/.test(t)))

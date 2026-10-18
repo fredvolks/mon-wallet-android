@@ -13,7 +13,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
   await page.route('https://esm.sh/@supabase/supabase-js@2.57.0*',r=>r.fulfill({contentType:'application/javascript',body:fake}));
   await page.goto('http://127.0.0.1:8765/?boot_case=paired-active');
   await page.locator('.real-home-shell').waitFor();
-  let mobileNavHeight,homeWordTop,homeKicker;
+  let mobileNavHeight,homeWordTop,homeKicker,homeTitle;
   for(const tab of ['home','session','special','advent','settings']){
    try{
     if(tab!=='home')await page.locator('.nav [data-action="tab:'+tab+'"]').click();
@@ -25,6 +25,9 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      const kicker=document.querySelector('.ritual-kicker'),caption=kicker?.getBoundingClientRect(),captionStyle=kicker&&getComputedStyle(kicker);
      const textRange=document.createRange();if(kicker)textRange.selectNodeContents(kicker);
      const textBox=kicker&&textRange.getBoundingClientRect();
+     const title=document.querySelector('.ritual-page-title'),titleBox=title?.getBoundingClientRect(),titleStyle=title&&getComputedStyle(title);
+     const titleRange=document.createRange();if(title)titleRange.selectNodeContents(title);
+     const titleText=title&&titleRange.getBoundingClientRect();
      // A fixed nav can cover a card even when the root never scrolls. Measure
      // the actual controls and full gift border against the nav's top edge.
      const controls=[...main.querySelectorAll('button,a[href],input,textarea,select')].filter(e=>!e.closest('.nav')&&getComputedStyle(e).visibility!=='hidden').map(e=>{
@@ -34,16 +37,25 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      return {documentHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,mainScroll:main.scrollHeight,mainClient:main.clientHeight,navTop:nav.top,navBottom:nav.bottom,
       controlsOutside:controls.filter(r=>r.left< -1||r.right>innerWidth+1||r.top< -1||r.bottom>nav.top-3),giftGap:giftBox&&giftBox.height>0?nav.top-giftBox.bottom:null,
       sections:[...document.querySelectorAll('.real-home-shell > *')].map(e=>({class:e.className,top:Math.round(e.getBoundingClientRect().top),bottom:Math.round(e.getBoundingClientRect().bottom),height:Math.round(e.getBoundingClientRect().height)})),shell:{display:getComputedStyle(document.querySelector('.real-home-shell')||main).display,height:document.querySelector('.real-home-shell')?.getBoundingClientRect().height,top:document.querySelector('.real-home-shell')?.getBoundingClientRect().top},dice:[...document.querySelectorAll('canvas[data-dice-sides]')].map(c=>({side:c.dataset.diceSides,face:c.dataset.face,width:c.clientWidth,height:c.clientHeight,webgl:c.dataset.webglReady})),
+      title:titleBox&&{text:title.textContent,top:titleBox.top,height:titleBox.height,font:titleStyle.font,letterSpacing:titleStyle.letterSpacing,color:titleStyle.color,center:(titleText.left+titleText.right)/2,left:titleText.left,right:titleText.right,lines:[...titleRange.getClientRects()].filter(r=>r.width>1).length},
+      subtitleCount:document.querySelectorAll('.home-title>p,.evening-intro>p,.advent-intro>p,.surprise-header>p').length,
       wordTop:document.querySelector('.ritual-brand b')?.getBoundingClientRect().top,kicker:caption&&{top:caption.top,height:caption.height,font:captionStyle.font,letterSpacing:captionStyle.letterSpacing,color:captionStyle.color,center:(textBox.left+textBox.right)/2},stats:[...document.querySelectorAll('.home-stat-card strong')].map(n=>n.textContent)};
     });
     report.push({name,tab,width,height,...geometry});
     assert.ok(geometry.kicker,'Missing ritual caption');
     assert.ok(Math.abs(geometry.kicker.center-width/2)<=2,'Ritual caption is off-center '+JSON.stringify({name,tab,kicker:geometry.kicker}));
-    if(tab==='home'){homeWordTop=geometry.wordTop;homeKicker=geometry.kicker;}
+    assert.ok(geometry.title,'Missing primary page title');
+    assert.equal(geometry.title.lines,1,'Primary page title wraps');
+    assert.ok(Math.abs(geometry.title.center-width/2)<=2,'Primary page title is off-center');
+    assert.ok(geometry.title.left>=0&&geometry.title.right<=width,'Primary page title is clipped');
+    assert.equal(geometry.subtitleCount,0,'A primary header subtitle is still present');
+    if(tab==='home'){homeWordTop=geometry.wordTop;homeKicker=geometry.kicker;homeTitle=geometry.title;}
     else{
      assert.ok(Math.abs(geometry.wordTop-homeWordTop)<=1,'LoveRoll wordmark moved between tabs '+JSON.stringify({name,tab,homeWordTop,actual:geometry.wordTop}));
      assert.ok(Math.abs(geometry.kicker.top-homeKicker.top)<=1,'Ritual caption moved between tabs '+JSON.stringify({name,tab,homeKicker,actual:geometry.kicker}));
      for(const key of ['height','font','letterSpacing','color'])assert.equal(geometry.kicker[key],homeKicker[key],'Ritual caption typography differs on '+name+'/'+tab+': '+key);
+     assert.ok(Math.abs(geometry.title.top-homeTitle.top)<=1,'Primary title moved between tabs '+JSON.stringify({name,tab,homeTitle,actual:geometry.title}));
+     for(const key of ['height','font','letterSpacing','color'])assert.equal(geometry.title[key],homeTitle[key],'Primary title typography differs on '+name+'/'+tab+': '+key);
     }
     assert.ok(geometry.scrollWidth<=width+1,'horizontal overflow');
     assert.ok(geometry.documentHeight<=height+2&&geometry.mainScroll<=geometry.mainClient+2,'primary page scrolls '+JSON.stringify({name,tab,...geometry}));
@@ -88,7 +100,8 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
      }),'Advent heading overlaps introduction');
     }
     assert.deepEqual(errors,[],'page errors');
-   }catch(error){failures.push(name+'/'+tab+': '+error.message);await page.screenshot({path:'design-captures/'+name+'-'+tab+'-FAIL.png',fullPage:true}).catch(()=>{});}
+    console.log('RITUAL_TITLE_OK',name,tab,JSON.stringify(geometry.title));
+   }catch(error){failures.push(name+'/'+tab+': '+error.message);console.error('DESIGN_VIEW_FAILURE',name,tab,error.message);await page.screenshot({path:'design-captures/'+name+'-'+tab+'-FAIL.png',fullPage:true}).catch(()=>{});}
   }
   if(name==='S25-short'){
    await page.goto('http://127.0.0.1:8765/?boot_case=paired');
@@ -101,6 +114,7 @@ const fake=fs.readFileSync('couple-web/boot-smoke.cjs','utf8').match(/const fake
     dice:document.querySelector('.home-die-platform canvas')?.dataset.face
    }));
    report.push({name:'S25-short',tab:'home-unrolled',...unrolled});
+   assert.equal(unrolled.title,'Cette semaine, on joue ?');
    if(unrolled.last>unrolled.nav+2)failures.push('S25-short/home-unrolled: statistics under navigation '+JSON.stringify(unrolled));
   }
   await page.close();
