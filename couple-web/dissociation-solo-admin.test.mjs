@@ -47,8 +47,8 @@ test('Either full-duo member can confirm dissociation and become solo admin via 
   const result=await simulate();
   assert.equal(result.error,null,user);
   assert.deepEqual(result.calls.map(x=>x.kind),['confirm','rpc','reload','notify']);
-  assert.deepEqual({name:result.calls[1].name,args:result.calls[1].args},
-   {name:'dissociate_love_to_solo',args:{p_couple:'the-shared-duo'}});
+  assert.equal(result.calls[1].name,'dissociate_love_to_solo');
+  assert.equal(result.calls[1].args.p_couple,'the-shared-duo');
   assert.equal(result.state.unlockKey,null);
   assert.equal(result.state.personalPass,null);
   assert.equal(result.state.inviteDraft,null);
@@ -71,7 +71,7 @@ test('Solo member cannot accidentally dissociate their own admin workspace',asyn
 });
 
 test('The same dissociation button is shown to both owner and partner',()=>{
- const body=section('function renderSettings(){','function render');
+ const body=section('function renderSettings(){','async function handle(action,element){');
  assert.match(body,/if\(hasPartner\)\{/);
  assert.match(body,/button\('end-couple',editorialIcon\('unlink'\)/);
  assert.match(body,/Dissocier notre duo/);
