@@ -361,6 +361,24 @@ function bindActions(){
  librarySearch?.addEventListener('input',updateLibraryFilter);
  libraryFilter?.addEventListener('change',updateLibraryFilter);
  if(librarySearch)updateLibraryFilter();
+ // Admin weighting editors: show live total and require exactly 100%.
+ root.querySelectorAll('.admin-dice-weight-section').forEach(section=>{
+  const fields=[...section.querySelectorAll('.admin-dice-weight-face input')];
+  const total=section.querySelector('.admin-dice-weight-total');
+  const saveButton=section.querySelector('.admin-dice-weight-save');
+  const update=()=>{
+   let valid=false;
+   try{parseDiceWeightInputs(fields.map(field=>field.value));valid=true;}catch(error){}
+   const sum=fields.reduce((a,field)=>a+(Number(field.value)||0),0);
+   if(total){
+    total.textContent='Total : '+sum+' / 100 %';
+    total.dataset.valid=valid?'true':'false';
+   }
+   if(saveButton)saveButton.disabled=!valid;
+  };
+  fields.forEach(field=>field.addEventListener('input',update));
+  update();
+ });
  document.querySelectorAll('[data-action]').forEach(el=>{
   el.addEventListener('click',()=>{
    if(el.disabled||el.dataset.busy==='true')return;
@@ -1663,6 +1681,7 @@ function adminDiceWeightEditor(kind){
   '<input type="checkbox" role="switch" id="admin-weight-'+kind+'-enabled"'+(enabled?' checked':'')+'></label>'+
   '<p class="tiny-note">'+note+'</p>'+
   '<div class="admin-dice-weight-grid">'+grid+'</div>'+
+  '<p class="admin-dice-weight-total" data-valid="true" role="status" aria-live="polite">Total : 100 / 100 %</p>'+
   '<p class="tiny-note">Répartissez 100 % sur les 6 faces (0 % exclut une face). Les tirages déjà enregistrés ne changent pas.</p>'+
   '<p class="admin-dice-weight-feedback" role="status" aria-live="polite"></p>'+
   button('save-dice-weights:'+kind,'Enregistrer les pondérations','class="settings-primary admin-dice-weight-save"')+
