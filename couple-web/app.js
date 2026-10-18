@@ -2145,6 +2145,10 @@ async function handle(action,element){
   state.inviteAccepted=true;state.showAuth=true;state.showDiscover=false;
   sessionStorage.setItem('loverollInviteAccepted',invite.kind+':'+invite.value);
   if(invite.kind==='id')try{
+   // Persist only after the recipient expressly accepts the invitation.
+   // Previewing someone else's link must never trap a future login.
+   localStorage.setItem('pendingInviteId',invite.value);
+   localStorage.setItem('loverollInviteUntil',String(Date.now()+7*24*60*60*1000));
    localStorage.setItem('loverollInviteAccepted','id:'+invite.value);
   }catch(error){/* Private-mode storage is optional. */}
   if(state.user)await reload();else render();
@@ -3196,11 +3200,6 @@ async function start(){
   if(kind==='id'){
    sessionStorage.setItem('pendingInviteId',value);
    sessionStorage.removeItem('pendingInvite');
-   try{
-    // Never persist secret tokens. Supabase checks confirmed email server-side.
-    localStorage.setItem('pendingInviteId',value);
-    localStorage.setItem('loverollInviteUntil',String(Date.now()+7*24*60*60*1000));
-   }catch(error){/* Browser storage might be disabled. */}
    // Keep the non-secret reference in the URL for Messenger and OAuth handoffs.
   }else{
    sessionStorage.setItem('pendingInvite',value);
