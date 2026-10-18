@@ -24,10 +24,20 @@ export function parseInvitationFromUrl(value){
  if(!queryId&&token&&!TOKEN.test(token))throw Error('Lien d’invitation invalide.');
  return {id:queryId||null,token:queryId?null:(token||null)};
 }
-export function pendingInviteReference(storage){
+export function pendingInviteReference(storage,durable=typeof localStorage!=='undefined'?localStorage:null){
  const id=storage.getItem('pendingInviteId');
  if(id&&UUID.test(id))return {kind:'id',value:id};
  const token=storage.getItem('pendingInvite');
  if(token&&TOKEN.test(token))return {kind:'token',value:token};
+ // Public invitation IDs (never secret tokens) can survive email verification,
+ // a fresh browser tab and a PKCE/OAuth return on the same origin.
+ if(durable&&durable!==storage){
+  try{
+   const storedId=durable.getItem('pendingInviteId');
+   const until=Number(durable.getItem('loverollInviteUntil'));
+   if(storedId&&UUID.test(storedId)&&Number.isFinite(until)&&until>Date.now())
+    return {kind:'id',value:storedId};
+  }catch(error){/* Local storage may be disabled in private browsers. */}
+ }
  return null;
 }
