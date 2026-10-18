@@ -5,6 +5,7 @@ const {chromium}=require('playwright');
  await page.goto('http://127.0.0.1:8765/social-preview.html',{waitUntil:'load'});
  await page.locator('figure img').evaluate(el=>el.decode());await page.evaluate(()=>document.fonts.ready);
  await page.screenshot({path:'couple-web/assets/loveroll-messenger-og-v139.png'});
+ await page.screenshot({path:'couple-web/assets/loveroll-messenger-og-v142.jpg',type:'jpeg',quality:90});
  await page.evaluate(()=>document.body.classList.add('scene-only'));
  await page.screenshot({path:'couple-web/assets/loveroll-rendezvous-scene-v139.png'});
  console.log('RENDEZVOUS_SOCIAL_139 1200x630');

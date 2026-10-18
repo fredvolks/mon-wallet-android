@@ -4,7 +4,15 @@ Re-author with social-preview.html and render-social-preview.cjs. No personal da
 from pathlib import Path
 import shutil
 import struct
+from PIL import Image
 root = Path(__file__).resolve().parent / 'assets'
+share = root / 'loveroll-messenger-og-v142.jpg'
+with Image.open(share) as image:
+    assert image.format == 'JPEG' and image.mode == 'RGB', share.name
+    assert image.size == (1200,630), share.name
+    image.verify()
+assert 30000 < share.stat().st_size < 250000, 'Keep the Messenger JPEG lightweight'
+print('LoveRoll Messenger JPEG:', share.name, share.stat().st_size, 'bytes')
 for source, output in [('loveroll-messenger-og-v139.png','loveroll-invite-og.png'),
                        ('loveroll-rendezvous-scene-v139.png','loveroll-premium-scene.png')]:
     asset = root / source
