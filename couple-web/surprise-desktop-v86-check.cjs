@@ -26,11 +26,13 @@ const assert=require('node:assert/strict');
        .map(rect);
      const host=document.querySelector('.surprise-host');
      const month=document.querySelector('.surprise-month');
+     const gallery=document.querySelector('.surprise-gallery');
      const special=document.querySelector('.surprise-special');
      const events=[...document.querySelectorAll('.surprise-event-card')].map(rect);
      return {viewport:{w:innerWidth,h:innerHeight},docH:document.documentElement.scrollHeight,
       bodyH:document.body.scrollHeight,rootH:root.scrollHeight,panelH:panel.scrollHeight,
-      panel:rect(panel),nav:rect(nav),month:rect(month),host:rect(host),special:rect(special),
+      panel:rect(panel),nav:rect(nav),gallery:rect(gallery),month:rect(month),host:rect(host),special:rect(special),
+      controls:[...document.querySelectorAll('.surprise-month>.surprise-primary')].map(rect),
       events,d6,d6Mine:rect(document.querySelector('.evening-my-die .love3d-stage')),
       d6Partner:rect(document.querySelector('.evening-partner-die .love3d-stage')),
       d20:rect(document.querySelector('.surprise-d20-scene')),
@@ -47,9 +49,14 @@ const assert=require('node:assert/strict');
      assert.equal(size.host,null,'Old separate Qui invite card must be gone');
      if(view==='surprise-ready')
        assert.ok(size.d20?.height>50,'Monthly activity D20 remains visible with inline invite '+name);
-     for(const key of ['month','special'])assert.ok(size[key]?.height>75&&
+     // The photograph and controls now occupy separate slots of one gallery.
+     for(const key of ['gallery','special'])assert.ok(size[key]?.height>75&&
        size[key].bottom<=size.docH+2,'Section clipped '+key+' '+name+' '+JSON.stringify(size));
      assert.ok(size.d20?.height>50,'D20 missing '+name+' '+JSON.stringify(size));
+     assert.ok(size.d20.bottom<=size.nav.top+2,'Photo overlaps navigation '+name);
+     assert.equal(size.controls.length,1,'Monthly action missing '+name);
+     for(const control of size.controls)assert.ok(control.height>=40&&control.top>=size.panel.top&&control.bottom<=size.nav.top+2,
+       'Monthly action clipped '+name+' '+JSON.stringify(size));
     }else if(view==='evening'){
      assert.equal(size.d6.length,2,'Need both official D6 dice in step 1 '+name);
      for(const die of size.d6)assert.ok(die.width>=90&&die.height>=90,
