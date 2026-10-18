@@ -359,7 +359,10 @@ test('Removing a partner retains their own diary and removes access at the serve
  assert.doesNotMatch(sql,/delete from public\.couple_intimacy/);
  assert.match(sql,/on conflict\s*\(user_id,source_event_id\) do nothing/);
  assert.match(sql,/create or replace function public\.add_my_love_event/);
- assert.match(app,/rpc\('end_love_match'/);
+ const splitSql=readFileSync(new URL('./migrations/20261018_dissociate_to_two_solo_admins.sql',import.meta.url),'utf8');
+ assert.match(splitSql,/public\.end_love_match\(p_couple\)/);
+ assert.match(splitSql,/insert into public\.couples\(owner_user_id\)/);
+ assert.match(app,/rpc\('dissociate_love_to_solo'/);
  assert.match(app,/rpc\('add_my_love_event'/);
  assert.match(app,/function renderPersonalJournal\(/);
  assert.match(app,/state\.personalPass=null/);
@@ -370,7 +373,7 @@ test('Optional partner linking, settings management and individualized tips',()=
  assert.match(matchHtml('Camille',false),/prepare-cards/);
  assert.match(app,/function renderWaitingPartner\(/);
  assert.doesNotMatch(app,/function renderSolo\(/);
- assert.match(app,/Dissocier mon partenaire/);
+ assert.match(app,/Dissocier notre duo/);
  assert.match(app,/Inviter un conjoint ou une conjointe/);
  assert.match(app,/function ideaHtml\(/);
  assert.match(app,/Chacun peut dire non/);
