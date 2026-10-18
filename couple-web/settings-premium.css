@@ -83,6 +83,8 @@ main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-
 main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-input input[type="number"]::-webkit-inner-spin-button{appearance:none;margin:0;}
 main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-input>span{position:absolute;top:50%;right:11px;transform:translateY(-50%);font-size:13px;color:var(--ritual-muted);pointer-events:none;}
 main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-save{width:100%;margin:0;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-total{color:var(--ritual-muted);font-size:13px;font-variant-numeric:tabular-nums;}
+main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-total[data-valid="false"]{color:var(--ritual-rose);}
 main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-feedback:empty{display:none;}
 main#app.loveroll-settings-page [data-settings-page="admin"] .admin-dice-weight-feedback:not(:empty){color:var(--ritual-rose);font-size:13px;}
 
