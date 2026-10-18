@@ -19,8 +19,8 @@ const {glassState}=require('./crystal-glass-browser-check.cjs');
      const inspect=()=>page.evaluate(()=>{
       const c=document.querySelector('.home-die-platform canvas'),b=c.loveRollDie.projectedBounds(),r=c.getBoundingClientRect(),scene=c.closest('.home-die-theater').getBoundingClientRect();
       const nav=document.querySelector('.nav').getBoundingClientRect(),stats=document.querySelector('.home-stats-grid').getBoundingClientRect();
-      const title=document.querySelector('.home-title h2'),titleBox=title.getBoundingClientRect(),subtitle=document.querySelector('.home-title p').getBoundingClientRect();
-      return {face:c.dataset.face,markers:c.dataset.diceMarkers,preview:c.dataset.dicePreview==='true',q:c.loveRollDie.readState().quaternion,webgl:c.dataset.webglReady,contact:Number(c.dataset.podiumContact),meshBottom:r.top+b.bottom*r.height-scene.top,meshTop:r.top+b.top*r.height-scene.top,headroom:parseFloat(getComputedStyle(c.closest('.home-die-theater')).getPropertyValue('--dice-headroom')),titleLines:titleBox.height/parseFloat(getComputedStyle(title).lineHeight),subtitleGap:r.top+b.top*r.height-subtitle.bottom,sceneHeight:scene.height,sceneWidth:scene.width,navTop:nav.top,statsBottom:stats.bottom,bodyHeight:document.documentElement.scrollHeight,horizontal:document.documentElement.scrollWidth-innerWidth,textFits:[...document.querySelectorAll('.home-stat-card')].every(card=>[...card.querySelectorAll('strong,span,small')].every(t=>t.getBoundingClientRect().bottom<=Math.min(card.getBoundingClientRect().bottom,nav.top)+1))};
+      const title=document.querySelector('.home-title h2'),titleBox=title.getBoundingClientRect();
+      return {face:c.dataset.face,markers:c.dataset.diceMarkers,preview:c.dataset.dicePreview==='true',q:c.loveRollDie.readState().quaternion,webgl:c.dataset.webglReady,contact:Number(c.dataset.podiumContact),meshBottom:r.top+b.bottom*r.height-scene.top,meshTop:r.top+b.top*r.height-scene.top,headroom:parseFloat(getComputedStyle(c.closest('.home-die-theater')).getPropertyValue('--dice-headroom')),titleLines:titleBox.height/parseFloat(getComputedStyle(title).lineHeight),titleGap:r.top+b.top*r.height-titleBox.bottom,sceneHeight:scene.height,sceneWidth:scene.width,navTop:nav.top,statsBottom:stats.bottom,bodyHeight:document.documentElement.scrollHeight,horizontal:document.documentElement.scrollWidth-innerWidth,textFits:[...document.querySelectorAll('.home-stat-card')].every(card=>[...card.querySelectorAll('strong,span,small')].every(t=>t.getBoundingClientRect().bottom<=Math.min(card.getBoundingClientRect().bottom,nav.top)+1))};
      });
      const initial=await inspect();await page.waitForTimeout(500);const result=await inspect();
      assert.deepEqual(result.q,initial.q,'Idle weekly die moved');assert.equal(result.webgl,'true');
@@ -28,8 +28,8 @@ const {glassState}=require('./crystal-glass-browser-check.cjs');
      assert.equal(result.preview,face===null,'Only an unrolled Home D6 is a preview');
      assert.ok(Math.abs(result.meshBottom-result.contact)<=2,JSON.stringify(result));assert.ok(result.meshTop>=-2&&result.meshBottom<=result.sceneHeight+2,JSON.stringify(result));
      assert.ok(result.meshTop>=result.headroom-1,'Die lost its breathing room: '+JSON.stringify(result));
-     assert.ok(result.subtitleGap>=result.headroom,'Die overlaps the header: '+JSON.stringify(result));
-     if(!face&&width<900)assert.ok(Math.abs(result.titleLines-2)<.05,'The selected portrait title must stay on two lines: '+JSON.stringify(result));
+     assert.ok(result.titleGap>=result.headroom,'Die overlaps the header: '+JSON.stringify(result));
+     assert.ok(Math.abs(result.titleLines-1)<.05,'The primary title must stay on one line: '+JSON.stringify(result));
      assert.ok(result.statsBottom<=result.navTop-3&&result.textFits,JSON.stringify(result));assert.ok(result.bodyHeight<=height+2&&result.horizontal<=1,JSON.stringify(result));
      if(face)assert.equal(result.face,String(face));assert.deepEqual(errors,[]);
      if(name==='S25'){

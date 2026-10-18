@@ -40,8 +40,8 @@ test('v79 fixes both invitation visual and registration without full-page scalin
  assert.doesNotMatch(html,/entry-viewport-v78\.js/);
  assert.doesNotMatch(html,/mobile-entry-v76\.css|mobile-entry-v77\.css|mobile-entry-v78\.css/);
  assert.doesNotMatch(html,/loveroll-entry-viewport-safety/);
- assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.135');
- assert.match(sw,/loveroll-static-v135/);
+ assert.equal(JSON.parse(read('web-version.json')).build,'2026-10-17.136');
+ assert.match(sw,/loveroll-static-v136/);
  assert.match(sw,/\.\/mobile-entry-v79\.css/);
  assert.doesNotMatch(sw,/entry-viewport-v78\.js/);
 });

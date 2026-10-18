@@ -238,3 +238,10 @@ Les libellés « Attribués à », le nom et les défis restants occupent des li
 Le panneau « Nos statistiques » de l’Accueil centre les chiffres, les libellés et leurs précisions tout en conservant les icônes et les valeurs existantes. L’introduction de Soirée devient « 200 défis à vivre à deux », suivie de « Brassez le dé et découvrez votre prochain défi. ». Les titres des étapes d’une soirée active restent contextuels.
 
 La tuile « 100 + 100 » affiche désormais les défis complétés parmi les 200 emplacements Sensuel et Sexuel. La progression réunit les historiques déjà chargés pour les deux partenaires et les cartes de la soirée courante. Chaque emplacement catégorie/numéro complété compte une fois, même après plusieurs réalisations ; les défis simplement pigés, commencés ou passés ne comptent pas. Les essais vérifient les doublons, les états incomplets, la limite de 200 et la même progression depuis les deux comptes simulés.
+
+
+## Titres principaux harmonisés — Web 136
+
+L’Accueil propose « Cette semaine, on joue ? » avant le tirage, puis affiche toujours le nombre officiel de soirées obtenu. Les cinq onglets partagent la même hauteur de titre, la même police et un centrage sur la page. Les sous-titres des introductions sont retirés ; Surprise et Avent n’imposent plus de saut de ligne dans leur titre. Les instructions des cartes et les indications des étapes restent dans leurs sections respectives.
+
+La feuille commune `ritual-titles.css` est chargée après les dispositions existantes et préchargée hors ligne. Elle adapte aussi l’ancrage des titres en paysage compact et sur l’Avent PC. Le contrôle des cinq onglets compare les lignes de texte réellement rendues, leur centrage, leur hauteur et leur typographie, en plus des vérifications de navigation et de contenu existantes.

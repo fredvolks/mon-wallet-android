@@ -140,9 +140,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const coupleStats=coupleHomeStats(history,sessions,members,now);
  const memberA=escape(members[0]?.name||'Partenaire 1');
  const memberB=escape(members[1]?.name||'Partenaire 2');
- const weeklyTitle=ready?weekly.face+' soirée'+(weekly.face===1?'':'s')+' de défi':'Prêts pour votre prochain rituel ?';
- const titleMarkup=ready?escape(weeklyTitle):'Prêts pour votre prochain <span class="home-title-last">rituel ?</span>';
- const weeklySubtitle=ready?'cette semaine':'Brassez votre dé hebdomadaire';
+ const weeklyTitle=ready?weekly.face+' soirée'+(weekly.face===1?'':'s')+' de défi':'Cette semaine, on joue ?';
  const statistic=(value,label,subtitle,cls='')=>
   '<div class="home-stat-card '+cls+'"><div class="home-stat-content"><i aria-hidden="true">'+({completed:'★',partners:'♧',categories:'♡',streak:'▥'}[cls]||'')+'</i><strong>'+escape(value)+'</strong>'+
   '<span>'+escape(label)+'</span><small>'+escape(subtitle)+'</small></div></div>';
@@ -157,7 +155,7 @@ export function premiumHomeHtml({weekly=null,rolling=false,disabled=false,member
  const pending=rolling||disabled;
  return '<section class="real-home-shell" aria-label="Tableau de bord du couple">'+
    '<div class="home-ritual">'+ritualHeadingHtml('NOTRE RITUEL DE LA SEMAINE')+
-   '<div class="home-title"><h2>'+titleMarkup+'</h2><p>'+weeklySubtitle+'</p></div></div>'+
+   '<div class="home-title"><h2 class="ritual-page-title">'+escape(weeklyTitle)+'</h2></div></div>'+
    '<div class="home-die-theater" aria-label="Dé à six faces en trois dimensions">'+
    '<div class="home-fabric-photo" aria-hidden="true"></div>'+
    '<div class="home-satin-orbit" aria-hidden="true"></div>'+

@@ -62,7 +62,7 @@ export function premiumSurpriseHtml({
  const monthLabel=new Intl.DateTimeFormat('fr-CA',{month:'long',timeZone:'America/Toronto'}).format(now);
  return '<div class="surprise-premium-view surprise-ecrin">'+
   '<header class="surprise-header surprise-new-header">'+ritualHeadingHtml('NOTRE RITUEL DE LA SURPRISE')+
-   '<h2>Une surprise <br>à partager</h2></header>'+
+   '<h2 class="ritual-page-title">Une surprise à partager</h2></header>'+
   '<section class="surprise-month '+(a?'has-activity':'waiting-activity')+
     (needsHost?' host-pending':h?' host-complete':'')+'" aria-label="Notre écrin du mois">'+
    '<div class="surprise-month-label"><span>'+esc(monthLabel)+'</span></div>'+

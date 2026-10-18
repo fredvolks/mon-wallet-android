@@ -30,7 +30,8 @@ test('Inactive Soirée invites a roll and shows actual progress through 200 chal
     {category:'SENSUEL',face:2,status:'accepted'}],2]
  ]){
   const html=premiumEveningHtml({members,challengeHistory});
-  assert.match(html,/<h2>200 défis à vivre à deux<\/h2><p>Brassez le dé et découvrez votre prochain défi.<\/p>/);
+  assert.match(html,/<h2 class="ritual-page-title">200 défis à vivre à deux<\/h2><\/div>/);
+  assert.doesNotMatch(html,/Brassez le dé et découvrez votre prochain défi/);
   assert.ok(html.includes('<strong>'+count+' / 200</strong><span>Défis complétés</span>'));
   assert.doesNotMatch(html,/Nos défis disponibles|100 \+ 100|idées jouables|résultats synchronisés/);
  }
@@ -39,7 +40,7 @@ test('Soirée removes oversized header and old top Options, but retains contextu
  const html=premiumEveningHtml({...base,status:{both_ready:false}});
  assert.doesNotMatch(html,/<header class="evening-topline">/);
  assert.doesNotMatch(html,/NOTRE SOIRÉE PARTAGÉE|⋯ Options/);
- assert.match(html,/<h2>À toi de brasser ton dé<\/h2>/);
+ assert.match(html,/<h2 class="ritual-page-title">À toi de brasser ton dé<\/h2>/);
  assert.match(html,/class="evening-manage" data-action="evening-more" aria-label="Gérer notre soirée"/);
  assert.match(html,/data-action="evening-list"/);
  assert.match(html,/data-action="give-challenge"/);
