@@ -146,8 +146,7 @@ BEGIN
  insert into public.couple_events(couple_id,event_type,actor_id,title)
  values(p_couple,'roll',auth.uid(),p_kind);
  return old;
-end; $function$
-
+end; $function$;
 
 CREATE OR REPLACE FUNCTION public.roll_my_evening_d6(p_session uuid)
  RETURNS couple_personal_rolls
@@ -184,5 +183,4 @@ BEGIN
  -- A second invocation returns the same record and DOES NOT reroll.
  RETURN r;
 END;
-$function$
-
+$function$;
