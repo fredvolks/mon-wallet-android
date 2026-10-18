@@ -67,11 +67,11 @@ test('Messenger invitation is one clickable link, not a giant blue block',()=>{
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  assert.match(html,/og:image:width" content="1200"/);
  assert.match(html,/og:image:height" content="630"/);
- assert.match(html,/loveroll-messenger-og-v43\.jpg/);
+ assert.match(html,/loveroll-messenger-og-v139\.png/);
  assert.doesNotMatch(html,/loveroll-invite-og\.png\?v=5/);
- const image=readFileSync(new URL('./assets/loveroll-messenger-og-v43.jpg',import.meta.url));
+ const image=readFileSync(new URL('./assets/loveroll-messenger-og-v139.png',import.meta.url));
  assert.ok(image.byteLength>80000);
- assert.equal(image[0],0xff);assert.equal(image[1],0xd8);
+ assert.deepEqual([...image.subarray(0,8)],[137,80,78,71,13,10,26,10]);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert.match(app,/verb==='send-messenger'\?invitationMessengerText\(d\.link\)/);
  assert.match(app,/navigator\.share\(\{url:d\.link\}\)/);

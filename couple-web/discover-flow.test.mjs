@@ -10,7 +10,7 @@ const sql=readFileSync(new URL('./migrations/20261014_safe_unpair_portable_libra
 
 test('Invitation immediately renders the approved premium visual, not authentication',()=>{
  const h=discoverHtml(true);
- for(const label of ['UNE INVITATION POUR VOTRE COUPLE','Ce soir,','joue','ensemble.','Soirée','Surprise','Avent','Couple','Prêts à lancer le dé'])
+ for(const label of ['UNE INVITATION POUR NOUS DEUX','On se donne','rendez-vous ?','Soirées','surprise','Avent','événements à deux','200 défis.'])
   assert.ok(h.includes(label),label);
  assert.match(h,/data-action="invite-start"/);
  assert.match(h,/ACCEPTER L’INVITATION/);
@@ -20,12 +20,12 @@ test('Invitation immediately renders the approved premium visual, not authentica
  assert.match(h,/discover-editorial-die/);
  assert.match(css,/\.discover-editorial-die/);
  assert.match(css,/\.discover-accept/);
- assert.match(h,/loveroll-invitation-hero-hd\.webp/);
+ assert.match(h,/loveroll-invitation-scene-v139\.webp/);
  assert.match(h,/fetchpriority="high"/);
  assert.match(css,/\.discover-editorial-list/);
  assert.equal((h.match(/class="discover-editorial-item /g)||[]).length,4);
  const shell=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
- assert.match(shell,/loveroll-invitation-hero-hd\.webp/);
+ assert.match(shell,/loveroll-invitation-scene-v139\.webp/);
 });
 
 test('Public homepage shares the same premium visual while retaining account entry',()=>{
@@ -58,7 +58,7 @@ test('App-wide theme brings premium visual language to all signed-in sections',(
  }
  assert.match(html,/premium-theme\.css/);
  assert.match(worker,/premium-theme\.css/);
- assert.match(worker,/loveroll-static-v138/);
+ assert.match(worker,/loveroll-static-v139/);
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{

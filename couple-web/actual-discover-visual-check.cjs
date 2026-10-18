@@ -4,9 +4,7 @@ const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path');
 const html=`<!doctype html><html lang="fr-CA"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./premium-theme.css">
-<link rel="stylesheet" href="./discover.css"><link rel="stylesheet" href="./approved-artwork.css">
-<link rel="stylesheet" href="./satin-reference.css"><link rel="stylesheet" href="./invitation-poster.css"><link rel="stylesheet" href="./responsive-tablet-desktop.css"></head><body><main id="app"></main>
+${[...fs.readFileSync(path.join(__dirname,'index.html'),'utf8').matchAll(/<link rel="stylesheet" href="(\.\/[^"]+)"/g)].map(m=>'<link rel="stylesheet" href="'+m[1]+'">').join('')}</head><body><main id="app"></main>
 <script type="module">
 import {discoverHtml} from './discover.mjs';
 document.getElementById('app').innerHTML=discoverHtml(new URLSearchParams(location.search).has('invite'));
