@@ -2762,13 +2762,24 @@ async function handle(action,element){
  }
  if(verb==='prepare-cards'){
   if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
-  if(!state.coupleId)await rpc('create_love_match',{p_anniversary_md:null});
+  if(!state.coupleId){
+   const decision=await resolveVerifiedSignup(false);
+   if(decision?.status==='invitation'||decision?.status==='linked'){
+    await reload();return;
+   }
+   await rpc('create_love_match',{p_anniversary_md:null});
+  }
   state.tab='library';
   await reload();
   notify('Votre bibliothèque privée est prête. Invitez votre conjointe plus tard.');
   return;
  }
  if(verb==='create-couple'){
+  if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
+  const decision=await resolveVerifiedSignup(false);
+  if(decision?.status==='invitation'||decision?.status==='linked'){
+   await reload();return;
+  }
   const date=parseMonthDay('signup-couple',false);
   await rpc('create_love_match',{p_anniversary_md:date});
   await reload();return;
