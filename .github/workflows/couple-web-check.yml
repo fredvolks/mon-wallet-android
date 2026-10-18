@@ -69,14 +69,14 @@ jobs:
           scene=Path('couple-web/assets/loveroll-premium-scene.png')
           with Image.open(scene) as graphic: assert graphic.size==(1200,630)
           assert scene.stat().st_size>30000
-          card=Path('couple-web/assets/loveroll-messenger-og-v139.png')
+          card=Path('couple-web/assets/loveroll-messenger-og-v142.jpg')
           with Image.open(card) as image:
               assert image.size==(1200,630)
-              assert image.format=='PNG'
-          assert card.stat().st_size>80000
+              assert image.format=='JPEG' and image.mode=='RGB'
+          assert 30000 < card.stat().st_size < 250000
           page=Path('couple-web/index.html').read_text(encoding='utf8')
-          assert 'loveroll-messenger-og-v139.png' in page
-          assert 'og:image:type" content="image/png"' in page
+          assert 'loveroll-messenger-og-v142.jpg' in page
+          assert 'og:image:type" content="image/jpeg"' in page
           PY
       - name: Validate HD invitation artwork and crisp SVG icons
         run: |

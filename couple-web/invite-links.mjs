@@ -5,7 +5,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const TOKEN=/^[0-9a-f]{64}$/i;
 export const INVITATION_REVISION='20261014-messenger-v5';
 // Share revision seen with working image cards in Messenger; kept separate from auth flow.
-export const MESSENGER_SHARE_PREVIEW_REVISION='20261017-rendezvous139';
+export const MESSENGER_SHARE_PREVIEW_REVISION='20261017-messenger142';
 export function inviteLinkForId(siteUrl,invitationId){
  if(!UUID.test(invitationId||''))throw Error('Référence d’invitation invalide.');
  const url=new URL(siteUrl);
