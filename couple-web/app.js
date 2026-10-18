@@ -438,6 +438,10 @@ function finishInviteReference(){
  sessionStorage.removeItem('pendingInvite');
  sessionStorage.removeItem('pendingInviteId');
  sessionStorage.removeItem('loverollInviteAccepted');
+ // The same public ID may have been kept across a new tab or email redirect.
+ for(const key of ['pendingInviteId','loverollInviteUntil','loverollInviteAccepted']){
+  try{localStorage.removeItem(key);}catch(error){/* Private storage may be unavailable. */}
+ }
  const clean=new URL(location.href);
  for(const key of ['invite_id','v','auth','type','token'])clean.searchParams.delete(key);
  clean.hash='';
@@ -652,6 +656,12 @@ async function reload(){
   query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'})
  ]);
  state.invitations=invitations;
+ // A repeated invite link is not an expired match when its recipient is
+ // already a member of the exact shared couple.
+ const completedInvite=pendingInviteReference(sessionStorage);
+ if(completedInvite?.kind==='id'&&invitations.some(i=>
+   i.id===completedInvite.value&&i.couple_id===state.coupleId&&
+   i.accepted_at&&!i.cancelled_at))finishInviteReference();
  state.couple=couple[0]||null;
  if(state.couple?.owner_user_id===state.user.id){
   const [cards,activities,adventConfig,adventDays,specialSettings]=await Promise.all([
@@ -2134,6 +2144,9 @@ async function handle(action,element){
   if(!invite)throw Error('Invitation introuvable.');
   state.inviteAccepted=true;state.showAuth=true;state.showDiscover=false;
   sessionStorage.setItem('loverollInviteAccepted',invite.kind+':'+invite.value);
+  if(invite.kind==='id')try{
+   localStorage.setItem('loverollInviteAccepted','id:'+invite.value);
+  }catch(error){/* Private-mode storage is optional. */}
   if(state.user)await reload();else render();
   return;
  }
@@ -2143,6 +2156,7 @@ async function handle(action,element){
   if(pendingInviteReference(sessionStorage)){
    state.inviteAccepted=false;state.showAuth=false;
    sessionStorage.removeItem('loverollInviteAccepted');
+   try{localStorage.removeItem('loverollInviteAccepted');}catch(error){}
   }else state.showAuth=verb==='discover-back';
   render();return;
  }
@@ -3182,6 +3196,11 @@ async function start(){
   if(kind==='id'){
    sessionStorage.setItem('pendingInviteId',value);
    sessionStorage.removeItem('pendingInvite');
+   try{
+    // Never persist secret tokens. Supabase checks confirmed email server-side.
+    localStorage.setItem('pendingInviteId',value);
+    localStorage.setItem('loverollInviteUntil',String(Date.now()+7*24*60*60*1000));
+   }catch(error){/* Browser storage might be disabled. */}
    // Keep the non-secret reference in the URL for Messenger and OAuth handoffs.
   }else{
    sessionStorage.setItem('pendingInvite',value);
@@ -3191,11 +3210,20 @@ async function start(){
    currentUrl.hash=frag.toString();
    history.replaceState(null,'',currentUrl.pathname+currentUrl.search+currentUrl.hash);
   }
-  state.inviteAccepted=sessionStorage.getItem('loverollInviteAccepted')===key;
+  let rememberedConsent=null;
+  try{rememberedConsent=localStorage.getItem('loverollInviteAccepted');}catch(error){}
+  state.inviteAccepted=sessionStorage.getItem('loverollInviteAccepted')===key||
+   (kind==='id'&&rememberedConsent===key);
+  if(state.inviteAccepted)sessionStorage.setItem('loverollInviteAccepted',key);
   state.showAuth=state.inviteAccepted;
  }else{
   const existing=pendingInviteReference(sessionStorage);
-  state.inviteAccepted=!!existing&&sessionStorage.getItem('loverollInviteAccepted')===existing.kind+':'+existing.value;
+  let consent=sessionStorage.getItem('loverollInviteAccepted');
+  if(existing?.kind==='id'&&!consent)try{
+   consent=localStorage.getItem('loverollInviteAccepted');
+  }catch(error){}
+  state.inviteAccepted=!!existing&&consent===existing.kind+':'+existing.value;
+  if(state.inviteAccepted)state.showAuth=true;
  }
  if(!client){render();return;}
  const {data,error}=await client.auth.getUser();
