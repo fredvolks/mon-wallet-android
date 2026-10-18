@@ -1662,16 +1662,15 @@ function renderSettings(){
  if(hasPartner){
   const initials=[state.profile.display_name,other()?.name||'Partenaire'].map(n=>safe(Array.from(n||'♡')[0]));
   partner='<div class="settings-duo-card"><div class="settings-duo-initials"><span>'+initials[0]+'</span><i>'+editorialIcon('heart')+'</i><span>'+initials[1]+'</span></div>'+
-   '<strong>'+safe(state.profile.display_name)+' &amp; '+safe(other()?.name||'Votre partenaire')+'</strong><small>● Connectés</small></div>'+
+   '<strong>'+safe(state.profile.display_name)+' &amp; '+safe(other()?.name||'Votre partenaire')+'</strong><small>● Connectés · '+(isLoveAdmin()?'Administrateur':'Membre')+'</small></div>'+
    editorialRow('Invitation acceptée','','','check')+
    '<div class="settings-date-outer"><h3>Notre anniversaire</h3>'+renderCoupleDateSetting()+'</div>'+
    (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
-   '<div class="settings-danger-zone">'+button('end-couple',editorialIcon('unlink')+' Dissocier mon partenaire','class="settings-signout"')+
-   '<p class="tiny-note">Les comptes et les cartes restent conservés.</p></div>';
+   '<div class="settings-danger-zone">'+button('end-couple',editorialIcon('unlink')+' Dissocier notre duo','class="settings-signout"')+
+   '<p class="tiny-note">Chacun deviendra administrateur de son propre espace. Vos comptes et archives sont conservés.</p></div>';
  }else if(linked){
   partner=renderInvitePanel()+
-   '<p class="tiny-note">Vous pouvez préparer vos défis avant que la demande soit acceptée.</p>'+
-   button('end-couple','Annuler mon espace à deux','class="subtle danger-action"');
+   '<p class="tiny-note">Vous êtes administrateur de cet espace individuel. Vous pouvez préparer vos défis et inviter votre partenaire.</p>';
  }else partner='<div class="settings-couple-invite">'+
   '<p>Votre espace privé est prêt à être créé. Invitez votre partenaire pour commencer à deux.</p>'+
   button('start-couple','♡ Inviter un conjoint ou une conjointe','class="settings-primary settings-couple-cta"')+
@@ -2483,12 +2482,17 @@ async function handle(action,element){
   await reload();return;
  }
  if(verb==='end-couple'){
-  if(!state.coupleId)return;
-  if(!(await premiumConfirm('La dissociation s’appliquera aux deux personnes. Vos comptes, défis et cartes personnalisées seront conservés. Les anciennes données communes resteront privées et inaccessibles.',{kind:'couple'})))return;
-  await rpc('end_love_match',{p_couple:state.coupleId});
-  state.unlockKey=null;state.personalPass=null;
-  state.inviteDraft=null;state.invitations=[];
-  await reload();notify('Partenaire dissocié. Vos défis personnels sont conservés.');return;
+  if(!state.coupleId||state.members.length!==2)
+   throw Error('La dissociation est réservée à un duo de deux personnes.');
+  if(!(await premiumConfirm(
+   'Cette action séparera vos deux comptes. Chacun aura automatiquement son propre espace LoveRoll avec le rôle administrateur et pourra inviter une nouvelle personne. Les données communes resteront archivées, sans être mélangées à vos nouveaux espaces. Confirmer la dissociation ?',
+   {kind:'couple',title:'Dissocier notre duo ?',accept:'Oui, dissocier notre duo',cancel:'Conserver notre duo'})))return;
+  // One authenticated, atomic Supabase transaction for both members.
+  // No client-side DELETE and no new signup or account loss.
+  await rpc('dissociate_love_to_solo',{p_couple:state.coupleId});
+  state.unlockKey=null;state.personalPass=null;state.personalJournal=[];
+  state.inviteDraft=null;state.invitations=[];state.inviteAccepted=false;
+  await reload();notify('Vous gérez maintenant votre propre espace LoveRoll.');return;
  }
  if(verb==='unlock-personal'){
   const pass=id('personal-pass')?.value||'';
