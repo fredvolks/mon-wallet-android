@@ -1,15 +1,51 @@
 plugins { id 'com.android.application' }
 // Firebase client identifiers are PUBLIC configuration (not service-account secrets).
-def firebaseVar = { String key -> (System.getenv(key) ?: '').replace('\\','\\\\').replace('"','\\"') }
+def firebaseClient = ['FIREBASE_APP_ID','FIREBASE_API_KEY','FIREBASE_SENDER_ID','FIREBASE_PROJECT_ID']
+  .collectEntries { key -> [(key): (System.getenv('LOVEROLL_'+key) ?: '').trim()] }
+def firebaseFile = file('google-services.json')
+if (firebaseFile.exists()) {
+  def sdk = new groovy.json.JsonSlurper().parse(firebaseFile)
+  if (sdk.type == 'service_account' || sdk.containsKey('private_key'))
+    throw new GradleException('Utilisez la configuration Android publique, jamais une clé privée serveur dans l’APK.')
+  if (!firebaseClient.values().every { it }) {
+    def clients = (sdk.client ?: []).findAll {
+      it.client_info?.android_client_info?.package_name == 'ca.desadeux.jeu'
+    }
+    if (clients.size() != 1)
+      throw new GradleException('google-services.json doit contenir un seul client Android ca.desadeux.jeu.')
+    firebaseClient = [FIREBASE_APP_ID: clients[0].client_info?.mobilesdk_app_id ?: '',
+      FIREBASE_API_KEY: clients[0].api_key?.find { it.current_key }?.current_key ?: '',
+      FIREBASE_SENDER_ID: sdk.project_info?.project_number ?: '',
+      FIREBASE_PROJECT_ID: sdk.project_info?.project_id ?: ''].collectEntries { key,value -> [(key):value.toString().trim()] }
+  }
+}
+def firebaseConfigured = firebaseClient.values().every { it }
+if (firebaseClient.values().any { it } && !firebaseConfigured)
+  throw new GradleException('Configuration Firebase incomplète : '+firebaseClient.findAll { !it.value }.keySet().join(', '))
+if (firebaseConfigured) {
+  if (!(firebaseClient.FIREBASE_APP_ID ==~ /1:[0-9]+:android:[a-fA-F0-9]+/) ||
+      !(firebaseClient.FIREBASE_API_KEY ==~ /AIza[A-Za-z0-9_-]{35}/) ||
+      !(firebaseClient.FIREBASE_SENDER_ID ==~ /[0-9]+/) ||
+      !(firebaseClient.FIREBASE_PROJECT_ID ==~ /[a-z][a-z0-9-]{4,28}[a-z0-9]/) ||
+      firebaseClient.FIREBASE_APP_ID.split(':')[1] != firebaseClient.FIREBASE_SENDER_ID)
+    throw new GradleException('Identifiants Firebase Android invalides ou projet incohérent.')
+}
+if (System.getenv('LOVEROLL_REQUIRE_FIREBASE') == 'true' && !firebaseConfigured)
+  throw new GradleException('Publication annulée : configurez Firebase avant de livrer un APK avec notifications.')
+def firebaseLiteral = { String value -> value.replace('\\','\\\\').replace('"','\\"') }
 android { namespace 'ca.desadeux.jeu'
  compileSdk 35
- defaultConfig { applicationId 'ca.desadeux.jeu'; minSdk 26; targetSdk 35; versionCode 130012; versionName '0.13.12'  }
+ defaultConfig { applicationId 'ca.desadeux.jeu'; minSdk 26; targetSdk 35; versionCode 130013; versionName '0.13.13'  }
  buildFeatures { buildConfig true }
  defaultConfig {
-  buildConfigField 'String','FIREBASE_APP_ID','"'+firebaseVar('LOVEROLL_FIREBASE_APP_ID')+'"'
-  buildConfigField 'String','FIREBASE_API_KEY','"'+firebaseVar('LOVEROLL_FIREBASE_API_KEY')+'"'
-  buildConfigField 'String','FIREBASE_SENDER_ID','"'+firebaseVar('LOVEROLL_FIREBASE_SENDER_ID')+'"'
-  buildConfigField 'String','FIREBASE_PROJECT_ID','"'+firebaseVar('LOVEROLL_FIREBASE_PROJECT_ID')+'"'
+  firebaseClient.each { key,value -> buildConfigField 'String',key,'"'+firebaseLiteral(value)+'"' }
+  // FirebaseInitProvider also needs these resources when Android starts the
+  // messaging service in the background, before the WebView Activity exists.
+  if (firebaseConfigured) {
+    [google_app_id:firebaseClient.FIREBASE_APP_ID,google_api_key:firebaseClient.FIREBASE_API_KEY,
+      gcm_defaultSenderId:firebaseClient.FIREBASE_SENDER_ID,project_id:firebaseClient.FIREBASE_PROJECT_ID]
+      .each { key,value -> resValue 'string',key,value }
+  }
  }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
