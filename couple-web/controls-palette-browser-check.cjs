@@ -20,7 +20,7 @@ const click=async(p,name)=>{const b=p.locator('[data-action="'+name+'"]');await 
    };
    await primary('.home-roll-button');
    await p.screenshot({path:'design-captures/controls141-'+width+'-home.png'});
-   for(const [tab,selector] of [['session','.evening-primary'],['special','.surprise-primary'],['advent','.advent-primary']]){
+   for(const [tab,selector] of [['session','.evening-finale-start'],['special','.surprise-primary'],['advent','.advent-primary']]){
     await click(p,'tab:'+tab);await p.locator(selector).waitFor();
     if(await p.locator(selector).isEnabled())await primary(selector);
     else assert.equal(await p.locator(selector).evaluate(el=>getComputedStyle(el).boxShadow),'none','Disabled CTA stays quiet');
