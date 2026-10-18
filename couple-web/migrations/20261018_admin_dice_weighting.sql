@@ -55,7 +55,7 @@ BEGIN
   RAISE EXCEPTION 'Type de pondération inconnu';
  END IF;
  IF p_enabled IS NULL OR NOT couple_private.valid_love_d6_weights(p_weights) THEN
-  RAISE EXCEPTION 'Saisissez six pourcentages entiers de 0 à 100, total 100 %';
+  RAISE EXCEPTION 'Saisissez six pourcentages entiers de 0 à 100, total 100 pour cent';
  END IF;
  SELECT owner_user_id INTO v_owner FROM public.couples
  WHERE id=p_couple FOR UPDATE;
