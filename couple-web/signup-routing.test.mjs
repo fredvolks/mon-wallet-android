@@ -12,6 +12,7 @@ function extract(start,end){
 }
 const complete=extract(" if(verb==='complete-registration'){"," if(verb==='profile'){");
 const resolution=extract('async function resolveVerifiedSignup(', 'async function autoAcceptPendingInvite(){');
+const autoJoin=extract('async function autoAcceptPendingInvite(){','function verificationPendingHtml(');
 
 test('new account with invitation completes profile but never creates own admin duo',async()=>{
  const calls=[],state={installAfterSignup:false};
@@ -110,4 +111,48 @@ test('even legacy manual creation paths must consult verified server invitation 
  }
  assert.match(app,/if\(!state\.coupleId&&!pendingInviteReference\(sessionStorage\)\)/);
  assert.match(app,/await resolveVerifiedSignup\(false\)/);
+});
+
+test('accepted invitation automatically joins the existing duo after profile completion',async()=>{
+ const calls=[];
+ const state={
+  user:{id:'verified-recipient'},profile:{birthday_md:'10-18'},
+  inviteAccepted:true,inviteAttemptKey:null,passwordRecovery:false,
+  tab:'invitation',showAuth:true
+ };
+ const ctx={
+  state,sessionStorage:{},inviteAcceptanceBusy:false,
+  pendingInviteReference:()=>({kind:'id',value:'72aa640b-2644-4d0d-bcf7-575587d27f31'}),
+  verifiedLoveEmail:()=>true,
+  rpc:async(name,args)=>{calls.push({name,args});return 'existing-duo';},
+  hashToken:async()=>{throw Error('UUID invitation must not use secret token');},
+  finishInviteReference:()=>{calls.push({name:'finished'});state.inviteAttemptKey=null;},
+  invitationAuthMessage:()=> 'Unexpected pairing rejection'
+ };
+ const fn=vm.runInNewContext(autoJoin+';autoAcceptPendingInvite',ctx);
+ await fn();
+ assert.deepEqual(calls.map(x=>x.name),['accept_love_match_by_id','finished']);
+ assert.equal(calls[0].args.p_invitation,'72aa640b-2644-4d0d-bcf7-575587d27f31');
+ assert.equal(state.inviteWelcome,true);
+ assert.equal(state.showAuth,false);
+ assert.equal(state.inviteError,null);
+});
+
+test('invitation cannot pair before birth date or email verification',async()=>{
+ const calls=[];
+ const state={
+  user:{id:'new-user'},profile:null,inviteAccepted:true,
+  inviteAttemptKey:null,passwordRecovery:false
+ };
+ const ctx={
+  state,sessionStorage:{},inviteAcceptanceBusy:false,
+  pendingInviteReference:()=>({kind:'id',value:'72aa640b-2644-4d0d-bcf7-575587d27f31'}),
+  verifiedLoveEmail:()=>false,
+  rpc:async name=>calls.push(name),
+  finishInviteReference:()=>calls.push('finished')
+ };
+ const fn=vm.runInNewContext(autoJoin+';autoAcceptPendingInvite',ctx);
+ await fn();
+ assert.deepEqual(calls,[]);
+ assert.equal(state.inviteAttemptKey,null);
 });
