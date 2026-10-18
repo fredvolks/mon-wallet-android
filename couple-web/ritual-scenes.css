@@ -50,12 +50,18 @@ main#app.loveroll-surprise-ecrin .surprise-month-label{
  position:absolute;inset:10px 12px auto;z-index:2;min-height:14px;
  margin:0;pointer-events:none;text-shadow:0 1px 5px #10070c;
 }
-@media(max-width:767px) and (max-height:720px){
- :root{--ritual-gallery-footer:257px;}
+@media(max-width:767px){
  main#app.loveroll-surprise-ecrin .surprise-details:has(.host-pending) .surprise-event-card{
   padding-block:2px;gap:2px;
  }
  main#app.loveroll-surprise-ecrin .surprise-details:has(.host-pending) .surprise-event-details{gap:2px;}
+ main#app.loveroll-surprise-ecrin .surprise-details:has(.host-pending) :is(.surprise-event-symbol,.surprise-event-svg){width:20px;height:20px;}
+ main#app.loveroll-surprise-ecrin .surprise-details:has(.host-pending) .surprise-event-title{font-size:11px;line-height:1.1;}
+}
+@media(max-width:767px) and (max-height:720px){
+ :root{--ritual-gallery-footer:257px;}
+ main#app.loveroll-surprise-ecrin .surprise-details:has(.host-pending) :is(.surprise-event-symbol,.surprise-event-svg){width:18px;height:18px;}
+ main#app.loveroll-surprise-ecrin .surprise-details:has(.host-pending) .surprise-event-title{font-size:10px;}
 }
 @media(min-width:768px){
  main#app.loveroll-real-home,
