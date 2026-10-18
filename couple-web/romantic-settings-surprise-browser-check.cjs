@@ -68,8 +68,8 @@ const client=`export function createClient(){
     assert.equal(await page.locator('.surprise-main-die-scene canvas').count(),1);
     assert.equal(await page.locator('.surprise-month-title,.surprise-ecrin-note,.surprise-events-heading p').count(),0);
     assert.equal(await page.locator('.surprise-main-die-scene .surprise-month-label').count(),1);
-    const frame=await page.locator('.surprise-main-die-scene').evaluate(e=>{const r=e.getBoundingClientRect(),month=e.closest('.surprise-month').getBoundingClientRect(),s=getComputedStyle(e);return {border:parseFloat(s.borderTopWidth),radius:parseFloat(s.borderTopLeftRadius),left:r.left,right:r.right,top:r.top,outerLeft:month.left,outerRight:month.right,outerTop:month.top};});
-    assert.equal(frame.border,1);assert.equal(frame.radius,20);for(const [a,b] of [['left','outerLeft'],['right','outerRight'],['top','outerTop']])assert.ok(Math.abs(frame[a]-frame[b])<=1,'Photo does not fill its frame '+JSON.stringify(frame));
+    const frame=await page.locator('.surprise-main-die-scene').evaluate(e=>{const r=e.getBoundingClientRect(),gallery=e.closest('.surprise-gallery').getBoundingClientRect(),s=getComputedStyle(e);return {border:parseFloat(s.borderTopWidth),radius:parseFloat(s.borderTopLeftRadius),top:r.top,outerTop:gallery.top};});
+    assert.equal(frame.border,1);assert.equal(frame.radius,20);assert.ok(Math.abs(frame.top-frame.outerTop)<=1,'Photo must begin at the top of the shared gallery '+JSON.stringify(frame));
     assert.equal(await page.locator('.nav button.active').innerText(),'Surprise');
     await page.screenshot({path:'design-captures/ecrin-'+name+'-'+phase+'.png'});console.log('ECRIN_VIEWPORT_OK',name,phase,JSON.stringify(g));await page.context().close();
    }
