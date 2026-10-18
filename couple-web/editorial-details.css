@@ -36,7 +36,7 @@ main#app.loveroll-settings-page .settings-status-list .editorial-row{min-height:
 main#app.loveroll-settings-page .settings-detail-body .push-status{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;align-items:center;margin:0;}
 main#app.loveroll-settings-page .push-status strong{font-size:15px;font-weight:500;}
 main#app.loveroll-settings-page .push-status p{font-size:12px;line-height:1.4;margin:5px 0 0;}
-main#app.loveroll-settings-page .settings-detail-body .push-option{display:grid;grid-template-columns:28px minmax(0,1fr) 44px;gap:14px;min-height:70px;}
+main#app.loveroll-settings-page .settings-detail-body .push-option{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:14px;min-height:70px;}
 main#app.loveroll-settings-page .settings-detail-body .push-option svg{width:26px;height:26px;}
 main#app.loveroll-settings-page .settings-detail-body .push-actions{display:grid;gap:12px;margin-top:8px;}
 main#app.loveroll-settings-page .settings-detail-body .push-actions .settings-signout{background:none;box-shadow:none;border:0;color:var(--ritual-rose);}
