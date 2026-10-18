@@ -61,7 +61,9 @@ test('Active evening is covered by a real Chromium click test, not just the lock
  assert.match(smoke,/paired-active/);
  assert.match(smoke,/SOIREE_ACTIVE_ACCESS_OK/);
  assert.match(smoke,/evening-premium-view/);
- assert.match(smoke,/tab:special/);
+ assert.match(smoke,/selectTab\(page,'special'\)/);
+ assert.match(smoke,/selectTab\(page,'session'\)/);
+ assert.match(smoke,/await target\.click\(\)/);
 });
 
 test('Only completed challenge cards are greyed but stay clickable for history',()=>{
