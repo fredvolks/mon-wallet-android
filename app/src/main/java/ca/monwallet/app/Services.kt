@@ -250,7 +250,14 @@ class Services(val context: Context) {
             recentQuotes[security.id]?.takeIf {
                 System.currentTimeMillis() - it.fetchedAt < 2_000
             } ?: liveQuotes.quote(security).cached.also { fresh ->
-                repo.quote(fresh)
+                // Never force Room -> entire Wallet -> Compose recomputation every
+                // 3 seconds if Yahoo sends the same quote again. Keep a freshness
+                // heartbeat at most once per minute for unchanged provider data.
+                val previous = recentQuotes[security.id] ?: repo.state.value.quotes[security.id]
+                val changed = previous == null ||
+                    previous.copy(fetchedAt = fresh.fetchedAt) != fresh
+                val refreshAge = previous?.let { fresh.fetchedAt - it.fetchedAt } ?: Long.MAX_VALUE
+                if (changed || refreshAge >= 60_000L) repo.quote(fresh)
                 recentQuotes[security.id] = fresh
             }
         }
@@ -297,7 +304,7 @@ class Services(val context: Context) {
     }
 
     suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false,
-        notifyWidgets: Boolean = true) {
+        notifyWidgets: Boolean = true, backgroundQuotesOnly: Boolean = false) {
         if (busy.value) return
         busy.value = true
         try {
@@ -308,9 +315,9 @@ class Services(val context: Context) {
                         w.alerts.map { it.securityId })
                     .toSet()
             val securities =
-                (w.securities.filter { it.id in ids } + Catalog.markets + extra).distinctBy {
-                    it.id
-                }
+                (w.securities.filter { it.id in ids } +
+                    (if (backgroundQuotesOnly) Catalog.markets.take(4) else Catalog.markets) +
+                    extra).distinctBy { it.id }
             val errors = java.util.concurrent.atomic.AtomicInteger(0)
             val semaphore = Semaphore(3)
             supervisorScope {
@@ -320,9 +327,11 @@ class Services(val context: Context) {
                             semaphore.withPermit {
                                 try {
                                     refreshQuote(s)
-                                    if (history || w.prices.none { it.securityId == s.id })
+                                    if (!backgroundQuotesOnly &&
+                                        (history || w.prices.none { it.securityId == s.id }))
                                         repo.points(s.id, market.history(s))
-                                    if (s.id in ids || s.symbol == "CAD=X")
+                                    if (!backgroundQuotesOnly &&
+                                        (s.id in ids || s.symbol == "CAD=X"))
                                         runCatching {
                                             repo.points(s.id, market.history(s, "1d", "5m"), true)
                                         }
@@ -354,7 +363,9 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         while (!s.initialized.value) delay(50)
         return try {
             val widgetId = inputData.getInt("widgetId", -1)
-            s.refresh(notifyWidgets = widgetId < 0)
+            // A periodic widget refresh needs current quotes, not a full
+            // backfill of charts for every held, sold and indexed symbol.
+            s.refresh(notifyWidgets = widgetId < 0, backgroundQuotesOnly = true)
             if (widgetId >= 0)
                 WalletWidget.render(applicationContext, intArrayOf(widgetId))
             Result.success()
