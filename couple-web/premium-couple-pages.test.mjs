@@ -138,7 +138,7 @@ test('Gift transfer disabled when monthly 3/3 or zero own remaining',()=>{
  assert.match(html,/3\/3 dons ce mois/);
  assert.match(app,/rpc\('give_love_challenge'/);
 });
-test('Before D20 roll, Surprise has no separate host bubble and exactly six editable default events',()=>{
+test('Before D100 roll, Surprise has no separate host bubble and exactly six editable default events',()=>{
  const html=premiumSurpriseHtml({members:people,settings:{anniversary_md:'08-20',
    birthday_by_user:{first:'01-10',second:'11-25'}},now:new Date('2026-10-14T17:00:00Z')});
  assert.match(html,/class="surprise-header surprise-new-header"/);
@@ -146,7 +146,7 @@ test('Before D20 roll, Surprise has no separate host bubble and exactly six edit
  assert.doesNotMatch(html,/surprise-top-icons|surprise-header-symbol|surprise-host-grid/);
  assert.equal((html.match(/class="surprise-event-card /g)||[]).length,6);
  assert.equal((html.match(/data-action="edit-surprise-event:/g)||[]).length,6);
- assert.equal((html.match(/data-dice-sides="20"/g)||[]).length,1);
+ assert.equal((html.match(/data-dice-sides="100"/g)||[]).length,1);
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,0,
   'The D6 appears only after the monthly activity is chosen');
  assert.match(html,/data-action="roll:monthly_activity">Brasser le dé<\/button>/);
@@ -158,7 +158,7 @@ test('Before D20 roll, Surprise has no separate host bubble and exactly six edit
  assert.match(html,/data-action="edit-surprise-event:birthday:first"/);
  assert.match(html,/data-action="edit-surprise-event:birthday:second"/);
 });
-test('After D20 roll, D6 replaces the full-size D20 then restores it after the host choice',()=>{
+test('After D100 roll, D6 replaces the full-size D100 then restores it after the host choice',()=>{
  const html=premiumSurpriseHtml({members:people,monthly:{monthly_activity:{face:13}},
   activity:{title:'Une escapade',description:'Une sortie pour deux'}});
  assert.doesNotMatch(html,/data-action="surprise-activity"/);
@@ -173,7 +173,7 @@ test('After D20 roll, D6 replaces the full-size D20 then restores it after the h
  assert.doesNotMatch(html,/1 · 3 · 5/);
  assert.match(html,/Camille/);assert.match(html,/Noémie/);
  assert.equal((html.match(/data-dice-sides="6"/g)||[]).length,1);
- assert.equal((html.match(/data-dice-sides="20"/g)||[]).length,0);
+ assert.equal((html.match(/data-dice-sides="100"/g)||[]).length,0);
  assert.doesNotMatch(html,/class="surprise-invite-inside"|class="surprise-host"/);
  const assigned=premiumSurpriseHtml({members:people,monthly:{
   monthly_activity:{face:13},monthly_host:{face:5}}});
@@ -181,7 +181,7 @@ test('After D20 roll, D6 replaces the full-size D20 then restores it after the h
  assert.match(assigned,/class="surprise-month has-activity host-complete"/);
  assert.match(assigned,/data-action="surprise-activity"/);
  assert.doesNotMatch(assigned,/data-action="roll:monthly_host"/);
- assert.equal((assigned.match(/data-dice-sides="20"/g)||[]).length,1);
+ assert.equal((assigned.match(/data-dice-sides="100"/g)||[]).length,1);
  assert.equal((assigned.match(/data-dice-sides="6"/g)||[]).length,0);
 });
 test('The six event cards open an editor for shared name/date without rewriting old rolls',()=>{
