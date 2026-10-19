@@ -86,5 +86,20 @@ jobs:
       - name: Publish APK, AAB and manifest
         env: {GH_TOKEN: '${{ github.token }}'}
         run: gh release create "$TAG" "dist/MonWallet-$TAG.apk" "dist/MonWallet-$TAG.aab" dist/version.json --title "Mon Wallet $TAG" --notes-file CHANGELOG.md --verify-tag
+      - name: Refresh stable Mon Wallet update manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only update the wallet-only feed after the signed release exists.
+          url="repos/${GITHUB_REPOSITORY}/contents/version.json"
+          current_sha="$(gh api "$url?ref=main" --jq '.sha' 2>/dev/null || true)"
+          args=(-f "message=Update stable Mon Wallet manifest for $TAG"
+                -f "branch=main" -f "content=$(base64 -w0 dist/version.json)")
+          if [[ -n "$current_sha" ]]; then
+            args+=(-f "sha=$current_sha")
+          fi
+          gh api --method PUT "$url" "${args[@]}" >/dev/null
       - if: always()
         run: rm -f "$MONWALLET_STORE_FILE"
