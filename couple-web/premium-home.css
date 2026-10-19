@@ -178,3 +178,16 @@ main#app.loveroll-real-home{
 .weekly-admin-status{padding:12px;border:1px solid var(--love-border);border-radius:16px;}
 main#app :is(.evening-toolbar,.advent-top,.surprise-header,.settings-page-header) .ritual-brand i{font-size:var(--ritual-heart-size);line-height:var(--ritual-heart-line);}
 main#app :is(.evening-toolbar,.advent-top,.surprise-header,.settings-page-header) .ritual-brand b{font-size:var(--ritual-word-size);line-height:var(--ritual-word-line);}
+
+/* iPad/desktop scene repair: keep the real die above its photographic marble plinth.
+   The old 1% background position put the marble below short, wide iPad theaters;
+   the old 580px square canvas extended outside their clipped photo viewport. */
+@media (min-width:768px){
+ main#app.loveroll-real-home .home-die-theater{
+  background-position:center 62%;
+ }
+ main#app.loveroll-real-home .home-die-platform{
+  box-sizing:border-box;width:auto;height:100%;max-height:100%;max-width:100%;
+  aspect-ratio:1;align-self:center;justify-self:center;
+ }
+}
