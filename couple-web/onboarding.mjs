@@ -132,11 +132,19 @@ export function profileGenderSelect(gender='',id='profile-gender'){
    '<option value="her"'+(chosen==='her'?' selected':'')+'>Femme</option>'+
   '</select></label>';
 }
+export function profilePlayStyleSelect(style='medium',id='profile-play-style'){
+ const chosen=['soft','medium','intense'].includes(style)?style:'medium';
+ return '<label class="loveroll-style-select">Mon style de jeu'+
+  '<select id="'+id+'" required aria-label="Mon style de jeu">'+
+  [['soft','Soft'],['medium','Medium'],['intense','Intense']].map(([value,label])=>
+   '<option value="'+value+'"'+(chosen===value?' selected':'')+'>'+label+'</option>').join('')+
+  '</select><small>Votre préférence est personnelle et modifiable à tout moment. Elle ne change pas encore les cartes.</small></label>';
+}
 function profileScreen(user,profile,invitation){
  const name=profile?.display_name||user?.user_metadata?.given_name||user?.user_metadata?.full_name||user?.user_metadata?.name||'';
  return '<div class="entry-account-screen auth-editorial entry-profile-screen">'+entryHeader(invitation,invitation)+
  '<section class="entry-auth-card entry-profile-card"><h1>Votre profil.</h1><p>Quelques informations pour personnaliser LoveRoll.</p>'+profileAccountChoiceHtml(user)+
- '<form class="editorial-form" onsubmit="return false"><label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+
+ '<form class="editorial-form" onsubmit="return false"><label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+profilePlayStyleSelect(profile?.play_style)+
  '<div class="entry-birthday"><span>Votre anniversaire</span>'+monthDayInputs('signup-birth',profile?.birthday_md||'')+'</div>'+
  '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+button('complete-registration','Terminer mon inscription','entry-auth-submit')+'</form>'+
  '<p class="entry-small-note">Seuls le mois et le jour sont conservés.</p>'+button('use-existing-account','‹ Retour à la connexion','entry-auth-back')+'</section></div>';
