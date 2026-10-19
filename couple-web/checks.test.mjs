@@ -601,7 +601,7 @@ test('D100 is a genuine 100-face numbered 3D die and Supabase stores 1..100',()=
  assert.ok(!app.includes('solo-roll:challenge'));
  assert.ok(app.includes('DÉCOUVRIR UN DÉFI POUR'));
  assert.ok(app.includes('CARTE N° '));
- assert.ok(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8').includes('premiumPolyDie(20,'));
+ assert.ok(readFileSync(new URL('./premium-surprise.mjs',import.meta.url),'utf8').includes('premiumPolyDie(100,'));
 });
 test('Prepare cards privately before inviting a partner with future partner roles',()=>{
  const view=matchHtml('Test',false);
@@ -689,15 +689,15 @@ test('Database snapshots and server defaults match all 50 client cards without c
  assert.ok(!sql.includes('delete from public.love_personal_intimacy'));
 });
 
-test('All 20 monthly D20 activities are editable without changing their face identifiers',()=>{
- assert.equal(MONTHLY_ACTIVITIES.length,20);
- assert.deepEqual(MONTHLY_ACTIVITIES.map(a=>a.face),Array.from({length:20},(_,i)=>i+1));
+test('All 100 monthly D100 activities are editable without changing their face identifiers',()=>{
+ assert.equal(MONTHLY_ACTIVITIES.length,100);
+ assert.deepEqual(MONTHLY_ACTIVITIES.map(a=>a.face),Array.from({length:100},(_,i)=>i+1));
  for(const item of MONTHLY_ACTIVITIES){
   assert.ok(item.title.length>=3&&item.title.length<=120);
   assert.ok(item.description.length>=10&&item.description.length<=900);
   assert.equal(typeof item.is_restaurant,'boolean');
  }
- const edits=[{face:1,title:'Notre sortie surprise',description:'Une sortie personnalisée et encore inconnue.',is_restaurant:false}];
+ const edits=[{face:1,title:'Notre sortie surprise',description:'Une sortie personnalisée et encore inconnue.',is_restaurant:false,catalogue_version:2}];
  const result=editableMonthlyActivities(edits);
  assert.equal(result.length,20);
  assert.equal(result[0].title,'Notre sortie surprise');
@@ -708,14 +708,14 @@ test('All 20 monthly D20 activities are editable without changing their face ide
  assert.equal(editableMonthlyActivities([])[0].title,MONTHLY_ACTIVITIES[0].title);
  assert.deepEqual(monthlyActivityForRoll({face:1}),{
   face:1,title:MONTHLY_ACTIVITIES[0].title,
-  description:MONTHLY_ACTIVITIES[0].description,is_restaurant:true,timer_minutes:null
+  description:MONTHLY_ACTIVITIES[0].description,is_restaurant:MONTHLY_ACTIVITIES[0].is_restaurant,timer_minutes:null
  });
  const historic={face:1,activity_title:'Ancienne activité du mois',
   activity_description:'Le souvenir de notre ancienne sortie à deux.',
   activity_is_restaurant:false};
  assert.equal(monthlyActivityForRoll(historic).title,'Ancienne activité du mois');
  assert.equal(monthlyActivityForRoll(historic).is_restaurant,false);
- assert.throws(()=>monthlyActivityForRoll({face:21}),/invalide/);
+ assert.throws(()=>monthlyActivityForRoll({face:101}),/invalide/);
 });
 test('Only LoveRoll couple owner edits monthly activities, including before partner invitation',()=>{
  const sql=readFileSync(new URL('./edit-monthly-activities.sql',import.meta.url),'utf8');
