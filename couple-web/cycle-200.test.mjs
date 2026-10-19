@@ -11,7 +11,6 @@ const passesSql=read('migrations/20261018_play_style_and_pass_quota.sql');
 const app=read('app.js');
 
 test('Dons et passes se réinitialisent au 1er du mois au Québec, pour chaque personne',()=>{
- const gift=sql.includes('give_love_challenge')?sql:read('migrations/20261016_evening_gifts.sql');
  assert.match(passesSql,/AT TIME ZONE 'America\/Toronto'/);
  assert.match(passesSql,/PARTITION BY q\.recipient/);
  assert.match(passesSql,/chronicle\.sequence<=3/);
