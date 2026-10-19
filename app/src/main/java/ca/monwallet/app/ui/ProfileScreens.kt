@@ -649,8 +649,9 @@ fun UpdateSettings(vm: WalletViewModel, onClose: () -> Unit) {
 
     FullDialog(stringResource(R.string.ui_mises_a_jour_8e32a), onClose) {
         Text(status)
-        Caption("Mon Wallet vérifie les mises à jour officielles automatiquement.")
-        Caption("La source est le dépôt GitHub officiel de Mon Wallet.")
+        Caption("Version installée : ${BuildConfig.VERSION_NAME}")
+        Caption("Canal de mise à jour : Mon Wallet uniquement.")
+        Caption("Le fichier version.json est indépendant des publications LoveRoll.")
 
         Button(
             enabled = !busy,
@@ -679,7 +680,7 @@ fun UpdateSettings(vm: WalletViewModel, onClose: () -> Unit) {
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (busy) "Vérification en cours…" else "Mettre à jour Mon Wallet")
+            Text(if (busy) "Vérification en cours…" else "Vérifier / mettre à jour Mon Wallet")
         }
 
         release?.let { r ->
