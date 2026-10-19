@@ -38,6 +38,7 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
   month:current,members,sessions,historyChallenges,sessionStats:stats,passQuota
  });
  const freeByChallenge=new Set((passQuota||[]).filter(p=>p.free_pass).map(p=>p.challenge_id));
+ const chargedByChallenge=new Set((passQuota||[]).filter(p=>!p.free_pass).map(p=>p.challenge_id));
  const extraStats='<div class="evening-cal-stats evening-cal-extra" aria-label="Taux de réussite et passes mensuelles">'+
   '<span><strong>'+(weekResult.hasRoll?weekResult.percent+' %':'—')+'</strong>'+
    (weekResult.hasRoll?weekResult.completed+' / '+weekResult.possible+' soirées possibles':'Aucun dé cette semaine')+'</span>'+
@@ -77,7 +78,8 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
     const card=resolvedCard(c);
     return '<li class="evening-cal-challenge '+(c.status==='completed'?'is-done':'is-open')+'">'+
       '<span>'+safe(c.status==='passed'?
-       (freeByChallenge.has(c.id)?'↷ Passé sans pénalité':'↷ Passé, comptabilisé'):
+       (freeByChallenge.has(c.id)?'↷ Passé sans pénalité':
+        chargedByChallenge.has(c.id)?'↷ Passé, comptabilisé':statusLabel(c.status)):
        statusLabel(c.status))+'</span><strong>'+safe(card.title)+'</strong>'+
       '<small>'+safe(c.category==='SEXUEL'?'Sexuel':'Sensuel')+'</small></li>';
    }).join('');
