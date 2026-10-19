@@ -256,9 +256,11 @@ class Services(val context: Context) {
         }
 
     suspend fun refreshForeground(securities: List<Security>): Boolean {
-        if (busy.value || securities.isEmpty()) return false
+        if (securities.isEmpty()) return false
+        // Foreground quotes must not wait for the much heavier history/news refresh.
+        // Per-security mutexes in refreshQuote prevent duplicate provider requests.
         val before = repo.state.value.quotes
-        val gate = Semaphore(2)
+        val gate = Semaphore(4)
         val updates = supervisorScope {
             securities.distinctBy { it.id }.take(20).map { security ->
                 async {
@@ -282,12 +284,15 @@ class Services(val context: Context) {
                 fresh.preMarketTimestamp != old.preMarketTimestamp ||
                 fresh.afterHoursTimestamp != old.afterHoursTimestamp
         } ?: true }
-        marketStatus.value = if (updates.isEmpty())
-            "Derniers cours en cache · fournisseur indisponible"
-        else if (updates.any { (it.delay ?: 0) > 0 })
-            "Cotation vérifiée · certains cours différés"
-        else if (changed) "Nouvelle cotation reçue · délai non garanti"
-        else "Dernière cotation inchangée · délai non garanti"
+        val checkedAt = java.time.LocalTime.now(java.time.ZoneId.of("America/Toronto"))
+            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+        marketStatus.value = when {
+            updates.isEmpty() -> "Cotation indisponible · derniers prix conservés"
+            updates.any { (it.delay ?: 0) > 0 } ->
+                "Cours vérifiés à $checkedAt · certains cours différés"
+            changed -> "Cours mis à jour à $checkedAt · délai non garanti"
+            else -> "Cours vérifiés à $checkedAt · cotation inchangée"
+        }
         return true
     }
 
