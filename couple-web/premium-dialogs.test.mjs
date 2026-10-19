@@ -5,7 +5,7 @@ const read=f=>readFileSync(new URL('./'+f,import.meta.url),'utf8');
 const app=read('app.js'),markup=read('premium-dialogs.mjs'),styles=read('premium-dialogs.css'),html=read('index.html'),sw=read('service-worker.js');
 test('All eight old confirm() dialogs replaced; mutations still await explicit approval',()=>{
  const actions=['reset_love_all_dice_admin','openLegacyOffline','import_love_evening_library',
- 'reset_love_monthly_activity','delete_love_custom_card','end_love_match','give_love_challenge','couple_intimacy'];
+ 'reset_love_monthly_activity','delete_love_custom_card','dissociate_love_to_solo','give_love_challenge','couple_intimacy'];
  assert.doesNotMatch(app,/(?:^|[^a-zA-Z])confirm\s*\(/m);
  assert.doesNotMatch(app,/(?:^|[^a-zA-Z])prompt\s*\(/m);
  assert.ok((app.match(/await premiumConfirm\(/g)||[]).length>=8);
