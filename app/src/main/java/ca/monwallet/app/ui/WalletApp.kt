@@ -138,10 +138,10 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             else -> s.foregroundSecurities.value = emptyList()
         }
     }
-    LaunchedEffect(initialized, prefs["onboarded"], user) {
-        if (initialized && (prefs["onboarded"] == "true" || user != null))
-            vm.run { s.refresh(history = false) } // Avoid expensive history rebuild on every launch.
-    }
+    // The RESUMED quote loop above loads visible holdings immediately.
+    // Do not launch a second full-portfolio job on login: that job also downloaded
+    // history and news for many off-screen symbols and kept the global loading
+    // bar active when users opened a security detail.
     LaunchedEffect(deepSecurity, w.securities) {
         if (deepSecurity != null && handledDeepLink != deepSecurity)
             w.security(deepSecurity)?.let {
@@ -208,7 +208,7 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                     },
                     actions = {
                         if (route in tabs.map { it.first }) {
-                            IconButton(onClick = { vm.refresh() }, enabled = !busy) {
+                            IconButton(onClick = { vm.refreshVisible() }) {
                                 Icon(Icons.Outlined.Refresh, stringResource(R.string.action_refresh), tint = Blue)
                             }
                             IconButton(
@@ -276,7 +276,10 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                 )
             else
                 Column {
-                    if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    // Background quote/history work must not cover every screen with
+                    // an indeterminate progress bar. Reports has its own history status.
+                    if (busy && route == "reports")
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
                     if (route in listOf("portfolio", "markets"))
                         Caption(marketStatus, Modifier.padding(horizontal = 18.dp, vertical = 3.dp))
                     NavHost(
