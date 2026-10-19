@@ -95,3 +95,9 @@ main#app.loveroll-settings-page>.nav button span{line-height:1.08;margin:0;font-
 @media(max-width:767px) and (max-height:700px){main#app.loveroll-settings-page{padding-inline:16px;padding-bottom:calc(68px + env(safe-area-inset-bottom,0px));}main#app.loveroll-settings-menu .settings-editorial-content{gap:12px;}main#app.loveroll-settings-page .settings-sections{grid-template-rows:repeat(5,minmax(56px,1fr));}main#app.loveroll-settings-page .settings-section-row{min-height:56px;padding:8px 4px;}main#app.loveroll-settings-page .settings-profile-row{min-height:64px;padding:10px;}main#app.loveroll-settings-page .settings-profile-row small{font-size:12px;}}
 @media(min-width:768px){main#app.loveroll-settings-page{padding-inline:32px;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));}main#app.loveroll-settings-page>.nav{padding:8px 24px;min-height:68px;}main#app.loveroll-settings-page>.nav button{flex-direction:row;gap:10px;min-height:49px;padding:8px 14px;font-size:14px;}main#app.loveroll-settings-page .settings-section-row{padding-inline:12px;}}
 @media(prefers-reduced-motion:reduce){main#app.loveroll-settings-page *,main#app.loveroll-settings-page *::before{transition:none;animation:none;}}
+
+/* Future personal play style remains an ordinary LoveRoll profile field. */
+main#app.loveroll-settings-page .loveroll-style-select small{
+ display:block;font-size:12px;color:var(--ritual-muted);line-height:1.3;
+}
+main#app.loveroll-settings-page .admin-category-weight-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
