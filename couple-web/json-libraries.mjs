@@ -1,6 +1,6 @@
 // LoveRoll — portable challenge libraries. No account data, secrets, history or couple IDs.
 import {EVENING_CATEGORIES,editableCardSlots} from './evening-challenges.mjs';
-import {editableMonthlyActivities} from './monthly-activities.mjs';
+import {editableMonthlyActivities} from './monthly-activities.mjs?v=20261018-d100151';
 import {validateAdventJson} from './advent-calendar.mjs';
 import {validateSpecialEventsJson} from './private-special-events.mjs';
 export const JSON_VERSION=1;
@@ -65,20 +65,20 @@ export function validateEveningLibrary(data){
   cards:cards.sort((a,b)=>a.card_id-b.card_id)};
 }
 export function buildMonthlyLibrary(overrides=[]){
- return {format:'loveroll-monthly',version:JSON_VERSION,
+ return {format:'loveroll-monthly',version:2,
   activities:editableMonthlyActivities(overrides).map(item=>({
    face:item.face,title:item.title,description:item.description,is_restaurant:item.is_restaurant,
    timer_minutes:duration(item.timer_minutes,'Activité '+item.face)
   }))};
 }
 export function validateMonthlyLibrary(data){
- if(!object(data)||data.format!=='loveroll-monthly'||data.version!==JSON_VERSION||
- !Array.isArray(data.activities)||data.activities.length!==20)
-  throw Error('Fichier d’activités : 20 idées de sortie du D20 attendues.');
+ if(!object(data)||data.format!=='loveroll-monthly'||data.version!==2||
+ !Array.isArray(data.activities)||data.activities.length!==100)
+  throw Error('Fichier d’activités : 100 idées de sortie du D100 attendues.');
  const seen=new Set();
  for(const item of data.activities){
-  if(!object(item)||!Number.isInteger(item.face)||item.face<1||item.face>20||seen.has(item.face))
-   throw Error('Les 20 faces doivent être uniques et numérotées de 1 à 20.');
+  if(!object(item)||!Number.isInteger(item.face)||item.face<1||item.face>100||seen.has(item.face))
+   throw Error('Les 100 faces doivent être uniques et numérotées de 1 à 100.');
   seen.add(item.face);text(item.title,3,120,'Titre sortie '+item.face);
   text(item.description,10,900,'Description sortie '+item.face);
   if(typeof item.is_restaurant!=='boolean')throw Error('is_restaurant doit être true ou false.');
@@ -99,7 +99,7 @@ export function librarySummary(data,kind){
  }
  if(kind==='monthly'){
   const item=validateMonthlyLibrary(data);
-  return {count:item.activities.length,total:20,timers:item.activities.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Activités du mois'};
+  return {count:item.activities.length,total:100,timers:item.activities.filter(c=>duration(c.timer_minutes,'Minuteur')!==null).length,label:'Activités du mois'};
  }
  if(kind==='advent'){
   const item=validatePortableAdvent(data);
