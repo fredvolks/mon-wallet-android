@@ -379,6 +379,25 @@ function bindActions(){
   fields.forEach(field=>field.addEventListener('input',update));
   update();
  });
+ // The two category values always total 100%; Soirée visuals remain unchanged.
+ const categoryFirst=id('admin-category-preferred'),categoryOther=id('admin-category-other');
+ if(categoryFirst&&categoryOther){
+  const total=id('admin-category-total'),save=root.querySelector('.admin-category-save');
+  const sync=(input,sibling)=>{
+   const value=input.value.trim();
+   if(/^[0-9]+$/.test(value)&&Number(value)<=100)
+    sibling.value=String(100-Number(value));
+   const good=[categoryFirst.value,categoryOther.value].every(v=>/^[0-9]+$/.test(v)&&Number(v)<=100)
+    &&Number(categoryFirst.value)+Number(categoryOther.value)===100;
+   if(total){
+    total.textContent='Total : '+(Number(categoryFirst.value||0)+Number(categoryOther.value||0))+' / 100 %';
+    total.dataset.valid=good?'true':'false';
+   }
+   if(save)save.disabled=!good;
+  };
+  categoryFirst.addEventListener('input',()=>sync(categoryFirst,categoryOther));
+  categoryOther.addEventListener('input',()=>sync(categoryOther,categoryFirst));
+ }
  document.querySelectorAll('[data-action]').forEach(el=>{
   el.addEventListener('click',()=>{
    if(el.disabled||el.dataset.busy==='true')return;
@@ -1697,6 +1716,28 @@ function adminDiceWeightEditor(kind){
   button('save-dice-weights:'+kind,'Enregistrer les pondérations','class="settings-primary admin-dice-weight-save"')+
   '</div></details>';
 }
+function adminCategoryWeightEditor(){
+ const enabled=state.couple?.category_weights_enabled!==false;
+ const selected=Number.isInteger(state.couple?.category_preference_percent)?
+  state.couple.category_preference_percent:88;
+ return '<details class="settings-help-item admin-dice-weight-section" data-category-weights="true">'+
+  '<summary>Pondération · Style de défi<small>'+(enabled?'Activée':'Désactivée')+'</small></summary>'+
+  '<div class="admin-dice-weight-editor">'+
+  '<label class="push-option"><span><strong>Activer la pondération</strong>'+
+  '<small>Sinon, chaque catégorie a 50 % de chance.</small></span>'+
+  '<input type="checkbox" role="switch" id="admin-category-enabled"'+(enabled?' checked':'')+'></label>'+
+  '<div class="admin-dice-weight-grid admin-category-weight-grid">'+
+  '<label class="admin-dice-weight-face">Catégorie choisie'+
+  '<span class="admin-dice-weight-input"><input id="admin-category-preferred" type="number" inputmode="numeric" min="0" max="100" step="1" value="'+selected+'">'+
+  '<span aria-hidden="true">%</span></span></label>'+
+  '<label class="admin-dice-weight-face">Autre catégorie'+
+  '<span class="admin-dice-weight-input"><input id="admin-category-other" type="number" inputmode="numeric" min="0" max="100" step="1" value="'+(100-selected)+'">'+
+  '<span aria-hidden="true">%</span></span></label></div>'+
+  '<p class="admin-dice-weight-total" id="admin-category-total" data-valid="true" role="status" aria-live="polite">Total : 100 / 100 %</p>'+
+  '<p class="tiny-note">Par défaut : 88 % de la catégorie sélectionnée et 12 % de l’autre. Aléatoire reste à 50/50. Aucun changement aux cartes existantes.</p>'+
+  button('save-category-weights','Enregistrer la pondération','class="settings-primary admin-dice-weight-save admin-category-save"')+
+  '</div></details>';
+}
 function openSettingsPage(section=''){
  const allowed=['','compte','couple','notifications','jeu','confidentialite','application','aide','aide-connexion','aide-des','aide-sync','admin'];
  if(!allowed.includes(section))return;
@@ -1811,7 +1852,7 @@ function renderSettings(){
   'aide-des':{title:'Dés et activités',body:'<p>Le dé hebdomadaire est commun : un tirage par couple et par semaine. En Soirée, chacun brasse son D6 personnel ; les deux résultats déverrouillent les défis.</p><p>Sensuel et Sexuel : 88 % de la catégorie choisie, 12 % de l’autre. Au hasard : 50 / 50. Les emplacements vides sont exclus ; l’option anti-répétition conserve son cycle entre les soirées.</p><p>La Surprise du mois choisit une activité puis qui invite. L’Avent se débloque par date : une lettre oubliée reste ouvrable plus tard. Un défi non commencé peut être offert, jusqu’à trois fois par mois et par personne.</p>'},
   'aide-sync':{title:'Synchronisation',body:'<p>Les résultats officiels proviennent du serveur et se retrouvent sur les deux comptes associés. Une connexion est nécessaire pour confirmer un lancer ou une ouverture.</p><p>Les listes personnelles de défis restent privées. Les bilans de soirée restent associés à leur auteur dans le calendrier commun.</p>'},
   aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+
-   adminDiceWeightEditor('weekly')+adminDiceWeightEditor('evening')+
+   adminDiceWeightEditor('weekly')+adminDiceWeightEditor('evening')+adminCategoryWeightEditor()+
    (celebrants?'<details class="settings-help-item"><summary>Destinataires des occasions</summary>'+celebrants+'</details>':'')}};
  if(settingsOpenSection==='admin'&&!canEdit)settingsOpenSection='jeu';
  if(!pages[settingsOpenSection])settingsOpenSection='';
@@ -2151,6 +2192,21 @@ async function handle(action,element){
 
  if(verb==='reload-web'){
   await reloadWebAssets(true);return;
+ }
+ if(verb==='save-category-weights'){
+  if(!isLoveAdmin())throw Error('Pondération réservée à l’administrateur du duo.');
+  const preferredText=id('admin-category-preferred')?.value;
+  const otherText=id('admin-category-other')?.value;
+  const values=parseDiceWeightInputs([preferredText,otherText,'0','0','0','0']);
+  const enabled=id('admin-category-enabled')?.checked;
+  if(typeof enabled!=='boolean')throw Error('Interrupteur introuvable.');
+  await rpc('save_love_category_weights',{
+   p_couple:state.coupleId,p_enabled:enabled,p_preferred:values[0]
+  });
+  settingsOpenSection='admin';await reload();
+  const panel=root.querySelector('[data-category-weights="true"]');
+  if(panel)panel.open=true;
+  return;
  }
  if(verb==='save-dice-weights'){
   const kind=parts[0],config=DICE_WEIGHT_CONFIG[kind];
