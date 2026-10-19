@@ -34,6 +34,11 @@ open class WalletWidget : AppWidgetProvider() {
         (context.applicationContext as MonWallet).services.scope.launch {
             try {
                 render(context, ids)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                // An app-widget provider is allowed to fail without killing the whole app.
+                android.util.Log.e("MonWalletWidget", "Unable to update widgets: ${ids.joinToString()}", error)
             } finally {
                 pending.finish()
             }
