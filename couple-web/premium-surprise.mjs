@@ -45,12 +45,12 @@ export function sixSpecialEvents(now,settings={},members=[]){
 }
 export function premiumSurpriseHtml({
  monthly={},members=[],settings={},now=new Date(),activity=null,
- rolling=false,rollingKind=null,rollFace=1,settlingHost=false,showActivity=false,timerHtml='',editSlot=null
+ rolling=false,rollingKind=null,rollFace=1,settlingHost=false,showActivity=false,timerHtml='',editSlot=null,season=null
 }={}){
  const a=monthly.monthly_activity,h=monthly.monthly_host;
  const rollingActivity=rolling&&rollingKind==='monthly_activity';
  const rollingHost=rolling&&rollingKind==='monthly_host'&&!settlingHost;
- // This month has just one large dice stage: D20 -> activity dialog -> D6 -> D20.
+ // This month has just one large dice stage: D100 -> seasonal activity dialog -> D6 -> D100.
  // The server owns the official face; parity only selects which partner invites.
  const needsHost=!!a&&!showActivity&&(!h||settlingHost);
  const hostFaceVisible=rollingHost||settlingHost;
@@ -60,15 +60,24 @@ export function premiumSurpriseHtml({
  const names=partnerNames(members),partner=i=>esc(names[i]);
  const activityTitle=esc(activity?.title||'Notre rendez-vous');
  const monthLabel=new Intl.DateTimeFormat('fr-CA',{month:'long',timeZone:'America/Toronto'}).format(now);
+ const localMonth=Number(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',month:'2-digit'}).format(now));
+ const currentSeason=season==='hiver'||season==='ete'?season:(localMonth>=11||localMonth<=4?'hiver':'ete');
+ const seasonalText=activity?.[currentSeason]||activity?.description||'';
+ const minCost=activity?.['prix_'+currentSeason+'_min'];
+ const maxCost=activity?.['prix_'+currentSeason+'_max'];
+ const costRange=Number.isInteger(minCost)&&Number.isInteger(maxCost)?
+  minCost.toLocaleString('fr-CA')+' à '+maxCost.toLocaleString('fr-CA')+' $ CA':null;
+ const outingPlace=[activity?.region,activity?.location].filter(Boolean).map(esc).join(' · ');
  return '<div class="surprise-premium-view surprise-ecrin">'+
   '<header class="surprise-header surprise-new-header">'+ritualHeadingHtml('NOTRE RITUEL DE LA SURPRISE')+
    '<h2 class="ritual-page-title">Une surprise à partager</h2></header>'+
   '<div class="surprise-gallery ritual-gallery">'+
-   '<div class="surprise-d20-scene surprise-main-die-scene" aria-label="'+
-      (needsHost?'Dé à six faces pour déterminer qui invite':'Dé à vingt faces pour choisir l’activité')+'">'+
+   '<div class="surprise-d20-scene surprise-d100-scene surprise-main-die-scene" aria-label="'+
+      (needsHost?'Dé à six faces pour déterminer qui invite':'Dé à cent faces pour choisir l’activité')+'">'+
     '<div class="surprise-month-label"><span>'+esc(monthLabel)+'</span></div>'+
     (needsHost?premiumPolyDie(6,hostFaceVisible?rollFace:null,'Dé six faces : pair ou impair',rollingHost,true):
-       premiumPolyDie(20,rollingActivity?rollFace:a?.face||null,'Dé 20 faces, activité du mois',rollingActivity))+
+       premiumPolyDie(100,rollingActivity?rollFace:a?.face||null,'Dé 100 faces, activité du mois',rollingActivity))+
+    ((!needsHost&&a)?'<div class="surprise-d100-result" aria-live="polite">Résultat : '+esc(a.face)+'</div>':'')+
    '</div>'+
   '<div class="surprise-details">'+
   '<section class="surprise-month '+(a?'has-activity':'waiting-activity')+
@@ -114,9 +123,22 @@ export function premiumSurpriseHtml({
     '</div></div>':'')+
   (showActivity&&a?
    '<div class="surprise-modal" role="dialog" aria-modal="true" aria-label="Notre activité du mois">'+
-    '<article class="surprise-modal-content"><strong>♡ ACTIVITÉ DU MOIS · '+esc(a.face)+'</strong>'+
-     '<h2>'+activityTitle+'</h2><p>'+esc(activity?.description||'')+'</p>'+
-     '<p>Le résultat est commun aux deux comptes.</p>'+timerHtml+
-     button('surprise-activity','Fermer','surprise-primary')+'</article></div>':'')+
+    '<article class="surprise-modal-content surprise-season-modal">'+
+     '<strong class="surprise-season-overline">♡ ACTIVITÉ DU MOIS · D100 · '+esc(a.face)+'</strong>'+
+     '<h2>'+activityTitle+'</h2>'+
+     (outingPlace?'<p class="surprise-location">'+outingPlace+'</p>':'')+
+     (activity?.hiver||activity?.ete?
+       '<div class="surprise-season-switch" role="group" aria-label="Choisir la saison">'+
+       button('surprise-season:hiver','❄ Hiver','surprise-season-tab'+(currentSeason==='hiver'?' is-active':''))+
+       button('surprise-season:ete','☀ Été','surprise-season-tab'+(currentSeason==='ete'?' is-active':''))+'</div>':'')+
+     '<p class="surprise-season-description">'+esc(seasonalText)+'</p>'+
+     (costRange?'<div class="surprise-budget-block">'+
+       '<span>Budget approximatif · 2 personnes</span><strong>'+esc(costRange)+'</strong>'+
+       '<small>'+esc(activity?.budget_note||'Estimation, transport compris.')+'</small>'+
+       (activity?.distance_km_est!=null?'<small>Environ '+esc(activity.distance_km_est)+' km de Québec (aller simple).</small>':'')+
+       '</div>':'')+
+     '<small class="surprise-season-disclaimer">Tarifs variables selon les dates, les réservations et la météo. Vérifiez les horaires et la disponibilité avant de partir.</small>'+
+     timerHtml+button('surprise-activity','Fermer','surprise-primary')+
+    '</article></div>':'')+
  '</div>';
 }
