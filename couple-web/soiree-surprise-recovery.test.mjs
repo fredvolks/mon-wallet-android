@@ -11,7 +11,7 @@ test('Soirée tolerates an absent review and no longer opens legacy feedback',()
  assert.doesNotMatch(app,/loveroll-aftercare-auto-recover-/);
  assert.match(app,/reviewModalSessionId/);
 });
-test('Surprise monthly D20 and host D6 own separate centered 3D stages and never escape scene',()=>{
+test('Surprise monthly D100 and host D6 own separate centered 3D stages and never escape scene',()=>{
  assert.match(style,/surprise-d20-scene/);
  assert.match(style,/surprise-host-die/);
  assert.match(style,/display:grid;place-items:center/);
@@ -34,7 +34,7 @@ test('PWA and served HTML share v73 CSS and cache-busting tags',()=>{
  assert.match(index,/surprise-refined-v104\.css\?v=20261017-ritual130/);
  assert.match(worker,/const CACHE='loveroll-static-v\d+';/);
  assert.match(worker,/surprise-dice-layout-v73\.css/);
- assert.match(app,/WEB_RELEASE='2026-10-17\.142'/);
+ assert.match(app,/WEB_RELEASE='2026-10-18\.151'/);
 });
 
 test('Active Soirée does not pass an unbound pending challenge into premiumEveningHtml',()=>{
