@@ -70,25 +70,33 @@ fun DetailScreen(
     LaunchedEffect(security.id, range) {
         loading = true
         status = null
-        prices = emptyList()
-        pricesRange = -1
+        val today = java.time.LocalDate.now()
+        val start = if (range == 5) today.withDayOfYear(1) else
+            today.minusDays(listOf(1L, 7L, 31L, 92L, 184L, 0L, 366L, 1827L, 50000L)[range])
+        // Show stored daily closes immediately; never make a title screen wait
+        // for Yahoo/network just to display its existing history.
+        // Intraday 1J must not be faked with daily-only cached closes.
+        val cached = if (range == 0) emptyList() else withContext(Dispatchers.Default) {
+            w.prices.filter { it.securityId == security.id && it.date >= start.toString() }
+        }
+        prices = cached
+        pricesRange = if (cached.isEmpty()) -1 else range
         try {
-            runCatching { s.refreshQuote(security) }
-            prices = s.market.history(security, codes[range], if (range == 0) "5m" else "1d")
-            pricesRange = range
-            if (range >= 5) s.repo.points(security.id, prices)
+            // The foreground quote loop already refreshes the live price.
+            // Fetch historical candles independently, without serial quote waiting.
+            val fresh = s.market.history(security, codes[range], if (range == 0) "1m" else "1d")
+            if (fresh.isNotEmpty()) {
+                prices = fresh
+                pricesRange = range
+                if (range >= 5) s.repo.points(security.id, fresh)
+            } else if (cached.isEmpty()) {
+                status = "Historique indisponible pour ce titre."
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            status = e.message
-            val today = java.time.LocalDate.now()
-            val start = if (range == 5) today.withDayOfYear(1) else
-                today.minusDays(listOf(1L, 7L, 31L, 92L, 184L, 0L, 366L, 1827L, 50000L)[range])
-            prices =
-                w.prices.filter {
-                    it.securityId == security.id && it.date >= start.toString()
-                }
-            pricesRange = range
+            status = if (cached.isEmpty()) (e.message ?: "Historique indisponible.")
+                else "Historique en cache · actualisation temporairement indisponible"
         } finally {
             loading = false
         }
