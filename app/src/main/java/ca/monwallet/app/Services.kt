@@ -35,8 +35,16 @@ open class MonWallet : Application() {
         super.onCreate()
         services = Services(this)
         services.scope.launch {
-            services.auth.initialize()
-            services.initialized.value = true
+            try {
+                services.auth.initialize()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                // Don't strand the native UI on the loading screen when auth initialization fails.
+                android.util.Log.e("MonWallet", "Unable to initialize auth", error)
+            } finally {
+                services.initialized.value = true
+            }
         }
         Notifications.channels(this)
         WorkManager.getInstance(this)
