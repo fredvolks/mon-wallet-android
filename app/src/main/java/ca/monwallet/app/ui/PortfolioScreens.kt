@@ -85,7 +85,7 @@ fun PortfolioScreen(
     // A live quote must not re-run all trade-ledger calculations on the
     // Compose main thread. Only the inputs used by valuation invalidate it.
     val result by produceState<ca.monwallet.app.domain.Result?>(
-        initialValue = null, w.transactions, w.quotes, w.settings, w.portfolios, selected
+        null, w.transactions, w.quotes, w.settings, w.portfolios, selected
     ) {
         value = withContext(Dispatchers.Default) {
             runCatching { w.result(selected) }.getOrNull()
