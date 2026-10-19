@@ -3,6 +3,7 @@
 import {resolvedCard} from './evening-challenges.mjs';
 import {eveningPersonReviewMarkup} from './evening-review.mjs';
 import {ritualHeadingHtml} from './brand.mjs?v=20261017-ritual130';
+import {calendarWeekSuccess,monthlyChallengeSuccess} from './calendar-success-stats.mjs?v=20261018-stats148';
 const safe=x=>String(x??'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[k]));
 const isoMonth=v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(v||'')?v:null;
 export function eveningLocalDay(iso){
@@ -18,7 +19,8 @@ const statusLabel=s=>({
 })[s]||'○ Non réalisé';
 const monthLabel=mo=>new Intl.DateTimeFormat('fr-CA',{month:'long',year:'numeric',timeZone:'UTC'})
  .format(new Date(mo+'-15T12:00:00Z'));
-export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyChallenges=[],reviews=[],me,month,selectedDate,backAction='tab:session',backLabel='Retour à Soirée'}={}){
+export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyChallenges=[],reviews=[],me,month,selectedDate,
+ weeklyRolls=[],passQuota=[],backAction='tab:session',backLabel='Retour à Soirée'}={}){
  const current=isoMonth(month)||'2026-10';
  const [year,m]=current.split('-').map(Number);
  const validDate=selectedDate&&/^\d{4}-\d\d-\d\d$/.test(selectedDate)?selectedDate:current+'-01';
@@ -31,6 +33,19 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
   .reduce((n,r)=>n+Number(r.completed||0),0);
  const incomplete=stats.filter(r=>archives.some(s=>s.id===r.session_id&&!!s.finished_at))
   .reduce((n,r)=>n+Math.max(0,Number(r.target==null?r.incomplete:(r.target-r.completed))||0),0);
+ const weekResult=calendarWeekSuccess({date:validDate,weeklyRolls,sessions});
+ const monthlyResults=monthlyChallengeSuccess({
+  month:current,members,sessions,historyChallenges,sessionStats:stats,passQuota
+ });
+ const freeByChallenge=new Set((passQuota||[]).filter(p=>p.free_pass).map(p=>p.challenge_id));
+ const extraStats='<div class="evening-cal-stats evening-cal-extra" aria-label="Taux de réussite et passes mensuelles">'+
+  '<span><strong>'+(weekResult.hasRoll?weekResult.percent+' %':'—')+'</strong>'+
+   (weekResult.hasRoll?weekResult.completed+' / '+weekResult.possible+' soirées possibles':'Aucun dé cette semaine')+'</span>'+
+  monthlyResults.slice(0,2).map(item=>'<span><strong>'+(item.percent===null?'—':item.percent+' %')+'</strong>'+
+   safe(item.name)+' · défis réalisés'+
+   '<small>Passes gratuites : '+item.freeUsed+'/3'+
+   (item.penalizedPasses?' · pénalisées : '+item.penalizedPasses:'')+'</small></span>').join('')+
+  '</div>';
  const byDay=new Map();
  for(const row of archives){byDay.set(row.localDay,(byDay.get(row.localDay)||0)+1);}
  let cells=Array.from({length:padding},()=>'<span class="evening-cal-blank"></span>').join('');
@@ -61,7 +76,9 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
    const picked=cards.map(c=>{
     const card=resolvedCard(c);
     return '<li class="evening-cal-challenge '+(c.status==='completed'?'is-done':'is-open')+'">'+
-      '<span>'+safe(statusLabel(c.status))+'</span><strong>'+safe(card.title)+'</strong>'+
+      '<span>'+safe(c.status==='passed'?
+       (freeByChallenge.has(c.id)?'↷ Passé sans pénalité':'↷ Passé, comptabilisé'):
+       statusLabel(c.status))+'</span><strong>'+safe(card.title)+'</strong>'+
       '<small>'+safe(c.category==='SEXUEL'?'Sexuel':'Sensuel')+'</small></li>';
    }).join('');
    const unpicked=row?.target==null?0:Math.max(0,Number(row.target)-Number(row.drawn||cards.length));
@@ -89,6 +106,7 @@ export function eveningHistoryMarkup({sessions=[],members=[],stats=[],historyCha
   '<div class="evening-cal-stats"><span><strong>'+history+'</strong> soirées clôturées</span>'+
    '<span><strong>'+done+'</strong> défis réalisés</span>'+
    '<span><strong>'+incomplete+'</strong> non réalisés</span></div>'+
+  extraStats+
   '<section class="evening-cal-month"><div class="evening-cal-toolbar">'+
    '<button data-action="evening-month-prev" aria-label="Mois précédent">‹</button>'+
    '<h3>'+safe(monthLabel(current))+'</h3>'+
