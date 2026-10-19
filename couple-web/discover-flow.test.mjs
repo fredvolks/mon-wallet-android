@@ -62,8 +62,8 @@ test('App-wide theme brings premium visual language to all signed-in sections',(
 });
 
 test('Unpair keeps all challenges and settings in a user-owned archive',()=>{
- assert.match(app,/Dissocier mon partenaire/);
- assert.match(app,/rpc\('end_love_match'/);
+ assert.match(app,/Dissocier notre duo/);
+ assert.match(app,/rpc\('dissociate_love_to_solo'/);
  for(const table of [
   'love_custom_challenges','love_monthly_activity_overrides','love_advent_2026_config',
   'love_advent_2026_days','love_special_event_catalogue'])
