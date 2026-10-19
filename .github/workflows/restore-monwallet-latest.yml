@@ -1,0 +1,43 @@
+name: Restore Mon Wallet legacy update URL
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore-monwallet-latest.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Point releases/latest back to the last signed Mon Wallet APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          wallet_tag="v0.2.47"
+          release_id="$(gh api "repos/$repo/releases/tags/$wallet_tag" --jq '.id')"
+          test -n "$release_id"
+          gh api --method PATCH "repos/$repo/releases/$release_id" -f make_latest=true >/dev/null
+          actual="$(gh api "repos/$repo/releases/latest" --jq '.tag_name')"
+          echo "Latest release: $actual"
+          test "$actual" = "$wallet_tag"
+          manifest="$(gh api "repos/$repo/releases/tags/$wallet_tag" --jq '.assets[].name' | grep -x version.json)"
+          test "$manifest" = "version.json"
+          url="https://github.com/$repo/releases/latest/download/version.json"
+          code="$(curl -Ls --max-time 30 -o /tmp/monwallet-version.json -w '%{http_code}' "$url")"
+          echo "Old APK manifest URL HTTP status: $code"
+          test "$code" = "200"
+          python3 - <<'PY'
+          import json
+          with open('/tmp/monwallet-version.json') as f:
+              data=json.load(f)
+          assert data['versionName']=='0.2.47'
+          assert data['apkUrl'].endswith('/MonWallet-v0.2.47.apk')
+          assert len(data['sha256'])==64
+          print('Old installed APK update URL is restored without reinstall.')
+          PY
