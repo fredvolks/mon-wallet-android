@@ -12,14 +12,14 @@ const make=(host,options={})=>premiumSurpriseHtml({
 });
 const count=(html,needle)=>html.split(needle).length-1;
 
-test('Before D20 roll: one main D20 fills the activity scene, no host stage',()=>{
+test('Before D100 roll: one main D100 fills the activity scene, no host stage',()=>{
  const html=premiumSurpriseHtml({members,now:new Date('2026-10-16T12:00:00-04:00')});
  assert.match(html,/waiting-activity/);
- assert.match(html,/data-dice-sides="20"/);
+ assert.match(html,/data-dice-sides="100"/);
  assert.match(html,/data-action="roll:monthly_activity"/);
  assert.doesNotMatch(html,/surprise-host-legend|surprise-host-winner/);
 });
-test('D20 confirmed: activity opens; closing it reveals one full-stage host D6',()=>{
+test('D100 confirmed: activity opens; closing it reveals one full-stage host D6',()=>{
  const modal=make(null,{showActivity:true,timerHtml:'<div class="timer">10:00</div>'});
  assert.match(modal,/role="dialog" aria-modal="true" aria-label="Notre activité du mois"/);
  assert.match(modal,/Coucher de soleil sur l’eau/);
@@ -27,12 +27,12 @@ test('D20 confirmed: activity opens; closing it reveals one full-stage host D6',
  const closed=make(null,{showActivity:false});
  assert.doesNotMatch(closed,/aria-label="Notre activité du mois"/);
  assert.match(closed,/surprise-month has-activity host-pending/);
- assert.match(closed,/surprise-d20-scene surprise-main-die-scene/);
+ assert.match(closed,/surprise-d20-scene surprise-d100-scene surprise-main-die-scene/);
  assert.equal(count(closed,'data-dice-sides="6"'),1);
  assert.match(closed,/data-dice-preview="true"/);
  assert.match(closed,/data-dice-markers="pips"/);
  assert.doesNotMatch(closed,/data-dice-unrolled="true"/);
- assert.equal(count(closed,'data-dice-sides="20"'),0);
+ assert.equal(count(closed,'data-dice-sides="100"'),0);
  assert.match(closed,/PAIR/);
  assert.match(closed,/IMPAIR/);
  assert.match(closed,/Fred/);
@@ -57,7 +57,7 @@ test('When the official D6 stops, the same face stays visible for the result pau
  assert.doesNotMatch(html,/data-dice-preview=/);
  assert.match(html,/data-spinning="false"/);
  assert.doesNotMatch(html,/data-dice-unrolled="true"/);
- assert.equal(count(html,'data-dice-sides="20"'),0);
+ assert.equal(count(html,'data-dice-sides="100"'),0);
  assert.match(html,/data-action="roll:monthly_host" disabled/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
  const start=app.indexOf("if(kind==='monthly_host'||kind==='monthly_activity'){",app.indexOf('async function animateRoll'));
@@ -79,12 +79,12 @@ test('Duplicate partner display names are allowed; parity follows partner order,
   assert.equal(count(done,'class="surprise-host-winner"'),1);
  }
 });
-test('Each official D6 face uses parity; the large D20 comes back with only winner text',()=>{
+test('Each official D6 face uses parity; the large D100 comes back with only winner text',()=>{
  for(let face=1;face<=6;face++){
   const html=make(face);
   const name=face%2===0?'Fred':'Émilie';
   assert.match(html,/surprise-month has-activity host-complete/);
-  assert.equal(count(html,'data-dice-sides="20"'),1);
+  assert.equal(count(html,'data-dice-sides="100"'),1);
   assert.equal(count(html,'data-dice-sides="6"'),0);
   assert.match(html,/data-action="surprise-activity"/);
   assert.doesNotMatch(html,/data-action="roll:monthly_host"|surprise-host-legend|surprise-invite-inside/);
@@ -100,7 +100,7 @@ test('Surprise one-screen CSS keeps the same generous stage on phone and desktop
  assert.match(css,/@media\(max-width:767px\)/);
  assert.match(css,/@media\(min-width:768px\)/);
  const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
- assert.match(app,/premium-surprise\.mjs\?v=20261017-scenes138/);
+ assert.match(app,/premium-surprise\.mjs\?v=20261018-d100151/);
  assert.match(app,/if\(kind==='monthly_activity'\)state\.showSurpriseActivity=!!state\.monthly\?\.monthly_activity/);
  const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
  const sw=readFileSync(new URL('./service-worker.js',import.meta.url),'utf8');
