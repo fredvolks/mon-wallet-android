@@ -8,6 +8,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LiveQuotesTest {
+    @Test fun foregroundPollingIsAdaptiveAndDoesNotHammerClosedMarkets() {
+        assertEquals(15_000L, foregroundQuoteRefreshDelayMillis(true, 8, false))
+        assertEquals(25_000L, foregroundQuoteRefreshDelayMillis(true, 9, false))
+        assertEquals(25_000L, foregroundQuoteRefreshDelayMillis(true, 15, false))
+        assertEquals(45_000L, foregroundQuoteRefreshDelayMillis(true, 16, false))
+        assertEquals(120_000L, foregroundQuoteRefreshDelayMillis(false, 8, false))
+        assertEquals(60_000L, foregroundQuoteRefreshDelayMillis(true, 8, true))
+        assertEquals(60_000L, foregroundQuoteRefreshDelayMillis(false, 8, true))
+    }
+
     private val now = 1_700_000_000_000L
     private fun quote(session: String, delay: Int? = null, fetched: Long = now) = Quote(
         securityId = "US", price = BigDecimal("100"), previous = BigDecimal("98"),
