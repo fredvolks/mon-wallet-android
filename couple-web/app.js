@@ -1,4 +1,4 @@
-import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-entry140';
+import { marketingHtml,authHtml,profileHtml,inviteProfileHtml,emailConfirmationHtml,profileGenderSelect,profilePlayStyleSelect,matchHtml,parseMonthDay,monthDayInputs } from './onboarding.mjs?v=20261017-entry140';
 import {editorialHeader,editorialRow,editorialIcon} from './editorial-ui.mjs?v=20261017-ritual130';
 import {cardLibraryHtml,monthlyEditorHtml,adventEditorHtml,specialEditorHtml,importEditorHtml} from './editorial-editors.mjs?v=20261017-ritual130';
 import { discoverHtml } from './discover.mjs?v=20261017-entry139';
@@ -1712,7 +1712,7 @@ function renderSettings(){
   '<p class="settings-detail-intro">Compte connecté</p>'+
   '<label class="settings-inline-name"><span>Prénom affiché</span>'+
   '<input id="profile-name" type="text" autocomplete="given-name" value="'+safe(state.profile.display_name)+'" maxlength="80" aria-label="Prénom affiché"></label>'+
-  profileGenderSelect(state.profile.gender)+
+  profileGenderSelect(state.profile.gender)+profilePlayStyleSelect(state.profile.play_style)+
   '<div class="settings-birthday-edit"><span>Mon anniversaire</span>'+monthDayInputs('settings-birthday',state.profile.birthday_md)+'</div>'+
   '<label>Courriel du compte<input type="email" readonly aria-readonly="true" value="'+safe(state.user.email||'')+'" autocomplete="email"></label>'+
   button('profile','Enregistrer mon profil','class="settings-primary"')+
@@ -2823,10 +2823,13 @@ async function handle(action,element){
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
   const birthday=parseMonthDay('signup-birth');
   const gender=id('profile-gender')?.value;
+  const playStyle=id('profile-play-style')?.value||'medium';
   if(!['him','her'].includes(gender))throw Error('Choisissez Homme ou Femme pour votre profil.');
+  if(!['soft','medium','intense'].includes(playStyle))throw Error('Choisissez Soft, Medium ou Intense.');
   if(!id('age-confirm')?.checked)throw Error('LoveRoll est réservé aux personnes de 18 ans et plus.');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
   await rpc('save_my_gender',{p_gender:gender});
+  await rpc('save_my_play_style',{p_style:playStyle});
   // Invitation => accept existing duo. No invitation => own new admin duo.
   // Both decisions are authenticated and checked in one server transaction.
   // An account already linked to a duo is never duplicated.
@@ -2840,10 +2843,13 @@ async function handle(action,element){
   if(!name||name.length>80)throw Error('Choisis ton nom à afficher.');
   const birthday=parseMonthDay('settings-birthday');
   const gender=id('profile-gender')?.value;
+  const playStyle=id('profile-play-style')?.value||'medium';
   if(!['him','her'].includes(gender))throw Error('Choisissez Homme ou Femme pour votre profil.');
+  if(!['soft','medium','intense'].includes(playStyle))throw Error('Choisissez Soft, Medium ou Intense.');
   await rpc('complete_love_registration',{p_name:name,p_birthday_md:birthday});
   await rpc('save_my_gender',{p_gender:gender});
-  await reload();notify('Votre profil, votre genre et votre date sont enregistrés.');return;
+  await rpc('save_my_play_style',{p_style:playStyle});
+  await reload();notify('Votre profil, votre style et votre date sont enregistrés.');return;
  }
  if(verb==='prepare-cards'){
   if(pendingInviteReference(sessionStorage))throw Error('Une invitation est en attente.');
