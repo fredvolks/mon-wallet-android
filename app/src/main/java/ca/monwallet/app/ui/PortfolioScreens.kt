@@ -84,13 +84,15 @@ fun PortfolioScreen(
     val tableScroll = rememberScrollState()
     // A live quote must not re-run all trade-ledger calculations on the
     // Compose main thread. Only the inputs used by valuation invalidate it.
-    val result by produceState<ca.monwallet.app.domain.Result?>(
+    val computedResult by produceState<ca.monwallet.app.domain.Result?>(
         null, w.transactions, w.quotes, w.settings, w.portfolios, selected
     ) {
         value = withContext(Dispatchers.Default) {
             runCatching { w.result(selected) }.getOrNull()
         }
     }
+    // A local immutable value can be smart-cast inside the LazyColumn branches.
+    val result = computedResult
     val snapshots by
         produceState(emptyList<Snapshot>(), w.transactions, w.prices, selected) {
             value =
