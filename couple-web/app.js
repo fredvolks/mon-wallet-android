@@ -706,8 +706,13 @@ async function reload(){
  state.profile=profiles[0]||null;
  state.wellbeing=assessments[0]||null;
  state.personalJournal=personal;
- await autoAcceptPendingInvite();
- const membership=await query('couple_members',{eq:{user_id:state.user.id}});
+ // Safari can retain an old invitation while this verified account already
+ // belongs to a duo. Check real Supabase membership FIRST: never attempt a
+ // second acceptance, disconnect a member or hide their existing Home screen.
+ const knownMembership=await query('couple_members',{eq:{user_id:state.user.id}});
+ if(!knownMembership.length)await autoAcceptPendingInvite();
+ const membership=knownMembership.length?knownMembership:
+  await query('couple_members',{eq:{user_id:state.user.id}});
  const previousCouple=state.coupleId;
  state.coupleId=membership[0]?.couple_id||null;
  if(!state.coupleId&&!pendingInviteReference(sessionStorage)){
@@ -736,12 +741,22 @@ async function reload(){
   query('couple_invitations',{eq:{couple_id:state.coupleId},order:'created_at'})
  ]);
  state.invitations=invitations;
- // A repeated invite link is not an expired match when its recipient is
- // already a member of the exact shared couple.
  const completedInvite=pendingInviteReference(sessionStorage);
- if(completedInvite?.kind==='id'&&invitations.some(i=>
+ // A full duo takes precedence over an old/wrong Messenger invitation on
+ // Safari, iPad, Chrome and APK. No extra pairing is possible or needed.
+ // Keep pending invitations for a genuine solo account, which may explicitly
+ // choose to join the inviting duo through the existing guarded workflow.
+ if(completedInvite&&isSharedCoupleReady(state.coupleId,members)&&
+    members.some(m=>m.user_id===state.user.id)){
+  finishInviteReference();
+  state.showAuth=false;state.showDiscover=false;
+ }else if(completedInvite?.kind==='id'&&invitations.some(i=>
    i.id===completedInvite.value&&i.couple_id===state.coupleId&&
-   i.accepted_at&&!i.cancelled_at))finishInviteReference();
+   i.accepted_at&&!i.cancelled_at)){
+  // Old accepted invitation re-opened, but the connected account is already
+  // associated to that same couple. Never show a second invitation screen.
+  finishInviteReference();
+ }
  state.couple=couple[0]||null;
  if(state.couple?.owner_user_id===state.user.id){
   const [cards,activities,adventConfig,adventDays,specialSettings]=await Promise.all([
