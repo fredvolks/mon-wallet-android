@@ -70,3 +70,35 @@ main#app.loveroll-advent-letters .timer-panel{border:1px solid var(--ritual-bord
 @media(prefers-reduced-motion:reduce){main#app.loveroll-advent-letters *,main#app.loveroll-advent-letters *::before{animation:none;transition:none;}main#app.loveroll-advent-letters .advent-box.opening .advent-envelope-flap{transform:rotateX(-165deg);}main#app.loveroll-advent-letters .advent-box.opening .advent-letter-paper{opacity:1;transform:translateY(-38%);}}
 
 main#app.loveroll-advent-letters .advent-history-trigger .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;}
+
+/* iPad Advent: give every envelope a real rectangle instead of a thin line.
+   Preserve 25 letters, their lock state, SVG folds and the phone layout. */
+@media (min-width:768px) and (min-height:760px){
+ main#app.loveroll-advent-letters .advent-tiles{
+  align-items:stretch;justify-items:stretch;
+ }
+ main#app.loveroll-advent-letters .advent-box{
+  box-sizing:border-box;width:100%;height:100%;align-self:stretch;justify-self:stretch;
+  grid-template-rows:minmax(0,1fr) 18px;
+ }
+ main#app.loveroll-advent-letters .advent-envelope{
+  box-sizing:border-box;display:block;width:100%;height:100%;min-height:45px;
+  align-self:stretch;justify-self:stretch;overflow:hidden;
+  border:1.5px solid #c47796;border-radius:8px;
+  background:linear-gradient(150deg,#5a263c 0%,#331323 64%,#230d19 100%);
+  box-shadow:inset 0 1px 0 #f9b4cf35,0 5px 13px #0903087a;
+ }
+ main#app.loveroll-advent-letters .advent-envelope-front{
+  background:linear-gradient(155deg,#4b1c31,#2c101f 85%);
+ }
+ main#app.loveroll-advent-letters .advent-envelope-flap{
+  background:linear-gradient(165deg,#672d48,#341324);
+ }
+ main#app.loveroll-advent-letters .advent-fold{
+  stroke:#dfa0b5;stroke-width:1.3;
+ }
+ main#app.loveroll-advent-letters .advent-box-number{color:#ffe3e9;}
+ main#app.loveroll-advent-letters .advent-seal{
+  left:50%;top:57%;background:#260b1b;border-color:#da8dab;
+ }
+}
