@@ -75,6 +75,8 @@ test('Account creation keeps invite and returning matched accounts do not see ex
  assert.match(app,/localStorage\.setItem\('pendingInviteId',invite\.value\)/);
  assert.match(app,/localStorage\.setItem\('loverollInviteAccepted','id:'\+invite\.value\)/);
  assert.match(app,/completedInvite\?\.kind==='id'/);
- assert.match(app,/i\.accepted_at&&!i\.cancelled_at\)\)finishInviteReference\(\)/);
+ assert.match(app,/i\.accepted_at&&!i\.cancelled_at\)\)\{/);
+ assert.match(app,/finishInviteReference\(\)/);
+ assert.match(app,/isSharedCoupleReady\(state\.coupleId,members\)/);
  assert.match(app,/if\(pendingInviteReference\(sessionStorage\)\)throw Error\('Une invitation est en attente\.'\)/);
 });
