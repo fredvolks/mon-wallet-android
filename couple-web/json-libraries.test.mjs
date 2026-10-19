@@ -45,9 +45,9 @@ test('An old 35-card JSON backup stays importable without erasing new 100-card c
  assert.equal(custom.cards[99].title,'Notre centième idée');
  assert.deepEqual(validateEveningLibrary(custom).cards,custom.cards);
 });
-test('monthly JSON is always 20 numbered options, with optional timer',()=>{
- const lib=buildMonthlyLibrary([{face:1,title:'Souper à deux',description:'Planifier un souper ensemble au restaurant',is_restaurant:true,timer_minutes:15}]);
- assert.equal(lib.activities.length,20);
+test('monthly JSON is always 100 numbered options, with optional timer',()=>{
+ const lib=buildMonthlyLibrary([{face:1,title:'Souper à deux',description:'Planifier un souper ensemble au restaurant',is_restaurant:true,timer_minutes:15,catalogue_version:2}]);
+ assert.equal(lib.activities.length,100);
  assert.equal(lib.activities[0].timer_minutes,15);
  assert.equal(librarySummary(lib,'monthly').timers,1);
  const bad=JSON.parse(JSON.stringify(lib));bad.activities[0].timer_minutes=-2;
