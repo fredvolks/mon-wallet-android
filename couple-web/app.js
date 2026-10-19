@@ -9,6 +9,7 @@ import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261018-weights146';
 import {futureCoupleStyleMix,playStyleLabel} from './play-style.mjs?v=20261018-styles148';
+import {cycleIntensityQuestionnaireHtml} from './cycle-questionnaire.mjs?v=20261018-cycle149';
 import {DICE_WEIGHT_CONFIG,configuredDiceWeights,parseDiceWeightInputs} from './dice-weighting.mjs?v=20261018-weights146';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261018-odds148';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261018-stats148';
@@ -54,7 +55,7 @@ let notificationFeedback=null;
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,customSearch:'',customFilter:'all',monthlyActivities:[],monthlySlot:1,libraryScreen:'list',libraryImportKind:null,specialEditorKey:null,specialEditorStage:'D6_activite',specialEditorFace:1,adventEditorDay:1,pushDevice:null,
  events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventRevealing:false,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],weeklyRollHistory:[],calendarPassQuota:[],calendarPassMonth:null,eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],weeklyRollHistory:[],calendarPassQuota:[],calendarPassMonth:null,cycleStatus:null,cycleDeferred:null,eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -286,7 +287,13 @@ function frame(body,title='LOVEROLL',subtitle='Un jeu intime, juste pour vous de
   sessionId:state.reviewModalSessionId,draft:state.reviewDraft||{},
   saving:state.reviewSaving,partnerName:other()?.name?.split(' ')[0]||'ton partenaire'
  }):'';
- root.innerHTML=(realHome||realEvening||realSurprise||realSettings||realEditor||eveningArchive||(isCouple&&state.tab==='advent')?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel;
+ const cyclePanel=connected&&state.members?.length===2&&state.cycleStatus?.pending&&
+  state.cycleDeferred!==state.cycleStatus?.cycle?
+  cycleIntensityQuestionnaireHtml({
+   status:state.cycleStatus,style:state.profile?.play_style,
+   partnerName:other()?.name?.split(' ')[0]||'votre partenaire'
+  }):'';
+ root.innerHTML=(realHome||realEvening||realSurprise||realSettings||realEditor||eveningArchive||(isCouple&&state.tab==='advent')?'':usualHeader)+body+(connected?nav():'')+installation+reviewPanel+cyclePanel;
  if(savedStage){
   const freshD100=root.querySelector('.evening-step.two .evening-d35-col canvas[data-dice-sides="100"]');
   const freshStage=freshD100?.closest('.love3d-stage');
@@ -715,7 +722,7 @@ async function reload(){
  if(!state.coupleId){
   if(state.channel){await client.removeChannel(state.channel);state.channel=null;}
   state.couple=null;state.members=[];state.weekly=null;state.monthly={};state.customCards=[];state.monthlyActivities=[];state.rollStatus=null;state.gifts=[];
-  state.session=null;state.sessions=[];state.events=[];state.journal=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];state.weeklyRollHistory=[];state.calendarPassQuota=[];state.calendarPassMonth=null;state.eveningReviews=[];state.reviewModalSessionId=null;
+  state.session=null;state.sessions=[];state.events=[];state.journal=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];state.weeklyRollHistory=[];state.calendarPassQuota=[];state.calendarPassMonth=null;state.cycleStatus=null;state.cycleDeferred=null;state.eveningReviews=[];state.reviewModalSessionId=null;
   state.advent=[];state.adventYear=null;state.adventSelected=null;state.adventServerDate=null;state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;state.specialEventKeys=[];state.unlockKey=null;
   state.invitations=[];state.inviteDraft=null;state.challengesHistory=[];state.eveningHistoryStats=[];state.eveningCalendarChallenges=[];state.eveningReviews=[];state.reviewModalSessionId=null;state.reviewDraft={};
   state.tab=['settings','personal-journal'].includes(state.tab)?state.tab:'home';
@@ -760,7 +767,7 @@ async function reload(){
 }
 async function refreshShared(){
  const c=state.coupleId;
- const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts,adventServerDate,eveningStats,calendarChallenges,eveningReviews,calendarPasses]=await Promise.all([
+ const [rolls,sessions,advents,events,diary,occasionSettings,occasionRolls,keys,challengeHistory,gifts,adventServerDate,eveningStats,calendarChallenges,eveningReviews,calendarPasses,cycleInfo]=await Promise.all([
  query('couple_rolls',{eq:{couple_id:c}}),
  query('couple_sessions',{eq:{couple_id:c},order:'started_at'}),
  query('couple_advent',{eq:{couple_id:c}}),
@@ -775,8 +782,11 @@ async function refreshShared(){
  rpc('love_evening_session_stats',{p_couple:c}),
  rpc('love_evening_calendar_challenges',{p_couple:c}),
  rpc('love_evening_reviews_for_couple',{p_couple:c}),
- rpc('love_calendar_pass_quota',{p_couple:c,p_month:state.eveningCalendarMonth||month()})
+ rpc('love_calendar_pass_quota',{p_couple:c,p_month:state.eveningCalendarMonth||month()}),
+ rpc('love_cycle_status',{p_couple:c})
  ]);
+ state.cycleStatus=cycleInfo;
+ if(!cycleInfo?.pending)state.cycleDeferred=null;
  state.eveningHistoryStats=Array.isArray(eveningStats)?eveningStats:[];
  state.eveningCalendarChallenges=Array.isArray(calendarChallenges)?calendarChallenges:[];
  state.calendarPassQuota=Array.isArray(calendarPasses)?calendarPasses:[];
@@ -1827,6 +1837,15 @@ function renderSettings(){
   button('admin-reset-all-dice',editorialIcon('reset')+' Réinitialiser les dés','class="settings-secondary settings-reset" '+(!resettableDice?'disabled':''))+
   '<p class="tiny-note">Une confirmation sera demandée. La soirée active est clôturée sans être comptée. Cartes, anciennes soirées et historiques restent conservés.</p>':
   '<p>Aucun tirage actif : associez votre partenaire pour jouer à deux.</p>';
+ const progress=state.cycleStatus||{completed:0,required:200,cycle:state.couple?.challenge_cycle_number||1};
+ const adminChallenges=isLoveAdmin()?
+  '<h3>Notre cycle de défis</h3><div class="editorial-status-list">'+
+  editorialRow('Progression des défis',progress.completed+' / '+progress.required+' complétés','','dice')+
+  editorialRow('Cycle',String(progress.cycle)+(progress.pending?' · Bilan à remplir':''),'','calendar')+'</div>'+
+  button('admin-reset-challenges',editorialIcon('reset')+' Recommencer les 200 défis',
+   'class="settings-secondary settings-reset" '+(state.session?'disabled':''))+
+  '<p class="tiny-note">Nouveau cycle de tirage uniquement : aucune carte, ancien défi réalisé, soirée, passe ou don ne sera effacé. Terminez la soirée avant de recommencer.</p>'+
+  (progress.pending?button('cycle-reopen','Répondre au questionnaire','class="settings-primary"'):''):'';
  const notifications=notificationSettingsMarkup(state.pushPrefs||{},state.pushDevice);
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
@@ -1865,7 +1884,7 @@ function renderSettings(){
   'aide-connexion':{title:'Connexion et invitation',body:'<p>Chaque personne utilise son propre compte. Confirmez votre courriel avant de rejoindre votre partenaire. L’invitation reste conservée pendant la connexion, Google et la récupération du mot de passe.</p><p>Dans Notre duo, le créateur prépare un lien privé. Le destinataire l’accepte avec le courriel auquel il a été invité.</p>'},
   'aide-des':{title:'Dés et activités',body:'<p>Le dé hebdomadaire est commun : un tirage par couple et par semaine. En Soirée, chacun brasse son D6 personnel ; les deux résultats déverrouillent les défis.</p><p>Sensuel et Sexuel : 88 % de la catégorie choisie, 12 % de l’autre. Au hasard : 50 / 50. Les emplacements vides sont exclus ; l’option anti-répétition conserve son cycle entre les soirées.</p><p>La Surprise du mois choisit une activité puis qui invite. L’Avent se débloque par date : une lettre oubliée reste ouvrable plus tard. Un défi non commencé peut être offert, jusqu’à trois fois par mois et par personne.</p>'},
   'aide-sync':{title:'Synchronisation',body:'<p>Les résultats officiels proviennent du serveur et se retrouvent sur les deux comptes associés. Une connexion est nécessaire pour confirmer un lancer ou une ouverture.</p><p>Les listes personnelles de défis restent privées. Les bilans de soirée restent associés à leur auteur dans le calendrier commun.</p>'},
-  aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+
+  aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+adminChallenges+
    adminDiceWeightEditor('weekly')+adminDiceWeightEditor('evening')+adminCategoryWeightEditor()+
    (celebrants?'<details class="settings-help-item"><summary>Destinataires des occasions</summary>'+celebrants+'</details>':'')}};
  if(settingsOpenSection==='admin'&&!canEdit)settingsOpenSection='jeu';
@@ -2245,6 +2264,36 @@ async function handle(action,element){
    if(status)status.textContent='Pondérations enregistrées pour vos prochains tirages.';
   }
   return;
+ }
+ if(verb==='admin-reset-challenges'){
+  if(!isLoveAdmin()||!state.coupleId)
+   throw Error('Cette remise à zéro est réservée à l’administrateur du duo.');
+  if(state.session)throw Error('Terminez ou clôturez la soirée avant de recommencer les défis.');
+  if(!(await premiumConfirm(
+   'Recommencer un nouveau cycle de 200 défis ? Les cartes déjà pigées pourront revenir, mais vos anciens défis complétés, les soirées, les dons et les passes du mois seront conservés. Les dés ne seront pas réinitialisés.',
+   {kind:'reset',title:'Recommencer les défis ?',accept:'Oui, nouveau cycle',cancel:'Conserver notre progression'}
+  )))return;
+  await rpc('reset_love_challenges_admin',{p_couple:state.coupleId});
+  state.cycleDeferred=null;
+  await reload();
+  notify('Un nouveau cycle de 200 défis est prêt. Vos souvenirs sont conservés.');return;
+ }
+ if(verb==='cycle-answer'){
+  if(!state.cycleStatus?.pending||!state.coupleId)
+   throw Error('Le questionnaire des 200 défis n’est pas disponible.');
+  const choice=parts[0];
+  if(!['down','same','up'].includes(choice))throw Error('Choix d’intensité invalide.');
+  const result=await rpc('answer_love_cycle_intensity',{p_couple:state.coupleId,p_choice:choice});
+  state.cycleDeferred=null;
+  await reload();
+  if(result?.completed)notify('♡ Votre nouveau cycle de 200 défis commence.');
+  return;
+ }
+ if(verb==='cycle-later'){
+  state.cycleDeferred=state.cycleStatus?.cycle||null;render();return;
+ }
+ if(verb==='cycle-reopen'){
+  state.cycleDeferred=null;render();return;
  }
  if(verb==='admin-reset-all-dice'){
   if(!isLoveAdmin()||!isSharedCoupleReady(state.coupleId,state.members))
