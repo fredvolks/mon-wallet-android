@@ -83,9 +83,9 @@ test('Switching categories must leave mounted WebGL canvases in place',()=>{
  const start=app.indexOf("if(verb==='category')");
  const end=app.indexOf("if(verb==='timer-mode')",start);
  const handler=app.slice(start,end);
- assert.match(handler,/if\(!updateEveningCategoryUi\(root,parts\[0\]\)\)render\(\)/);
+ assert.match(handler,/if\(!updateEveningCategoryUi\(root,parts\[0\],/);
  assert.doesNotMatch(handler,/\n  render\(\);return;/);
- assert.match(module,/export function updateEveningCategoryUi\(root,category\)/);
+ assert.match(module,/export function updateEveningCategoryUi\(root,category,percent=88\)/);
  const updater=module.slice(module.indexOf('export function updateEveningCategoryUi('),module.indexOf('const d6='));
  assert.match(updater,/querySelector\('\.evening-step\.two \.evening-choice'\)/);
  assert.doesNotMatch(updater,/innerHTML|outerHTML|replaceChildren|diceCleanup|clearDice|dieOn|render\(/);
