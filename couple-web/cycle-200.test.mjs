@@ -156,3 +156,39 @@ test('Changer de bibliothèque SEXUEL pendant le cycle préserve les cartes déj
  assert.match(app,/state\.couple\?\.sexual_card_mode==='automatic'/);
  assert.match(app,/state\.tab='settings';settingsOpenSection='admin';renderSettings\(\)/);
 });
+
+test('Private MEDIUM copy is seeded once per duo, editable without changing common cards',()=>{
+ const personal=read('migrations/20261018_private_medium_prefilled_editor_cards.sql');
+ const editors=read('editorial-editors.mjs');
+ assert.match(personal,/create table if not exists public\.love_personal_sexual_cards/);
+ assert.match(personal,/references public\.couples\(id\) on delete cascade/);
+ assert.match(personal,/alter table public\.love_personal_sexual_cards enable row level security/);
+ assert.match(personal,/grant select on public\.love_personal_sexual_cards to authenticated/);
+ assert.match(personal,/c\.owner_user_id=\(select auth\.uid\(\)\)/);
+ assert.match(personal,/and couple_private\.is_member\(c\.id\)/);
+ assert.match(personal,/on conflict \(couple_id,card_id\) do nothing/);
+ assert.match(personal,/f\.style='medium'/);
+ assert.match(personal,/v_saved<>100/);
+ assert.match(personal,/set_love_sexual_card_mode\(p_couple uuid,p_mode text\)/);
+ assert.match(personal,/perform couple_private\.ensure_love_personal_sexual_cards\(p_couple\)/);
+ assert.match(personal,/save_love_personal_sexual_card/);
+ assert.match(personal,/restore_love_personal_sexual_card/);
+ assert.match(personal,/import_love_personal_sexual_cards/);
+ assert.match(personal,/pc\.couple_id,'SEXUEL'::text/);
+ assert.match(personal,/c\.sexual_card_mode='custom'/);
+ assert.match(app,/query\('love_personal_sexual_cards'/);
+ assert.match(app,/state\.personalSexualCardsReady=personalSexualCards\.length===100/);
+ assert.match(app,/state\.customCategory='SEXUEL';state\.customSlot=1/);
+ assert.match(app,/rpc\('save_love_personal_sexual_card'/);
+ assert.match(app,/rpc\('restore_love_personal_sexual_card'/);
+ assert.match(app,/rpc\('import_love_personal_sexual_cards'/);
+ assert.match(editors,/Restaurer la version MEDIUM/);
+ assert.match(editors,/Ces cartes ne sont pas partagées avec d’autres couples/);
+ // Import and edit requests for SENSUEL still follow the prior RPC.
+ assert.match(app,/else if\(preview\.kind==='evening'\)\s+await rpc\('import_love_evening_library'/);
+ assert.match(app,/else\{\s+await rpc\('save_love_card_with_roles'/);
+ // The new personal RPC must never edit the future/default libraries or prior cards.
+ const saver=personal.slice(personal.indexOf('create or replace function public.save_love_personal_sexual_card'),
+  personal.indexOf('revoke all on function public.save_love_personal_sexual_card'));
+ assert.doesNotMatch(saver,/update public\.love_future_style_cards|delete from public\.love_custom_challenges|truncate/i);
+});
