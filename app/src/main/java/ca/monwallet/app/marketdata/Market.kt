@@ -93,11 +93,18 @@ class Yahoo : MarketDataProvider {
 
     override suspend fun quote(s: Security): Quote {
         val us = supportsUsExtendedHours(s)
-        // A 5-minute chart includes actual extended-session prints. Daily bars do not.
-        val c = when {
-            us -> chart(s, "1d", "5m", includePrePost = true)
-            s.type.uppercase() == "FUTURE" -> chart(s, "1d", "5m", includePrePost = true)
-            else -> chart(s, "5d", "1d")
+        // A 1-minute intraday chart is the freshest publicly available Yahoo chart.
+        // The exchange may still delay its feed; do not call this guaranteed realtime.
+        // If 1-minute history is unavailable for this listing, retain the older
+        // supported interval rather than losing its last quote.
+        val intraday = us || s.type.uppercase() == "FUTURE"
+        val c = try {
+            chart(s, "1d", "1m", includePrePost = intraday)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            if (intraday) chart(s, "1d", "5m", includePrePost = true)
+            else chart(s, "5d", "1d")
         }
         return YahooQuoteMapper.map(s, c, Instant.now().epochSecond, name, us)
     }
@@ -408,6 +415,8 @@ class Twelve(private val key: String) : MarketDataProvider {
                 "1mo" -> 30
                 "3mo" -> 100
                 "6mo" -> 200
+                // Estimate trading sessions since Jan 1, with a buffer for holidays.
+                "ytd" -> (java.time.LocalDate.now().dayOfYear * 5 / 7) + 20
                 "1y" -> 300
                 else -> 5000
             }
@@ -419,7 +428,7 @@ class Twelve(private val key: String) : MarketDataProvider {
                 "1mo" -> "1month"
                 else -> "1day"
             }
-        return get(
+        val points = get(
                 "time_series",
                 mapOf(
                     "symbol" to symbol(s),
@@ -445,6 +454,10 @@ class Twelve(private val key: String) : MarketDataProvider {
                     o.number("open"), o.number("high"), o.number("low"), o.number("volume"))
             }
             ?.reversed() ?: emptyList()
+        return if (range == "ytd") {
+            val yearStart = LocalDate.now().withDayOfYear(1).toString()
+            points.filter { it.date >= yearStart }
+        } else points
     }
 
     override suspend fun search(q: String) =

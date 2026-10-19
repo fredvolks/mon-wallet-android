@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,5 +39,19 @@ class WidgetIndexModeTest {
         stale[security.id] = stale.getValue(security.id).copy(
             timestamp = now.minusHours(3).toInstant().toEpochMilli())
         assertFalse(WidgetIndexMode.useFutures(Wallet(quotes = stale), now))
+    }
+
+    @Test fun dailyPnlChartLineChangesColorAtZeroCrossings() {
+        val pieces = listOf(10f to -5f, -5f to -4f, -4f to 8f)
+            .flatMap { (start, end) -> WidgetChartData.segmentPieces(start, end) }
+
+        assertEquals(listOf(1, -1, -1, -1, 1), pieces.map { it.sign })
+        assertEquals(2f / 3f, pieces[0].endFraction, 0.0001f)
+        assertEquals(1f / 3f, pieces[4].startFraction, 0.0001f)
+    }
+
+    @Test fun chartSegmentsStayGreenAboveZeroAndRedBelowZero() {
+        assertEquals(listOf(1), WidgetChartData.segmentPieces(2f, 5f).map { it.sign })
+        assertEquals(listOf(-1), WidgetChartData.segmentPieces(-2f, -5f).map { it.sign })
     }
 }

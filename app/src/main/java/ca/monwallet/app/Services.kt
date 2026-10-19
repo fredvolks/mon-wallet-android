@@ -35,8 +35,16 @@ open class MonWallet : Application() {
         super.onCreate()
         services = Services(this)
         services.scope.launch {
-            services.auth.initialize()
-            services.initialized.value = true
+            try {
+                services.auth.initialize()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                // Don't strand the native UI on the loading screen when auth initialization fails.
+                android.util.Log.e("MonWallet", "Unable to initialize auth", error)
+            } finally {
+                services.initialized.value = true
+            }
         }
         Notifications.channels(this)
         WorkManager.getInstance(this)
@@ -240,17 +248,26 @@ class Services(val context: Context) {
     suspend fun refreshQuote(security: Security): Quote =
         quoteLocks.getOrPut(security.id) { Mutex() }.withLock {
             recentQuotes[security.id]?.takeIf {
-                System.currentTimeMillis() - it.fetchedAt < 5_000
+                System.currentTimeMillis() - it.fetchedAt < 2_000
             } ?: liveQuotes.quote(security).cached.also { fresh ->
-                repo.quote(fresh)
+                // Never force Room -> entire Wallet -> Compose recomputation every
+                // 3 seconds if Yahoo sends the same quote again. Keep a freshness
+                // heartbeat at most once per minute for unchanged provider data.
+                val previous = recentQuotes[security.id] ?: repo.state.value.quotes[security.id]
+                val changed = previous == null ||
+                    previous.copy(fetchedAt = fresh.fetchedAt) != fresh
+                val refreshAge = previous?.let { fresh.fetchedAt - it.fetchedAt } ?: Long.MAX_VALUE
+                if (changed || refreshAge >= 60_000L) repo.quote(fresh)
                 recentQuotes[security.id] = fresh
             }
         }
 
     suspend fun refreshForeground(securities: List<Security>): Boolean {
-        if (busy.value || securities.isEmpty()) return false
+        if (securities.isEmpty()) return false
+        // Foreground quotes must not wait for the much heavier history/news refresh.
+        // Per-security mutexes in refreshQuote prevent duplicate provider requests.
         val before = repo.state.value.quotes
-        val gate = Semaphore(2)
+        val gate = Semaphore(4)
         val updates = supervisorScope {
             securities.distinctBy { it.id }.take(20).map { security ->
                 async {
@@ -274,17 +291,20 @@ class Services(val context: Context) {
                 fresh.preMarketTimestamp != old.preMarketTimestamp ||
                 fresh.afterHoursTimestamp != old.afterHoursTimestamp
         } ?: true }
-        marketStatus.value = if (updates.isEmpty())
-            "Derniers cours en cache · fournisseur indisponible"
-        else if (updates.any { (it.delay ?: 0) > 0 })
-            "Cotation vérifiée · certains cours différés"
-        else if (changed) "Nouvelle cotation reçue · délai non garanti"
-        else "Dernière cotation inchangée · délai non garanti"
+        val checkedAt = java.time.LocalTime.now(java.time.ZoneId.of("America/Toronto"))
+            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+        marketStatus.value = when {
+            updates.isEmpty() -> "Cotation indisponible · derniers prix conservés"
+            updates.any { (it.delay ?: 0) > 0 } ->
+                "Cours vérifiés à $checkedAt · certains cours différés"
+            changed -> "Cours mis à jour à $checkedAt · délai non garanti"
+            else -> "Cours vérifiés à $checkedAt · cotation inchangée"
+        }
         return true
     }
 
     suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false,
-        notifyWidgets: Boolean = true) {
+        notifyWidgets: Boolean = true, backgroundQuotesOnly: Boolean = false) {
         if (busy.value) return
         busy.value = true
         try {
@@ -295,9 +315,9 @@ class Services(val context: Context) {
                         w.alerts.map { it.securityId })
                     .toSet()
             val securities =
-                (w.securities.filter { it.id in ids } + Catalog.markets + extra).distinctBy {
-                    it.id
-                }
+                (w.securities.filter { it.id in ids } +
+                    (if (backgroundQuotesOnly) Catalog.markets.take(4) else Catalog.markets) +
+                    extra).distinctBy { it.id }
             val errors = java.util.concurrent.atomic.AtomicInteger(0)
             val semaphore = Semaphore(3)
             supervisorScope {
@@ -307,9 +327,11 @@ class Services(val context: Context) {
                             semaphore.withPermit {
                                 try {
                                     refreshQuote(s)
-                                    if (history || w.prices.none { it.securityId == s.id })
+                                    if (!backgroundQuotesOnly &&
+                                        (history || w.prices.none { it.securityId == s.id }))
                                         repo.points(s.id, market.history(s))
-                                    if (s.id in ids || s.symbol == "CAD=X")
+                                    if (!backgroundQuotesOnly &&
+                                        (s.id in ids || s.symbol == "CAD=X"))
                                         runCatching {
                                             repo.points(s.id, market.history(s, "1d", "5m"), true)
                                         }
@@ -341,7 +363,9 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         while (!s.initialized.value) delay(50)
         return try {
             val widgetId = inputData.getInt("widgetId", -1)
-            s.refresh(notifyWidgets = widgetId < 0)
+            // A periodic widget refresh needs current quotes, not a full
+            // backfill of charts for every held, sold and indexed symbol.
+            s.refresh(notifyWidgets = widgetId < 0, backgroundQuotesOnly = true)
             if (widgetId >= 0)
                 WalletWidget.render(applicationContext, intArrayOf(widgetId))
             Result.success()

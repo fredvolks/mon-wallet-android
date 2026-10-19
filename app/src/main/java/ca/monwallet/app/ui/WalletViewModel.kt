@@ -26,5 +26,19 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Manual toolbar action: refresh what the user is looking at, not every
+     *  chart and news source in the entire portfolio. */
+    fun refreshVisible() = run {
+        val visible = services.foregroundSecurities.value
+        if (visible.isNotEmpty()) {
+            services.refreshForeground(visible)
+        } else {
+            // News has its own cache/refresh lifecycle. Keep the toolbar useful
+            // when no quote list is active (e.g. the News screen).
+            services.news.refresh(services.repo.current(), force = true)
+        }
+    }
+
+    /** Explicit deep refresh remains available from advanced settings. */
     fun refresh() = run { services.refresh(history = true) }
 }

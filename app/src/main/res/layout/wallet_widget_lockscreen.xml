@@ -1,0 +1,28 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_lock_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="9dp"
+    android:paddingBottom="8dp"
+    android:background="@drawable/widget_background">
+    <TextView
+        android:id="@+id/widget_lock_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="P&amp;L du jour · CAD"
+        android:textColor="#9CCDFF"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp"/>
+    <LinearLayout
+        android:id="@+id/widget_lock_rows"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"/>
+</LinearLayout>

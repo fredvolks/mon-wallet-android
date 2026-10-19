@@ -640,64 +640,57 @@ fun DeviceSettings(vm: WalletViewModel, onClose: () -> Unit) {
 fun UpdateSettings(vm: WalletViewModel, onClose: () -> Unit) {
     val s = vm.services
     val context = LocalContext.current
-    var url by remember { mutableStateOf(s.secure.updateUrl) }
     var release by remember { mutableStateOf<Updater.Release?>(null) }
     var apk by remember { mutableStateOf<java.io.File?>(null) }
-    var status by remember { mutableStateOf(context.getString(R.string.profile_installed_version, BuildConfig.VERSION_NAME)) }
+    var status by remember {
+        mutableStateOf(context.getString(R.string.profile_installed_version, BuildConfig.VERSION_NAME))
+    }
     var busy by remember { mutableStateOf(false) }
+
     FullDialog(stringResource(R.string.ui_mises_a_jour_8e32a), onClose) {
         Text(status)
-        TextEntry(stringResource(R.string.ui_adresse_https_de_version_json_4a892), url, { url = it })
-        Caption(
-            stringResource(R.string.ui_cette_adresse_est_fournie_par_le_depot_de_dis_aba3c)
-        )
+        Caption("Version installée : ${BuildConfig.VERSION_NAME}")
+        Caption("Canal de mise à jour : Mon Wallet uniquement.")
+        Caption("Le fichier version.json est indépendant des publications LoveRoll.")
+
         Button(
             enabled = !busy,
             onClick = {
                 vm.run {
-                    s.secure.put("update_url", url.trim())
                     busy = true
                     try {
-                        release = s.updater.check()
-                        status =
-                            if (release == null) context.getString(R.string.profile_latest_version)
-                            else context.getString(R.string.profile_new_version)
+                        val next = release ?: s.updater.check()
+                        if (next == null) {
+                            release = null
+                            apk = null
+                            status = context.getString(R.string.profile_latest_version)
+                        } else {
+                            release = next
+                            status = context.getString(R.string.profile_new_version)
+                            val file = apk?.takeIf { it.exists() } ?: s.updater.download(next).also { apk = it }
+                            s.updater.install(file)
+                            status = context.getString(R.string.profile_install_again)
+                        }
+                    } catch (e: Exception) {
+                        status = e.message ?: "La vérification de mise à jour a échoué."
                     } finally {
                         busy = false
                     }
                 }
             },
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(stringResource(R.string.ui_verifier_les_mises_a_jour_7a411))
+            Text(if (busy) "Vérification en cours…" else "Vérifier / mettre à jour Mon Wallet")
         }
+
         release?.let { r ->
             Section(stringResource(R.string.profile_release_name, r.name))
             Text(r.notes)
             if (r.mandatory || BuildConfig.VERSION_CODE < r.min)
                 Text(stringResource(R.string.ui_mise_a_jour_requise_par_lediteur_dc126), color = Red)
-            Button(
-                enabled = !busy,
-                onClick = {
-                    vm.run {
-                        busy = true
-                        try {
-                            val file = apk ?: s.updater.download(r).also { apk = it }
-                            s.updater.install(file)
-                            status =
-                                context.getString(R.string.profile_install_again)
-                        } finally {
-                            busy = false
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(if (apk == null) R.string.profile_download_update else R.string.profile_install))
-            }
+            if (apk != null) Caption("APK téléchargé et vérifié; touche le bouton pour reprendre l’installation si Android a demandé une autorisation.")
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-        Caption(
-            stringResource(R.string.ui_controles_sha_256_identifiant_version_et_cert_97a32)
-        )
+        Caption("L’APK et sa signature sont vérifiés avant l’installation. Android demande ta confirmation finale.")
     }
 }

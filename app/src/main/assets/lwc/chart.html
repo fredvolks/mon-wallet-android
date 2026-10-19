@@ -11,7 +11,12 @@ function renderWalletChart(payload) {
     width: host.clientWidth, height: 222,
     layout: {background:{type:'solid',color:'#08111e'},textColor:'#9daab8',attributionLogo:false},
     grid: {vertLines:{color:'#182536'},horzLines:{color:'#182536'}},
-    rightPriceScale: {borderColor:'#263649'}, timeScale:{borderColor:'#263649',timeVisible:true},
+    rightPriceScale: {visible:true,borderColor:'#263649',scaleMargins:{top:0.12,bottom:0.12}},
+    timeScale:{borderColor:'#263649',timeVisible:true},
+    localization: payload.kind==='volume' ? {} : {
+      priceFormatter: price => new Intl.NumberFormat('fr-CA',
+        {minimumFractionDigits:2,maximumFractionDigits:2}).format(price)
+    },
     crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
   });
   const color=payload.positive?'#66ed9e':'#f47780';

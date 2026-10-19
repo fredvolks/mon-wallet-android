@@ -10,6 +10,24 @@ import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 
+
+/**
+ * While the app is RESUMED, fetch visible quotes at a bounded cadence.
+ * Check up to 8 visible symbols every 3 seconds while active. Larger watchlists\n * use 5-10 seconds to avoid excessive unauthenticated Yahoo requests.\n * Back off after outages or rate limiting.
+ * This is polling, not an exchange-entitled streaming feed.
+ */
+fun foregroundQuoteRefreshDelayMillis(
+    active: Boolean,
+    symbolCount: Int,
+    providerUnavailable: Boolean,
+): Long = when {
+    providerUnavailable -> 60_000L
+    !active -> 120_000L
+    symbolCount <= 8 -> 3_000L
+    symbolCount <= 15 -> 5_000L
+    else -> 10_000L
+}
+
 enum class QuoteFreshness { REALTIME, DELAYED, CACHED, STALE }
 enum class MarketSession { PRE_MARKET, REGULAR, AFTER_HOURS, CLOSED }
 

@@ -1,5 +1,69 @@
 # Versions
 
+## Mon Wallet v0.2.47 — 2026-10-13 (P&L à 0 % les jours fériés)
+
+- Les titres dont la bourse est fermée pour congé affichent un P&L individuel de 0 $ et 0,00 %, avec le logo de congé dans Mes titres et la Watchlist.
+- Le widget affiche aussi 0,00 % et un repère « F » mauve à côté des titres en congé; les variations périmées et le PRE/AFTER sont masqués.
+- Le P&L quotidien global en dollars continue d’exclure les titres en congé.
+
+
+## Mon Wallet v0.2.46 — 2026-10-12 (pourcentage quotidien calculé sur le wallet complet)
+
+- Les titres dont la bourse est fermée pour congé restent exclus du P&L quotidien en dollars.
+- Leur dernière valeur connue reste incluse dans la base totale utilisée pour calculer le pourcentage du wallet.
+- Le widget affiche donc le rendement quotidien sur la valeur du portefeuille complet.
+
+## Mon Wallet v0.2.44 — 2026-10-12 (congés boursiers et P&L quotidien)
+
+- Ajoute un indicateur de congé boursier à côté des titres concernés dans Mes titres et la Watchlist, selon leur place canadienne ou américaine.
+- Le P&L quotidien masque la variation des titres dont la place est fermée pour congé; les titres dont la place est ouverte continuent de compter.
+- Le P&L du jour est calculé sur les titres actifs seulement et indique combien de titres en congé sont exclus.
+- Le P&L de la dernière séance reste disponible après une transaction ou un dépôt ultérieur.
+- Tests de régression pour l’Action de grâce canadienne, le marché américain ouvert et le calcul quotidien sélectif.
+
+## Mon Wallet v0.2.42 — 2026-10-12 (mise à jour intégrée en un toucher)
+
+- Profil → Mises à jour utilise par défaut le manifeste officiel de la dernière release; aucune URL à saisir.
+- Un seul bouton vérifie la version, télécharge l’APK signé, vérifie son SHA-256, son identifiant et son certificat, puis ouvre l’installateur Android.
+- L’APK reste en cache pour reprendre l’installation si Android demande d’abord l’autorisation « Installer des applications inconnues ». La confirmation finale reste faite dans Android.
+
+
+## Mon Wallet v0.2.41 — 2026-10-09 (P&L quotidien après fermeture avec FX en cache)
+
+- Le P&L quotidien des titres américains reste disponible en CAD lorsque la clôture USD/CAD n’est pas datée de la même séance; le dernier taux courant connu sert de repli.
+- Le calcul par titre et le total du portefeuille utilisent le même taux de repli, au lieu d’afficher « — » pour une séance FX décalée.
+- Test de régression couvrant le rendement d’un titre américain et le P&L agrégé avec un taux FX d’une autre date.
+
+# Versions
+
+## Mon Wallet v0.2.40 — 2026-10-09 (P&L quotidien avec taux FX en cache)
+
+- Le P&L quotidien en CAD reste calculable après la fermeture même si le taux FX n’a pas de clôture datée de la même séance.
+- En l’absence de clôture FX alignée, utilise le dernier taux courant connu comme approximation et conserve le P&L plutôt que d’afficher « — ».
+- Test de régression sur un titre américain et un taux FX d’une autre date.
+
+## Mon Wallet v0.2.39 — 2026-10-08 (P&L quotidien après la fermeture)
+
+- Portefeuille et widget conservent le P&L de la séance régulière après la fermeture, en reprenant la clôture précédente de l’historique si la cotation ne la fournit pas.
+- Le cours after-hours reste utilisé uniquement pour la valeur estimée et n’altère pas le P&L quotidien.
+
+## Mon Wallet v0.2.38 — 2026-10-08 (cours after-hours dans la fiche titre)
+
+- Fiche titre : affiche le cours après clôture à côté du cours régulier, avec la lune et le mauve de la Watchlist.
+- La variation after-hours et son heure restent indiquées sous les deux cours.
+
+## Mon Wallet v0.2.37 — 2026-10-08 (rendement par période et prix sur le graphique)
+
+- Fiche titre : la variation affichée suit la période sélectionnée dans le graphique, calculée entre le premier cours affiché et le cours actuel; 1J conserve la variation quotidienne.
+- Ajout de YTD (depuis le début de l’année) aux périodes du graphique, avec historique adapté aux sources Yahoo et Twelve Data.
+- Échelle de prix visible à droite du graphique, avec valeurs formatées en français canadien.
+
+## Mon Wallet v0.2.36 — 2026-10-08 (graphique P&L vert/rouge)
+
+- Widget 4×2 : le graphique intrajournalier devient vert lorsque le P&L est positif et rouge lorsqu’il est négatif; la couleur bascule précisément au passage de zéro.
+- La ligne et le remplissage suivent le signe réel du P&L quotidien dans la tuile Daily.
+
+
 ## Mon Wallet v0.2.32 — 2026-10-08 (P&L quotidien centré dans le widget)
 
 - Widget 4×2 : centre le montant et le pourcentage du P&L quotidien dans le panneau Daily.

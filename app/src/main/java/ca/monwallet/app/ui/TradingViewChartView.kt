@@ -19,7 +19,7 @@ import org.json.JSONObject
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun TradingViewChartView(points: List<Point>, kind: String) {
+fun TradingViewChartView(points: List<Point>, kind: String, currency: String = "CAD") {
     val context = LocalContext.current
     var loaded by remember { mutableStateOf(false) }
     val view = remember(context) {
@@ -40,20 +40,31 @@ fun TradingViewChartView(points: List<Point>, kind: String) {
         }
     }
     DisposableEffect(view) { onDispose { view.stopLoading(); view.destroy() } }
-    val rows = JSONArray()
-    points.sortedBy { it.timestamp }.distinctBy { it.timestamp }.forEach { point ->
-        rows.put(JSONObject().put("time", point.timestamp / 1000)
-            .put("close", point.close.toDouble())
-            .put("open", point.open?.toDouble())
-            .put("high", point.high?.toDouble())
-            .put("low", point.low?.toDouble())
-            .put("volume", point.volume?.toDouble()))
+    // JSON serialization and WebView chart redraws are expensive. A quote change
+    // updates the stock price header, not the historical chart data. Keep the
+    // payload stable and send it only when chart points or chart type change.
+    val payload = remember(points, kind, currency) {
+        val rows = JSONArray()
+        points.sortedBy { it.timestamp }.distinctBy { it.timestamp }.forEach { point ->
+            rows.put(JSONObject().put("time", point.timestamp / 1000)
+                .put("close", point.close.toDouble())
+                .put("open", point.open?.toDouble())
+                .put("high", point.high?.toDouble())
+                .put("low", point.low?.toDouble())
+                .put("volume", point.volume?.toDouble()))
+        }
+        JSONObject().put("kind", kind).put("points", rows)
+            .put("currency", currency)
+            .put("positive", points.lastOrNull()?.close?.let { last ->
+                points.firstOrNull()?.close?.let { last >= it }
+            } ?: true).toString()
     }
-    val payload = JSONObject().put("kind", kind).put("points", rows)
-        .put("positive", points.lastOrNull()?.close?.let { last -> points.firstOrNull()?.close?.let { last >= it } } ?: true)
-    AndroidView(factory = { view }, modifier = Modifier.fillMaxWidth().height(252.dp), update = {
-        if (loaded && points.isNotEmpty()) it.evaluateJavascript("renderWalletChart(${payload})", null)
-    })
+    LaunchedEffect(view, loaded, payload) {
+        if (loaded && points.isNotEmpty()) {
+            view.evaluateJavascript("renderWalletChart(${payload})", null)
+        }
+    }
+    AndroidView(factory = { view }, modifier = Modifier.fillMaxWidth().height(252.dp))
     TextButton(onClick = { view.evaluateJavascript("resetWalletChart()", null) }) {
         Text(stringResource(R.string.chart_reset))
     }

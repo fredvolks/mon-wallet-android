@@ -82,7 +82,17 @@ fun PortfolioScreen(
         mutableStateOf(PortfolioTableColumns.restore(w.settings["portfolio_columns"]))
     }
     val tableScroll = rememberScrollState()
-    val result = remember(w, selected) { runCatching { w.result(selected) }.getOrNull() }
+    // A live quote must not re-run all trade-ledger calculations on the
+    // Compose main thread. Only the inputs used by valuation invalidate it.
+    val computedResult by produceState<ca.monwallet.app.domain.Result?>(
+        null, w.transactions, w.quotes, w.settings, w.portfolios, selected
+    ) {
+        value = withContext(Dispatchers.Default) {
+            runCatching { w.result(selected) }.getOrNull()
+        }
+    }
+    // A local immutable value can be smart-cast inside the LazyColumn branches.
+    val result = computedResult
     val snapshots by
         produceState(emptyList<Snapshot>(), w.transactions, w.prices, selected) {
             value =
@@ -108,6 +118,10 @@ fun PortfolioScreen(
         }.toString()
     val visible = snapshots.filter { it.date >= cutoff }
     val owned = result?.holdings?.filter { it.quantity > ZERO }.orEmpty()
+    val holidayCount = owned.count { holding ->
+        val security = w.security(holding.securityId)
+        security != null && MarketHoliday.excludesDailyPnl(security)
+    }
     val extendedSession = if (w.settings["portfolio_extended"] != "REGULAR")
         owned.mapNotNull { h -> w.security(h.securityId)?.let { activeExtended(w, it)?.session } }
             .distinct().singleOrNull() else null
@@ -194,6 +208,7 @@ fun PortfolioScreen(
                             fontWeight = FontWeight.SemiBold)
                         Text("Profit portefeuille  ${percent(result?.percent)}",
                             fontSize = 11.sp, color = tint(result?.pnl))
+                        if (holidayCount > 0) Caption("$holidayCount titre(s) en congé exclus du P&L")
                     }
                 }
             } else CardBlock {
@@ -235,6 +250,7 @@ fun PortfolioScreen(
                     Metric(stringResource(R.string.ui_jour_a2cf1), percent(result?.dayPercent), tint(result?.day))
                     Metric(stringResource(R.string.ui_encaisse_d0263), money(result?.cash))
                 }
+                if (holidayCount > 0) Caption("$holidayCount titre(s) en congé exclus du P&L quotidien")
             }
         }
         item {
@@ -426,6 +442,7 @@ private fun PortfolioTableRow(w: Wallet, s: Security, h: Holding, result: Result
                 Spacer(Modifier.width(4.dp))
                 Text(s.ticker, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
+                MarketHolidayIcon(s, Modifier.padding(start = 2.dp))
             }
         }, value = { key ->
             if (key == "sparkline") {
@@ -524,7 +541,10 @@ fun HoldingRow(w: Wallet, s: Security, h: Holding, compact: Boolean,
             Logo(s)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(s.ticker, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.ticker, fontWeight = FontWeight.Bold)
+                    MarketHolidayIcon(s, Modifier.padding(start = 3.dp))
+                }
                 Caption(stringResource(R.string.shares_currency, number(h.quantity, 6), s.currency))
             }
             Chart(
@@ -612,8 +632,11 @@ private fun CompactHoldingRow(w: Wallet, s: Security, h: Holding,
             Logo(s, 42.dp)
             Spacer(Modifier.width(8.dp))
             Column {
-                Text(s.ticker, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.ticker, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    MarketHolidayIcon(s, Modifier.padding(start = 3.dp))
+                }
                 Text(compactQuantity(s, h.quantity) + if (showWeight) " · " +
                     percent(h.value?.let { v -> portfolioValue?.let { v.pct(it) } }) else "",
                     color = Muted, fontSize = 10.sp, maxLines = 1,

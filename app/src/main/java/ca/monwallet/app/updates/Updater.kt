@@ -10,9 +10,16 @@ import ca.monwallet.app.data.SecureSettings
 import ca.monwallet.app.marketdata.Http
 import java.io.File
 import java.security.MessageDigest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+
+/** No branch/tag called "latest" is used: LoveRoll had hijacked that release alias. */
+internal fun updateManifestCandidates(preferred: String): List<String> =
+    listOf(preferred, SecureSettings.STABLE_UPDATE_MANIFEST_URL)
+        .filter { it.startsWith("https://") }
+        .distinct()
 
 class Updater(private val context: Context, private val secure: SecureSettings) {
     data class Release(
@@ -26,23 +33,45 @@ class Updater(private val context: Context, private val secure: SecureSettings) 
     )
 
     suspend fun check(): Release? {
-        val url = secure.updateUrl
-        require(url.startsWith("https://")) {
-            "Ajoute l’adresse HTTPS du fichier version.json dans les paramètres de mise à jour."
+        var lastError: Exception? = null
+        // Existing APKs and repository variables can still point to the former
+        // GitHub "latest" URL, which currently selects a LoveRoll release.
+        // Fall back to an independent, stable Mon Wallet manifest on HTTP 404
+        // or malformed data without ever accepting another app's APK.
+        for (url in updateManifestCandidates(secure.updateUrl)) {
+            try {
+                val j = Http.json(
+                    Request.Builder().url(url).header("Cache-Control", "no-cache").build()
+                )
+                val r = Release(
+                    j.getInt("versionCode"),
+                    j.getString("versionName"),
+                    j.getString("apkUrl"),
+                    j.getString("sha256"),
+                    j.optString("releaseNotes"),
+                    j.optBoolean("mandatory"),
+                    j.optInt("minimumSupportedVersion", 1),
+                )
+                require(r.code > 0 && r.name.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+"))) {
+                    "Version Mon Wallet invalide."
+                }
+                require(r.url.startsWith("https://") &&
+                    r.sha.matches(Regex("[a-fA-F0-9]{64}"))) {
+                    "Manifeste de mise à jour invalide."
+                }
+                // SHA-256, version code, package ID and signing certificate are
+                // independently verified by download() before installation.
+                return r.takeIf { it.code > BuildConfig.VERSION_CODE }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                lastError = error
+            }
         }
-        val j = Http.json(Request.Builder().url(url).build())
-        val r =
-            Release(
-                j.getInt("versionCode"),
-                j.getString("versionName"),
-                j.getString("apkUrl"),
-                j.getString("sha256"),
-                j.optString("releaseNotes"),
-                j.optBoolean("mandatory"),
-                j.optInt("minimumSupportedVersion", 1),
-            )
-        require(r.url.startsWith("https://") && r.sha.matches(Regex("[a-fA-F0-9]{64}")))
-        return r.takeIf { it.code > BuildConfig.VERSION_CODE }
+        throw IllegalStateException(
+            "Impossible de vérifier les mises à jour Mon Wallet. Réessaie plus tard.",
+            lastError,
+        )
     }
 
     suspend fun download(r: Release): File =

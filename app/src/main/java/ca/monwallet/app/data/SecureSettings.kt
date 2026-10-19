@@ -14,6 +14,13 @@ import kotlinx.coroutines.flow.map
 private val Context.store by preferencesDataStore("device_preferences")
 
 class SecureSettings(private val context: Context) {
+    companion object {
+        // Stable, Mon Wallet-only feed. GitHub "releases/latest" used to point to
+        // LoveRoll releases in this repository, which have no version.json.
+        const val STABLE_UPDATE_MANIFEST_URL =
+            "https://raw.githubusercontent.com/fredvolks/mon-wallet-android/main/version.json"
+    }
+
     private val prefs = context.getSharedPreferences("secure_settings", 0)
 
     private fun key(): SecretKey {
@@ -84,5 +91,9 @@ class SecureSettings(private val context: Context) {
         get() = url.startsWith("https://") && apiKey.isNotBlank()
 
     val updateUrl
-        get() = get("update_url") ?: BuildConfig.UPDATE_MANIFEST_URL
+        get() =
+            get("update_url")
+                ?.takeIf { it.startsWith("https://") }
+                ?: BuildConfig.UPDATE_MANIFEST_URL.takeIf { it.startsWith("https://") }
+                ?: STABLE_UPDATE_MANIFEST_URL
 }
