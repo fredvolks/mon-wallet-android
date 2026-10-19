@@ -10,6 +10,24 @@ import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 
+
+/**
+ * While the app is RESUMED, fetch visible quotes at a bounded cadence.
+ * Limit provider traffic for large watchlists and back off after outages/429s.
+ * This is polling, not an exchange-entitled streaming feed.
+ */
+fun foregroundQuoteRefreshDelayMillis(
+    active: Boolean,
+    symbolCount: Int,
+    providerUnavailable: Boolean,
+): Long = when {
+    providerUnavailable -> 60_000L
+    !active -> 120_000L
+    symbolCount <= 8 -> 15_000L
+    symbolCount <= 15 -> 25_000L
+    else -> 45_000L
+}
+
 enum class QuoteFreshness { REALTIME, DELAYED, CACHED, STALE }
 enum class MarketSession { PRE_MARKET, REGULAR, AFTER_HOURS, CLOSED }
 
