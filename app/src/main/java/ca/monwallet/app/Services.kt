@@ -248,7 +248,7 @@ class Services(val context: Context) {
     suspend fun refreshQuote(security: Security): Quote =
         quoteLocks.getOrPut(security.id) { Mutex() }.withLock {
             recentQuotes[security.id]?.takeIf {
-                System.currentTimeMillis() - it.fetchedAt < 5_000
+                System.currentTimeMillis() - it.fetchedAt < 2_000
             } ?: liveQuotes.quote(security).cached.also { fresh ->
                 repo.quote(fresh)
                 recentQuotes[security.id] = fresh
