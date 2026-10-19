@@ -1,0 +1,24 @@
+name: Request Mon Wallet v0.2.48 signed release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/request-monwallet-v048.yml'
+permissions:
+  actions: write
+  contents: read
+jobs:
+  request-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run existing signed release pipeline from tested development branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/release-apk.yml/dispatches" \
+            -f ref="codex/lockscreen-widget-v0.2.33" \
+            -f "inputs[release_version]=0.2.48"
+          echo "Requested Mon Wallet v0.2.48 using the existing signed-release workflow."
