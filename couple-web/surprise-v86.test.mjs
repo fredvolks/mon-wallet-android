@@ -10,7 +10,7 @@ const state={
  members:[{user_id:'a',name:'Fred'},{user_id:'b',name:'Marie'}],
  showActivity:true,timerHtml:'<div class="timer">10:00</div>'
 };
-test('Confirmed D20 opens the activity modal after the official roll animation',()=>{
+test('Confirmed D100 opens the activity modal after the official roll animation',()=>{
  const start=app.indexOf("const result=await animateRoll(()=>rpc('roll_couple_once'");
  const branch=app.slice(start,start+800);
  assert.match(branch,/kind==='monthly_activity'/);
