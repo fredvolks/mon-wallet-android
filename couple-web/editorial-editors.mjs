@@ -11,6 +11,7 @@ const area=(label,id,value,max=900)=>'<label>'+esc(label)+'<textarea id="'+id+'"
 const importLink=kind=>editorialRow('Importer / exporter JSON','','editor-import:'+kind,'upload');
 export function cardLibraryHtml(state){
  const category=state.customCategory,slots=editableCardSlots(category,state.customCards),counts=playableEveningCount(state.customCards);
+ const privateSexual=category==='SEXUEL'&&state.couple?.sexual_card_mode==='custom'&&state.personalSexualCardsReady;
  if(state.libraryScreen==='edit'){
   const slot=slots.find(s=>s.cardId===state.customSlot)||slots[0];
   const legacyRole=role=>{
@@ -21,12 +22,15 @@ export function cardLibraryHtml(state){
    '<fieldset><legend>Qui peut piger ?</legend>'+roleChoice('custom-drawer',legacyRole(slot.drawerRole))+'</fieldset>'+
    '<fieldset><legend>Qui peut recevoir ?</legend>'+roleChoice('custom-recipient',legacyRole(slot.recipientRole))+'</fieldset>'+
    timerFields('custom',slot.minutes)+editorButton('save-custom-card','Enregistrer')+
-   (slot.saved?editorButton('delete-custom-card',slot.isOriginal?'Restaurer l’original':'Vider cet emplacement',true):'')+'</form>'+
-   note('Sans minuteur, aucun compte à rebours. Les défis déjà tirés restent inchangés.');
+   (slot.saved?editorButton('delete-custom-card',privateSexual?'Restaurer la version MEDIUM':slot.isOriginal?'Restaurer l’original':'Vider cet emplacement',true):'')+'</form>'+
+   note(privateSexual?
+    'Cette carte est réservée à votre duo. Vous modifiez uniquement votre copie personnelle, jamais les cartes MEDIUM des autres couples. Les défis déjà pigés restent inchangés.':
+    'Sans minuteur, aucun compte à rebours. Les défis déjà tirés restent inchangés.');
   return editorialPage('Modifier la carte',body,{back:'editor-back',parent:'Mes cartes',subtitle:names[category]+' · Carte '+String(slot.cardId).padStart(2,'0')});
  }
  const body='<div class="editorial-segments">'+EVENING_CATEGORIES.map(c=>'<button type="button" data-action="custom-category:'+c+'" aria-pressed="'+(category===c)+'" class="'+(category===c?'selected':'')+'">'+editorialIcon('heart')+names[c]+'</button>').join('')+'</div>'+
   '<p class="editorial-library-count">'+counts.sensual+' Sensuel · '+counts.sexual+' Sexuel jouables</p>'+
+  (privateSexual?'<p class="tiny-note">♡ Vos 100 cartes SEXUEL personnelles, initialement copiées de MEDIUM. Modifiez librement le titre, la consigne, le minuteur et les rôles. Ces cartes ne sont pas partagées avec d’autres couples.</p>':'')+
   '<div class="editorial-library-filters"><label class="editorial-search">'+editorialIcon('search')+'<input id="custom-card-search" data-draft-ignore type="search" aria-label="Rechercher une carte" value="'+esc(state.customSearch||'')+'" placeholder="Titre, mot-clé ou numéro"></label>'+
   '<label class="visually-labelled">Afficher<select id="custom-card-filter" data-draft-ignore><option value="all"'+(state.customFilter!=='edited'&&state.customFilter!=='empty'?' selected':'')+'>Toutes les cartes</option><option value="edited"'+(state.customFilter==='edited'?' selected':'')+'>Cartes personnalisées</option><option value="empty"'+(state.customFilter==='empty'?' selected':'')+'>Emplacements libres</option></select></label></div>'+
   '<div class="editorial-draw-rule"><label class="push-option"><span>'+editorialIcon('sync')+'Éviter les répétitions</span><input id="no-repeat-cards" type="checkbox" role="switch"'+(state.couple?.no_repeat_challenges!==false?' checked':'')+'></label>'+editorButton('save-draw-rule','Enregistrer',true)+'</div>'+
