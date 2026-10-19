@@ -1787,6 +1787,9 @@ function renderSettings(){
   partner='<div class="settings-duo-card"><div class="settings-duo-initials"><span>'+initials[0]+'</span><i>'+editorialIcon('heart')+'</i><span>'+initials[1]+'</span></div>'+
    '<strong>'+safe(state.profile.display_name)+' &amp; '+safe(other()?.name||'Votre partenaire')+'</strong><small>● Connectés · '+(isLoveAdmin()?'Administrateur':'Membre')+'</small></div>'+
    editorialRow('Invitation acceptée','','','check')+
+   (state.cycleStatus?.pending?editorialRow('Bilan des 200 défis',
+    state.cycleStatus.answered_self?'Réponse enregistrée · en attente du partenaire':'Choisir votre prochaine intensité',
+    'cycle-reopen','heart'):'')+
    '<p class="tiny-note">Styles futurs : '+safe(futureMixLabel)+'. Ces préférences ne changent pas encore les cartes.</p>'+
    '<div class="settings-date-outer"><h3>Notre anniversaire</h3>'+renderCoupleDateSetting()+'</div>'+
    (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
