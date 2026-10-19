@@ -1302,7 +1302,7 @@ function renderEveningCalendar(){
  const date=state.eveningCalendarDate?.startsWith(mo)?state.eveningCalendarDate:
   ((state.sessions||[]).find(s=>eveningLocalDay(s.started_at)?.startsWith(mo))?
    eveningLocalDay(state.sessions.find(s=>eveningLocalDay(s.started_at)?.startsWith(mo)).started_at):
-   mo+'-01');
+   (mo===month()?today():mo+'-01'));
  frame(eveningHistoryMarkup({
   sessions:state.sessions||[],members:state.members||[],
   stats:state.eveningHistoryStats||[],historyChallenges:state.eveningCalendarChallenges||[],
