@@ -7,6 +7,7 @@ const {glassState}=require('./crystal-glass-browser-check.cjs');
  const failures=[];fs.mkdirSync('design-captures',{recursive:true});
  try{
   for(const [name,width,height] of [['small',360,640],['Android-app',360,704],['Android',360,740],['S25',412,824],['S25-tall',412,915],['iPhone',393,852],['iPad',820,1180],['PC',1366,768]]){
+   if(process.env.LOVE_PAD_ONLY==='1'&&!name.startsWith('iPad'))continue;
    for(const face of [null,2,6]){
     const world=createWorld();world.profiles[0].display_name='Fred';world.profiles[1].display_name='Fred Messely';
     const now=new Date(),toronto=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
@@ -20,13 +21,18 @@ const {glassState}=require('./crystal-glass-browser-check.cjs');
       const c=document.querySelector('.home-die-platform canvas'),b=c.loveRollDie.projectedBounds(),r=c.getBoundingClientRect(),scene=c.closest('.home-die-theater').getBoundingClientRect();
       const nav=document.querySelector('.nav').getBoundingClientRect(),stats=document.querySelector('.home-stats-grid').getBoundingClientRect();
       const title=document.querySelector('.home-title h2'),titleBox=title.getBoundingClientRect();
-      return {face:c.dataset.face,markers:c.dataset.diceMarkers,preview:c.dataset.dicePreview==='true',q:c.loveRollDie.readState().quaternion,webgl:c.dataset.webglReady,contact:Number(c.dataset.podiumContact),meshBottom:r.top+b.bottom*r.height-scene.top,meshTop:r.top+b.top*r.height-scene.top,headroom:parseFloat(getComputedStyle(c.closest('.home-die-theater')).getPropertyValue('--dice-headroom')),titleLines:titleBox.height/parseFloat(getComputedStyle(title).lineHeight),titleGap:r.top+b.top*r.height-titleBox.bottom,sceneHeight:scene.height,sceneWidth:scene.width,navTop:nav.top,statsBottom:stats.bottom,bodyHeight:document.documentElement.scrollHeight,horizontal:document.documentElement.scrollWidth-innerWidth,textFits:[...document.querySelectorAll('.home-stat-card')].every(card=>[...card.querySelectorAll('strong,span,small')].every(t=>t.getBoundingClientRect().bottom<=Math.min(card.getBoundingClientRect().bottom,nav.top)+1))};
+      return {face:c.dataset.face,markers:c.dataset.diceMarkers,preview:c.dataset.dicePreview==='true',q:c.loveRollDie.readState().quaternion,webgl:c.dataset.webglReady,contact:Number(c.dataset.podiumContact),meshBottom:r.top+b.bottom*r.height-scene.top,meshTop:r.top+b.top*r.height-scene.top,headroom:parseFloat(getComputedStyle(c.closest('.home-die-theater')).getPropertyValue('--dice-headroom')),titleLines:titleBox.height/parseFloat(getComputedStyle(title).lineHeight),titleGap:r.top+b.top*r.height-titleBox.bottom,sceneHeight:scene.height,sceneWidth:scene.width,sceneBackgroundY:getComputedStyle(c.closest('.home-die-theater')).backgroundPositionY,platformHeight:c.parentElement.getBoundingClientRect().height,navTop:nav.top,statsBottom:stats.bottom,bodyHeight:document.documentElement.scrollHeight,horizontal:document.documentElement.scrollWidth-innerWidth,textFits:[...document.querySelectorAll('.home-stat-card')].every(card=>[...card.querySelectorAll('strong,span,small')].every(t=>t.getBoundingClientRect().bottom<=Math.min(card.getBoundingClientRect().bottom,nav.top)+1))};
      });
      const initial=await inspect();await page.waitForTimeout(500);const result=await inspect();
      const frame=await page.locator('.home-die-theater').evaluate(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {border:parseFloat(s.borderTopWidth),radius:parseFloat(s.borderTopLeftRadius),mask:s.maskImage,left:r.left,right:r.right,width:innerWidth};});
      assert.equal(frame.border,1);assert.equal(frame.radius,20);assert.equal(frame.mask,'none');assert.ok(frame.left>=12&&frame.right<=frame.width-12,'Photo frame must be inset from the screen');
      assert.deepEqual(result.q,initial.q,'Idle weekly die moved');assert.equal(result.webgl,'true');
      assert.equal(result.markers,'pips','Home D6 must use classic points');
+     if(name.startsWith('iPad')){
+      assert.equal(result.sceneBackgroundY,'62%','iPad photographed marble plinth is positioned below the die');
+      assert.ok(result.platformHeight<=result.sceneHeight+2,'iPad 3D platform extends below the photo frame: '+JSON.stringify(result));
+      assert.ok(result.sceneHeight-result.contact>=28,'iPad marble base is outside the photo frame: '+JSON.stringify(result));
+     }
      assert.equal(result.preview,face===null,'Only an unrolled Home D6 is a preview');
      assert.ok(Math.abs(result.meshBottom-result.contact)<=2,JSON.stringify(result));assert.ok(result.meshTop>=-2&&result.meshBottom<=result.sceneHeight+2,JSON.stringify(result));
      assert.ok(result.meshTop>=result.headroom-1,'Die lost its breathing room: '+JSON.stringify(result));
