@@ -6,7 +6,7 @@ const read=file=>readFileSync(new URL('./'+file,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),sw=read('service-worker.js');
 const release=JSON.parse(read('web-version.json'));
 test('LoveRoll build versions agree between endpoint, app, HTML and imported modules',()=>{
- const build='2026-10-18.151',tag='20261015-no-toast87',appTag='20261018-surprise151',inviteTag='20261018-safari150',controlsTag='20261017-controls141',diceTag='20261017-home134';
+ const build='2026-10-18.152',tag='20261015-no-toast87',appTag='20261018-surprise152',inviteTag='20261018-safari150',controlsTag='20261017-controls141',diceTag='20261017-home134';
  assert.equal(release.build,build);
  assert.ok(app.includes('invite-links.mjs?v='+inviteTag));
  assert.ok(sw.includes('./assets/loveroll-messenger-og-v142.jpg'));
@@ -54,7 +54,7 @@ test('LoveRoll build versions agree between endpoint, app, HTML and imported mod
  assert.match(app,/surprise-event-config\.mjs\?v=20261016-surprise109/);
 });
 test('PWA bypasses stale Android network caches while preserving offline fallback',()=>{
- assert.match(sw,/loveroll-static-v151/);
+ assert.match(sw,/loveroll-static-v152/);
  assert.match(sw,/fetch\(req,\{cache:'no-store'\}\)/);
  assert.match(sw,/cache\.match\(fallback\.href\)/);
  assert.match(sw,/const cache=await caches\.open\(CACHE\)/);
@@ -65,9 +65,9 @@ test('PWA bypasses stale Android network caches while preserving offline fallbac
 test('Updating LoveRoll retains caches owned by Mon Wallet and other applications',async()=>{
  const events={},deleted=[];
  const self={registration:{scope:'https://example.test/mon-wallet-android/'},clients:{claim:async()=>{}},addEventListener:(type,callback)=>{events[type]=callback;}};
- vm.runInNewContext(sw,{URL,self,caches:{keys:async()=>['loveroll-static-v121','loveroll-static-v122','loveroll-static-v123','loveroll-static-v124','loveroll-static-v125','loveroll-static-v126','loveroll-static-v127','loveroll-static-v128','loveroll-static-v130','loveroll-static-v131','loveroll-static-v132','loveroll-static-v133','loveroll-static-v134','loveroll-static-v135','loveroll-static-v136','loveroll-static-v137','loveroll-static-v138','loveroll-static-v139','loveroll-static-v140','loveroll-static-v141','loveroll-static-v142','loveroll-static-v143','loveroll-static-v144','loveroll-static-v145','loveroll-static-v146','loveroll-static-v147','loveroll-static-v148','loveroll-static-v149','loveroll-static-v151' ,'loveroll-static-v150','mon-wallet-offline-v9','other-app-data'],delete:async key=>{deleted.push(key);}}});
+ vm.runInNewContext(sw,{URL,self,caches:{keys:async()=>['loveroll-static-v121','loveroll-static-v122','loveroll-static-v123','loveroll-static-v124','loveroll-static-v125','loveroll-static-v126','loveroll-static-v127','loveroll-static-v128','loveroll-static-v130','loveroll-static-v131','loveroll-static-v132','loveroll-static-v133','loveroll-static-v134','loveroll-static-v135','loveroll-static-v136','loveroll-static-v137','loveroll-static-v138','loveroll-static-v139','loveroll-static-v140','loveroll-static-v141','loveroll-static-v142','loveroll-static-v143','loveroll-static-v144','loveroll-static-v145','loveroll-static-v146','loveroll-static-v147','loveroll-static-v148','loveroll-static-v149','loveroll-static-v152' ,'loveroll-static-v150','loveroll-static-v151','mon-wallet-offline-v9','other-app-data'],delete:async key=>{deleted.push(key);}}});
  let work;events.activate({waitUntil:promise=>{work=promise;}});await work;
- assert.deepEqual(deleted,['loveroll-static-v121','loveroll-static-v122','loveroll-static-v123','loveroll-static-v124','loveroll-static-v125','loveroll-static-v126','loveroll-static-v127','loveroll-static-v128','loveroll-static-v130','loveroll-static-v131','loveroll-static-v132','loveroll-static-v133','loveroll-static-v134','loveroll-static-v135','loveroll-static-v136','loveroll-static-v137','loveroll-static-v138','loveroll-static-v139','loveroll-static-v140','loveroll-static-v141','loveroll-static-v142','loveroll-static-v143','loveroll-static-v144','loveroll-static-v145','loveroll-static-v146','loveroll-static-v147','loveroll-static-v148','loveroll-static-v149','loveroll-static-v150']);
+ assert.deepEqual(deleted,['loveroll-static-v121','loveroll-static-v122','loveroll-static-v123','loveroll-static-v124','loveroll-static-v125','loveroll-static-v126','loveroll-static-v127','loveroll-static-v128','loveroll-static-v130','loveroll-static-v131','loveroll-static-v132','loveroll-static-v133','loveroll-static-v134','loveroll-static-v135','loveroll-static-v136','loveroll-static-v137','loveroll-static-v138','loveroll-static-v139','loveroll-static-v140','loveroll-static-v141','loveroll-static-v142','loveroll-static-v143','loveroll-static-v144','loveroll-static-v145','loveroll-static-v146','loveroll-static-v147','loveroll-static-v148','loveroll-static-v149','loveroll-static-v150','loveroll-static-v151']);
 });
 test('LoveRoll can force reload from Settings without touching user or challenge data',()=>{
  assert.match(app,/Actualiser LoveRoll/);
