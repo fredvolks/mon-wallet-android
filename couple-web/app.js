@@ -14,14 +14,14 @@ import {DICE_WEIGHT_CONFIG,configuredDiceWeights,parseDiceWeightInputs} from './
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261018-odds148';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261018-stats148';
 import {eveningReviewModal,validEveningReview} from './evening-review.mjs?v=20261016-person-review97';
-import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261017-scenes138';
+import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=20261018-d100151';
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
 import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs?v=20261018-safari150';
 import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-restore113';
-import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
+import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs?v=20261018-d100151';
 import {ritualBrandHtml} from './brand.mjs?v=20261017-ritual130';
 import {validateAdventJson,calendarFromSaved} from './advent-calendar.mjs';
 import {adventPremiumHtml,sharedAdventState} from './premium-advent.mjs?v=20261017-titles136';
@@ -41,7 +41,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-18.150';
+const WEB_RELEASE='2026-10-18.151';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -55,7 +55,7 @@ let notificationFeedback=null;
 const state={user:null,profile:null,members:[],coupleId:null,couple:null,
  tab:launchParams.has('settings')?'settings':(['home','session','special','advent'].includes(launchParams.get('open'))?launchParams.get('open'):'home'),weekly:null,monthly:{},session:null,personal:[],challenges:[],gifts:[],rollStatus:null,customCards:[],customCategory:'SENSUEL',customSlot:1,customSearch:'',customFilter:'all',monthlyActivities:[],monthlySlot:1,libraryScreen:'list',libraryImportKind:null,specialEditorKey:null,specialEditorStage:'D6_activite',specialEditorFace:1,adventEditorDay:1,pushDevice:null,
  events:[],journal:[],advent:[],advent2026Config:null,advent2026Days:[],selectedDay:1,adventYear:null,adventSelected:null,adventHistory:false,adventOpening:null,adventRevealing:false,adventServerDate:null,unlockKey:null,channel:null,
- occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],weeklyRollHistory:[],calendarPassQuota:[],calendarPassMonth:null,cycleStatus:null,cycleDeferred:null,eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
+ occasionSettings:null,occasionRolls:[],specialEventsConfig:null,specialEventKeys:[],wellbeing:null,guidance:'playful',personalJournal:[],personalPass:null,showAuth:launchParams.has('auth'),authNotice:null,authMode:['signin','request-reset'].includes(launchParams.get('auth'))?launchParams.get('auth'):'signup',authNeedsEmailConfirmation:false,emailVerificationPending:false,authDraftEmail:'',passwordRecovery:launchParams.get('auth')==='recover',inviteError:null,inviteAttemptKey:null,inviteWelcome:false,homeNotices:false,showDiscover:false,inviteAccepted:false,demoMode:false,demoTab:'home',demoRoll:null,demoSurprise:null,demoDay:1,demoChallengeComplete:false,showEveningChallenge:false,showEveningChallenges:false,selectedEveningChallengeId:null,eveningQueueSeen:null,eveningBoard:null,eveningMore:false,eveningHistoryStats:[],eveningCalendarChallenges:[],weeklyRollHistory:[],calendarPassQuota:[],calendarPassMonth:null,cycleStatus:null,cycleDeferred:null,eveningReviews:[],reviewModalSessionId:null,reviewDismissedSessionId:null,reviewDraft:{},reviewSaving:false,eveningCalendarMonth:null,eveningCalendarDate:null,showSurpriseActivity:false,surpriseSeason:null,surpriseEditSlot:null,specialFocus:null,diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false,confirmCancel:false,showInstallSteps:false,installAfterSignup:false,installModalOpen:false,forceInstallGuide:false,invitations:[],inviteDraft:null,inviteCopyFallback:false,challengesHistory:[],jsonPending:null,specialTimerKey:null,pushPrefs:null};
 const names={SENSUEL:'Sensuel',COQUIN:'Coquin',SEXUEL:'Sexuel'};
 function isSharedCoupleReady(coupleId,members){
  return !!coupleId&&Array.isArray(members)&&members.length===2;
@@ -1360,7 +1360,7 @@ function renderSpecial(){
    timerHtml:state.showSurpriseActivity&&activity?.timer_minutes?
     timerWidget({id:'monthly-'+month()},activity.timer_minutes):'',
    rolling:!!state.diceStatus,rollingKind,rollFace:state.rollAnimationFace,
-   showActivity:state.showSurpriseActivity,editSlot:state.surpriseEditSlot,
+   showActivity:state.showSurpriseActivity,season:state.surpriseSeason,editSlot:state.surpriseEditSlot,
    settlingHost:state.diceStatus==='settled'&&state.rollAnimationKind==='monthly_host'
  }), 'RENDEZ-VOUS SURPRISE','Un mois, un tirage, une expérience à deux');
 }
@@ -1956,7 +1956,7 @@ async function animateRoll(fn,kind='general'){
   if(!Number.isInteger(confirmedFace)||confirmedFace<1||
      (kind==='my-d6'&&confirmedFace>6)||
      (kind==='new-challenge'&&confirmedFace>100)||
-     (kind==='monthly_activity'&&confirmedFace>20)||(kind==='monthly_host'&&confirmedFace>6))
+     (kind==='monthly_activity'&&confirmedFace>100)||(kind==='monthly_host'&&confirmedFace>6))
    throw new Error('Le serveur n’a pas confirmé le résultat officiel du dé.');
   state.rollAnimationFace=confirmedFace;
   state.diceStatus='rolling';
@@ -1971,7 +1971,7 @@ async function animateRoll(fn,kind='general'){
   }
   if(kind==='monthly_host'||kind==='monthly_activity'){
    // Show each official monthly face for a full second after it stops, before
-   // opening the activity or restoring the D20. Never draw twice.
+   // opening the activity or restoring the D100. Never draw twice.
    state.diceStatus='settled';
    await refreshShared();
    // Keep the existing WebGL canvas mounted: no flash or animation restart.
@@ -2209,6 +2209,7 @@ async function handle(action,element){
   return;
  }
  if(verb==='surprise-activity'){state.showSurpriseActivity=!state.showSurpriseActivity;render();return;}
+ if(verb==='surprise-season'){if(!['hiver','ete'].includes(parts[0])||!state.showSurpriseActivity)return;state.surpriseSeason=parts[0];render();return;}
  if(verb==='surprise-how'){
    notify('Chaque événement : un D6 choisit l’activité puis un second D6 choisit sa variante. Les résultats sont synchronisés.');
    return;
@@ -2610,7 +2611,7 @@ async function handle(action,element){
  if(verb==='monthly-slot'){
   if(!isLoveAdmin())throw Error('Modification réservée à l’administrateur.');
   const face=Number(parts[0]);
-  if(!Number.isInteger(face)||face<1||face>20)throw Error('Activité invalide.');
+  if(!Number.isInteger(face)||face<1||face>100)throw Error('Activité invalide.');
   state.monthlySlot=face;render();
   id('monthly-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;
  }
@@ -3163,7 +3164,7 @@ async function handle(action,element){
   }
   const result=await animateRoll(()=>rpc('roll_couple_once',{p_couple:state.coupleId,p_kind:kind}),kind);
   if(kind==='monthly_activity'){
-   // Only after Supabase confirms the official D20 and its 3D animation ends.
+   // Only after Supabase confirms the official D100 and its 3D animation ends.
    state.showSurpriseActivity=!!state.monthly?.monthly_activity;
    render();
    return;
