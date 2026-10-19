@@ -191,7 +191,7 @@ internal object WidgetWideRenderer {
         views.setViewVisibility(R.id.widget_chart, if (chartVisible) View.VISIBLE else View.GONE)
         if (chartVisible) {
             views.setImageViewBitmap(R.id.widget_chart,
-                WidgetChartData.bitmap(chartSeries, width = 720, height = 220))
+                WidgetChartData.bitmap(chartSeries, width = 320, height = 100))
         }
 
         views.removeAllViews(R.id.widget_rows)
