@@ -137,3 +137,22 @@ test('On confirmed admin reset, only the secure server RPC is called',async()=>{
  assert.deepEqual(calls.slice(1).map(c=>c[0]),['reload','notify']);
  assert.equal(state.cycleDeferred,null);
 });
+
+test('Changer de bibliothèque SEXUEL pendant le cycle préserve les cartes déjà pigées',()=>{
+ const modeSql=read('migrations/20261018_midcycle_auto_or_custom_sexual_cards.sql');
+ assert.match(modeSql,/sexual_card_mode text not null default 'custom'/);
+ assert.match(modeSql,/set_love_sexual_card_mode\(p_couple uuid,p_mode text\)/);
+ assert.match(modeSql,/p_mode not in \('automatic','custom'\)/);
+ assert.match(modeSql,/owner_user_id into v_owner/);
+ assert.match(modeSql,/couple_private\.is_member\(p_couple\)/);
+ const setter=modeSql.slice(modeSql.indexOf('CREATE OR REPLACE FUNCTION public.set_love_sexual_card_mode'),modeSql.indexOf('revoke all on function public.set_love_sexual_card_mode'));
+ assert.doesNotMatch(setter,/delete from public\.love_card_draw_history|delete from public\.couple_challenges|challenge_cycle_number\s*=/i);
+ assert.match(modeSql,/couple_private\.love_active_challenges cc/);
+ assert.match(modeSql,/couple_private\.ensure_love_style_pool\(s\.couple_id\)/);
+ assert.match(modeSql,/role_total\/2/);
+ assert.match(modeSql,/position<=case when v_styles\[1\]=v_styles\[2\]/);
+ assert.match(app,/data-sexual-mode-editor="true"/);
+ assert.match(app,/rpc\('set_love_sexual_card_mode'/);
+ assert.match(app,/state\.couple\?\.sexual_card_mode==='automatic'/);
+ assert.match(app,/state\.tab='settings';settingsOpenSection='admin';renderSettings\(\)/);
+});
