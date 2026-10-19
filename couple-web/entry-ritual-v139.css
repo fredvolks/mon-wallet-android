@@ -179,3 +179,10 @@ html:has(.discover-ritual),body:has(.discover-ritual),html:has(.entry-access-scr
 #app .entry-access-screen .entry-password-placeholder{visibility:hidden;pointer-events:none;}
 #app .entry-access-screen:is(.entry-mode-signup,.entry-mode-signin) .entry-auth-title h1{font-size:clamp(20px,6.3vw,30px);white-space:nowrap;}
 #app .entry-access-screen .entry-footer :is(.entry-auth-back,.entry-auth-link){line-height:1.15;}
+
+/* Compact personal game style choice on signup: use the same select treatment. */
+.entry-profile-screen .loveroll-profile-choice-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0;}
+.entry-profile-screen .loveroll-profile-choice-row>label{min-width:0;margin:0;}
+.entry-profile-screen .loveroll-profile-choice-row select{min-width:0;width:100%;}
+.entry-profile-screen .loveroll-style-select small{display:block;font-size:10px;line-height:1.2;color:var(--ritual-muted,#d7aabd);}
+@media(max-width:340px){.entry-profile-screen .loveroll-profile-choice-row{grid-template-columns:1fr;}}
