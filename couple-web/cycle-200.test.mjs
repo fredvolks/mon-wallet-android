@@ -141,7 +141,7 @@ test('On confirmed admin reset, only the secure server RPC is called',async()=>{
 test('Changer de bibliothèque SEXUEL pendant le cycle préserve les cartes déjà pigées',()=>{
  const modeSql=read('migrations/20261018_midcycle_auto_or_custom_sexual_cards.sql');
  assert.match(modeSql,/sexual_card_mode text not null default 'custom'/);
- assert.match(modeSql,/set_love_sexual_card_mode\(p_couple uuid,p_mode text\)/);
+ assert.match(modeSql,/set_love_sexual_card_mode\(p_couple uuid,\s*p_mode text\)/);
  assert.match(modeSql,/p_mode not in \('automatic','custom'\)/);
  assert.match(modeSql,/owner_user_id into v_owner/);
  assert.match(modeSql,/couple_private\.is_member\(p_couple\)/);
