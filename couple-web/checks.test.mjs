@@ -177,7 +177,7 @@ test('The evening asks for a category at each draw with 88/12 odds',()=>{
  assert.deepEqual(availableEveningCategories('SENSUEL'),[{category:'SENSUEL',weight:88},{category:'SEXUEL',weight:12}]);
  assert.deepEqual(availableEveningCategories('SEXUEL'),[{category:'SENSUEL',weight:12},{category:'SEXUEL',weight:88}]);
  assert.match(app,/EVENING_CATEGORIES\.map/);
- assert.match(app,/88 % dans votre catégorie choisie · 12 % dans l’autre/);
+ assert.match(readFileSync(new URL('./premium-evening.mjs',import.meta.url),'utf8'),/categoryOdds=88/);
  assert.match(app,/diceStatus:null,rollAnimationFace:null,rollAnimationKind:null,category:null,randomMode:false/);
  assert.ok(app.includes("Défi '+(otherCompleted+1)+' / '+theirs.face"));
  assert.ok(app.includes("if(!EVENING_CATEGORIES.includes(state.category)&&state.category!=='HASARD')"));
