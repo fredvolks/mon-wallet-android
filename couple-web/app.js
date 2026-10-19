@@ -8,6 +8,7 @@ import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261018-weights146';
+import {futureCoupleStyleMix,playStyleLabel} from './play-style.mjs?v=20261018-styles148';
 import {DICE_WEIGHT_CONFIG,configuredDiceWeights,parseDiceWeightInputs} from './dice-weighting.mjs?v=20261018-weights146';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261017-scenes138';
 import {eveningHistoryMarkup,eveningLocalDay} from './evening-calendar.mjs?v=20261017-ritual130';
@@ -751,7 +752,7 @@ async function reload(){
   state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;
  }
  const profilesAll=await query('couple_profiles');
- state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter',gender:profilesAll.find(p=>p.id===m.user_id)?.gender||null}));
+ state.members=members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).map(m=>({...m,name:profilesAll.find(p=>p.id===m.user_id)?.display_name||'Profil à compléter',gender:profilesAll.find(p=>p.id===m.user_id)?.gender||null,playStyle:profilesAll.find(p=>p.id===m.user_id)?.play_style||'medium'}));
  state.guidance=state.wellbeing?await rpc('get_love_guidance',{p_couple:state.coupleId}):'gentle';
  if(members.length===2)await refreshShared();
  subscribe();render();
@@ -1754,6 +1755,9 @@ function openSettingsPage(section=''){
 }
 function renderSettings(){
  const linked=!!state.coupleId,hasPartner=linked&&state.members.length===2;
+ const futureMix=hasPartner?futureCoupleStyleMix(...state.members.map(m=>m.playStyle)):
+  futureCoupleStyleMix(state.profile?.play_style,state.profile?.play_style);
+ const futureMixLabel=futureMix.map(entry=>playStyleLabel(entry.style)+' '+entry.weight+' %').join(' · ');
  const account='<div class="settings-account-form">'+
   '<p class="settings-detail-intro">Compte connecté</p>'+
   '<label class="settings-inline-name"><span>Prénom affiché</span>'+
@@ -1769,6 +1773,7 @@ function renderSettings(){
   partner='<div class="settings-duo-card"><div class="settings-duo-initials"><span>'+initials[0]+'</span><i>'+editorialIcon('heart')+'</i><span>'+initials[1]+'</span></div>'+
    '<strong>'+safe(state.profile.display_name)+' &amp; '+safe(other()?.name||'Votre partenaire')+'</strong><small>● Connectés · '+(isLoveAdmin()?'Administrateur':'Membre')+'</small></div>'+
    editorialRow('Invitation acceptée','','','check')+
+   '<p class="tiny-note">Styles futurs : '+safe(futureMixLabel)+'. Ces préférences ne changent pas encore les cartes.</p>'+
    '<div class="settings-date-outer"><h3>Notre anniversaire</h3>'+renderCoupleDateSetting()+'</div>'+
    (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
    '<div class="settings-danger-zone">'+button('end-couple',editorialIcon('unlink')+' Dissocier notre duo','class="settings-signout"')+
