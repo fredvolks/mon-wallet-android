@@ -41,7 +41,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-18.152';
+const WEB_RELEASE='2026-10-18.153';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -766,10 +766,10 @@ async function reload(){
    query('love_advent_2026_days',{eq:{couple_id:state.coupleId}}),
    query('love_special_event_catalogue',{eq:{couple_id:state.coupleId}})
   ]);
-  // Hide the 100-card automatic selection: never download or render its contents.
-  // Personal SEXUEL cards stay intact in Supabase for later switching.
-  state.customCards=state.couple?.sexual_card_mode==='automatic'?
-   cards.filter(c=>c.category!=='SEXUEL'):cards;
+  // Private algorithm cards are never fetched from the browser. Existing
+  // personal cards remain available for accurate totals, but their editor
+  // is hidden while the automatic mode is selected.
+  state.customCards=cards;
   state.monthlyActivities=activities;
   state.advent2026Config=adventConfig[0]||null;state.advent2026Days=adventDays;
   state.specialEventsConfig=specialSettings[0]?.events||null;
