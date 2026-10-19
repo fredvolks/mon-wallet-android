@@ -1,6 +1,6 @@
 import {editorialPage,editorialRow,editorialIcon,editorButton,timerFields,roleChoice,escapeHtml as esc} from './editorial-ui.mjs?v=20261017-ritual130';
 import {editableCardSlots,playableEveningCount,EVENING_CATEGORIES} from './evening-challenges.mjs?v=20261016-restore113';
-import {editableMonthlyActivities} from './monthly-activities.mjs';
+import {editableMonthlyActivities} from './monthly-activities.mjs?v=20261018-d100151';
 import {calendarFromSaved} from './advent-calendar.mjs';
 import {jsonToolsPanel} from './json-library-ui.mjs';
 import {privateSpecialKey} from './private-special-events.mjs';
@@ -38,8 +38,9 @@ export function cardLibraryHtml(state){
 }
 export function monthlyEditorHtml(state){
  const items=editableMonthlyActivities(state.monthlyActivities),entry=items.find(x=>x.face===state.monthlySlot)||items[0];
- const body='<form class="editorial-form" onsubmit="return false"><label>Activité à modifier<select data-editor-select="monthly-slot" id="monthly-selection">'+items.map(x=>'<option value="'+x.face+'"'+(x.face===entry.face?' selected':'')+'>'+String(x.face).padStart(2,'0')+' · '+esc(x.title)+'</option>').join('')+'</select></label>'+
-  field('Nom de l’activité','monthly-title',entry.title)+area('Description','monthly-description',entry.description)+timerFields('monthly',entry.timer_minutes)+
+ const body='<form class="editorial-form" onsubmit="return false"><label>Activité à modifier<select data-editor-select="monthly-slot" id="monthly-selection">'+items.map(x=>'<option value="'+x.face+'"'+(x.face===entry.face?' selected':'')+'>'+String(x.face).padStart(3,'0')+' · '+esc(x.title)+'</option>').join('')+'</select></label>'+
+  field('Nom de l’activité','monthly-title',entry.title)+area('Description','monthly-description',entry.description)+
+  '<p class="editorial-note">'+esc(entry.region)+' · '+esc(entry.location)+' — Budget approximatif pour deux : hiver '+esc(entry.prix_hiver_min)+' à '+esc(entry.prix_hiver_max)+' $; été '+esc(entry.prix_ete_min)+' à '+esc(entry.prix_ete_max)+' $.'+(entry.hotel_inclus?' Nuitée comprise.':'')+'</p>'+timerFields('monthly',entry.timer_minutes)+
   editorButton('save-monthly-activity','Enregistrer l’activité')+(entry.edited?editorButton('reset-monthly-activity','Restaurer l’original',true):'')+'</form>'+importLink('monthly')+
   note('Les tirages déjà obtenus restent conservés.');
  return editorialPage('Activités du mois',body,{subtitle:'Créateur · '+items.length+' activités'});
@@ -76,6 +77,6 @@ export function specialEditorHtml(state,events){
  return editorialPage('Événements spéciaux',body,{subtitle:'Créateur · 6 événements · aperçu privé',kind:'short'});
 }
 export function importEditorHtml(state){
- const kind=state.libraryImportKind,label=kind==='evening'?'Soirée · '+names[state.customCategory]:({monthly:'20 activités du mois',advent:'25 surprises de l’Avent',special:'6 événements spéciaux'}[kind]);
+ const kind=state.libraryImportKind,label=kind==='evening'?'Soirée · '+names[state.customCategory]:({monthly:'100 activités du mois',advent:'25 surprises de l’Avent',special:'6 événements spéciaux'}[kind]);
  return editorialPage('Importer / exporter',jsonToolsPanel(kind,label,state.jsonPending),{back:'editor-import-back',parent:({evening:'Mes cartes',monthly:'Activités du mois',advent:'Calendrier de l’Avent',special:'Événements spéciaux'}[kind]),subtitle:label});
 }
