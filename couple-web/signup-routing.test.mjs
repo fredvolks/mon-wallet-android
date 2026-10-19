@@ -32,7 +32,7 @@ test('new account with invitation completes profile but never creates own admin 
  const handler=vm.runInNewContext('(async function(verb){'+complete+'})',ctx);
  await handler('complete-registration');
  assert.deepEqual(calls.map(x=>x.name),[
-  'complete_love_registration','save_my_gender','reload']);
+  'complete_love_registration','save_my_gender','save_my_play_style','reload']);
  assert.equal(state.installAfterSignup,true);
 });
 
@@ -56,8 +56,8 @@ test('new account without invitation resolves owner creation server-side exactly
  const handler=vm.runInNewContext('(async function(verb){'+complete+'})',ctx);
  await handler('complete-registration');
  assert.deepEqual(calls.map(x=>x.name),[
-  'complete_love_registration','save_my_gender','resolveVerifiedSignup','reload']);
- assert.equal(calls[2].flag,true);
+  'complete_love_registration','save_my_gender','save_my_play_style','resolveVerifiedSignup','reload']);
+ assert.equal(calls[3].flag,true);
 });
 
 test('server invitation decision is retrieved before creating the admin duo',async()=>{
