@@ -41,7 +41,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-18.151';
+const WEB_RELEASE='2026-10-18.152';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -766,7 +766,11 @@ async function reload(){
    query('love_advent_2026_days',{eq:{couple_id:state.coupleId}}),
    query('love_special_event_catalogue',{eq:{couple_id:state.coupleId}})
   ]);
-  state.customCards=cards;state.monthlyActivities=activities;
+  // Hide the 100-card automatic selection: never download or render its contents.
+  // Personal SEXUEL cards stay intact in Supabase for later switching.
+  state.customCards=state.couple?.sexual_card_mode==='automatic'?
+   cards.filter(c=>c.category!=='SEXUEL'):cards;
+  state.monthlyActivities=activities;
   state.advent2026Config=adventConfig[0]||null;state.advent2026Days=adventDays;
   state.specialEventsConfig=specialSettings[0]?.events||null;
  }else{
@@ -1684,6 +1688,9 @@ async function renderJournal(){
 function isLoveAdmin(){return !!(state.coupleId&&state.couple?.owner_user_id===state.user?.id);}
 function renderCardLibrary(){
  if(!isLoveAdmin()){state.tab='settings';renderSettings();return;}
+ if(state.couple?.sexual_card_mode==='automatic'){
+  state.libraryImportKind=null;state.tab='settings';settingsOpenSection='admin';renderSettings();return;
+ }
  frame(state.libraryImportKind?importEditorHtml(state):cardLibraryHtml(state),'Mes cartes','');
 }
 function renderMonthlyLibrary(){
@@ -1805,7 +1812,7 @@ function renderSettings(){
    (state.cycleStatus?.pending?editorialRow('Bilan des 200 défis',
     state.cycleStatus.answered_self?'Réponse enregistrée · en attente du partenaire':'Choisir votre prochaine intensité',
     'cycle-reopen','heart'):'')+
-   '<p class="tiny-note">Styles futurs : '+safe(futureMixLabel)+'. Ces préférences ne changent pas encore les cartes.</p>'+
+   '<p class="tiny-note">Styles du duo : '+safe(futureMixLabel)+'. '+(state.couple?.sexual_card_mode==='automatic'?'Sélection automatique active pour les prochains défis SEXUEL.':'Mode personnalisé actif pour les prochains défis SEXUEL.')+'</p>'+
    '<div class="settings-date-outer"><h3>Notre anniversaire</h3>'+renderCoupleDateSetting()+'</div>'+
    (isLoveAdmin()?button('save-couple-date','Enregistrer notre date','class="settings-primary"'):'')+
    '<div class="settings-danger-zone">'+button('end-couple',editorialIcon('unlink')+' Dissocier notre duo','class="settings-signout"')+
@@ -1837,7 +1844,9 @@ function renderSettings(){
   '<p class="tiny-note">Aléatoire reste disponible.</p>'+
   (canEdit?button('save-evening-buttons','Enregistrer','class="settings-primary"'):'<p>Seul le créateur peut modifier ces choix.</p>')+'</div>';
  const game=(canEdit?
-  settingRow('Mes cartes','100 Sensuel · 100 Sexuel','tab:library','')+
+  (state.couple?.sexual_card_mode==='automatic'?
+   '<p class="tiny-note">100 défis SENSUEL communs · 100 défis SEXUEL choisis secrètement selon vos deux styles. Pour changer de mode : Options avancées.</p>':
+   settingRow('Mes cartes','100 Sensuel · 100 Sexuel','tab:library',''))+
   settingRow('Activités du mois','20 activités','tab:monthly-library','')+
   settingRow('Calendrier de l’Avent','25 surprises','tab:advent-editor','')+
   settingRow('Événements spéciaux','Événements, activités et variantes','tab:special-editor',''):
@@ -1864,6 +1873,20 @@ function renderSettings(){
    'class="settings-secondary settings-reset" '+(state.session?'disabled':''))+
   '<p class="tiny-note">Nouveau cycle de tirage uniquement : aucune carte, ancien défi réalisé, soirée, passe ou don ne sera effacé. Terminez la soirée avant de recommencer.</p>'+
   (progress.pending?button('cycle-reopen','Répondre au questionnaire','class="settings-primary"'):''):'';
+ const sexualMode=state.couple?.sexual_card_mode==='automatic'?'automatic':'custom';
+ const adminSexualMode=isLoveAdmin()?
+  '<section class="admin-sexual-card-mode" data-sexual-mode-editor="true">'+
+  '<h3>Nos 100 défis SEXUEL</h3>'+
+  '<p class="tiny-note">Choisissez d’où proviennent les prochains défis sexuels. Changement permis même pendant le cycle : les défis déjà pigés, les résultats et les compteurs sont conservés.</p>'+
+  '<label class="settings-inline-name"><span>Mode des cartes</span>'+
+  '<select id="admin-sexual-mode" aria-label="Mode des cartes sexuelles">'+
+  '<option value="automatic"'+(sexualMode==='automatic'?' selected':'')+'>Algorithme automatique · sélection cachée</option>'+
+  '<option value="custom"'+(sexualMode==='custom'?' selected':'')+'>Mes 100 cartes personnalisées</option>'+
+  '</select></label>'+
+  '<p class="tiny-note">Automatique : mêmes styles = 100 cartes de ce style ; styles différents = 50 cartes prises au hasard dans chaque style. Les 100 SENSUEL restent identiques et aucune liste automatique n’est dévoilée.</p>'+
+  (sexualMode==='custom'?editorialRow('Éditer mes 100 cartes','Créer, modifier ou importer','tab:library','dice'):'')+
+  button('save-sexual-mode','Appliquer ce mode','class="settings-primary"')+
+  '</section>':'';
  const notifications=notificationSettingsMarkup(state.pushPrefs||{},state.pushDevice);
  const nativeApp=typeof window!=='undefined'&&!!window.LoveRollNativeAuth;
  const nativeVersion=nativeApp&&typeof window.LoveRollNativeAuth.appVersion==='function'?
@@ -1903,7 +1926,7 @@ function renderSettings(){
   'aide-des':{title:'Dés et activités',body:'<p>Le dé hebdomadaire est commun : un tirage par couple et par semaine. En Soirée, chacun brasse son D6 personnel ; les deux résultats déverrouillent les défis.</p><p>Sensuel et Sexuel : 88/12 par défaut, modifiable dans Options avancées. Aléatoire reste à 50/50. Un défi passé retourne dans le tirage et son passage reste dans le calendrier.</p><p>La Surprise du mois choisit une activité puis qui invite. L’Avent se débloque par date : une lettre oubliée reste ouvrable plus tard. Vous pouvez donner jusqu’à trois défis par personne et par mois. Les dons et les trois passages gratuits recommencent le 1er du mois, selon l’heure du Québec. Après 200 défis réalisés, les deux personnes choisissent de diminuer, conserver ou augmenter leur intensité pour le prochain cycle.</p>'},
   'aide-sync':{title:'Synchronisation',body:'<p>Les résultats officiels proviennent du serveur et se retrouvent sur les deux comptes associés. Une connexion est nécessaire pour confirmer un lancer ou une ouverture.</p><p>Les listes personnelles de défis restent privées. Les bilans de soirée restent associés à leur auteur dans le calendrier commun.</p>'},
   aide:{title:'Aide',body:support},admin:{title:'Options avancées',body:adminWeekly+adminChallenges+
-   adminDiceWeightEditor('weekly')+adminDiceWeightEditor('evening')+adminCategoryWeightEditor()+
+   adminSexualMode+adminDiceWeightEditor('weekly')+adminDiceWeightEditor('evening')+adminCategoryWeightEditor()+
    (celebrants?'<details class="settings-help-item"><summary>Destinataires des occasions</summary>'+celebrants+'</details>':'')}};
  if(settingsOpenSection==='admin'&&!canEdit)settingsOpenSection='jeu';
  if(!pages[settingsOpenSection])settingsOpenSection='';
@@ -2248,6 +2271,18 @@ async function handle(action,element){
 
  if(verb==='reload-web'){
   await reloadWebAssets(true);return;
+ }
+ if(verb==='save-sexual-mode'){
+  if(!isLoveAdmin()||!state.coupleId)throw Error('Mode réservé à l’administrateur du couple.');
+  const requestedMode=id('admin-sexual-mode')?.value;
+  if(!['automatic','custom'].includes(requestedMode))throw Error('Veuillez choisir un mode de cartes.');
+  await rpc('set_love_sexual_card_mode',{p_couple:state.coupleId,p_mode:requestedMode});
+  state.libraryImportKind=null;state.libraryScreen='list';state.jsonPending=null;
+  settingsOpenSection='admin';await reload();
+  notify(requestedMode==='automatic'?
+   'Algorithme activé pour les prochains défis. La sélection reste secrète.':
+   'Vos 100 cartes personnalisées seront utilisées aux prochains tirages.');
+  return;
  }
  if(verb==='save-category-weights'){
   if(!isLoveAdmin())throw Error('Pondération réservée à l’administrateur du duo.');
@@ -3103,6 +3138,9 @@ async function handle(action,element){
   if(!allowed.includes(parts[0]))throw Error('Les jeux exigent deux comptes associés.');
   if(['library','monthly-library','advent-editor','special-editor'].includes(parts[0])&&!isLoveAdmin())
    throw Error('Modification réservée à l’administrateur du couple.');
+  if(parts[0]==='library'&&state.couple?.sexual_card_mode==='automatic'){
+   state.libraryImportKind=null;state.tab='settings';settingsOpenSection='admin';render();return;
+  }
   if(parts[0]!==state.tab&&hasUnsavedForm()&&
     !(await premiumConfirm('Vos modifications non enregistrées seront perdues. Voulez-vous quitter cette page ?',{
       kind:'library',title:'Quitter sans enregistrer ?',accept:'Quitter',cancel:'Rester'
