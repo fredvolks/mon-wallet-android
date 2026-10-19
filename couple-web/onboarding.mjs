@@ -144,7 +144,7 @@ function profileScreen(user,profile,invitation){
  const name=profile?.display_name||user?.user_metadata?.given_name||user?.user_metadata?.full_name||user?.user_metadata?.name||'';
  return '<div class="entry-account-screen auth-editorial entry-profile-screen">'+entryHeader(invitation,invitation)+
  '<section class="entry-auth-card entry-profile-card"><h1>Votre profil.</h1><p>Quelques informations pour personnaliser LoveRoll.</p>'+profileAccountChoiceHtml(user)+
- '<form class="editorial-form" onsubmit="return false"><label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+profileGenderSelect(profile?.gender)+profilePlayStyleSelect(profile?.play_style)+
+ '<form class="editorial-form" onsubmit="return false"><label>Votre prénom<input id="profile-name" autocomplete="given-name" maxlength="80" value="'+esc(name)+'"></label>'+'<div class="loveroll-profile-choice-row">'+profileGenderSelect(profile?.gender)+profilePlayStyleSelect(profile?.play_style)+'</div>'+
  '<div class="entry-birthday"><span>Votre anniversaire</span>'+monthDayInputs('signup-birth',profile?.birthday_md||'')+'</div>'+
  '<label class="checkline"><input type="checkbox" id="age-confirm"> Je confirme avoir 18 ans ou plus.</label>'+button('complete-registration','Terminer mon inscription','entry-auth-submit')+'</form>'+
  '<p class="entry-small-note">Seuls le mois et le jour sont conservés.</p>'+button('use-existing-account','‹ Retour à la connexion','entry-auth-back')+'</section></div>';
