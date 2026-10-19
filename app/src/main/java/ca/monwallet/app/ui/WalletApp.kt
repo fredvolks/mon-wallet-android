@@ -121,9 +121,11 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
             "portfolio" -> {
                 // Prioritize positions still held; old fully sold transactions must not
                 // consume the foreground quote budget before visible holdings.
-                val ids = runCatching { w.result(portfolio).holdings
-                    .filter { it.quantity > ZERO }.map { it.securityId }.toSet() }
-                    .getOrDefault(emptySet())
+                val ids = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    runCatching { w.result(portfolio).holdings
+                        .filter { it.quantity > ZERO }.map { it.securityId }.toSet() }
+                        .getOrDefault(emptySet())
+                }
                 val held = w.securities.filter { it.id in ids }.take(19)
                 // Portfolio valuations in CAD also depend on the USD/CAD rate.
                 val fx = if (held.any { it.currency == "USD" })
