@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import ca.monwallet.app.domain.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -79,8 +80,17 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     var loading by remember { mutableStateOf(false) }
     LaunchedEffect(selected, range, w.transactions) {
         loading = true
-        try { vm.services.refreshReportHistory(selected)
-        } finally { loading = false }
+        try {
+            vm.services.refreshReportHistory(selected)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            android.util.Log.e("MonWalletReports", "Historical refresh failed", error)
+            vm.services.reportHistoryStatus.value =
+                "Historique temporairement indisponible : ${error.message ?: "erreur inconnue"}"
+        } finally {
+            loading = false
+        }
     }
     val summary = remember(w.transactions, w.prices, selected, range, snapshots) {
         ReportEngine.summary(w, snapshots, range, portfolioId = selected)
