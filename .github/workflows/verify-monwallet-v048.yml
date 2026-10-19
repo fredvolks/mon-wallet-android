@@ -1,0 +1,42 @@
+name: Verify Mon Wallet v0.2.48 signature and updates
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-monwallet-v048.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compare the new APK with the installed release certificate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir old new
+          gh release download v0.2.47 -R "$GITHUB_REPOSITORY" -p 'MonWallet-v0.2.47.apk' --dir old
+          gh release download v0.2.48 -R "$GITHUB_REPOSITORY" -p 'MonWallet-v0.2.48.apk' --dir new
+          signer() {
+            "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$1" \
+              | sed -n 's/.*Signer #1 certificate SHA-256 digest: //p'
+          }
+          before="$(signer old/MonWallet-v0.2.47.apk)"
+          after="$(signer new/MonWallet-v0.2.48.apk)"
+          echo "Same signature: $([[ "$before" = "$after" ]] && echo yes || echo no)"
+          test -n "$before"
+          test "$before" = "$after"
+          test "$after" = "9fa4232613c4cccf611e8114fd121da630bbe0f8f2e6886814fde6225b10750d"
+          manifest_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/version.json"
+          curl -fL --retry 3 --max-time 30 "$manifest_url" -o manifest.json
+          python3 - <<'PY'
+          import json,hashlib
+          d=json.load(open('manifest.json'))
+          data=open('new/MonWallet-v0.2.48.apk','rb').read()
+          assert d['versionCode']==2048 and d['versionName']=='0.2.48'
+          assert d['sha256']==hashlib.sha256(data).hexdigest()
+          assert d['apkUrl'].endswith('/v0.2.48/MonWallet-v0.2.48.apk')
+          print('Mon Wallet v0.2.48 certificate and updater manifest verified.')
+          PY
