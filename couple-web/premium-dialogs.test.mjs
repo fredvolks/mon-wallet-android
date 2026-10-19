@@ -13,7 +13,7 @@ test('All eight old confirm() dialogs replaced; mutations still await explicit a
  const gift=app.slice(app.indexOf("if(verb==='give-challenge')"),app.indexOf("if(verb==='new-challenge')"));
  assert.ok(gift.indexOf("await premiumConfirm")<gift.indexOf("rpc('give_love_challenge'"));
  const unlink=app.slice(app.indexOf("if(verb==='end-couple')"),app.indexOf("if(verb==='save-wellbeing')"));
- assert.ok(unlink.indexOf("await premiumConfirm")<unlink.indexOf("rpc('end_love_match'"));
+ assert.ok(unlink.indexOf("await premiumConfirm")<unlink.indexOf("rpc('dissociate_love_to_solo'"));
 });
 test('Modal promises always resolve on cancel/accept/Escape, without any backend mutation',()=>{
  assert.match(markup,/role="alertdialog"/);
