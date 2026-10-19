@@ -93,11 +93,18 @@ class Yahoo : MarketDataProvider {
 
     override suspend fun quote(s: Security): Quote {
         val us = supportsUsExtendedHours(s)
-        // A 5-minute chart includes actual extended-session prints. Daily bars do not.
-        val c = when {
-            us -> chart(s, "1d", "5m", includePrePost = true)
-            s.type.uppercase() == "FUTURE" -> chart(s, "1d", "5m", includePrePost = true)
-            else -> chart(s, "5d", "1d")
+        // A 1-minute intraday chart is the freshest publicly available Yahoo chart.
+        // The exchange may still delay its feed; do not call this guaranteed realtime.
+        // If 1-minute history is unavailable for this listing, retain the older
+        // supported interval rather than losing its last quote.
+        val intraday = us || s.type.uppercase() == "FUTURE"
+        val c = try {
+            chart(s, "1d", "1m", includePrePost = intraday)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            if (intraday) chart(s, "1d", "5m", includePrePost = true)
+            else chart(s, "5d", "1d")
         }
         return YahooQuoteMapper.map(s, c, Instant.now().epochSecond, name, us)
     }
