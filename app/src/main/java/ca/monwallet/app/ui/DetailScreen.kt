@@ -170,7 +170,7 @@ fun DetailScreen(
     // Compute it off the main UI thread, and keep the prior result while new
     // market data arrives so the detail page never freezes between quotes.
     val result by produceState<ca.monwallet.app.domain.Result?>(
-        initialValue = null, w.transactions, w.quotes, w.settings, w.portfolios, position
+        null, w.transactions, w.quotes, w.settings, w.portfolios, position
     ) {
         value = withContext(Dispatchers.Default) {
             runCatching { w.result(position) }.getOrNull()
