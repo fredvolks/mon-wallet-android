@@ -8,7 +8,7 @@ import {playableSessionForWeekly} from './couple-reset-view.mjs';
 import {eveningDailyAccess} from './evening-daily-policy.mjs?v=20261016-daily100';
 import {ownEveningChallenges,queuePosition,queueLabel,hasTurnToDraw} from './evening-private-queue.mjs';
 import {premiumHomeHtml,nextMonday,fitHomeLayout} from './premium-home.mjs?v=20261018-weights146';
-import {futureCoupleStyleMix,playStyleLabel} from './play-style.mjs?v=20261018-styles148';
+import {futureCoupleStyleMix,playStyleLabel} from './play-style.mjs?v=20261018-styles149';
 import {cycleIntensityQuestionnaireHtml} from './cycle-questionnaire.mjs?v=20261018-cycle149';
 import {DICE_WEIGHT_CONFIG,configuredDiceWeights,parseDiceWeightInputs} from './dice-weighting.mjs?v=20261018-weights146';
 import {premiumEveningHtml,updateEveningCategoryUi} from './premium-evening.mjs?v=20261018-odds148';
@@ -18,7 +18,7 @@ import {premiumSurpriseHtml,sixSpecialEvents} from './premium-surprise.mjs?v=202
 import {surpriseSlot,surpriseCustom,surpriseTitle,formatSurpriseDateInput,parseSurpriseDateInput} from './surprise-event-config.mjs?v=20261016-surprise109';
 import {loginEmail,loginCode,emailAuthMessage,requireLovePassword,passwordQuality,verifiedLoveEmail,passwordAuthMessage,invitationAuthMessage} from './email-auth.mjs';
 import {demoCoupleHtml,DEMO_TABS} from './demo-couple.mjs';
-import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs?v=20261018-game148';
+import {inviteLinkForId,parseInvitationFromUrl,pendingInviteReference,INVITATION_REVISION} from './invite-links.mjs?v=20261018-cycle149';
 import {sharedEveningTurns,lastOfficialChallengeFace,latestCountedSession} from './evening-turns.mjs';
 import { eveningCard, EVENING_CATEGORIES, formatCountdown,customCardSlots,editableCardSlots,playableEveningCount,resolvedCard } from './evening-challenges.mjs?v=20261016-restore113';
 import {MONTHLY_ACTIVITIES,editableMonthlyActivities,monthlyActivityForRoll} from './monthly-activities.mjs';
@@ -41,7 +41,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-18.148';
+const WEB_RELEASE='2026-10-18.149';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -3628,6 +3628,6 @@ start().catch(fail);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () =>
-    navigator.serviceWorker.register('./service-worker.js?v=20261018-game148',
+    navigator.serviceWorker.register('./service-worker.js?v=20261018-cycle149',
      {scope:'./',updateViaCache:'none'}).then(reg=>reg.update()).catch(console.warn));
 }
