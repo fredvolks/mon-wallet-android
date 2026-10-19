@@ -82,7 +82,15 @@ fun PortfolioScreen(
         mutableStateOf(PortfolioTableColumns.restore(w.settings["portfolio_columns"]))
     }
     val tableScroll = rememberScrollState()
-    val result = remember(w, selected) { runCatching { w.result(selected) }.getOrNull() }
+    // A live quote must not re-run all trade-ledger calculations on the
+    // Compose main thread. Only the inputs used by valuation invalidate it.
+    val result by produceState<ca.monwallet.app.domain.Result?>(
+        initialValue = null, w.transactions, w.quotes, w.settings, w.portfolios, selected
+    ) {
+        value = withContext(Dispatchers.Default) {
+            runCatching { w.result(selected) }.getOrNull()
+        }
+    }
     val snapshots by
         produceState(emptyList<Snapshot>(), w.transactions, w.prices, selected) {
             value =
