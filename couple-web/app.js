@@ -41,7 +41,7 @@ import {invitationStatus,coupleStats,formatCoupleDate,invitationEmailText,invita
 import {premiumConfirm,premiumCopyLink,focusInlineLoveDialog} from './premium-dialogs.mjs?v=20261017-complete127';
 
 
-const WEB_RELEASE='2026-10-18.153';
+const WEB_RELEASE='2026-10-18.154';
 const root=document.querySelector('#app');
 const enc=new TextEncoder(),dec=new TextDecoder();
 let diceCleanup=[],renderToken=0;
@@ -759,21 +759,27 @@ async function reload(){
  }
  state.couple=couple[0]||null;
  if(state.couple?.owner_user_id===state.user.id){
-  const [cards,activities,adventConfig,adventDays,specialSettings]=await Promise.all([
+  const [cards,personalSexualCards,activities,adventConfig,adventDays,specialSettings]=await Promise.all([
    query('love_custom_challenges',{eq:{couple_id:state.coupleId}}),
+   // Only the couple creator can fetch private cards, and only in personal mode.
+   state.couple?.sexual_card_mode==='custom'?
+    query('love_personal_sexual_cards',{eq:{couple_id:state.coupleId}}):Promise.resolve([]),
    query('love_monthly_activity_overrides',{eq:{couple_id:state.coupleId}}),
    query('love_advent_2026_config',{eq:{couple_id:state.coupleId}}),
    query('love_advent_2026_days',{eq:{couple_id:state.coupleId}}),
    query('love_special_event_catalogue',{eq:{couple_id:state.coupleId}})
   ]);
-  // Private algorithm cards are never fetched from the browser. Existing
-  // personal cards remain available for accurate totals, but their editor
-  // is hidden while the automatic mode is selected.
-  state.customCards=cards;
+  // The original saved library is NEVER overwritten by the MEDIUM template.
+  // In personal mode, use only this couple's editable 100-card copy.
+  // The automatic secret pool is NEVER fetched into browser state.
+  state.personalSexualCardsReady=personalSexualCards.length===100;
+  state.customCards=state.personalSexualCardsReady?
+   [...cards.filter(card=>card.category!=='SEXUEL'),...personalSexualCards]:cards;
   state.monthlyActivities=activities;
   state.advent2026Config=adventConfig[0]||null;state.advent2026Days=adventDays;
   state.specialEventsConfig=specialSettings[0]?.events||null;
  }else{
+  state.personalSexualCardsReady=false;
   state.customCards=[];state.monthlyActivities=[];
   state.advent2026Config=null;state.advent2026Days=[];state.specialEventsConfig=null;
  }
@@ -1883,8 +1889,9 @@ function renderSettings(){
   '<option value="automatic"'+(sexualMode==='automatic'?' selected':'')+'>Algorithme automatique · sélection cachée</option>'+
   '<option value="custom"'+(sexualMode==='custom'?' selected':'')+'>Mes 100 cartes personnalisées</option>'+
   '</select></label>'+
-  '<p class="tiny-note">Automatique : mêmes styles = 100 cartes de ce style ; styles différents = 50 cartes prises au hasard dans chaque style. Les 100 SENSUEL restent identiques et aucune liste automatique n’est dévoilée.</p>'+
-  (sexualMode==='custom'?editorialRow('Éditer mes 100 cartes','Créer, modifier ou importer','tab:library','dice'):'')+
+  '<p class="tiny-note">Automatique : mêmes styles = 100 cartes de ce style ; styles différents = 50 cartes prises au hasard dans chaque style. Le lot automatique reste caché.</p>'+
+  '<p class="tiny-note">Mes cartes : au premier choix, les 100 SEXUEL MEDIUM sont copiées dans votre bibliothèque privée. Vous pouvez les modifier sans changer les cartes des autres couples. Vos modifications sont conservées si vous changez de mode.</p>'+
+  (sexualMode==='custom'?editorialRow('Modifier mes 100 SEXUEL','Copie personnelle préremplie avec MEDIUM','open-personal-sexual-cards','dice'):'')+
   button('save-sexual-mode','Appliquer ce mode','class="settings-primary"')+
   '</section>':'';
  const notifications=notificationSettingsMarkup(state.pushPrefs||{},state.pushDevice);
@@ -2272,16 +2279,28 @@ async function handle(action,element){
  if(verb==='reload-web'){
   await reloadWebAssets(true);return;
  }
+ if(verb==='open-personal-sexual-cards'){
+  if(!isLoveAdmin()||state.couple?.sexual_card_mode!=='custom')
+   throw Error('Cette bibliothèque est réservée au créateur en mode personnalisé.');
+  state.customCategory='SEXUEL';state.customSlot=1;
+  state.libraryScreen='list';state.libraryImportKind=null;
+  state.jsonPending=null;state.tab='library';render();return;
+ }
  if(verb==='save-sexual-mode'){
   if(!isLoveAdmin()||!state.coupleId)throw Error('Mode réservé à l’administrateur du couple.');
   const requestedMode=id('admin-sexual-mode')?.value;
   if(!['automatic','custom'].includes(requestedMode))throw Error('Veuillez choisir un mode de cartes.');
   await rpc('set_love_sexual_card_mode',{p_couple:state.coupleId,p_mode:requestedMode});
   state.libraryImportKind=null;state.libraryScreen='list';state.jsonPending=null;
-  settingsOpenSection='admin';await reload();
+  if(requestedMode==='custom'){
+   state.customCategory='SEXUEL';state.customSlot=1;state.tab='library';
+  }else{
+   state.tab='settings';settingsOpenSection='admin';
+  }
+  await reload();
   notify(requestedMode==='automatic'?
    'Algorithme activé pour les prochains défis. La sélection reste secrète.':
-   'Vos 100 cartes personnalisées seront utilisées aux prochains tirages.');
+   'Les 100 cartes MEDIUM sont disponibles dans votre bibliothèque privée, modifiable sans toucher aux autres couples.');
   return;
  }
  if(verb==='save-category-weights'){
@@ -2589,7 +2608,11 @@ async function handle(action,element){
   if(!(await premiumConfirm('Remplacer « '+preview.summary.label+' » avec '+
     preview.summary.count+' éléments et '+preview.summary.timers+
     ' minuteur(s) configuré(s) ? Les anciens tirages restent inchangés.',{kind:'library',title:'Importer la bibliothèque ?'})))return;
-  if(preview.kind==='evening')
+  if(preview.kind==='evening'&&preview.data.category==='SEXUEL'&&
+     state.couple?.sexual_card_mode==='custom')
+   await rpc('import_love_personal_sexual_cards',{
+    p_couple:state.coupleId,p_library:preview.data});
+  else if(preview.kind==='evening')
    await rpc('import_love_evening_library',{p_couple:state.coupleId,p_library:preview.data});
   else if(preview.kind==='monthly')
    await rpc('import_love_monthly_library',{p_couple:state.coupleId,p_library:preview.data});
@@ -2715,15 +2738,31 @@ async function handle(action,element){
   const drawer=document.querySelector('[name="custom-drawer"]:checked')?.value;
   if(!['both','him','her'].includes(drawer)||!['both','him','her'].includes(recipient))
    throw Error('Choisissez qui peut piger et recevoir cette carte.');
-  // Two partners of the same gender may still draw for each other.
-  await rpc('save_love_card_with_roles',{p_couple:state.coupleId,
-   p_category:state.customCategory,p_card_id:state.customSlot,
-   p_title:title,p_description:description,p_timer_minutes:minutes,
-   p_recipient_role:recipient,p_drawer_role:drawer});
-  await reload();notify('Carte enregistrée.');return;
+  // A SEXUEL personal edit must never modify the common MEDIUM cards, nor
+  // the legacy shared custom-card table.
+  if(state.customCategory==='SEXUEL'&&state.couple?.sexual_card_mode==='custom'){
+   await rpc('save_love_personal_sexual_card',{p_couple:state.coupleId,
+    p_card_id:state.customSlot,p_title:title,p_description:description,
+    p_timer_minutes:minutes,p_recipient_role:recipient,p_drawer_role:drawer});
+  }else{
+   await rpc('save_love_card_with_roles',{p_couple:state.coupleId,
+    p_category:state.customCategory,p_card_id:state.customSlot,
+    p_title:title,p_description:description,p_timer_minutes:minutes,
+    p_recipient_role:recipient,p_drawer_role:drawer});
+  }
+  await reload();notify('Carte enregistrée pour votre duo seulement.');return;
  }
  if(verb==='delete-custom-card'){
   if(!isLoveAdmin())throw Error('Accès réservé à l’administrateur.');
+  if(state.customCategory==='SEXUEL'&&state.couple?.sexual_card_mode==='custom'){
+   if(!(await premiumConfirm(
+    'Restaurer cette carte depuis le modèle MEDIUM ? Vos autres cartes personnelles et les défis déjà pigés ne changeront pas.',
+    {kind:'reset',title:'Restaurer cette carte MEDIUM ?'})))return;
+   await rpc('restore_love_personal_sexual_card',{
+    p_couple:state.coupleId,p_card_id:state.customSlot
+   });
+   await reload();notify('Carte personnelle restaurée depuis MEDIUM.');return;
+  }
   const original=state.customSlot<=25;
   if(!(await premiumConfirm(original?
    'La carte officielle et ses réglages seront restaurés. Les défis déjà tirés restent inchangés.':
