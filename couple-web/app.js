@@ -1168,7 +1168,9 @@ function renderLegacySession(){
      '<p>Choisissez votre catégorie. LoveRoll sélectionnera le défi parmi nos 200 emplacements.</p>'+
      '<div class="chipline">'+EVENING_CATEGORIES.map(c=>
      '<button class="pill '+(state.category===c?'selected':'')+'" data-action="category:'+c+'">'+names[c]+'</button>').join('')+'</div>'+
-     '<p>88 % dans votre catégorie choisie · 12 % dans l’autre. Choisissez à chaque défi.</p>'+
+     '<p>'+(state.couple?.category_weights_enabled===false?50:state.couple?.category_preference_percent??88)+
+     ' % dans votre catégorie choisie · '+(100-(state.couple?.category_weights_enabled===false?50:
+       state.couple?.category_preference_percent??88))+' % dans l’autre. Choisissez à chaque défi.</p>'+
      (EVENING_CATEGORIES.includes(state.category)?
       button('new-challenge','🎲 DÉCOUVRIR UN DÉFI POUR '+safe(p.name)):
       '<p class="tiny-note">Sélectionnez Sensuel ou Sexuel pour activer le tirage.</p>')+'</div>';
@@ -1283,6 +1285,8 @@ function renderSession(){
    turn,category:state.category,
    showSensuel:state.couple?.show_sensuel_button!==false,
    showSexuel:state.couple?.show_sexuel_button!==false,
+   categoryOdds:state.couple?.category_weights_enabled===false?50:
+    state.couple?.category_preference_percent??88,
    giftCount,rolling:state.diceStatus==='rolling'||state.diceStatus==='pending',rollFace:state.rollAnimationFace,
    playable:state.playableCounts||(isLoveAdmin()?playableEveningCount(state.customCards):null),
    rollingKind:state.rollAnimationKind,showMore:state.eveningMore,confirmCancel:state.confirmCancel,
@@ -3123,7 +3127,9 @@ async function handle(action,element){
   state.category=parts[0];state.randomMode=parts[0]==='HASARD';
   if(state.session)try{sessionStorage.setItem('loveroll-category-'+state.session.id,parts[0]);}catch{}
   // Never tear down all WebGL renderers for a category-only UI change.
-  if(!updateEveningCategoryUi(root,parts[0]))render();
+  if(!updateEveningCategoryUi(root,parts[0],
+   state.couple?.category_weights_enabled===false?50:
+   state.couple?.category_preference_percent??88))render();
   return;
  }
   if(verb==='timer-mode'){
