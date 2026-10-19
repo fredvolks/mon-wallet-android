@@ -699,7 +699,7 @@ test('All 100 monthly D100 activities are editable without changing their face i
  }
  const edits=[{face:1,title:'Notre sortie surprise',description:'Une sortie personnalisée et encore inconnue.',is_restaurant:false,catalogue_version:2}];
  const result=editableMonthlyActivities(edits);
- assert.equal(result.length,20);
+ assert.equal(result.length,100);
  assert.equal(result[0].title,'Notre sortie surprise');
  assert.equal(result[0].edited,true);
  assert.equal(result[0].is_restaurant,false);
