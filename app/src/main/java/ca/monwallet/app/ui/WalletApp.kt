@@ -22,6 +22,7 @@ import androidx.navigation.compose.*
 import ca.monwallet.app.R
 import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.*
+import ca.monwallet.app.marketdata.foregroundQuoteRefreshDelayMillis
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.collectLatest
@@ -100,12 +101,17 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                     val attempted = s.refreshForeground(visible)
                     val quotes = s.repo.state.value.quotes
                     val active = visible.any { security ->
-                        quotes[security.id]?.let { q -> q.marketOpen == true ||
-                            q.marketSession == "PRE_MARKET" || q.marketSession == "AFTER_HOURS" } == true
+                        security.type.uppercase() in setOf("CRYPTO", "FUTURE") ||
+                            quotes[security.id]?.let { q -> q.marketOpen == true ||
+                                q.marketSession == "PRE_MARKET" ||
+                                q.marketSession == "AFTER_HOURS" } == true
                     }
-                    // An initial full refresh may still be running; retry promptly.
-                    // The foreground loop is cancelled when the app is paused.
-                    delay(if (!attempted) 5_000L else if (active) 30_000L else 180_000L)
+                    // Re-read the repository each pass so updated prices and P&L
+                    // appear automatically while the user views the app.
+                    // No polling remains active when Android pauses the screen.
+                    val unavailable = s.marketStatus.value.startsWith("Cotation indisponible")
+                    delay(if (!attempted) 2_000L else foregroundQuoteRefreshDelayMillis(
+                        active, visible.distinctBy { it.id }.size, unavailable))
                 }
             }
         }
@@ -118,7 +124,12 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
                 val ids = runCatching { w.result(portfolio).holdings
                     .filter { it.quantity > ZERO }.map { it.securityId }.toSet() }
                     .getOrDefault(emptySet())
-                s.foregroundSecurities.value = w.securities.filter { it.id in ids }.take(20)
+                val held = w.securities.filter { it.id in ids }.take(19)
+                // Portfolio valuations in CAD also depend on the USD/CAD rate.
+                val fx = if (held.any { it.currency == "USD" })
+                    Catalog.markets.firstOrNull { it.symbol == "CAD=X" } else null
+                s.foregroundSecurities.value = (held + listOfNotNull(fx))
+                    .distinctBy { it.id }.take(20)
             }
             "detail/{id}" -> s.foregroundSecurities.value = listOfNotNull(
                 w.security(backstack?.arguments?.getString("id")) ?: selectedSecurity)
@@ -128,7 +139,8 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
         }
     }
     LaunchedEffect(initialized, prefs["onboarded"], user) {
-        if (initialized && (prefs["onboarded"] == "true" || user != null)) vm.refresh()
+        if (initialized && (prefs["onboarded"] == "true" || user != null))
+            vm.run { s.refresh(history = false) } // Avoid expensive history rebuild on every launch.
     }
     LaunchedEffect(deepSecurity, w.securities) {
         if (deepSecurity != null && handledDeepLink != deepSecurity)
