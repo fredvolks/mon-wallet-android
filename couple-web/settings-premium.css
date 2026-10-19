@@ -101,3 +101,32 @@ main#app.loveroll-settings-page .loveroll-style-select small{
  display:block;font-size:12px;color:var(--ritual-muted);line-height:1.3;
 }
 main#app.loveroll-settings-page .admin-category-weight-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+
+/* Private two-person 200-card cycle questionnaire; no changes to existing tabs. */
+.lr-cycle-overlay{position:fixed;inset:0;z-index:30000;display:grid;place-items:center;
+ background:rgba(15,3,11,.86);padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom));
+ overscroll-behavior:contain;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.lr-cycle-card{width:min(100%,420px);max-height:calc(100dvh - 44px);overflow-y:auto;
+ padding:clamp(23px,6vw,35px);border:1px solid rgba(227,143,174,.42);
+ border-radius:28px;text-align:center;color:#f8e2e8;
+ background:radial-gradient(ellipse at 50% 5%,#562037 0%,#2b101e 50%,#180b12 100%);
+ box-shadow:0 24px 90px rgba(0,0,0,.65),inset 0 1px rgba(255,230,238,.12);}
+.lr-cycle-card .lr-cycle-kicker{letter-spacing:.22em;font-size:11px;font-weight:600;
+ color:#dfa4bb;margin:0 0 12px;}
+.lr-cycle-card h2{font-family:Georgia,'Times New Roman',serif;font-weight:400;
+ font-size:clamp(31px,6vw,41px);margin:0 0 20px;line-height:1.1;}
+.lr-cycle-card>p:not(.lr-cycle-kicker){line-height:1.5;font-size:14px;color:#e5c2d0;}
+.lr-cycle-card .lr-cycle-current{font-size:14px;padding:10px 0;border-top:1px solid rgba(233,162,190,.28);
+ border-bottom:1px solid rgba(233,162,190,.28);}
+.lr-cycle-current strong{color:#fff;}
+.lr-cycle-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:24px 0 18px;}
+.lr-cycle-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+ background:linear-gradient(155deg,rgba(132,65,93,.72),rgba(58,20,38,.8));border:1px solid rgba(232,145,177,.50);
+ border-radius:18px;min-height:91px;padding:11px 3px;color:#fff;font-size:12px;}
+.lr-cycle-choice>span{font-size:23px;color:#f4bdd3;line-height:1;}
+.lr-cycle-choice:disabled{opacity:.35;cursor:not-allowed;}
+.lr-cycle-choice:not(:disabled):focus-visible,.lr-cycle-later:focus-visible{outline:2px solid #ffd1e1;outline-offset:3px;}
+.lr-cycle-card .lr-cycle-waiting{margin:22px auto 12px;font-weight:600;color:#f2bad3;}
+.lr-cycle-card .lr-cycle-note{font-size:12px;opacity:.8;}
+.lr-cycle-later{background:transparent;border:0;border-bottom:1px solid rgba(231,157,184,.5);
+ margin:8px auto 0;padding:7px 2px;color:#e4b9cb;font-size:13px;}
