@@ -250,7 +250,14 @@ class Services(val context: Context) {
             recentQuotes[security.id]?.takeIf {
                 System.currentTimeMillis() - it.fetchedAt < 2_000
             } ?: liveQuotes.quote(security).cached.also { fresh ->
-                repo.quote(fresh)
+                // Never force Room -> entire Wallet -> Compose recomputation every
+                // 3 seconds if Yahoo sends the same quote again. Keep a freshness
+                // heartbeat at most once per minute for unchanged provider data.
+                val previous = recentQuotes[security.id] ?: repo.state.value.quotes[security.id]
+                val changed = previous == null ||
+                    previous.copy(fetchedAt = fresh.fetchedAt) != fresh
+                val refreshAge = previous?.let { fresh.fetchedAt - it.fetchedAt } ?: Long.MAX_VALUE
+                if (changed || refreshAge >= 60_000L) repo.quote(fresh)
                 recentQuotes[security.id] = fresh
             }
         }
