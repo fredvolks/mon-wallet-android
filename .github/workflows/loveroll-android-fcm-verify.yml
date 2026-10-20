@@ -13,6 +13,7 @@ jobs:
       LOVEROLL_FIREBASE_API_KEY: ${{ vars.LOVEROLL_FIREBASE_API_KEY }}
       LOVEROLL_FIREBASE_SENDER_ID: ${{ vars.LOVEROLL_FIREBASE_SENDER_ID }}
       LOVEROLL_FIREBASE_PROJECT_ID: ${{ vars.LOVEROLL_FIREBASE_PROJECT_ID }}
+      LOVEROLL_REQUIRE_FIREBASE: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -28,19 +29,46 @@ jobs:
           SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
           yes | "$SDKMGR" --licenses >/dev/null || true
           "$SDKMGR" --install 'platforms;android-35' 'build-tools;35.0.0'
-      - name: Compile Android 0.13.12 and test
+      - name: Prepare public Firebase compile fixture when configuration is unavailable
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          config = Path('app/google-services.json')
+          supplied = any(os.environ.get('LOVEROLL_FIREBASE_' + key, '').strip()
+                         for key in ('APP_ID', 'API_KEY', 'SENDER_ID', 'PROJECT_ID'))
+          if not config.exists() and not supplied:
+              # Compile-only fixture: no Firebase project or working credentials.
+              config.write_text(json.dumps({
+                  'project_info': {'project_number': '123456789012', 'project_id': 'loveroll-ci-fixture'},
+                  'client': [{'client_info': {
+                      'mobilesdk_app_id': '1:123456789012:android:0123456789abcdef',
+                      'android_client_info': {'package_name': 'ca.desadeux.jeu'}},
+                      'api_key': [{'current_key': 'AIza' + 'A' * 35}]}]
+              }))
+          PY
+      - name: Compile Android 0.13.13 and test
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace
       - name: Verify Firebase service and APK metadata
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import xml.etree.ElementTree as ET
           manifest=Path('app/src/main/AndroidManifest.xml').read_text()
           build=Path('app/build.gradle').read_text()
           service=Path('app/src/main/java/ca/desadeux/jeu/LoveRollFcmService.java').read_text()
           assert 'POST_NOTIFICATIONS' in manifest
           assert '.LoveRollFcmService' in manifest
           assert 'FirebaseMessagingService' in service
-          assert "versionName '0.13.12'" in build
+          assert 'firebase_messaging_auto_init_enabled' in manifest
+          assert "versionName '0.13.13'" in build
+          resources = list(Path('app/build/generated/res/resValues').rglob('gradleResValues.xml'))
+          assert resources, 'Missing Firebase startup resources'
+          for resource in resources:
+              values = {item.attrib.get('name'): item.text for item in ET.parse(resource).getroot()}
+              assert all(values.get(key) for key in
+                         ('google_app_id', 'google_api_key', 'gcm_defaultSenderId', 'project_id'))
+              assert values['google_app_id'].split(':')[1] == values['gcm_defaultSenderId']
           assert Path('app/build/outputs/apk/debug/app-debug.apk').exists()
           assert Path('app/build/outputs/apk/release/app-release-unsigned.apk').exists()
           print('Android native FCM build & unit checks validated')

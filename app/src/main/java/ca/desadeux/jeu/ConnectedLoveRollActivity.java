@@ -181,6 +181,7 @@ public final class ConnectedLoveRollActivity extends Activity {
     !=android.content.pm.PackageManager.PERMISSION_GRANTED){
    requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},6832);return;
   }
+  FirebaseMessaging.getInstance().setAutoInitEnabled(true);
   FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task->{
    if(!task.isSuccessful()||task.getResult()==null){
     show("Impossible d’obtenir le jeton de notifications Firebase.");return;
@@ -295,6 +296,7 @@ public final class ConnectedLoveRollActivity extends Activity {
   @JavascriptInterface public void disableRemotePush(){
    runOnUiThread(()->{
     if(!firebaseReady)return;
+    FirebaseMessaging.getInstance().setAutoInitEnabled(false);
     FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(task->{
      if(task.isSuccessful())getSharedPreferences("loveroll_native_push",MODE_PRIVATE)
        .edit().remove("device_token").apply();
