@@ -120,6 +120,7 @@ class Services(val context: Context) {
     val market = Router(secure)
     val news = NewsRepository(repo, market, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY)
     val discovery by lazy { Discovery(this) }
+    val widgetLiveActive = MutableStateFlow(false)
     val foregroundSecurities = MutableStateFlow<List<Security>>(emptyList())
     val updater = Updater(context, secure)
     val initialized = MutableStateFlow(false)

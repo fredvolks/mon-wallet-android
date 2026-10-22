@@ -107,7 +107,7 @@ internal object WidgetWideRenderer {
         val title = if (portfolio == null) c.getString(R.string.all_portfolios)
             else wallet.portfolios.find { it.id == portfolio }?.name ?: "Portefeuille supprimé"
         views.setTextViewText(R.id.widget_title, title)
-        views.setTextViewText(R.id.widget_total_label, c.getString(R.string.widget_return_total))
+        views.setTextViewText(R.id.widget_total_label, "TOTAL")
         views.setTextViewText(R.id.widget_total, if (hidden) "—" else percent(result?.percent))
         views.setTextColor(R.id.widget_total, tone(result?.percent?.signum()))
         views.setViewVisibility(R.id.widget_total_group,
@@ -135,7 +135,7 @@ internal object WidgetWideRenderer {
         views.setTextViewTextSize(R.id.widget_amount, android.util.TypedValue.COMPLEX_UNIT_SP,
             if (unavailable) 12f else if (config.dailyHero) 26f else 22f)
         views.setTextViewTextSize(R.id.widget_percent, android.util.TypedValue.COMPLEX_UNIT_SP,
-            if (config.dailyHero) 24f else 17f)
+            if (config.dailyHero) 18f else 16f)
         views.setViewVisibility(R.id.widget_amount, if (showAmount) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_percent, if (showPercent) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_day_pill,
@@ -145,13 +145,6 @@ internal object WidgetWideRenderer {
         val dayColor = tone(daySign)
         views.setTextColor(R.id.widget_amount, dayColor)
         views.setTextColor(R.id.widget_percent, dayColor)
-        views.setInt(R.id.widget_day_pill, "setBackgroundResource",
-            when {
-                !config.dailyHero -> R.drawable.widget_pill_neutral
-                daySign == null || daySign == 0 -> R.drawable.widget_pill_neutral
-                daySign < 0 -> R.drawable.widget_pill_negative
-                else -> R.drawable.widget_pill_positive
-            })
         // The 4x2 never reveals wallet value or capital, including legacy configs.
         views.setTextViewText(R.id.widget_extras, "")
         views.setViewVisibility(R.id.widget_extras, View.GONE)
@@ -183,7 +176,7 @@ internal object WidgetWideRenderer {
         val minHeight = size.second
         val ordered = if (hidden || result == null) emptyList() else config.titles(result)
         val plan = WidgetTitleLayout.plan(config, "4x2", minHeight, ordered.size)
-        // Keep the real intraday portfolio P&L curve behind the daily figures only.
+        // Reserve a separate chart area below the figures; never paint over money.
         // It stays inside the Daily panel; the stock rows keep their own clear background.
         val chartSeries = if (hidden || !config.chart || result == null) emptyList()
             else WidgetChartData.values(wallet, portfolio, "Jour", cached)
@@ -225,7 +218,7 @@ internal object WidgetWideRenderer {
             }
             val showPrice = config.price && !config.hideAmounts
             TitleQuote(security.id, if (config.ticker) security.ticker else security.name,
-                if (showPrice) number(extraPrice ?: q?.price) else "",
+                if (showPrice) number(q?.price) else "",
                 MarketHoliday.dailyPercent(security, q),
                 session.takeIf { extraPrice != null && !holiday },
                 extraPercent.takeIf { extraPrice != null && !holiday }, holiday)
@@ -236,8 +229,8 @@ internal object WidgetWideRenderer {
         val priceChars = (quoteDetails.maxOfOrNull { it.price.length } ?: 6).coerceAtLeast(6)
         val summaries = quoteDetails.associate { detail ->
             detail.id to titleSummary(detail.label, detail.price, detail.dayPercent,
-                config.price && !config.hideAmounts, config.titleDayPercent, detail.session,
-                tickerChars, priceChars, detail.extendedPercent, detail.holiday)
+                config.price && !config.hideAmounts, config.titleDayPercent, null,
+                tickerChars, priceChars, null, detail.holiday)
         }
         // One text size for every title keeps the monospace price/% columns aligned.
         // Account for the actual 4x2 width, the divider, and the larger logos.
@@ -246,13 +239,13 @@ internal object WidgetWideRenderer {
             WidgetTitleLayout.Density.COMPACT -> 25f
             WidgetTitleLayout.Density.ULTRA -> 22f
         }
-        val maxSp = when (plan.density) {
+        val maxSp = if (quoteDetails.any { it.extendedPercent != null } && titles.size >= 6) 9f else when (plan.density) {
             WidgetTitleLayout.Density.SPACIOUS -> 13f
             WidgetTitleLayout.Density.COMPACT -> 12f
             WidgetTitleLayout.Density.ULTRA -> 11f
         }
         val metrics = c.resources.displayMetrics
-        val roomPx = (((minWidth - 30f) * .55f - logoWidth - 3f).coerceAtLeast(60f)) *
+        val roomPx = (((minWidth - 30f) * .59f - logoWidth - 3f).coerceAtLeast(60f)) *
             metrics.density
         val measure = Paint().apply {
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
@@ -296,6 +289,12 @@ internal object WidgetWideRenderer {
             row.setTextViewTextSize(R.id.widget_row_ticker,
                 android.util.TypedValue.COMPLEX_UNIT_SP, rowTextSp)
             row.setTextViewText(R.id.widget_row_ticker, summaries[security.id] ?: label)
+            val details = quoteDetails.firstOrNull { it.id == security.id }
+            val after = details?.extendedPercent
+            row.setViewVisibility(R.id.widget_row_after, if (after != null) View.VISIBLE else View.GONE)
+            row.setTextViewText(R.id.widget_row_after, if (after == null) "" else
+                (if (details.session == MarketSession.PRE_MARKET) "☀ PRE " else "☾ AFTER ") + percent(after))
+
             row.setOnClickPendingIntent(R.id.widget_row,
                 PendingIntent.getActivity(c, id xor security.id.hashCode(),
                     Intent(c, MainActivity::class.java).putExtra("security", security.id),
@@ -333,7 +332,7 @@ internal object WidgetWideRenderer {
                 else -> ""
             })
         views.setViewVisibility(R.id.widget_footer,
-            if (plan.footer && !hidden) View.VISIBLE else View.GONE)
+            if (config.showUpdated && !hidden) View.VISIBLE else View.GONE)
         views.setOnClickPendingIntent(R.id.widget_root,
             PendingIntent.getActivity(c, id + 20000,
                 Intent(c, MainActivity::class.java).putExtra("portfolio", portfolio),
@@ -357,11 +356,8 @@ internal object WidgetWideRenderer {
                     .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         views.setOnClickPendingIntent(R.id.widget_refresh,
-            PendingIntent.getBroadcast(c, id,
-                Intent("ca.monwallet.REFRESH_WIDGET")
-                    .setComponent(info?.provider ?: ComponentName(c, Widget4x2::class.java))
-                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            WidgetLiveService.refreshIntent(c, id))
+
         return views
     }
 

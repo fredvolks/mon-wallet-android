@@ -78,6 +78,17 @@ object OfficialDomains {
         "MSFT|NASDAQ|USD|STOCK" to "microsoft.com",
         "NVDA|NASDAQ|USD|STOCK" to "nvidia.com",
         "TSM|NYSE|USD|STOCK" to "tsmc.com",
+        "SPCX|NASDAQ|USD|STOCK" to "spacex.com",
+        "MCD.TO|TSX|CAD|STOCK" to "mcdonalds.com",
+        "MA|NYSE|USD|STOCK" to "mastercard.com",
+        "V|NYSE|USD|STOCK" to "visa.com",
+        "ATD.TO|TSX|CAD|STOCK" to "corpo.couche-tard.com",
+        "TNZ.TO|TSX|CAD|STOCK" to "tenazenergy.com",
+        "AVGO|NASDAQ|USD|STOCK" to "broadcom.com",
+        "META|NASDAQ|USD|STOCK" to "meta.com",
+        "GOOG|NASDAQ|USD|STOCK" to "google.com",
+        "GOOGL|NASDAQ|USD|STOCK" to "google.com",
+        "ASML|NASDAQ|USD|STOCK" to "asml.com",
         "MCD|NYSE|USD|STOCK" to "mcdonalds.com",
         "DOL.TO|TSX|CAD|STOCK" to "dollarama.com",
         "GURU.TO|TSX|CAD|STOCK" to "guruenergy.com",
@@ -95,7 +106,18 @@ object OfficialDomains {
             "NYQ", "NYSE" -> "NYSE"
             else -> exchange.uppercase()
         }
-        return domains["${symbol.uppercase()}|$market|${currency.uppercase()}|${type.uppercase()}"]
+        val rawSymbol = symbol.uppercase()
+        if (currency.uppercase() == "CAD" && type.uppercase() == "STOCK" &&
+            market in setOf("TSX", "NEO", "NE", "CBOE", "CBOE CANADA") &&
+            rawSymbol in setOf("MCD.TO", "MCD.NE", "MCD-C", "MCDS.NE", "MCDS.TO"))
+            return "mcdonalds.com"
+        val normalizedSymbol = when {
+            market == "TSX" && currency.uppercase() == "CAD" &&
+                rawSymbol in setOf("GURU", "DOL", "BLDP", "XEQT", "VFV", "ATD", "TNZ") -> "$rawSymbol.TO"
+            market == "CSE" && currency.uppercase() == "CAD" && rawSymbol == "PHOS" -> "PHOS.CN"
+            else -> rawSymbol
+        }
+        return domains["$normalizedSymbol|$market|${currency.uppercase()}|${type.uppercase()}"]
     }
 }
 

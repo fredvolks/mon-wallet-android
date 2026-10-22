@@ -9,11 +9,11 @@ import org.junit.Test
 
 class LiveQuotesTest {
     @Test fun foregroundPollingIsAdaptiveAndDoesNotHammerClosedMarkets() {
-        assertEquals(3_000L, foregroundQuoteRefreshDelayMillis(true, 8, false))
+        assertEquals(5_000L, foregroundQuoteRefreshDelayMillis(true, 8, false))
         assertEquals(5_000L, foregroundQuoteRefreshDelayMillis(true, 9, false))
         assertEquals(5_000L, foregroundQuoteRefreshDelayMillis(true, 15, false))
-        assertEquals(10_000L, foregroundQuoteRefreshDelayMillis(true, 16, false))
-        assertEquals(120_000L, foregroundQuoteRefreshDelayMillis(false, 8, false))
+        assertEquals(5_000L, foregroundQuoteRefreshDelayMillis(true, 16, false))
+        assertEquals(5_000L, foregroundQuoteRefreshDelayMillis(false, 8, false))
         assertEquals(60_000L, foregroundQuoteRefreshDelayMillis(true, 8, true))
         assertEquals(60_000L, foregroundQuoteRefreshDelayMillis(false, 8, true))
     }

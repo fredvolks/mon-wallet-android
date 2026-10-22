@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.util.Log
 import android.util.LruCache
 import ca.monwallet.app.BuildConfig
+import ca.monwallet.app.R
 import ca.monwallet.app.domain.OfficialDomains
 import ca.monwallet.app.domain.Security
 import java.io.File
@@ -25,6 +26,24 @@ object OfficialLogoProvider : LogoProvider {
     override suspend fun load(context: Context, security: Security): Bitmap? = withContext(Dispatchers.IO) {
         val domain = OfficialDomains.forIdentity(security.symbol, security.exchange, security.currency, security.type)
             ?: return@withContext null
+        val bundled = when (domain) {
+            "ishares.com" -> R.drawable.issuer_ishares
+            "guruenergy.com" -> R.drawable.issuer_guru
+            "tsmc.com" -> R.drawable.issuer_tsmc
+            "mcdonalds.com" -> R.drawable.issuer_mcdonalds
+            "spacex.com" -> R.drawable.issuer_spacex
+            "firstphosphate.com" -> R.drawable.issuer_first_phosphate
+            else -> null
+        }
+        if (bundled != null) {
+            val key = "bundled:$bundled"
+            synchronized(memory) { memory.get(key) }?.let { return@withContext it }
+            val original = BitmapFactory.decodeResource(context.resources, bundled)
+            val bitmap = if (domain == "firstphosphate.com" && original.width > original.height)
+                Bitmap.createBitmap(original, 0, 0, original.height, original.height) else original
+            synchronized(memory) { memory.put(key, bitmap) }
+            return@withContext bitmap
+        }
         val identity = listOf(security.symbol, security.exchange, security.currency, security.type, domain)
             .joinToString("|")
         val digest = MessageDigest.getInstance("SHA-256").digest(identity.toByteArray())

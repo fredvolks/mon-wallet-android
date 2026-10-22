@@ -98,6 +98,8 @@ fun WalletApp(deepSecurity: String?, widgetPortfolio: Pair<String?, Int>?,
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             s.foregroundSecurities.collectLatest { visible ->
                 while (isActive && visible.isNotEmpty()) {
+                    // A user-visible widget session also refreshes the current app symbols.
+                    if (s.widgetLiveActive.value) { delay(5_000L); continue }
                     val attempted = s.refreshForeground(visible)
                     val quotes = s.repo.state.value.quotes
                     val active = visible.any { security ->

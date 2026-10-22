@@ -289,6 +289,16 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
                 Caption(
                     stringResource(R.string.ui_maintiens_un_espace_vide_de_lecran_daccueil_s_93dbb)
                 )
+                var liveEnabled by remember { mutableStateOf(s.secure.get("widget_live") != "false") }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("Suivi du widget aux 5 secondes", modifier = Modifier.weight(1f))
+                    Switch(liveEnabled, { enabled ->
+                        liveEnabled = enabled
+                        if (enabled) WidgetLiveService.start(context, explicit = true)
+                        else WidgetLiveService.stop(context)
+                    })
+                }
+                Caption("Écran allumé et déverrouillé seulement. Une notification permet d’arrêter le suivi. Android peut limiter la durée; ouvre l’app ou touche ↻ pour reprendre. Les prix restent soumis au délai du fournisseur.")
                 WalletWidget.ids(context).forEachIndexed { index, id ->
                     val config = WidgetSettings.load(context, id)
                     Section(stringResource(R.string.profile_widget_number, index + 1))

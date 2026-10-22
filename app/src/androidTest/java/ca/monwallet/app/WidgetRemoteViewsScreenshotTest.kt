@@ -99,16 +99,16 @@ class WidgetRemoteViewsScreenshotTest {
             val body = view.findViewById<View>(R.id.widget_body)
             val first = rows.getChildAt(0)
             val title = first.findViewById<TextView>(R.id.widget_row_ticker)
-            val x = body.left + rows.left + first.left + title.left +
-                title.paint.measureText("XEQT ").toInt()
-            val y = body.top + rows.top + first.top + title.top
-            val bounds = (x.coerceAtLeast(0) until (body.left + rows.left + first.left +
-                title.right).coerceAtMost(width))
-            val lines = (y.coerceAtLeast(0) until (y + title.height).coerceAtMost(height))
+            val rect = android.graphics.Rect()
+            title.getDrawingRect(rect)
+            (view as android.view.ViewGroup).offsetDescendantRectToMyCoords(title, rect)
+            val x = rect.left + title.paint.measureText("XEQT ").toInt()
+            val y = rect.top
+            val bounds = (x.coerceAtLeast(0) until rect.right.coerceAtMost(width))
+            val lines = (y.coerceAtLeast(0) until rect.bottom.coerceAtMost(height))
             val painted = lines.any { py -> bounds.any { px ->
                 val color = requireNotNull(screenshot).getPixel(px, py)
-                android.graphics.Color.red(color) > 100 &&
-                    android.graphics.Color.green(color) > 100
+                android.graphics.Color.red(color) > 100 && android.graphics.Color.green(color) > 100
             } }
             assertTrue("Price not painted: body ${body.width} at ${body.left}, " +
                 "rows ${rows.width} at ${rows.left}, row ${first.width} at ${first.left}, " +
