@@ -30,7 +30,7 @@
  </LinearLayout>
  <TextView android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="3dp" android:background="#26424E"/>
             <LinearLayout android:id="@+id/widget_indices"
-                android:layout_width="match_parent" android:layout_height="18dp"
+                android:layout_width="match_parent" android:layout_height="22dp"
                 android:layout_marginTop="1dp" android:orientation="horizontal"
                 android:gravity="center_vertical">
                 <LinearLayout android:id="@+id/widget_sp500_group" android:layout_width="0dp"

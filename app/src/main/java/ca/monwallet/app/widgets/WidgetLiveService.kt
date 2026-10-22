@@ -9,11 +9,15 @@ import ca.monwallet.app.*
 import ca.monwallet.app.data.Catalog
 import ca.monwallet.app.domain.heldSecurityIds
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 /** User-visible five-second widget session. No wake lock and no polling while locked. */
 class WidgetLiveService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var loop: Job? = null
+    private var historyJob: Job? = null
+    private var lastHistoryAttempt = -5 * 60_000L
     private val services get() = (application as MonWallet).services
 
     override fun onBind(intent: Intent?) = null
@@ -61,6 +65,21 @@ class WidgetLiveService : Service() {
                             services.foregroundSecurities.value + Catalog.markets.filter {
                                 it.symbol in setOf("CAD=X", "^GSPC", "^IXIC", "^DJI", "ES=F", "NQ=F", "YM=F")
                             }).distinctBy { it.id }.take(20)
+                        // Refresh genuine intraday candles separately. Never hold up the 5s quote loop.
+                        if (historyJob?.isActive != true && started - lastHistoryAttempt >= 5 * 60_000L) {
+                            lastHistoryAttempt = started
+                            historyJob = scope.launch {
+                                val gate = Semaphore(2)
+                                securities.filter { it.id in tracked }.map { security -> async {
+                                    gate.withPermit {
+                                        try { services.repo.points(security.id,
+                                            services.market.history(security, "1d", "5m"), true) }
+                                        catch (e: CancellationException) { throw e }
+                                        catch (_: Exception) { /* Retain the last complete curve. */ }
+                                    }
+                                } }.awaitAll()
+                            }
+                        }
                         services.refreshForeground(securities)
                         failed = services.marketStatus.value.startsWith("Cotation indisponible")
                         WalletWidget.render(this@WidgetLiveService, ids.toIntArray())
