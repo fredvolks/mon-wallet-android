@@ -157,21 +157,24 @@ object Notifications {
                             emit(s, AlertEvent(securityId = security.id,
                                 title = "${security.ticker} · Résultats publiés",
                                 body = earningsSummary(e), channel = "earnings",
-                                eventKey = "earnings:after:${security.id}:$date:" +
-                                    "${e.epsActual}:${e.revenueActual}"))
+                                eventKey = "earnings:after:${security.id}:$date"))
                     }
                 } catch (e: CancellationException) { throw e } catch (_: Exception) { }
             }
             if (pref.news) s.news.state.value.articles
                 .filter { n -> newsMatches(n, security, System.currentTimeMillis(), pref.enabledAt) }
-                .sortedByDescending { it.publishedAt }.take(3).forEach { n ->
+                .filter { n -> w.events.none { it.eventKey == newsEventKey(n, security.id) } }
+                .sortedByDescending { it.publishedAt }.take(5).forEach { n ->
                     emit(s, AlertEvent(securityId = security.id,
                         title = "${security.ticker} · ${n.source}",
                         body = n.analysis?.summaryFr?.takeIf { it.isNotBlank() } ?: n.title,
-                        channel = "news", eventKey = "news:${ca.monwallet.app.news.NewsRepository.canonicalUrl(n.url)}:${security.id}", sourceUrl = n.url))
+                        channel = "news", eventKey = newsEventKey(n, security.id), sourceUrl = n.url))
                 }
         }
     }
+
+    internal fun newsEventKey(article: NewsArticle, securityId: String): String =
+        "news:${ca.monwallet.app.news.NewsRepository.canonicalUrl(article.url)}:$securityId"
 
     internal fun newsMatches(n: NewsArticle, security: Security, now: Long, enabledAt: Long): Boolean =
         n.url.startsWith("https://") && n.title.isNotBlank() &&

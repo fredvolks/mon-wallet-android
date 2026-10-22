@@ -30,6 +30,8 @@ class StockMonitoringTest {
         val n = NewsArticle("n", "Apple announces quarterly results", "Issuer",
             "https://example.com/results", 100_000, listOf("AAPL"), "USA", "Yahoo")
         assertTrue(Notifications.newsMatches(n, stock, 101_000, 90_000))
+        assertEquals(Notifications.newsEventKey(n, stock.id), Notifications.newsEventKey(
+            n.copy(id = "backend-new-id", url = n.url + "?utm_source=feed"), stock.id))
         assertFalse(Notifications.newsMatches(n, stock, 101_000, 100_001))
         assertFalse(Notifications.newsMatches(n.copy(tickers = listOf("AAPL.TO")), stock, 101_000, 0))
         assertFalse(Notifications.newsMatches(n, stock, 100_000 + 25 * 3600_000L, 0))

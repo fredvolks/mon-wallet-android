@@ -223,7 +223,7 @@ class Yahoo : MarketDataProvider {
             } ?: emptyList()
 
     override suspend fun news(s: Security): List<News> {
-        val direct = searchNews(s.symbol, s.symbol, strict = false)
+        val direct = searchNews(s.symbol, s.symbol, strict = true)
         if (direct.isNotEmpty() || s.currency != "CAD" || s.name.isBlank() ||
             s.name.equals(s.symbol, ignoreCase = true)) return direct
         return searchNews(s.name, s.symbol, strict = true)
