@@ -77,6 +77,7 @@ class FinancialSourceRouter(
     private val finviz: FundamentalsProvider?,
     private val sec: FundamentalsProvider,
     private val nasdaq: FundamentalsProvider,
+    private val snapshot: FundamentalsProvider? = null,
 ) {
     suspend fun load(s: Security): Fundamentals {
         val listing = FinancialSymbolResolver.resolve(s)
@@ -85,7 +86,7 @@ class FinancialSourceRouter(
             "Financial ${listing.market} ${listing.symbol} ${listing.exchange}")
         val sources = if (listing.market == "CANADA") listOfNotNull(canada)
             else if (listing.type == "ETF") listOfNotNull(finviz)
-            else listOfNotNull(finviz, sec, nasdaq)
+            else listOfNotNull(finviz, snapshot, sec, nasdaq)
         if (sources.isEmpty()) throw NoFinancialCoverage(
             "Aucune source autorisée pour ${listing.symbol}.")
         val results = mutableListOf<Fundamentals>()
@@ -105,6 +106,9 @@ class FinancialSourceRouter(
             quarterly = results.firstOrNull { it.quarterly.isNotEmpty() }?.quarterly ?: emptyMap(),
             source = results.joinToString(" · ") { it.source },
             asOf = results.mapNotNull { it.asOf }.maxOrNull(),
+            ratiosAsOf = results.mapNotNull { it.ratiosAsOf }.maxOrNull(),
+            unavailableMetrics = results.flatMap { it.unavailableMetrics }.distinct()
+                .filter { key -> results.none { key in it.metrics } },
         )
     }
 }

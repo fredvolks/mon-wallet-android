@@ -239,6 +239,8 @@ data class Fundamentals(
     val source: String = "",
     val quarterly: Map<String, List<Pair<String, BigDecimal>>> = emptyMap(),
     val asOf: String? = null,
+    val ratiosAsOf: String? = null,
+    val unavailableMetrics: List<String> = emptyList(),
 )
 
 data class Holding(

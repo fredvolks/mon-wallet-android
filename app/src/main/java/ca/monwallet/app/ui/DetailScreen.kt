@@ -111,7 +111,7 @@ fun DetailScreen(
                     financeLoading = true
                     financeError = null
                     financeNoData = false
-                    val cached = s.repo.dao.cache().find { it.id == "financials:v2:${security.id}" }
+                    val cached = s.repo.dao.cache().find { it.id == "financials:v3:${security.id}" }
                     if (cached != null && financeRetry == 0) {
                         fundamentals = s.repo.gson.fromJson(cached.payload, Fundamentals::class.java)
                         financeFetchedAt = cached.fetchedAt
@@ -121,7 +121,7 @@ fun DetailScreen(
                             val fresh = s.market.fundamentals(security)
                             fundamentals = fresh
                             financeFetchedAt = System.currentTimeMillis()
-                            s.repo.dao.cache(Cache("financials:v2:${security.id}", "fundamentals", s.repo.gson.toJson(fresh), financeFetchedAt!!))
+                            s.repo.dao.cache(Cache("financials:v3:${security.id}", "fundamentals", s.repo.gson.toJson(fresh), financeFetchedAt!!))
                         } catch (e: CancellationException) { throw e }
                         catch (e: NoFinancialCoverage) { financeNoData = true }
                         catch (e: Exception) { financeError = e.message ?: "Service indisponible." }
@@ -209,7 +209,11 @@ fun DetailScreen(
             }
             if (showHealth) {
                 health.details.forEach { Caption(it) }
-                fundamentals?.let { Caption("${it.source} · états au ${it.asOf ?: "date non fournie"}") }
+                fundamentals?.let {
+                    Caption(it.source)
+                    it.ratiosAsOf?.let { day -> Caption("Ratios consultés le $day") }
+                    it.asOf?.let { day -> Caption("Historique des états : dernière période reçue $day") }
+                }
             }
         }
         item {
