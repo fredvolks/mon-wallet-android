@@ -1,9 +1,9 @@
 {
-  "versionCode": 2048,
-  "versionName": "0.2.48",
-  "apkUrl": "https://github.com/fredvolks/mon-wallet-android/releases/download/v0.2.48/MonWallet-v0.2.48.apk",
-  "sha256": "dd8046d087f5cfafa29fc64e3323622d875fedac23b52024b59eaf004b85b69c",
-  "releaseNotes": "Mon Wallet v0.2.48 — voir la release GitHub.",
+  "versionCode": 2049,
+  "versionName": "0.2.49",
+  "apkUrl": "https://github.com/fredvolks/mon-wallet-android/releases/download/v0.2.49/MonWallet-v0.2.49.apk",
+  "sha256": "6426ca345d3b3a5019520aa4a7e8ff5e45abf01e39bc601adf51f9d48f5fa883",
+  "releaseNotes": "Mon Wallet v0.2.49 — voir la release GitHub.",
   "mandatory": false,
   "minimumSupportedVersion": 1
 }
