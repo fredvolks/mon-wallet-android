@@ -1,0 +1,23 @@
+name: Request Mon Wallet v0.2.49 signed release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/request-monwallet-v049.yml'
+permissions:
+  actions: write
+  contents: read
+jobs:
+  request-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Request signed release from validated startup fixes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/release-apk.yml/dispatches" \
+            -f ref="fix/startup-performance-20261022" \
+            -f "inputs[release_version]=0.2.49"
