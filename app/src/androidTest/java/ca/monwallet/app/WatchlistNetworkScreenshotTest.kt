@@ -34,6 +34,11 @@ class WatchlistNetworkScreenshotTest {
         val context = instrumentation.targetContext
         val services = (context.applicationContext as MonWallet).services
         withTimeout(30_000) { services.initialized.first { it } }
+        // Own provider polling for this test: compare one real fetched snapshot,
+        // rather than racing fresh 5s quotes against older values captured below.
+        val wasLive = services.widgetLiveActive.value
+        services.widgetLiveActive.value = true
+        try {
         val list = Watchlist(name = "Séance US")
         services.repo.put("watchlist", list.id, list)
         val symbols = listOf("TSLA" to "NASDAQ", "NVDA" to "NASDAQ",
@@ -116,6 +121,7 @@ class WatchlistNetworkScreenshotTest {
             }
         }
         capture(context, "watchlist-real.png")
+        } finally { services.widgetLiveActive.value = wasLive }
         Unit
     }
 
