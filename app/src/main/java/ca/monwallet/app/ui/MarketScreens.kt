@@ -702,7 +702,7 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
     var drag by remember(item.id) { mutableFloatStateOf(0f) }
     Column(Modifier.fillMaxWidth().clickable(onClick = click)) {
         WatchlistRowGrid(columns, grid, scroll,
-            modifier = Modifier.height(if (showName) 37.dp else 29.dp),
+            modifier = Modifier.height(if (showName) 40.dp else 32.dp),
             tickerCell = {
             Row(Modifier.fillMaxWidth().pointerInput(item.id) {
                 detectDragGesturesAfterLongPress(onDragEnd = { drag = 0f },
@@ -752,23 +752,36 @@ private fun WatchLine(w: Wallet, s: Security, item: WatchItem, facts: WatchFacts
         }, menuCell = menu)
         if (extra != null && "ticker" in columns) {
             val pre = extended?.marketSession == MarketSession.PRE_MARKET
-            WatchlistRowGrid(columns, grid, scroll, Modifier.height(16.dp),
-                tickerCell = {
-                    Text(if (pre) "☀ PRE" else "☾ AFTER", fontSize = 10.sp,
-                        color = if (pre) Blue else Color(0xFFAC9CDA),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }, valueCell = { key ->
-                    when (key) {
-                        "price" -> WatchValue(number(extra),
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = .78f))
-                        "dayPercent" -> WatchValue(percent(extraPercent), tint(extraDelta))
-                        "dayAmount" -> WatchValue(signed(extraDelta, s.currency), tint(extraDelta))
-                        "period" -> WatchValue("—", Muted)
-                    }
-                })
+            val sessionColor = if (pre) Blue else Color(0xFFB6A0FF)
+            Box(Modifier.fillMaxWidth().background(sessionColor.copy(alpha = .08f))) {
+                Box(Modifier.width(2.dp).height(24.dp).background(sessionColor))
+                WatchlistRowGrid(columns, grid, scroll, Modifier.height(24.dp),
+                    tickerCell = {
+                        Text(if (pre) "☀ PRE" else "☾ AFTER",
+                            modifier = Modifier.padding(start = 6.dp)
+                                .background(sessionColor.copy(alpha = .17f),
+                                    androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 2.dp),
+                            fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                            color = sessionColor, maxLines = 1,
+                            overflow = TextOverflow.Ellipsis)
+                    }, valueCell = { key ->
+                        when (key) {
+                            "price" -> WatchValue(number(extra),
+                                MaterialTheme.colorScheme.onSurface, 10.sp, emphasized = true)
+                            "dayPercent" -> WatchValue(percent(extraPercent), tint(extraDelta),
+                                10.sp, emphasized = true)
+                            "dayAmount" -> WatchValue(signed(extraDelta, s.currency), tint(extraDelta),
+                                10.sp, emphasized = true)
+                        }
+                    })
+            }
+
         }
     }
-    HorizontalDivider(color = Border.copy(alpha = .45f))
+    Spacer(Modifier.height(4.dp))
+    HorizontalDivider(thickness = 1.dp, color = Color(0xFF344652))
+    Spacer(Modifier.height(3.dp))
 }
 
 private fun watchCell(w: Wallet, s: Security, q: Quote?, points: List<Point>, key: String,
