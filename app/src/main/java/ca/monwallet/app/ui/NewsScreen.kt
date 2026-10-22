@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ca.monwallet.app.domain.Security
 import ca.monwallet.app.domain.Wallet
+import ca.monwallet.app.domain.heldSecurityIds
 import ca.monwallet.app.news.NewsArticle
 import java.time.Instant
 import java.time.ZoneId
@@ -29,8 +30,7 @@ fun NewsScreen(wallet: Wallet, vm: WalletViewModel, onSecurity: (Security) -> Un
     var showWeak by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<NewsArticle?>(null) }
     val trackedIds = remember(wallet.transactions, wallet.items) {
-        (wallet.transactions.mapNotNull { it.securityId } +
-            wallet.items.map { it.securityId }).toSet()
+        (wallet.heldSecurityIds() + wallet.items.map { it.securityId }).toSet()
     }
     val trackedSymbols = remember(trackedIds, wallet.securities) {
         trackedIds.mapNotNull(wallet::security).map { it.symbol.uppercase() }.toSet()

@@ -7,6 +7,8 @@ import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -105,7 +107,7 @@ fun DetailScreen(
         if (tab in listOf(0, 1, 2, 3)) {
             status = null
             try {
-                if (tab == 1 && (fundamentals == null || financeRetry > 0)) {
+                if (tab in listOf(0, 1) && (fundamentals == null || financeRetry > 0)) {
                     financeLoading = true
                     financeError = null
                     financeNoData = false
@@ -148,9 +150,7 @@ fun DetailScreen(
                 }
                 if (tab == 3) news = s.market.news(security)
                 if (tab == 0) {
-                    val key = s.secure.get("finnhub_key")
-                    if (!key.isNullOrBlank() && security.type == "STOCK")
-                        earnings = Finnhub(key).earnings(security)
+                    if (security.type == "STOCK") earnings = s.earningsFor(security)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -181,11 +181,37 @@ fun DetailScreen(
         w.portfolios.filter { p ->
             w.transactions.any { it.securityId == security.id && it.portfolioId == p.id }
         }
+    val health = remember(security, fundamentals) { FinancialHealthProfile.assess(security, fundamentals) }
+    val healthColor = when (health.rating) {
+        FinancialMetricRating.FAVORABLE -> Green
+        FinancialMetricRating.WATCH -> Color(0xFFFFD166)
+        FinancialMetricRating.UNFAVORABLE -> Red
+        FinancialMetricRating.CONTEXT -> Muted
+    }
+    var showHealth by remember(security.id) { mutableStateOf(false) }
     LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = 18.dp),
+        Modifier.fillMaxSize().padding(horizontal = 12.dp)
+            .border(2.dp, healthColor, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp),
         contentPadding = PaddingValues(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { showHealth = !showHealth }, modifier = Modifier.weight(1f)) {
+                    Text(if (financeLoading && fundamentals == null) "Profil financier en cours…" else health.title,
+                        color = healthColor, fontSize = 11.sp)
+                }
+                OutlinedButton(onClick = { onNotify(security) }) {
+                    Icon(Icons.Outlined.Notifications, null, Modifier.size(16.dp))
+                    Text(" Alertes", fontSize = 11.sp)
+                }
+            }
+            if (showHealth) {
+                health.details.forEach { Caption(it) }
+                fundamentals?.let { Caption("${it.source} · états au ${it.asOf ?: "date non fournie"}") }
+            }
+        }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Logo(security)
@@ -374,6 +400,9 @@ fun DetailScreen(
                 items(earnings) { e ->
                     CardBlock {
                         Text(e.date?.let(::date) ?: "Date indisponible")
+                        Caption("Source : ${e.source}")
+                        if (e.epsActual != null || e.revenueActual != null)
+                            Caption(ca.monwallet.app.notifications.Notifications.earningsSummary(e))
                         Caption("BPA : ${number(e.epsActual)} · attendu ${number(e.epsEstimate)}")
                         Caption(
                             "Revenus : ${number(e.revenueActual,0)} · attendus ${number(e.revenueEstimate,0)}"
@@ -443,6 +472,7 @@ fun DetailScreen(
                             "Cash",
                             "Dette totale",
                             "Dette nette",
+                            "Dette / capitaux propres",
                             "Free cash flow",
                             "ROE %",
                             "ROA %",
