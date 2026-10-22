@@ -262,8 +262,8 @@ class Services(val context: Context) {
             }
         }
 
-    suspend fun refreshForeground(securities: List<Security>): Boolean {
-        if (securities.isEmpty()) return false
+    suspend fun refreshForeground(securities: List<Security>): Boolean = withContext(Dispatchers.IO) {
+        if (securities.isEmpty()) return@withContext false
         // Foreground quotes must not wait for the much heavier history/news refresh.
         // Per-security mutexes in refreshQuote prevent duplicate provider requests.
         val before = repo.state.value.quotes
@@ -300,7 +300,7 @@ class Services(val context: Context) {
             changed -> "Cours mis à jour à $checkedAt · délai non garanti"
             else -> "Cours vérifiés à $checkedAt · cotation inchangée"
         }
-        return true
+        true
     }
 
     suspend fun refresh(extra: List<Security> = emptyList(), history: Boolean = false,
