@@ -167,6 +167,7 @@ object SecFacts {
         val capex = annual("PaymentsToAcquirePropertyPlantAndEquipment")
         val cash = balance("CashAndCashEquivalentsAtCarryingValue", "CashAndCashEquivalents")
         val longDebt = balance("LongTermDebt", "LongTermDebtNoncurrent", "LongTermDebtAndFinanceLeaseObligations")
+        val equity = balance("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "Equity")
         val currentDebt = balance("LongTermDebtCurrent", "LongTermDebtAndFinanceLeaseObligationsCurrent")
         val freeCash = operating.mapNotNull { (date, value) -> capex.lastOrNull { it.first == date }?.let { date to value - it.second } }
         val metrics = linkedMapOf<String, String>()
@@ -181,6 +182,9 @@ object SecFacts {
         if (debtEnd != null && debtEnd == currentDebt.lastOrNull()?.first) {
             val debt = longDebt.last().second + currentDebt.last().second
             metrics["Dette totale"] = debt.toPlainString()
+            val capital = equity.lastOrNull()?.takeIf { it.first == debtEnd }?.second
+            if (capital != null && capital.signum() != 0)
+                metrics["Dette / capitaux propres"] = debt.divide(capital, ca.monwallet.app.domain.MC).toPlainString()
             if (cash.lastOrNull()?.first == debtEnd)
                 metrics["Dette nette"] = (debt - cash.last().second).toPlainString()
         }

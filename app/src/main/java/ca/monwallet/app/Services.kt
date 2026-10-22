@@ -245,6 +245,25 @@ class Services(val context: Context) {
         }
     }
 
+    suspend fun earningsFor(security: Security): List<Earnings> = withContext(Dispatchers.IO) {
+        val id = "earnings:v1:${security.id}"
+        val cached = repo.dao.cache().firstOrNull { it.id == id }
+        val saved = cached?.let { runCatching {
+            repo.gson.fromJson(it.payload, Array<Earnings>::class.java).toList()
+        }.getOrNull() }.orEmpty()
+        if (cached != null && System.currentTimeMillis() - cached.fetchedAt < 15 * 60_000L)
+            return@withContext saved
+        val key = secure.get("finnhub_key")
+        val fresh = try {
+            if (!key.isNullOrBlank()) Finnhub(key).earnings(security) else emptyList()
+        } catch (e: CancellationException) { throw e } catch (_: Exception) { emptyList() }
+        val result = fresh.ifEmpty { NasdaqEarnings.load(security) }
+        // Cache misses briefly too, so an uncovered listing cannot hammer providers.
+        repo.dao.cache(ca.monwallet.app.database.Cache(id, "earnings", repo.gson.toJson(result),
+            System.currentTimeMillis()))
+        result.ifEmpty { saved }
+    }
+
     suspend fun refreshQuote(security: Security): Quote =
         quoteLocks.getOrPut(security.id) { Mutex() }.withLock {
             recentQuotes[security.id]?.takeIf {

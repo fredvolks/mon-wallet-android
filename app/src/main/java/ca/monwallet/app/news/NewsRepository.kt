@@ -4,6 +4,7 @@ import ca.monwallet.app.data.Repository
 import ca.monwallet.app.database.Cache
 import ca.monwallet.app.domain.Security
 import ca.monwallet.app.domain.Wallet
+import ca.monwallet.app.domain.heldSecurityIds
 import ca.monwallet.app.marketdata.Http
 import ca.monwallet.app.marketdata.Router
 import com.google.gson.Gson
@@ -53,13 +54,13 @@ data class NewsFeedState(
     val updatedAt: Long = 0,
 )
 
-/** One cache for the app. Only backend analyses may carry an IA label or trigger a news alert. */
+/** One cache for the app. Only backend analyses may carry an IA label. Sourced headlines may notify without IA. */
 class NewsRepository(private val repo: Repository, private val market: Router,
     private val supabaseUrl: String, private val publishableKey: String) {
     val state = MutableStateFlow(NewsFeedState())
     private val mutex = Mutex()
     private val gson = Gson()
-    private val refreshInterval = 60 * 60_000L
+    private val refreshInterval = 15 * 60_000L
     private var loadedOwner: String? = null
     private var loadedSymbols: Set<String> = emptySet()
 
@@ -83,8 +84,9 @@ class NewsRepository(private val repo: Repository, private val market: Router,
     suspend fun refresh(wallet: Wallet, force: Boolean = false) = mutex.withLock {
         loadCache()
         val now = System.currentTimeMillis()
-        val securities = (wallet.transactions.mapNotNull { it.securityId } +
-            wallet.items.map { it.securityId }).distinct().mapNotNull(wallet::security).take(20)
+        val securities = (wallet.heldSecurityIds().toList() +
+            wallet.items.map { it.securityId } + wallet.notifications.filter { it.news }.map { it.securityId })
+            .distinct().mapNotNull(wallet::security).take(50)
         val symbols = securities.map { it.symbol.uppercase() }.toSet()
         if (!force && symbols == loadedSymbols && now - state.value.updatedAt < refreshInterval)
             return@withLock

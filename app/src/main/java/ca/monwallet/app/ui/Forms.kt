@@ -416,8 +416,14 @@ fun NotificationDialog(
     onClose: () -> Unit,
     onPermission: () -> Unit,
 ) {
-    var earnings by remember { mutableStateOf(true) }
-    var news by remember { mutableStateOf(false) }
+    val wallet by s.repo.state.collectAsState()
+    val saved = wallet.monitoring(security.id)
+    var earnings by remember(security.id, saved) { mutableStateOf(saved.earnings) }
+    var results by remember(security.id, saved) { mutableStateOf(saved.earningsResults ?: saved.earnings) }
+    var news by remember(security.id, saved) { mutableStateOf(saved.news) }
+    var saving by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
     val scope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = onClose,
@@ -427,35 +433,40 @@ fun NotificationDialog(
                 Text(stringResource(R.string.ui_voulez_vous_recevoir_les_notifications_liees__549ab))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(earnings, { earnings = it })
-                    Text(stringResource(R.string.ui_dates_et_resultats_earnings_2d231))
+                    Text("Rappels des résultats : veille et jour même")
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(news, { news = it })
                     Text(stringResource(R.string.ui_actualites_du_titre_bbb8c))
                 }
-                Caption(
-                    stringResource(R.string.ui_earnings_cle_finnhub_requise_les_annonces_de__d33ba)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(results, { results = it })
+                    Text("Résultats publiés et résumé chiffré")
+                }
+                Caption("Pour les titres encore détenus. Vérification périodique Android, environ 15 min; pas du temps réel garanti. Les dates et chiffres dépendent de la couverture du fournisseur.")
+                error?.let { Text(it, color = Red) }
+
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    scope.launch {
-                        val n =
-                            NotificationPreference(
-                                "notification:${security.id}",
-                                security.id,
-                                earnings,
-                                news,
-                            )
-                        s.repo.put("notification_preference", n.id, n)
-                        onPermission()
-                        onClose()
+                    if (!saving) scope.launch {
+                        saving = true
+                        try {
+                            val n = NotificationPreference("notification:${security.id}", security.id,
+                                earnings, news, results,
+                                if (!saved.news && news) System.currentTimeMillis() else saved.enabledAt)
+                            s.repo.put("notification_preference", n.id, n)
+                            if (earnings || news || results) onPermission()
+                            onClose()
+                        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                        catch (e: Exception) { error = e.message ?: "Enregistrement impossible." }
+                        finally { saving = false }
                     }
                 }
             ) {
-                Text(stringResource(R.string.ui_activer_b96fa))
+                Text(if (saving) "Enregistrement…" else "Enregistrer")
             }
         },
         dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.ui_pas_maintenant_cf96b)) } },

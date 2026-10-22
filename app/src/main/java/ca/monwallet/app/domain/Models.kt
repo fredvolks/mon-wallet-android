@@ -147,6 +147,8 @@ data class NotificationPreference(
     val securityId: String,
     val earnings: Boolean = true,
     val news: Boolean = false,
+    val earningsResults: Boolean? = null,
+    val enabledAt: Long = 0L,
 )
 
 data class AlertEvent(
@@ -213,6 +215,7 @@ data class Earnings(
     val epsActual: BigDecimal?,
     val revenueEstimate: BigDecimal?,
     val revenueActual: BigDecimal?,
+    val source: String = "Finnhub",
 )
 
 data class Analyst(

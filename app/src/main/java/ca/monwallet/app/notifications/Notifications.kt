@@ -14,6 +14,8 @@ import ca.monwallet.app.marketdata.Finnhub
 import ca.monwallet.app.news.NewsArticle
 import java.net.URI
 import java.time.LocalDate
+import java.time.ZoneId
+import kotlinx.coroutines.CancellationException
 
 object Notifications {
     val categories =
@@ -63,6 +65,8 @@ object Notifications {
                 "contrat signé|acquisition complétée)\\b", RegexOption.IGNORE_CASE)
                 .containsMatchIn(article.title)
 
+    private val evaluationMutex = kotlinx.coroutines.sync.Mutex()
+
     private suspend fun emit(s: Services, event: AlertEvent) {
         val w = s.repo.current()
         if (w.events.any { it.eventKey == event.eventKey }) return
@@ -91,6 +95,11 @@ object Notifications {
     }
 
     suspend fun evaluate(s: Services) {
+        if (!evaluationMutex.tryLock()) return
+        try { evaluateLocked(s) } finally { evaluationMutex.unlock() }
+    }
+
+    private suspend fun evaluateLocked(s: Services) {
         val w = s.repo.current()
         for (a in w.alerts.filter { it.enabled && it.triggered == null }) {
             val q = w.quotes[a.securityId] ?: continue
@@ -128,69 +137,61 @@ object Notifications {
                 )
             }
         }
-        val last = s.secure.get("events_checked")?.toLongOrNull() ?: 0
-        if (System.currentTimeMillis() - last < 3600_000) return
-        s.secure.put("events_checked", System.currentTimeMillis().toString())
-        for (pref in w.notifications) {
-            val security = w.security(pref.securityId) ?: continue
-            if (pref.earnings) {
-                val key = s.secure.get("finnhub_key")
-                if (!key.isNullOrBlank())
-                    runCatching {
-                        for (e in Finnhub(key).earnings(security)) {
-                            val date = e.date ?: continue
-                            if (date == LocalDate.now().plusDays(1).toString())
-                                emit(
-                                    s,
-                                    AlertEvent(
-                                        securityId = security.id,
-                                        title = "${security.ticker} · Earnings demain",
-                                        body =
-                                            "BPA attendu : ${e.epsEstimate?:"—"}\nRevenus attendus : ${e.revenueEstimate?:"—"}",
-                                        channel = "earnings",
-                                        eventKey = "earnings:before:${security.id}:$date",
-                                    ),
-                                )
-                            if (e.epsActual != null || e.revenueActual != null)
-                                emit(
-                                    s,
-                                    AlertEvent(
-                                        securityId = security.id,
-                                        title = "${security.ticker} · Résultats publiés",
-                                        body =
-                                            "BPA : ${e.epsActual?:"—"} vs ${e.epsEstimate?:"—"}\nRevenus : ${e.revenueActual?:"—"} vs ${e.revenueEstimate?:"—"}",
-                                        channel = "earnings",
-                                        eventKey = "earnings:after:${security.id}:$date",
-                                    ),
-                                )
-                        }
+        val today = LocalDate.now(ZoneId.of("America/Toronto"))
+        for (securityId in w.heldSecurityIds()) {
+            val pref = w.monitoring(securityId)
+            val security = w.security(securityId) ?: continue
+            if (pref.earnings || (pref.earningsResults ?: pref.earnings)) {
+                try {
+                    for (e in s.earningsFor(security)) {
+                        val date = runCatching { LocalDate.parse(e.date) }.getOrNull() ?: continue
+                        val published = e.epsActual != null || e.revenueActual != null
+                        if (pref.earnings && !published && date in listOf(today, today.plusDays(1)))
+                            emit(s, AlertEvent(securityId = security.id,
+                                title = "${security.ticker} · Résultats ${if (date == today) "aujourd’hui" else "demain"}",
+                                body = "Date annoncée : $date. BPA prévu : ${e.epsEstimate ?: "indisponible"}. " +
+                                    "La date peut être révisée par la société.", channel = "earnings",
+                                eventKey = "earnings:before:${security.id}:$date:$today"))
+                        if ((pref.earningsResults ?: pref.earnings) && published &&
+                            !date.isAfter(today) && !date.isBefore(today.minusDays(2)))
+                            emit(s, AlertEvent(securityId = security.id,
+                                title = "${security.ticker} · Résultats publiés",
+                                body = earningsSummary(e), channel = "earnings",
+                                eventKey = "earnings:after:${security.id}:$date:" +
+                                    "${e.epsActual}:${e.revenueActual}"))
                     }
+                } catch (e: CancellationException) { throw e } catch (_: Exception) { }
             }
-            if (pref.news)
-                s.news.state.value.articles
-                    .filter { n ->
-                        val analysis = n.analysis
-                        val analyzed = analysis != null && analysis.notificationWorthy &&
-                            analysis.importance in setOf("HIGH", "CRITICAL")
-                        val sourced = importantCanadianDisclosure(n)
-                        (analyzed || sourced) &&
-                            n.tickers.any { it.equals(security.symbol, ignoreCase = true) } &&
-                            System.currentTimeMillis() - n.publishedAt in
-                                0L..(if (sourced) 6L * 3600_000 else 48L * 3600_000)
-                    }
-                    .forEach { n ->
-                        emit(
-                            s,
-                            AlertEvent(
-                                securityId = security.id,
-                                title = "${security.ticker} · ${n.analysis?.importance ?: "Actualité"} · ${n.source}",
-                                body = n.analysis?.summaryFr?.takeIf { it.isNotBlank() } ?: n.title,
-                                channel = "news",
-                                eventKey = "news:${n.id}:${security.id}",
-                                sourceUrl = n.url,
-                            ),
-                        )
-                    }
+            if (pref.news) s.news.state.value.articles
+                .filter { n -> newsMatches(n, security, System.currentTimeMillis(), pref.enabledAt) }
+                .sortedByDescending { it.publishedAt }.take(3).forEach { n ->
+                    emit(s, AlertEvent(securityId = security.id,
+                        title = "${security.ticker} · ${n.source}",
+                        body = n.analysis?.summaryFr?.takeIf { it.isNotBlank() } ?: n.title,
+                        channel = "news", eventKey = "news:${ca.monwallet.app.news.NewsRepository.canonicalUrl(n.url)}:${security.id}", sourceUrl = n.url))
+                }
         }
+    }
+
+    internal fun newsMatches(n: NewsArticle, security: Security, now: Long, enabledAt: Long): Boolean =
+        n.url.startsWith("https://") && n.title.isNotBlank() &&
+            n.tickers.any { it.equals(security.symbol, ignoreCase = true) } &&
+            now - n.publishedAt in 0L..24L * 3600_000 && n.publishedAt >= enabledAt
+
+    internal fun earningsSummary(e: Earnings): String {
+        fun comparison(actual: java.math.BigDecimal?, estimate: java.math.BigDecimal?): String {
+            if (actual == null) return "non disponible"
+            val text = actual.stripTrailingZeros().toPlainString()
+            if (estimate == null) return "$text · consensus indisponible"
+            val direction = when (actual.compareTo(estimate)) {
+                1 -> "au-dessus du consensus"
+                -1 -> "sous le consensus"
+                else -> "conforme au consensus"
+            }
+            return "$text vs ${estimate.stripTrailingZeros().toPlainString()} · $direction"
+        }
+        return "Publication : ${e.date}\nBPA : ${comparison(e.epsActual, e.epsEstimate)}\n" +
+            "Revenus : ${comparison(e.revenueActual, e.revenueEstimate)}\n" +
+            "Source : ${e.source}. Résumé chiffré; les données peuvent être complétées après publication."
     }
 }
