@@ -553,7 +553,7 @@ class Router(private val settings: SecureSettings) : MarketDataProvider {
             ?.let { LicensedFundamentalsProvider(it, "Canada") },
         finviz = BuildConfig.FINVIZ_FINANCIALS_URL.takeIf { it.isNotBlank() }
             ?.let { LicensedFundamentalsProvider(it, "Finviz Elite") },
-        sec = sec, nasdaq = nasdaqSummary,
+        sec = sec, nasdaq = nasdaqSummary, snapshot = FinvizSnapshotProvider(),
     )
 
     private fun provider(): MarketDataProvider =

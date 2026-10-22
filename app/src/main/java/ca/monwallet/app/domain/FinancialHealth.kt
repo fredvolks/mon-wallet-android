@@ -15,9 +15,11 @@ object FinancialHealthProfile {
         val pe = num("P/E")
         val debt = num("Dette / capitaux propres")
         val cap = num("Capitalisation (M)")
-        val details = listOf("P/E : ${pe ?: "indisponible"} · seuil 27",
+        val peLabel = pe?.toPlainString() ?: if (fundamentals?.unavailableMetrics?.contains("P/E") == true)
+            "non fourni par la source" else "indisponible"
+        val details = listOf("P/E : $peLabel · seuil 27",
             "Dette / capitaux propres : ${debt ?: "indisponible"} · seuil 2",
-            "Capitalisation : ${cap ?: "indisponible"} M · seuil 1 000 M dans la devise du titre")
+            "Capitalisation : ${cap?.divide(BigDecimal(1000), 2, java.math.RoundingMode.HALF_UP)?.toPlainString() ?: "indisponible"} G ${security.currency} · seuil 1 G")
         val income = num("Bénéfice net")
         val adverse = (pe != null && pe <= ZERO) || (debt != null && (debt < ZERO || debt > BigDecimal("2"))) ||
             (income != null && income < ZERO)
