@@ -53,6 +53,29 @@ class RepositoryTest {
         assertTrue(wallet.prices.isEmpty())
     }
 
+    @Test fun nullCacheFieldsAndNullHistoryEntriesDoNotAbortStartup() {
+        val caches = listOf(
+            ca.monwallet.app.database.Cache("bad", "quote", "{}", 1),
+            ca.monwallet.app.database.Cache("missing-price", "quote",
+                """{"securityId":"missing-price"}""", 1),
+            ca.monwallet.app.database.Cache("history:s", "history",
+                """[null,{}, {"securityId":"s","date":"2026-10-01","close":10,"timestamp":1}]""", 1),
+        )
+        val wallet = repo.decode(emptyList(), caches)
+        assertTrue(wallet.quotes.isEmpty())
+        assertEquals(listOf("2026-10-01"), wallet.prices.map { it.date })
+    }
+
+    @Test fun historyCacheIsReusedUntilPayloadChanges() {
+        fun row(close: Int) = ca.monwallet.app.database.Cache("history:s", "history",
+            """[{"securityId":"s","date":"2026-10-01","close":$close,"timestamp":1}]""", 1)
+        val first = repo.decode(emptyList(), listOf(row(10))).prices.single()
+        val second = repo.decode(emptyList(), listOf(row(10))).prices.single()
+        assertSame(first, second)
+        assertEquals("11".dec(), repo.decode(emptyList(), listOf(row(11))).prices.single().close)
+        assertTrue(repo.decode(emptyList(), emptyList()).prices.isEmpty())
+    }
+
     @Test fun freshGuestStartsEmpty() = runBlocking {
         assertTrue(repo.current().portfolios.isEmpty())
         assertTrue(repo.current().watchlists.isEmpty())

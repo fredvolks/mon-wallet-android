@@ -28,6 +28,9 @@ class Repository(val db: Database, val scope: CoroutineScope) {
     fun observeQuotes(securityIds: Set<String>): Flow<Map<String, Quote>> = state
         .map { wallet -> wallet.quotes.filterKeys { it in securityIds } }.distinctUntilChanged()
 
+    private val decodedHistories = mutableMapOf<String, Pair<String, List<Point>>>()
+
+    @Synchronized
     fun decode(records: List<Record>, cache: List<Cache>): Wallet {
         val alive = records.filter { it.deletedAt == null }
         // Room data and synced payloads can outlive app versions. A malformed row must not
@@ -47,22 +50,39 @@ class Repository(val db: Database, val scope: CoroutineScope) {
                         }
                 }
                 .toList()
-        val quotes =
-            cache.asSequence().filter { it.kind == "quote" }.mapNotNull { row ->
-                runCatching { gson.fromJson(row.payload, Quote::class.java) }
-                    .getOrNull()
-                    ?.takeIf { it.securityId.isNotBlank() && it.securityId == row.id }
-            }.toList()
-        val points =
-            cache.asSequence().filter { it.kind == "history" }.flatMap { row ->
-                runCatching { gson.fromJson(row.payload, Array<Point>::class.java).toList() }
-                    .getOrDefault(emptyList())
-                    .asSequence()
-                    .filter { point ->
-                        point.securityId.isNotBlank() &&
-                            runCatching { java.time.LocalDate.parse(point.date) }.isSuccess
-                    }
-            }.toList()
+        val quotes = cache.asSequence().filter { it.kind == "quote" }.mapNotNull { row ->
+            // Gson can produce null fields despite Kotlin non-null declarations.
+            // Validation belongs inside the recovery boundary as well as parsing.
+            runCatching {
+                gson.fromJson(row.payload, Quote::class.java)?.takeIf {
+                    it.securityId.isNotBlank() && it.securityId == row.id &&
+                        it.price.signum() >= 0 && it.currency.isNotBlank() &&
+                        it.source.isNotBlank() &&
+                        java.time.LocalDate.parse(it.sessionDate) != null
+                }
+            }.getOrNull()
+        }.toList()
+        val historyRows = cache.filter { it.kind == "history" }
+        decodedHistories.keys.retainAll(historyRows.map { it.id }.toSet())
+        val points = historyRows.flatMap { row ->
+            // Live quotes invalidate Room's cache query. Reuse unchanged histories
+            // instead of allocating and parsing years of JSON on each quote tick.
+            decodedHistories[row.id]?.takeIf { it.first == row.payload }?.second ?: run {
+                val parsed = runCatching {
+                    gson.fromJson(row.payload, Array<Point?>::class.java)?.mapNotNull { point ->
+                        runCatching {
+                            point?.takeIf {
+                                it.securityId.isNotBlank() && row.id == "history:${it.securityId}" &&
+                                    it.close.signum() >= 0 &&
+                                    java.time.LocalDate.parse(it.date) != null
+                            }
+                        }.getOrNull()
+                    }.orEmpty()
+                }.getOrDefault(emptyList())
+                decodedHistories[row.id] = row.payload to parsed
+                parsed
+            }
+        }
         return Wallet(
             rows("portfolio", Portfolio::class.java),
             (Catalog.all + rows("security", Security::class.java))
@@ -82,7 +102,9 @@ class Repository(val db: Database, val scope: CoroutineScope) {
         )
     }
 
-    suspend fun current() = decode(dao.records(owner.value), dao.cache())
+    suspend fun current() = withContext(Dispatchers.IO) {
+        decode(dao.records(owner.value), dao.cache())
+    }
 
     private suspend fun raw(kind: String, id: String, value: Any) {
         val old = dao.get(id, owner.value)
