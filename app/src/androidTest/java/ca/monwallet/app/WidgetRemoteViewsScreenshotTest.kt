@@ -33,12 +33,14 @@ class WidgetRemoteViewsScreenshotTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val portfolio = Portfolio(name = "Disnat")
-        val tickers = listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "DOL").take(count)
+        val tickers = listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "SPCX").take(count)
         val amounts = listOf("46.20", "485.80", "2.80", "2.06", "19.55", "184.33")
         val changes = listOf("0.54", "3.01", "-2.96", "-2.83", "0.31", "0.85")
         val securities = tickers.mapIndexed { index, ticker ->
-            Security.of(ticker, ticker, if (index == 1 || index == 4) "NYSE" else "TSX",
-                if (index == 1 || index == 4) "USD" else "CAD")
+            val symbol = listOf("XEQT.TO", "TSM", "GURU.TO", "PHOS.CN", "MCD.TO", "SPCX")[index]
+            val exchange = when (index) { 1 -> "NYSE"; 3 -> "CSE"; 5 -> "NASDAQ"; else -> "TSX" }
+            Security.of(symbol, ticker, exchange, if (index in setOf(1, 5)) "USD" else "CAD",
+                if (index == 0) "ETF" else "STOCK")
         }
         val holdings = securities.mapIndexed { index, security ->
             Holding(security.id, ONE, BigDecimal("100"), BigDecimal("100"), ZERO, ZERO,
@@ -50,7 +52,10 @@ class WidgetRemoteViewsScreenshotTest {
                 security.id to Quote(security.id, BigDecimal(amounts[index]),
                     BigDecimal(amounts[index]).divide(BigDecimal.ONE.add(
                         BigDecimal(changes[index]).divide(BigDecimal("100"))), MathContext.DECIMAL128),
-                    security.currency, now, LocalDate.now().toString(), "exemple visuel")
+                    security.currency, now, LocalDate.now().toString(), "exemple visuel",
+                    afterHoursPrice = if (index in setOf(1, 5)) BigDecimal(amounts[index]) + BigDecimal("0.50") else null,
+                    afterHoursTimestamp = if (index in setOf(1, 5)) now else null,
+                    marketSession = if (index in setOf(1, 5)) "AFTER_HOURS" else "CLOSED")
             }.toMap())
         val result = Result(holdings, BigDecimal("9300"), ZERO, BigDecimal("9348.36"),
             ZERO, ZERO, BigDecimal("48.36"), BigDecimal("6535.135"))
