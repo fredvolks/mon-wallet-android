@@ -55,10 +55,9 @@ class ReportsScreenshotTest {
             transactions = transactions, prices = prices)
         val history = ReportEngine.history(wallet, p.id)
         val now = LocalDateTime.parse("2026-10-23T08:06:00").atZone(MarketClock.zone).toInstant().toEpochMilli()
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, ReportsTestActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        ActivityScenario.launch<MainActivity>(intent).use { scenario ->
-            scenario.onActivity { activity -> activity.setContent {
+        ReportsTestActivity.content = {
                 WalletTheme {
                     Scaffold(topBar = { TopAppBar(title = { Text("Rapports") },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Night)) },
@@ -76,10 +75,19 @@ class ReportsScreenshotTest {
                         }
                     }
                 }
-            } }
+        }
+        ActivityScenario.launch<ReportsTestActivity>(intent).use { scenario ->
             val device = UiDevice.getInstance(instrumentation)
-            fun shown(text: String) = assertTrue("Missing UI: $text",
-                device.wait(Until.hasObject(By.textContains(text)), 15_000))
+            fun shown(text: String) {
+                val visible = device.wait(Until.hasObject(By.textContains(text)), 15_000)
+                if (!visible) {
+                    capture(context, "reports-diagnostic.png")
+                    val hierarchy = java.io.ByteArrayOutputStream()
+                    device.dumpWindowHierarchy(hierarchy)
+                    android.util.Log.e("ReportsScreenTest", hierarchy.toString(Charsets.UTF_8.name()))
+                }
+                assertTrue("Missing UI: $text", visible)
+            }
             shown("Mon wallet par jour")
             shown("348,36") // French-Canada grouping is a non-breaking space.
             capture(context, "reports-summary.png")
