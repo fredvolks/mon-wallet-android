@@ -24,6 +24,10 @@ class StockSearchTest {
         assertTrue(SecuritySearch.rank("no-such-company-zzzz", rows).isEmpty())
         val shareClass = Security.of("BRK.B", "Berkshire Class B", "NYSE", "USD")
         assertEquals("BRK.B", SecuritySearch.rank("BRK.B", rows + shareClass).first().ticker)
+        val canonical = shareClass.copy(symbol = "BRK-B")
+        assertEquals("BRK-B", SecuritySearch.rank("BRK.B", listOf(canonical)).single().symbol)
+        assertEquals(listOf("BBD.B.TO", "BBD.B"), SecuritySearch.remoteQueries("BBD.B"))
+        assertEquals(listOf("AAPL"), SecuritySearch.remoteQueries("NASDAQ:AAPL"))
         val match = SecuritySearch.rank("TSX:VFV", rows)
         assertTrue(match.all { it.exchange.uppercase() in setOf("TSX", "TOR", "TORONTO") })
     }

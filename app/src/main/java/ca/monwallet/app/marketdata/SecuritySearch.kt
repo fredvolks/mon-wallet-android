@@ -26,8 +26,10 @@ object SecuritySearch {
     fun remoteQueries(query: String): List<String> {
         val q = normalized(query).replace(Regex("^(TSX|NASDAQ|NYSE)[: ]+"), "").replace(Regex(" (TSX|NASDAQ|NYSE)$"), "")
         val alias = aliases.entries.firstOrNull { (_, values) -> values.any { normalized(it) == q } }?.key
-        val exactCanadian = if (q.matches(Regex("[A-Z]{1,5}"))) "$q.TO" else null
-        return listOfNotNull(alias ?: exactCanadian, query.trim()).distinct().take(2)
+        val explicitUs = normalized(query).let { it.startsWith("NYSE:") || it.startsWith("NASDAQ:") || it.endsWith(" NYSE") || it.endsWith(" NASDAQ") }
+        val exactCanadian = if (!explicitUs && q.matches(Regex("[A-Z][A-Z0-9.-]{0,8}")) &&
+            listOf(".TO", ".NE", ".CN", ".V").none { q.endsWith(it) }) "$q.TO" else null
+        return listOfNotNull(alias ?: exactCanadian, q).distinct().take(2)
     }
     fun rank(query: String, candidates: List<Security>): List<Security> {
         val raw = normalized(query)
@@ -54,7 +56,9 @@ object SecuritySearch {
             val bonus = if (s.currency == "CAD" && s.exchange.uppercase() in setOf("TSX", "TOR", "TORONTO")) 50 else 0
             val base = when {
                 symbol == q -> 12000
+                symbol.replace('-', '.') == q.replace('-', '.') -> 11900
                 ticker == q -> 11000
+                ticker.replace('-', '.') == q.replace('-', '.') -> 10900
                 aliases[symbol].orEmpty().any { normalized(it) == q } -> 10500
                 names.any { it == q } -> 10000
                 symbol.startsWith(q) -> 8000
