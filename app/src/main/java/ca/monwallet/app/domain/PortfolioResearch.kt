@@ -18,14 +18,14 @@ object PortfolioResearch {
     fun sector(raw: String?): String? = raw?.trim()?.takeIf { it.isNotBlank() && it !in setOf("-", "Non déterminé", "Unknown") }?.let {
         when (it.lowercase()) {
             "information technology", "technology", "technologie" -> "Technologie"
-            "financials", "financial services", "services financiers" -> "Services financiers"
+            "financials", "financial services", "services financiers", "finance" -> "Services financiers"
             "health care", "healthcare", "santé" -> "Santé"
-            "consumer discretionary", "consumer cyclical", "consommation cyclique" -> "Consommation cyclique"
-            "consumer staples", "consumer defensive", "consommation défensive" -> "Consommation défensive"
+            "consumer discretionary", "consumer cyclical", "consommation cyclique", "consommation discrétionnaire" -> "Consommation cyclique"
+            "consumer staples", "consumer defensive", "consommation défensive", "consommation de base" -> "Consommation défensive"
             "energy", "énergie" -> "Énergie"
             "materials", "basic materials", "matériaux" -> "Matériaux"
             "industrials", "industrie" -> "Industrie"
-            "communication services", "communication" -> "Communication"
+            "communication services", "communication", "communications" -> "Communication"
             "utilities", "services publics" -> "Services publics"
             "real estate", "immobilier" -> "Immobilier"
             "cash and/or derivatives", "cash", "liquidités", "cash equivalents" -> "Liquidités / dérivés"
@@ -51,42 +51,29 @@ object PortfolioResearch {
     private fun lines(values: Map<String, BigDecimal>, total: BigDecimal) = values.map { (key, value) ->
         ExposureLine(key, value, value.pct(total) ?: ZERO) }.sortedByDescending { it.value }
     fun build(result: Result, securities: List<Security>, funds: Map<String, EtfDetails> = emptyMap()): PortfolioExposure {
-        val total = result.value?.takeIf { it >= ZERO }
-        if (total == null) return PortfolioExposure(null, emptyList(), emptyList(), emptyList(), ZERO, ZERO, result.cash,
-            listOf("Valeur totale indisponible : cours, taux FX ou historique à compléter."))
-        val sectors = mutableMapOf<String, BigDecimal>(); val countries = mutableMapOf<String, BigDecimal>()
-        val currencies = mutableMapOf<String, BigDecimal>(); val notes = mutableListOf<String>()
-        var unknownSector = ZERO; var unknownCountry = ZERO
-        fun add(map: MutableMap<String, BigDecimal>, key: String, value: BigDecimal) { map[key] = (map[key] ?: ZERO) + value }
-        result.holdings.filter { it.quantity > ZERO }.forEach { h ->
-            val s = securities.find { it.id == h.securityId }?.let(::classified)
-            val value = h.value ?: return@forEach
-            add(currencies, s?.currency ?: "Inconnue", value)
-            if (s?.type?.uppercase() == "ETF") {
-                val fund = funds[s.id]
-                val sw = fundWeights(fund, true); val cw = fundWeights(fund, false)
-                sw.forEach { (label, weight) -> add(sectors, label, value * weight / BigDecimal("100")) }
-                cw.forEach { (label, weight) -> add(countries, label, value * weight / BigDecimal("100")) }
-                unknownSector += value * (BigDecimal("100") - sw.values.fold(ZERO, BigDecimal::add)) / BigDecimal("100")
-                unknownCountry += value * (BigDecimal("100") - cw.values.fold(ZERO, BigDecimal::add)) / BigDecimal("100")
-                notes += s.ticker + " : " + (fund?.issuer ?: "composition indisponible") +
-                    " · " + (fund?.underlying?.asOf ?: fund?.sectorExposure?.asOf ?: "date non fournie") +
-                    (fund?.compositionNote?.let { " · " + it } ?: "")
-            } else {
-                val label = sector(s?.sector)
-                if (label == null) unknownSector += value else add(sectors, label, value)
-                val country = s?.country?.takeIf { it.isNotBlank() && it != "-" }
-                if (country == null) unknownCountry += value else add(countries, country, value)
-            }
-        }
-        if (result.cash > ZERO) {
-            add(sectors, "Liquidités", result.cash); add(countries, "Liquidités", result.cash)
-            add(currencies, "Liquidités en CAD (valeur comptable)", result.cash)
-        }
-        if (unknownSector > ZERO) add(sectors, "Non déterminé", unknownSector)
-        if (unknownCountry > ZERO) add(countries, "Non déterminé", unknownCountry)
-        return PortfolioExposure(total, lines(sectors, total), lines(countries, total), lines(currencies, total),
-            unknownSector, unknownCountry, result.cash, notes)
+        if (result.value?.compareTo(ZERO) == 0 && result.holdings.all { it.quantity == ZERO || it.value?.compareTo(ZERO) == 0 } && result.cash == ZERO)
+            return PortfolioExposure(ZERO, emptyList(), emptyList(), emptyList(), ZERO, ZERO, ZERO, listOf("Portefeuille vide : simule un premier apport."))
+        val fundData = funds.mapValues { (_, f) -> ExposureData(
+            f.sectorExposure?.weights ?: f.underlying?.weights(true)?.toMap().orEmpty(),
+            f.countryExposure?.weights ?: f.underlying?.weights(false)?.toMap().orEmpty(),
+            f.sourceUrl, f.underlying?.asOf ?: f.sectorExposure?.asOf ?: f.direct.asOf) }
+        val report = PortfolioBalance.analyze(result, securities.associate { it.id to classified(it) }, fundData)
+        val notes = report.warnings + funds.map { (id, f) ->
+            (securities.find { it.id == id }?.ticker ?: id) + " : " + f.issuer + " · " +
+                (f.underlying?.asOf ?: f.sectorExposure?.asOf ?: f.direct.asOf) +
+                (f.compositionNote?.let { " · " + it } ?: "") }
+        val currency = mutableMapOf<String, BigDecimal>()
+        result.holdings.filter { it.quantity > ZERO }.forEach { h -> h.value?.let { value ->
+            val key = securities.find { it.id == h.securityId }?.currency ?: "Inconnue"
+            currency[key] = (currency[key] ?: ZERO) + value
+        } }
+        if (result.cash > ZERO) currency["Liquidités en CAD (valeur comptable)"] = result.cash
+        fun convert(rows: List<AllocationSlice>) = rows.map { ExposureLine(
+            sector(it.label) ?: it.label, it.value, it.weight) }
+        return PortfolioExposure(report.total, convert(report.sectors),
+            report.countries.map { ExposureLine(it.label, it.value, it.weight) },
+            report.total?.let { lines(currency, it) } ?: emptyList(),
+            report.unknownSector, report.unknownCountry, report.cash, notes)
     }
     fun simulate(before: PortfolioExposure, security: Security, quote: Quote?, budget: BigDecimal,
         fromCash: Boolean, fx: BigDecimal?, fund: EtfDetails? = null): PurchaseImpact? {

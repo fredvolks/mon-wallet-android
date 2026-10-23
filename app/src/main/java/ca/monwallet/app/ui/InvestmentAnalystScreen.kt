@@ -29,6 +29,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     val research = remember(s) { InvestmentResearch(s) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("portfolio_analyst", 0) }
     var tab by remember { mutableIntStateOf(if (initial == null) 0 else 1) }
     var memberId by remember { mutableStateOf<String?>(null) }
     var all by remember { mutableStateOf(false) }
@@ -39,7 +40,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     var country by remember { mutableStateOf("Canada") }
     var horizon by remember { mutableStateOf("3 à 5 ans") }
     var risk by remember { mutableStateOf("Modéré") }
-    var threshold by remember { mutableFloatStateOf(35f) }
+    var threshold by remember { mutableFloatStateOf((prefs.getString("sector_cap", "35")?.toFloatOrNull() ?: 35f).coerceIn(10f, 70f)) }
     var fromCash by remember { mutableStateOf(false) }
     var question by remember { mutableStateOf("") }
     var pack by remember { mutableStateOf<ResearchPack?>(null) }
@@ -57,6 +58,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         pack = null; answer = null; error = null; loading = false; asking = false
         research.cached(cacheKey)?.let { pack = it.pack; answer = it.answer; fromCash = it.pack.fromCash }
     }
+    LaunchedEffect(threshold) { prefs.edit().putString("sector_cap", threshold.toInt().toString()).apply() }
     DisposableEffect(Unit) { onDispose { job?.cancel() } }
     FullDialog("Analyste IA", onClose) {
         CardBlock {
