@@ -61,6 +61,9 @@ open class MonWallet : Application() {
 }
 
 /** Fetch far enough back to include an edited or backdated purchase. */
+internal fun mergeReportHistory(cached: List<Point>, fresh: List<Point>): List<Point> =
+    (fresh + cached).distinctBy { it.date }.sortedBy { it.date }
+
 internal fun reportHistoryRefreshDue(force: Boolean, lastSuccessfulRefresh: Long?, nowMillis: Long): Boolean =
     force || lastSuccessfulRefresh == null ||
         nowMillis - lastSuccessfulRefresh >= 6 * 60 * 60_000L ||
@@ -179,7 +182,7 @@ class Services(val context: Context) {
                     try {
                         try {
                             val fresh = market.history(security, range, "1d")
-                            points = (fresh + points).distinctBy { it.date }.sortedBy { it.date }
+                            points = mergeReportHistory(points, fresh)
                         } catch (cancelled: CancellationException) {
                             throw cancelled
                         } catch (error: Exception) {
@@ -191,7 +194,7 @@ class Services(val context: Context) {
                             if (fallback != null) {
                                 try {
                                     val retry = market.history(security, fallback, "1d")
-                                    points = (retry + points).distinctBy { it.date }.sortedBy { it.date }
+                                    points = mergeReportHistory(points, retry)
                                     covered = reportHistoryHasCoverage(points, firstNeeded, today)
                                     if (covered) failure = null
                                 } catch (cancelled: CancellationException) {
@@ -209,7 +212,7 @@ class Services(val context: Context) {
                                 // truncated history for an individual symbol such as BABA.
                                 val yahooPoints = Yahoo().historyBetween(
                                     security, firstNeeded.minusDays(7), today)
-                                points = (yahooPoints + points).distinctBy { it.date }.sortedBy { it.date }
+                                points = mergeReportHistory(points, yahooPoints)
                                 covered = !requiredForReports ||
                                     reportHistoryHasCoverage(points, firstNeeded, today)
                                 if (covered) failure = null
