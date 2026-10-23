@@ -27,6 +27,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -53,13 +58,18 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     }
     val status by vm.services.reportHistoryStatus.collectAsState()
     var loading by remember { mutableStateOf(false) }
-    LaunchedEffect(selected, w.transactions) {
-        loading = true
-        try { vm.services.refreshReportHistory(selected) }
-        catch (cancelled: CancellationException) { throw cancelled }
-        catch (error: Exception) { vm.services.reportHistoryStatus.value =
-            "Historique indisponible : ${error.message ?: "erreur inconnue"}" }
-        finally { loading = false }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(selected, w.transactions, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                try { vm.services.refreshReportHistory(selected) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (error: Exception) { vm.services.reportHistoryStatus.value =
+                    "Historique indisponible : ${error.message ?: "erreur inconnue"}" }
+                finally { loading = false }
+                delay(60_000)
+            }
+        }
     }
     ReportsDashboard(w, snapshots, selected, loading, status,
         onPortfolio = { id -> selected = id
