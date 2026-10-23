@@ -31,6 +31,13 @@ class StockSearchTest {
         val match = SecuritySearch.rank("TSX:VFV", rows)
         assertTrue(match.all { it.exchange.uppercase() in setOf("TSX", "TOR", "TORONTO") })
     }
+    @Test fun cachedTickerOnlyNameDoesNotSuppressProviderCompanyName() {
+        val cached = Security.of("CNR.TO", "CNR.TO", "TSX", "CAD").copy(id = "existing-user-id")
+        val remote = cached.copy(id = "provider-id", name = "Canadian National Railway", exchange = "Toronto")
+        val hit = SecuritySearch.rank("Canadian National", listOf(cached, remote)).single()
+        assertEquals("existing-user-id", hit.id)
+        assertEquals("Canadian National Railway", hit.name)
+    }
     @Test fun duplicatesAreCanonicalButSeparateListingsAndCurrenciesSurvive() {
         val cad = Security.of("RY.TO", "Royal Bank", "TSX", "CAD")
         val duplicate = cad.copy(id = "remote", exchange = "Toronto")

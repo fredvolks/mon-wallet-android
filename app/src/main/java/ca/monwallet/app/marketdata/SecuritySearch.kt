@@ -74,7 +74,13 @@ object SecuritySearch {
             }
             return if (base > 0) base + bonus else 0
         }
-        return candidates.distinctBy(::identity).map { it to score(it) }.filter { it.second > 0 }
+        return candidates.groupBy(::identity).values.map { listing ->
+            // A cached ticker-only name must not hide a richer catalog/provider name.
+            // Preserve the user's security ID and market while merging searchable names.
+            val base = listing.first()
+            val named = listing.firstOrNull { normalized(it.name) !in setOf(normalized(it.symbol), normalized(it.ticker)) }
+            base.copy(name = named?.name ?: base.name) to listing.maxOf(::score)
+        }.filter { it.second > 0 }
             .sortedWith(compareByDescending<Pair<Security, Int>> { it.second }.thenBy { it.first.symbol })
             .map { it.first }
     }

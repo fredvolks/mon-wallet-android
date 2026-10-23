@@ -272,8 +272,8 @@ class Discovery(private val s: Services) {
         onRows: (List<DiscoveryRow>) -> Unit, onProgress: (String) -> Unit): List<DiscoveryRow> {
         // Prefer sector-tagged entries from the curated free universe over untagged catalog duplicates.
         val partial = java.util.Collections.synchronizedList(mutableListOf<DiscoveryRow>())
-        val candidates = (SectorUniverse.stocks + Catalog.stocks + s.repo.current().securities)
-            .distinctBy { it.id }.filter { selectionEligible(it, f) }
+        val candidates = SecuritySearch.rank("", SectorUniverse.stocks + Catalog.stocks + s.repo.current().securities)
+            .filter { selectionEligible(it, f) }
         val gate = Semaphore(2)
         val completed = java.util.concurrent.atomic.AtomicInteger()
         val failures = java.util.concurrent.atomic.AtomicInteger()
