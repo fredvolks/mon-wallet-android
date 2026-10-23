@@ -29,11 +29,14 @@ class PortfolioResearchTest {
     @Test fun newMoneyAndExistingCashProduceDifferentSectorWeightsAndPreserveTotal() {
         val stock = Security("s", "MSFT", "Microsoft", "NASDAQ", "CAD", sector = "Technology")
         val e = PortfolioResearch.build(result(listOf(holding("s", "500")), "500"), listOf(stock))
+        eq("500", e.sectors.single { it.label == "Liquidités" }.value)
         val contributed = PortfolioResearch.simulate(e, stock, q("s", "100"), "500".dec(), false, null)!!
         eq("1500", contributed.after.total); eq("5", contributed.quantity); eq("500", contributed.after.cash)
         val existing = PortfolioResearch.simulate(e, stock, q("s", "100"), "500".dec(), true, null)!!
         eq("1000", existing.after.total); eq("0", existing.after.cash)
         eq("100", existing.after.sectors.single { it.label == "Technologie" }.percent)
+        assertTrue(existing.after.sectors.all { it.value >= ZERO })
+        eq("0", existing.after.sectors.single { it.label == "Liquidités" }.value)
         assertNull(PortfolioResearch.simulate(e, stock, q("s", "100"), "501".dec(), true, null))
     }
     @Test fun usdNeedsVerifiedFxAndWholeShareRemainderStaysCash() {

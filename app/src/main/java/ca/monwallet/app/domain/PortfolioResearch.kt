@@ -83,7 +83,7 @@ object PortfolioResearch {
         } }
         if (result.cash > ZERO) currency["Liquidités en CAD (valeur comptable)"] = result.cash
         fun convert(rows: List<AllocationSlice>) = rows.map { ExposureLine(
-            sector(it.label) ?: it.label, it.value, it.weight) }
+            if (it.label == "Liquidités") "Liquidités" else sector(it.label) ?: it.label, it.value, it.weight) }
         return PortfolioExposure(report.total, convert(report.sectors),
             report.countries.groupBy { country(it.label) ?: "Non déterminé" }.map { (label, rows) ->
                 val value = rows.fold(ZERO) { n, row -> n + row.value }; ExposureLine(label, value, report.total?.let { value.pct(it) } ?: ZERO) }.sortedByDescending { it.value },
