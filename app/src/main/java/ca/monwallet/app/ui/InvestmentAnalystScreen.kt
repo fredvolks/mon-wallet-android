@@ -91,7 +91,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         Caption("Seuil personnel d’alerte, pas une allocation optimale universelle.")
         Button(enabled = !loading && !asking && (tab != 1 || selected != null), modifier = Modifier.fillMaxWidth(),
             onClick = {
-                val amount = budgetText.toBigDecimalOrNull()
+                val amount = budgetText.replace(',', '.').toBigDecimalOrNull()
                 if (tab != 0 && (amount == null || amount <= ZERO)) error = "Entre un budget positif en CAD."
                 else {
                     job?.cancel()
@@ -115,7 +115,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         error?.let { CardBlock { Text(it, color = Blue); Caption("Le dossier chiffré reste disponible. Aucun avis IA n’est fabriqué en cas d’erreur.") } }
         pack?.let { p ->
             Caption("Dossier du " + analystDate(p.createdAt) + " · actualise après un achat, une vente ou un changement de budget.")
-            val budgetChanged = p.budget.compareTo(budgetText.toBigDecimalOrNull() ?: ZERO) != 0
+            val budgetChanged = p.budget.compareTo(budgetText.replace(',', '.').toBigDecimalOrNull() ?: ZERO) != 0
             val stockChanged = tab == 1 && p.stocks.firstOrNull()?.security?.id != selected?.id
             val settingsChanged = p.threshold != threshold.toInt() || p.horizon != horizon || p.risk != risk || (tab == 2 && p.country != country)
             val outdated = System.currentTimeMillis() - p.createdAt > 6 * 3600_000L
@@ -126,7 +126,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
             if (p.positions.isNotEmpty()) CardBlock {
                 Text("Positions détenues", fontWeight = FontWeight.Bold)
                 p.positions.sortedByDescending { it.valueCad }.take(15).forEach { position ->
-                    Metric(position.symbol, money(position.valueCad) + " · " + percent(position.valueCad?.let { v -> p.exposure.total?.let { v.pct(it) } }))
+                    Metric(position.symbol, money(position.valueCad) + " · " + exposurePercent(position.valueCad?.let { v -> p.exposure.total?.let { v.pct(it) } }))
                     Caption(number(position.quantity, 6) + " part(s) · " + position.currency)
                 }
             }
@@ -142,7 +142,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
             p.stocks.forEach { row ->
                 InvestmentStockCard(row)
                 val impact = PortfolioResearch.simulate(p.exposure, row.security, row.quote,
-                    budgetText.toBigDecimalOrNull() ?: ZERO, fromCash,
+                    budgetText.replace(',', '.').toBigDecimalOrNull() ?: ZERO, fromCash,
                     p.fxRate,
                     p.funds[row.security.id])
                 if (tab != 0) CardBlock {
@@ -154,7 +154,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                         Metric("Montant estimé · CAD", money(impact.spent))
                         impact.after.sectors.filter { it.label !in setOf("Liquidités", "Non déterminé") }.take(4).forEach { line ->
                             val before = p.exposure.sectors.find { it.label == line.label }?.percent ?: ZERO
-                            Metric(line.label, percent(before) + " → " + percent(line.percent))
+                            Metric(line.label, exposurePercent(before) + " → " + exposurePercent(line.percent))
                         }
                         Caption("Sans frais. " + if (fromCash) "Total inchangé; achat payé avec l’encaisse." else "Nouveaux fonds ajoutés au total; le solde non investi reste en liquidités.")
                     }
@@ -181,7 +181,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                 status = "Dossier copié. Tu peux le coller dans ChatGPT."; android.widget.Toast.makeText(context, status, android.widget.Toast.LENGTH_LONG).show()
             }, modifier = Modifier.fillMaxWidth()) { Text("Copier le dossier pour ChatGPT") }
             answer?.let { a -> CardBlock {
-                Text(a.verdict, fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Green)
+                Text(a.verdict, fontSize = 23.sp, fontWeight = FontWeight.Bold, color = when (a.verdict) { "Éviter" -> Red; "Attendre" -> Color(0xFFFFC45D); "Données insuffisantes" -> Muted; else -> Green })
                 Text(a.summary)
                 Text("Raisons", fontWeight = FontWeight.Bold); a.reasons.forEach { Text("• " + it) }
                 Text("Risques", fontWeight = FontWeight.Bold); a.risks.forEach { Text("• " + it) }
@@ -199,6 +199,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     }
     if (search) SearchDialog(s, wallet, { search = false }) { selected = it; search = false }
 }
+private fun exposurePercent(value: BigDecimal?) = value?.let { number(it) + " %" } ?: "—"
 private fun analystDate(timestamp: Long) = Instant.ofEpochMilli(timestamp).atZone(MarketClock.zone)
     .format(DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm", Locale.CANADA_FRENCH))
 
@@ -207,10 +208,10 @@ internal fun InvestmentBalanceCard(exposure: PortfolioExposure, threshold: Int) 
     CardBlock {
         Text("Équilibre du portefeuille", fontSize = 21.sp, fontWeight = FontWeight.Bold)
         Metric("Valeur totale · CAD", money(exposure.total))
-        Metric("Secteurs identifiés", percent(exposure.sectorCoverage))
+        Metric("Secteurs identifiés", exposurePercent(exposure.sectorCoverage))
         Metric("Liquidités · CAD", money(exposure.cash))
         exposure.sectors.forEach { line ->
-            Metric(line.label, percent(line.percent) + " · " + money(line.value),
+            Metric(line.label, exposurePercent(line.percent) + " · " + money(line.value),
                 if (line.percent > BigDecimal(threshold) && line.label !in setOf("Non déterminé", "Liquidités")) Blue else Color.White)
             LinearProgressIndicator(progress = { (line.percent.toFloat() / 100f).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(4.dp))
@@ -218,7 +219,7 @@ internal fun InvestmentBalanceCard(exposure: PortfolioExposure, threshold: Int) 
         val concentrated = exposure.sectors.filter { it.percent > BigDecimal(threshold) && it.label !in setOf("Non déterminé", "Liquidités") }
         concentrated.forEach { Caption(it.label + " dépasse ton seuil d’alerte de " + threshold + " %.") }
         if (exposure.unknownSector > ZERO) Caption("La part non déterminée reste dans le total : aucune extrapolation à partir des seuls secteurs connus.")
-        if (exposure.countries.isNotEmpty()) { Text("Pays / domicile", fontWeight = FontWeight.Bold); exposure.countries.take(8).forEach { Metric(it.label, percent(it.percent)) } }
+        if (exposure.countries.isNotEmpty()) { Text("Pays / domicile", fontWeight = FontWeight.Bold); exposure.countries.take(8).forEach { Metric(it.label, exposurePercent(it.percent)) } }
         if (exposure.currencies.isNotEmpty()) { Text("Devises de cotation", fontWeight = FontWeight.Bold); exposure.currencies.forEach { Metric(it.label, percent(it.percent)) } }
         exposure.notes.forEach { Caption(it) }
     }
