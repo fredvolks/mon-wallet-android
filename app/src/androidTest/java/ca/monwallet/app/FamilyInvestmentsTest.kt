@@ -43,7 +43,7 @@ class FamilyInvestmentsTest {
             withTimeout(10_000) { services.repo.state.first { it.transactions.size == 2 && it.memberName("jacob") == "Jacob" } }
             ReportsTestActivity.content = { WalletTheme { FamilyDialog(services, p.id, {}) } }
             val intent = Intent(context, ReportsTestActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            ActivityScenario.launch<ReportsTestActivity>(intent).use {
+            ActivityScenario.launch<ReportsTestActivity>(intent).use { scenario ->
                 val device = UiDevice.getInstance(instrumentation)
                 fun clearLauncher() {
                     if (device.hasObject(By.text("Quickstep isn't responding")))
@@ -72,7 +72,7 @@ class FamilyInvestmentsTest {
                 assertTrue(fields[0].text.contains("3"))
                 fields[0].text = "5"
                 fields[1].text = "48"
-                device.pressBack()
+                scenario.onActivity { activity -> activity.window.insetsController?.hide(android.view.WindowInsets.Type.ime()) }
                 find("Vendre des parts").click()
                 assertTrue(device.wait(Until.hasObject(By.text("Enregistrer quand même")), 10_000))
                 capture(context, "reports-family-warning.png")

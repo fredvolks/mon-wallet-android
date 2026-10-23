@@ -1,3 +1,11 @@
+# 0.2.65 — Famille et comparaison depuis la vente
+
+- Transactions attribuées à un membre; suivi des dépôts, parts, liquidités, rendement et historique.
+- Vente par membre avec quantité disponible, Tout vendre et confirmation si l’historique est incomplet.
+- Ventes incomplètes conservées sans coût inventé, puis recalculées après ajout des achats manquants.
+- Rapport Si tu l’avais gardé : variation en CAD et pourcentage depuis le produit net de la vente.
+- Attribution modifiable sur les transactions existantes et membre inclus dans les CSV.
+
 ## 0.2.63 — Screener, couverture FNB et recherche
 - Screener avec cartes et tableau, filtres de revenu, rendement de dividende minimum/maximum, fréquence observée, croissance annuelle et ratio de distribution selon couverture.
 - Résultats progressifs, recherche locale des résultats, stratégies rapides et groupes de critères repliables.

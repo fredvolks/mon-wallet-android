@@ -826,6 +826,9 @@ fun HistoryScreen(w: Wallet, onEdit: (Transaction) -> Unit, onDelete: (String) -
                         }
                     }
                 }
+                Caption("Pour : " + w.memberName(t.memberId))
+                if (runCatching { FamilyLedger.resolve(w.transactions).pending.any { it.id == t.id } }.getOrDefault(false))
+                    Caption("Profit et quantités : à compléter")
                 if (t.note.isNotBlank()) Caption(t.note, Modifier.padding(top = 5.dp))
             }
             HorizontalDivider(color = Border)

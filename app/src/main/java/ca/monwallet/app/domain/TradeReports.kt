@@ -155,26 +155,28 @@ object ReportCsv {
         fun portfolio(id: String) = text(wallet.portfolios.find { it.id == id }?.name ?: id)
         fun symbol(id: String?) = text(wallet.security(id)?.symbol.orEmpty())
         val tx = wallet.transactions.filter { portfolioId == null || it.portfolioId == portfolioId }
+        val pendingIds = FamilyLedger.resolve(tx).pending.map { it.id }.toSet()
         val lines = when (kind) {
             ReportExportKind.TRANSACTIONS -> listOf(listOf("id", "date", "titre", "operation",
                 "quantite", "prix_unitaire", "devise", "frais", "taux_fx", "date_fx", "montant_net_cad",
-                "portefeuille", "note")) + tx.filter { period.contains(it.date) }.sortedWith(
+                "portefeuille", "note", "membre", "calcul")) + tx.filter { period.contains(it.date) }.sortedWith(
                 compareBy<Transaction> { it.date }.thenBy { it.createdAt }.thenBy { it.id }).map {
                     listOf(text(it.id), it.date, symbol(it.securityId), it.type.name,
                         it.quantity, it.price, text(it.currency), it.fees, it.fxRate, it.fxDate,
-                        it.cad, portfolio(it.portfolioId), text(it.note))
+                        it.cad, portfolio(it.portfolioId), text(it.note), text(wallet.memberName(it.memberId)),
+                        if (it.id in pendingIds) "À compléter" else "Comptabilisé")
                 }
             ReportExportKind.CLOSED_TRADES -> listOf(listOf("vente_id", "titre", "portefeuille",
                 "premier_achat", "dernier_achat", "date_vente", "quantite_vendue", "achat_moyen",
                 "prix_vente", "devise", "cout_cad", "produit_net_cad", "profit_net_cad",
                 "profit_net_pct", "frais_alloues_cad", "jours_depuis_premier_achat",
-                "quantite_restante_apres_vente", "statut")) +
+                "quantite_restante_apres_vente", "statut", "membre")) +
                 TradeReports.sales(tx).filter { period.contains(it.saleDate) }.map {
                     listOf(text(it.saleId), symbol(it.securityId), portfolio(it.portfolioId),
                         it.firstBuyDate, it.lastBuyDate, it.saleDate, it.quantity, it.averageBuyPrice,
                         it.salePrice, text(it.currency), it.costCad, it.proceedsCad, it.pnl, it.percent,
                         it.allocatedFeesCad, it.days, it.remaining,
-                        if (it.closed) "Clôturée" else "Vente partielle")
+                        if (it.closed) "Clôturée" else "Vente partielle", text(wallet.memberName(tx.find { t -> t.id == it.saleId }?.memberId)))
                 }
             ReportExportKind.DAILY_WALLET -> {
                 val heldIds = tx.mapNotNull { it.securityId }.toSet()
