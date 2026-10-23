@@ -103,7 +103,7 @@ internal fun FamilyDialog(s: Services, portfolioId: String?, onClose: () -> Unit
         if (entries.isEmpty()) Caption("Aucune transaction pour ce membre.")
         val sorted = FamilyLedger.ordered(entries).asReversed()
         sorted.take(if (showAllTransactions) sorted.size else 20).forEach { t ->
-            OutlinedButton(onClick = { edit = t }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+            OutlinedButton(onClick = { initialSecurity = null; edit = t }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
                 Column(Modifier.fillMaxWidth()) {
                     Text(wallet.memberName(t.memberId) + " · " + transactionLabel(t.type) + " · " + (wallet.security(t.securityId)?.ticker ?: "Liquidités"))
                     Text(date(t.date) + " · " + money(t.cad))

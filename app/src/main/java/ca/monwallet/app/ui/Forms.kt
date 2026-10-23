@@ -134,7 +134,7 @@ fun TransactionDialog(
 ) {
     val checkAmounts = stringResource(R.string.check_amounts)
     val familyWallet by s.repo.state.collectAsState()
-    var memberId by remember { mutableStateOf(edit?.memberId ?: initialMemberId) }
+    var memberId by remember { mutableStateOf(if (edit != null) edit.memberId else initialMemberId) }
     var addMember by remember { mutableStateOf(false) }
     var pendingSale by remember { mutableStateOf<Transaction?>(null) }
     var security by remember { mutableStateOf(initial ?: w.security(edit?.securityId)) }
