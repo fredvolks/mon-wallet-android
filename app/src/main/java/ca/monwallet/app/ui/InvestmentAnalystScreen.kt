@@ -438,7 +438,6 @@ private fun AnalystTitleHeader(row: ResearchStock, pack: ResearchPack, budget: B
             Text("Budget restant", Modifier.weight(1f), fontSize = 13.sp, color = Muted)
             Text(money(purchase?.let { budget - it.second }), color = Green, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         }
-        Caption("Estimation sans frais · cours du " + (row.quote?.let { analystDate(it.timestamp) } ?: "—"))
     }
 }
 
