@@ -121,7 +121,7 @@ internal object WidgetWideRenderer {
         }
         views.setTextViewText(R.id.widget_day,
             if (hidden) c.getString(R.string.widget_locked) else if (currentDay || result?.day == null)
-                c.getString(R.string.widget_today) else "Dernière séance")
+                c.getString(R.string.widget_today) else c.getString(R.string.widget_today))
         views.setViewVisibility(R.id.widget_day,
             if (config.showDailyLabel) View.VISIBLE else View.GONE)
         val unavailable = result?.day == null && result?.dayPercent == null && !hidden
@@ -175,6 +175,20 @@ internal object WidgetWideRenderer {
             AppWidgetManager.getInstance(c).getAppWidgetOptions(id), 250 to 150)
         val minWidth = size.first
         val minHeight = size.second
+        if (showAmount) {
+            val amountText = signed(result?.day)
+            val desiredSp = if (config.dailyHero) 26f else 22f
+            val paint = Paint().apply {
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textSize = desiredSp * c.resources.displayMetrics.scaledDensity
+            }
+            val availablePx = ((minWidth - 30f) * .34f - 6f).coerceAtLeast(40f) *
+                c.resources.displayMetrics.density
+            val fittedSp = (desiredSp * availablePx / paint.measureText(amountText).coerceAtLeast(1f))
+                .coerceIn(12f, desiredSp)
+            views.setTextViewTextSize(R.id.widget_amount,
+                android.util.TypedValue.COMPLEX_UNIT_SP, fittedSp)
+        }
         val ordered = if (hidden || result == null) emptyList() else config.titles(result)
         val plan = WidgetTitleLayout.plan(config, "4x2", minHeight, ordered.size)
         // Reserve a separate chart area below the figures; never paint over money.
@@ -218,9 +232,10 @@ internal object WidgetWideRenderer {
                 else -> null
             }
             val showPrice = config.price && !config.hideAmounts
+            val dailyQuote = q?.let { ca.monwallet.app.domain.CivilDayPnl.dailyQuote(it, security, quoteNow) }
             TitleQuote(security.id, if (config.ticker) security.ticker else security.name,
-                if (showPrice) number(q?.price) else "",
-                MarketHoliday.dailyPercent(security, q),
+                if (showPrice) number(dailyQuote?.price) else "",
+                MarketHoliday.dailyPercent(security, dailyQuote, quoteNow),
                 session.takeIf { extraPrice != null },
                 extraPercent.takeIf { extraPrice != null }, holiday)
         }

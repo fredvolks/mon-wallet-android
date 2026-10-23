@@ -277,7 +277,9 @@ class Services(val context: Context) {
                 val changed = previous == null ||
                     previous.copy(fetchedAt = fresh.fetchedAt) != fresh
                 val refreshAge = previous?.let { fresh.fetchedAt - it.fetchedAt } ?: Long.MAX_VALUE
-                if (changed || refreshAge >= 60_000L) repo.quote(fresh)
+                if (changed || refreshAge >= 60_000L ||
+                    repo.state.value.quotes[security.id]?.dayReferenceDate !=
+                        CivilDayPnl.date(System.currentTimeMillis())) repo.quote(fresh)
                 recentQuotes[security.id] = fresh
             }
         }

@@ -28,6 +28,7 @@ import ca.monwallet.app.marketdata.NormalizedQuote
 import ca.monwallet.app.marketdata.MarketSession
 import ca.monwallet.app.marketdata.quoteFreshnessLabel
 import kotlinx.coroutines.*
+import androidx.lifecycle.repeatOnLifecycle
 
 @Composable
 fun DetailScreen(
@@ -43,6 +44,7 @@ fun DetailScreen(
 ) {
     val s = vm.services
     val context = LocalContext.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val q = w.quotes[security.id]
     var tab by remember { mutableIntStateOf(0) }
     var range by remember { mutableIntStateOf(2) }
@@ -101,6 +103,19 @@ fun DetailScreen(
                 else "Historique en cache · actualisation temporairement indisponible"
         } finally {
             loading = false
+        }
+    }
+    LaunchedEffect(security.id, range, lifecycleOwner) {
+        if (range == 0) lifecycleOwner.lifecycle.repeatOnLifecycle(
+            androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (isActive) {
+                delay(60_000L)
+                try {
+                    val fresh = s.market.history(security, "1d", "1m")
+                    if (fresh.isNotEmpty()) { prices = fresh; pricesRange = 0 }
+                } catch (e: CancellationException) { throw e }
+                catch (_: Exception) { /* Retain real cached bars; quotes refresh independently. */ }
+            }
         }
     }
     LaunchedEffect(security.id, tab, financeRetry, analystRetry) {

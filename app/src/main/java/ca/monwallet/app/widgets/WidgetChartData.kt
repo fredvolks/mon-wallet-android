@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import ca.monwallet.app.domain.Engine
+import ca.monwallet.app.domain.CivilDayPnl
 import ca.monwallet.app.domain.MarketHoliday
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Wallet
@@ -53,21 +54,25 @@ internal object WidgetChartData {
             .filter { it.quantity > ZERO && it.securityId !in excluded }
             .map { it.securityId }.toSet()
         if (held.isEmpty()) return emptyList()
-        val session = wallet.quotes.values.filter { it.securityId in held }
-            .minOfOrNull { it.sessionDate } ?: return emptyList()
+        val now = System.currentTimeMillis()
+        val session = CivilDayPnl.date(now)
         val points = cached.filter { it.securityId in held && it.date == session }
         val times = points.map { it.timestamp }.distinct().sorted()
         val bySecurity = points.groupBy { it.securityId }
             .mapValues { (_, series) -> series.sortedBy { it.timestamp } }
         val fx = wallet.securities.find { it.symbol == "CAD=X" }
         return times.mapNotNull { timestamp ->
-            val quotes = wallet.quotes.toMutableMap()
+            val quotes = wallet.quotes.mapValues { (id, quote) ->
+                CivilDayPnl.dailyQuote(quote, wallet.security(id), now)
+            }.toMutableMap()
             if (held.any { it !in quotes }) return@mapNotNull null
             for (securityId in held) {
                 val point = bySecurity[securityId]?.lastOrNull { it.timestamp <= timestamp }
-                    ?: return@mapNotNull null
-                quotes[securityId] = quotes.getValue(securityId)
-                    .copy(price = point.close, timestamp = point.timestamp)
+                val quote = quotes.getValue(securityId)
+                // Other holdings retain their actual day reference until their first bar.
+                quotes[securityId] = if (point != null)
+                    quote.copy(price = point.close, timestamp = point.timestamp)
+                    else quote.copy(price = quote.previous ?: return@mapNotNull null)
             }
             // Keep the existing FX quote; no inferred exchange rate is introduced.
             runCatching { Engine.calculate(tx, quotes, fx?.let { quotes[it.id] }, excluded).day?.toFloat() }

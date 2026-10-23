@@ -132,7 +132,8 @@ class Yahoo : MarketDataProvider {
     }
 
     override suspend fun history(s: Security, range: String, interval: String): List<Point> =
-        historyPoints(s, chart(s, range, interval))
+        historyPoints(s, chart(s, range, interval,
+            includePrePost = supportsUsExtendedHours(s) && interval !in setOf("1d", "1wk", "1mo")))
 
     /** Exact Unix date bounds avoid truncated range-based chart responses for report backfills. */
     suspend fun historyBetween(s: Security, first: LocalDate, last: LocalDate): List<Point> {
@@ -333,7 +334,13 @@ internal object YahooQuoteMapper {
             return listOfNotNull(metaPrint, barPrint).maxByOrNull { it.timestamp }
         }
         val pre = marketPrint("PRE_MARKET", preWindow)
-        val post = marketPrint("AFTER_HOURS", postWindow)
+        val latest = if (extendedEligible) latestChartPrint(c) else null
+        val overnight = latest?.takeIf {
+            it.timestamp <= now && it.timestamp * 1000 > time &&
+                NormalizedQuote.retainsAfterHours(it.timestamp * 1000, now * 1000)
+        }
+        val post = listOfNotNull(marketPrint("AFTER_HOURS", postWindow), overnight)
+            .filter { it.timestamp <= now }.maxByOrNull { it.timestamp }
         val regular = futurePrint?.price ?: m.number("regularMarketPrice") ?: error("Prix absent.")
         // A provider's change fields refer to its own price. Never attach them to a
         // different, newer chart candle.

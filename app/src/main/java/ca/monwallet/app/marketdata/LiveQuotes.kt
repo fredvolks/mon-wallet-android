@@ -66,11 +66,14 @@ data class NormalizedQuote(
         fun retainsAfterHours(timestamp: Long?, now: Long): Boolean {
             if (timestamp == null || timestamp > now) return false
             val print = Instant.ofEpochMilli(timestamp).atZone(newYork)
-            if (print.toLocalTime() < LocalTime.of(16, 0) ||
-                print.toLocalTime() >= LocalTime.of(20, 0)) return false
-            if (print.dayOfWeek in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) ||
-                MarketHoliday.isHoliday(usCalendar, print.toLocalDate())) return false
-            var next = print.toLocalDate().plusDays(1)
+            if (print.toLocalTime() >= LocalTime.of(4, 0) &&
+                print.toLocalTime() < LocalTime.of(16, 0)) return false
+            val overnightMorning = print.toLocalTime() < LocalTime.of(4, 0)
+            if (print.dayOfWeek == DayOfWeek.SATURDAY ||
+                (print.dayOfWeek == DayOfWeek.SUNDAY && !(!overnightMorning &&
+                    print.toLocalTime() >= LocalTime.of(20, 0)))) return false
+            if (!overnightMorning && MarketHoliday.isHoliday(usCalendar, print.toLocalDate())) return false
+            var next = if (overnightMorning) print.toLocalDate() else print.toLocalDate().plusDays(1)
             while (next.dayOfWeek in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) ||
                 MarketHoliday.isHoliday(usCalendar, next)) next = next.plusDays(1)
             return now < next.atTime(9, 30).atZone(newYork).toInstant().toEpochMilli()
@@ -108,6 +111,12 @@ data class NormalizedQuote(
                     Instant.ofEpochMilli(now).atZone(newYork).toLocalDate()
             } == true
             val session = when {
+                active == MarketSession.PRE_MARKET && q.preMarketPrice != null &&
+                    q.preMarketTimestamp?.let {
+                        Instant.ofEpochMilli(it).atZone(newYork).toLocalDate() ==
+                            Instant.ofEpochMilli(now).atZone(newYork).toLocalDate() &&
+                            it <= now && it > (q.afterHoursTimestamp ?: Long.MIN_VALUE)
+                    } == true -> MarketSession.PRE_MARKET
                 q.afterHoursPrice != null && retainsAfterHours(q.afterHoursTimestamp, now) ->
                     MarketSession.AFTER_HOURS
                 providerSession in setOf(MarketSession.PRE_MARKET, MarketSession.AFTER_HOURS) &&

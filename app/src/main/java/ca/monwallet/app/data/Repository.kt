@@ -213,7 +213,7 @@ class Repository(val db: Database, val scope: CoroutineScope) {
             ca.monwallet.app.marketdata.NormalizedQuote.retainPreviousAfterHours(
                 q, previous, System.currentTimeMillis())
         }.getOrDefault(q)
-        dao.cache(Cache(q.securityId, "quote", gson.toJson(retained), q.fetchedAt))
+        dao.cache(Cache(q.securityId, "quote", gson.toJson(CivilDayPnl.capture(retained, previous, System.currentTimeMillis())), q.fetchedAt))
     }
 
     suspend fun points(id: String, points: List<Point>, intraday: Boolean = false) {

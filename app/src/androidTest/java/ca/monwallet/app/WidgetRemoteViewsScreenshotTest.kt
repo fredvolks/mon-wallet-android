@@ -106,8 +106,11 @@ class WidgetRemoteViewsScreenshotTest {
                     commonTextSize, text.textSize, 0.1f)
                 assertTrue("Missing title ${tickers[index]} in ${text.text}",
                     text.text.contains(tickers[index]))
+                val visiblePrice = if (index in setOf(1, 5))
+                    BigDecimal(amounts[index]).add(BigDecimal("0.50"))
+                        .setScale(2).toPlainString() else amounts[index]
                 assertTrue("Missing price in ${text.text}",
-                    text.text.contains(amounts[index].replace('.', ',')))
+                    text.text.contains(visiblePrice.replace('.', ',')))
                 assertTrue("Missing day percent in ${text.text}", text.text.contains("%"))
                 assertTrue("Row $index clipped: ${text.text}, width ${text.width}, " +
                     "painted ${text.paint.measureText(text.text.toString())}",

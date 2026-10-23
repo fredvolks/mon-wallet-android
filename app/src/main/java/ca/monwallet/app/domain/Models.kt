@@ -210,6 +210,9 @@ data class Quote(
     val preMarketChangePercent: BigDecimal? = null,
     val afterHoursChange: BigDecimal? = null,
     val afterHoursChangePercent: BigDecimal? = null,
+    val dayReferenceDate: String? = null,
+    val dayReferencePrice: BigDecimal? = null,
+    val dayReferenceTimestamp: Long? = null,
 ) {
     val change
         get() = previous?.let { price - it }
@@ -369,7 +372,19 @@ data class Wallet(
                 }
             )
         }
-        if (settings["portfolio_extended"] == "REGULAR") return regular
+        val civilQuotes = datedQuotes.mapValues { (id, quote) ->
+            CivilDayPnl.dailyQuote(quote, security(id), now)
+        }
+        val civil = Engine.calculate(entries, civilQuotes,
+            securities.find { it.symbol == "CAD=X" }?.let { civilQuotes[it.id] }, holidayIds)
+        fun Result.withCivilDay(): Result {
+            val byId = civil.holdings.associateBy { it.securityId }
+            return copy(day = civil.day, dayBase = civil.dayBase, holdings = holdings.map { holding ->
+                holding.copy(day = if (holding.securityId in holidayIds) ZERO else byId[holding.securityId]?.day,
+                    dayBase = byId[holding.securityId]?.dayBase)
+            })
+        }
+        if (settings["portfolio_extended"] == "REGULAR") return regular.withCivilDay()
         val adjusted = datedQuotes.mapValues { (securityId, quote) ->
             val normalized = securities.find { it.id == securityId }
                 ?.takeIf { supportsUsExtendedHours(it) }
@@ -382,15 +397,8 @@ data class Wallet(
             if (extended != null && quote.currency == "USD") quote.copy(price = extended)
             else quote
         }
-        if (adjusted == datedQuotes) return regular
+        if (adjusted == datedQuotes) return regular.withCivilDay()
         val estimated = Engine.calculate(entries, adjusted, usd, holidayIds)
-        val byId = regular.holdings.associateBy { it.securityId }
-        // Today's P&L retains the regular-session reference; only valuation uses
-        // extended hours, and only when the provider supplied a current quote.
-        return estimated.copy(day = regular.day, dayBase = regular.dayBase,
-            holdings = estimated.holdings.map { holding ->
-                holding.copy(day = byId[holding.securityId]?.day,
-                    dayBase = byId[holding.securityId]?.dayBase)
-            })
+        return estimated.withCivilDay()
     }
 }
