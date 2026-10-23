@@ -300,20 +300,37 @@ internal object WidgetWideRenderer {
             row.setTextViewTextSize(R.id.widget_row_ticker,
                 android.util.TypedValue.COMPLEX_UNIT_SP, rowTextSp)
             val detail = quoteDetails.firstOrNull { it.id == security.id }
-            row.setTextViewText(R.id.widget_row_ticker, if (detail == null) label else
+            val line = if (detail == null) SpannableStringBuilder(label) else
                 titleSummary(detail.label, detail.price, detail.dayPercent,
                     config.price && !config.hideAmounts, config.titleDayPercent, null,
-                    tickerChars, priceChars, null, detail.holiday))
-            val extraPercent = detail?.extendedPercent
-            row.setViewVisibility(R.id.widget_row_after,
-                if (extraPercent == null) View.GONE else View.VISIBLE)
-            row.setTextViewTextSize(R.id.widget_row_after,
-                android.util.TypedValue.COMPLEX_UNIT_SP, rowTextSp)
-            row.setTextColor(R.id.widget_row_after,
-                if (detail?.session == MarketSession.PRE_MARKET) Color.rgb(90, 183, 255)
-                else Color.rgb(181, 150, 241))
-            row.setTextViewText(R.id.widget_row_after, if (extraPercent == null) "" else
-                (if (detail.session == MarketSession.PRE_MARKET) "☀ " else "☾ ") + percent(extraPercent))
+                    tickerChars, priceChars, null, detail.holiday)
+            detail?.extendedPercent?.let { extraPercent ->
+                val extra = (if (detail.session == MarketSession.PRE_MARKET) "☀ " else "☾ ") +
+                    percent(extraPercent)
+                val paint = Paint().apply {
+                    typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                    textSize = rowTextSp * metrics.scaledDensity
+                    textScaleX = 0.93f
+                }
+                // A standard Parcelable ScaleXSpan stretches only this blank gap.
+                // Both numeric groups stay in one TextView, as required by widget hosts.
+                val fullTextWidth = ((minWidth - 30f) * .63f - logoWidth) * metrics.density
+                val gap = (fullTextWidth - paint.measureText(line.toString()) -
+                    paint.measureText(extra) - 3f).coerceAtLeast(paint.measureText(" "))
+                val gapStart = line.length
+                line.append(" ")
+                line.setSpan(android.text.style.ScaleXSpan(gap / paint.measureText(" ")),
+                    gapStart, line.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                val extraStart = line.length
+                line.append(extra)
+                line.setSpan(ForegroundColorSpan(
+                    if (detail.session == MarketSession.PRE_MARKET) Color.rgb(90, 183, 255)
+                    else Color.rgb(181, 150, 241)), extraStart, line.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            row.setTextViewText(R.id.widget_row_ticker, line)
+            row.setViewVisibility(R.id.widget_row_after, View.GONE)
+            row.setTextViewText(R.id.widget_row_after, "")
 
             row.setOnClickPendingIntent(R.id.widget_row,
                 PendingIntent.getActivity(c, id xor security.id.hashCode(),

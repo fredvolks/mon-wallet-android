@@ -75,7 +75,12 @@ class WidgetRemoteViewsScreenshotTest {
             portfolio.id, result, false, emptyList(), widthDp to heightDp, quoteNow = now)
         var screenshot: Bitmap? = null
         instrumentation.runOnMainSync {
-            val view = remote.apply(context, null)
+            val parcel = android.os.Parcel.obtain()
+            remote.writeToParcel(parcel, 0)
+            parcel.setDataPosition(0)
+            val restored = android.widget.RemoteViews.CREATOR.createFromParcel(parcel)
+            parcel.recycle()
+            val view = restored.apply(context, null)
             val scale = context.resources.displayMetrics.density
             val width = (widthDp * scale).roundToInt()
             val height = (heightDp * scale).roundToInt()
@@ -96,17 +101,15 @@ class WidgetRemoteViewsScreenshotTest {
                 val row = rows.getChildAt(index)
                 assertNotNull(row.findViewById<ImageView>(R.id.widget_row_logo).drawable)
                 val text = row.findViewById<TextView>(R.id.widget_row_ticker)
-                val after = row.findViewById<TextView>(R.id.widget_row_after)
+                assertEquals(View.GONE, row.findViewById<TextView>(R.id.widget_row_after).visibility)
                 if (index in setOf(1, 5)) {
-                    assertEquals(View.VISIBLE, after.visibility)
-                    assertTrue(after.text.contains((if (preMarket) "☀ " else "☾ ") + "+0,27 %"))
-                    assertEquals("Same quote font", text.textSize, after.textSize, 0.1f)
-                    assertEquals("Extended return at the right edge", row.width, after.right)
-                    assertTrue("Shared baseline within native pixel rounding",
-                        kotlin.math.abs(text.top + text.baseline - after.top - after.baseline) <= 1)
-                    assertTrue("Extended return must fit", after.paint.measureText(
-                        after.text.toString()) <= after.width)
-                } else assertEquals(View.GONE, after.visibility)
+                    assertTrue(text.text.contains((if (preMarket) "☀ " else "☾ ") + "+0,27 %"))
+                    assertEquals("One complete line", 1, text.layout.lineCount)
+                    assertEquals("No clipped percentage", 0, text.layout.getEllipsisCount(0))
+                    assertTrue("Extended return reaches the right edge: " +
+                        text.layout.getLineRight(0) + "/" + text.width,
+                        kotlin.math.abs(text.layout.getLineRight(0) - text.width) <= 8)
+                }
                 assertTrue("Compact widget text must stay readable",
                     text.textSize / context.resources.displayMetrics.scaledDensity >= 10f)
                 assertEquals("All price columns need the same character width",
