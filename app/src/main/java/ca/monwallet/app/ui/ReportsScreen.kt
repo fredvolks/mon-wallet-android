@@ -41,148 +41,46 @@ private val benchmarkColors = listOf(Blue, Color(0xFF9F76FF), Color(0xFFFFA04D),
 
 @Composable
 fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
-    val savedPortfolio = w.settings["reports_portfolio"]
-    val validId = savedPortfolio?.takeIf { id -> w.portfolios.any { it.id == id } }
-    var selected by remember(savedPortfolio, initialPortfolio) {
-        mutableStateOf(if (savedPortfolio == "all") null else validId ?: initialPortfolio)
-    }
-    var portfolioMenu by remember { mutableStateOf(false) }
-    var tab by remember(w.settings["reports_tab"]) {
-        mutableIntStateOf(w.settings["reports_tab"]?.toIntOrNull()?.coerceIn(0, 4) ?: 0)
-    }
-    var range by remember(w.settings["reports_range"]) {
-        mutableStateOf(runCatching { ReportRange.valueOf(w.settings["reports_range"].orEmpty()) }
-            .getOrDefault(ReportRange.SIX_MONTHS))
-    }
-    var mode by remember(w.settings["reports_chart"]) {
-        mutableIntStateOf(w.settings["reports_chart"]?.toIntOrNull()?.coerceIn(0, 2) ?: 0)
-    }
-    var month by remember(w.settings["reports_month"]) {
-        mutableStateOf(runCatching { YearMonth.parse(w.settings["reports_month"]) }
-            .getOrDefault(YearMonth.now()))
-    }
-    var benchmarks by remember(w.settings["reports_benchmarks"]) {
-        mutableStateOf(w.settings["reports_benchmarks"]?.split('|')?.filter { it in benchmarkNames }?.toSet()
-            ?: setOf("^GSPC", "^IXIC", "^GSPTSE", "XEQT.TO"))
-    }
-    fun selectTab(index: Int) {
-        tab = index
-        vm.run { vm.services.repo.setting("reports_tab", index.toString()) }
-    }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val reportHistoryStatus by vm.services.reportHistoryStatus.collectAsState()
-    val snapshots by produceState(emptyList<PortfolioDailySnapshot>(), w.transactions, w.prices, selected) {
+    val saved = w.settings["reports_portfolio"]
+    var selected by remember(saved, initialPortfolio) { mutableStateOf(
+        if (saved == "all") null else saved?.takeIf { id -> w.portfolios.any { it.id == id } }
+            ?: initialPortfolio) }
+    val snapshots by produceState(emptyList<PortfolioDailySnapshot>(), w.transactions, w.prices,
+        w.securities, selected) {
         value = withContext(Dispatchers.Default) { runCatching {
             ReportEngine.history(w, selected)
         }.getOrDefault(emptyList()) }
     }
+    val status by vm.services.reportHistoryStatus.collectAsState()
     var loading by remember { mutableStateOf(false) }
-    LaunchedEffect(selected, range, w.transactions) {
+    LaunchedEffect(selected, w.transactions) {
         loading = true
-        try {
-            vm.services.refreshReportHistory(selected)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            android.util.Log.e("MonWalletReports", "Historical refresh failed", error)
-            vm.services.reportHistoryStatus.value =
-                "Historique temporairement indisponible : ${error.message ?: "erreur inconnue"}"
-        } finally {
-            loading = false
-        }
+        try { vm.services.refreshReportHistory(selected) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { vm.services.reportHistoryStatus.value =
+            "Historique indisponible : ${error.message ?: "erreur inconnue"}" }
+        finally { loading = false }
     }
-    val summary = remember(w.transactions, w.prices, selected, range, snapshots) {
-        ReportEngine.summary(w, snapshots, range, portfolioId = selected)
-    }
-    val current = remember(w.transactions, w.quotes, selected) {
-        runCatching { w.result(selected) }.getOrNull()
-    }
-    val csvLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
-        if (uri != null) scope.launch {
-            runCatching { withContext(Dispatchers.IO) {
-                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { out ->
-                    out.appendLine("date,valeur,capital_investi,pnl_jour,rendement_jour_pct,dividendes_cumules,flux_externe,rendement_cumule_pct")
-                    val cumulative = summary.cumulative.toMap()
-                    summary.days.forEach { day -> out.appendLine(listOf(day.date, day.closingValue,
-                        day.capitalInvested, day.dailyPnl, day.dailyReturn, day.dividends,
-                        day.netExternalFlow, cumulative[day.date]).joinToString(",") { it?.toString().orEmpty() }) }
-                } ?: error("Fichier inaccessible")
-            } }.onFailure { Toast.makeText(context, "Export impossible : ${it.message}", Toast.LENGTH_LONG).show() }
-        }
-    }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(11.dp)) {
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Box {
-                    AssistChip(onClick = { portfolioMenu = true },
-                        label = { Text(w.portfolios.firstOrNull { it.id == selected }?.name ?: "Tous") })
-                    DropdownMenu(portfolioMenu, { portfolioMenu = false }) {
-                        (listOf(null) + w.portfolios.map { it.id }).forEach { id ->
-                            DropdownMenuItem(text = { Text(w.portfolios.firstOrNull { it.id == id }?.name ?: "Tous") },
-                                onClick = {
-                                    portfolioMenu = false
-                                    selected = id
-                                    vm.run { vm.services.repo.setting("reports_portfolio", id ?: "all") }
-                                })
-                        }
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = { vm.run { vm.services.refreshReportHistory(selected, true) } }) {
-                    Text("↻ Actualiser", color = Blue, fontSize = 12.sp)
-                }
-                TextButton(onClick = { csvLauncher.launch("MonWallet-Rapports-${LocalDate.now()}.csv") }) {
-                    Text("CSV", color = Blue, fontSize = 12.sp)
-                }
-            }
-            Chips(reportTabs, tab, ::selectTab)
-            Chips(ReportRange.entries.map { it.label }, range.ordinal) { index ->
-                range = ReportRange.entries[index]
-                vm.run { vm.services.repo.setting("reports_range", range.name) }
-            }
-            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Green)
-            if (reportHistoryStatus.isNotBlank()) Caption(reportHistoryStatus)
-        }
-        when (tab) {
-            0 -> {
-                item { ReportHero(summary, current, mode, onMode = { mode = it; vm.run {
-                    vm.services.repo.setting("reports_chart", it.toString()) } }) }
-                item { ReportMetrics(summary, current) }
-                item { Comparison(w, summary, benchmarks) { selectTab(1) } }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.weight(1f)) { ReportMini("Calendrier", "Rendement quotidien", { selectTab(2) }) }
-                        Box(Modifier.weight(1f)) { ReportMini("Allocation", "Positions actuelles", { selectTab(3) }) }
-                    }
-                }
-            }
-            1 -> {
-                item { ReportHero(summary, current, mode, onMode = { mode = it; vm.run {
-                    vm.services.repo.setting("reports_chart", it.toString()) } }) }
-                item { ReportMetrics(summary, current) }
-                item { Comparison(w, summary, benchmarks) { symbol ->
-                    benchmarks = if (symbol in benchmarks) benchmarks - symbol else benchmarks + symbol
-                    vm.run { vm.services.repo.setting("reports_benchmarks", benchmarks.joinToString("|")) }
-                } }
-                item { ReportStatistics(summary, snapshots) }
-                item { ReportContributors(w, summary) }
-                item { ReportMonthYear(snapshots) }
-            }
-            2 -> {
-                item { ReportCalendar(w, snapshots,
-                    w.transactions.filter { selected == null || it.portfolioId == selected },
-                    month, { month = it; vm.run { vm.services.repo.setting("reports_month", month.toString()) } },
-                    refreshing = loading,
-                    onRefresh = { vm.run { vm.services.refreshReportHistory(selected, true) } }) }
-                item { ReportMonthYear(snapshots) }
-            }
-            3 -> item { ReportAllocation(w, selected, current) }
-            4 -> item { ReportFlows(w, selected, summary, snapshots) }
-        }
-        item { Caption("Rendement ajusté des flux : clôtures historiques en CAD. Les transactions n’ayant pas d’heure, les flux du jour sont supposés avant la clôture; le TWR exact exige une valorisation à chaque flux.") }
-    }
+    ReportsDashboard(w, snapshots, selected, loading, status,
+        onPortfolio = { id -> selected = id
+            vm.run { vm.services.repo.setting("reports_portfolio", id ?: "all") } },
+        onPreference = { key, value -> vm.run { vm.services.repo.setting(key, value) } },
+        onRefresh = { vm.run { vm.services.refreshReportHistory(selected, true) } },
+        advanced = { summary ->
+            var mode by remember { mutableIntStateOf(0) }
+            val current = remember(w.transactions, w.quotes, selected) {
+                runCatching { w.result(selected) }.getOrNull() }
+            ReportHero(summary, current, mode) { mode = it }
+            ReportMetrics(summary, current)
+            var benchmarks by remember { mutableStateOf(benchmarkNames.keys.toSet()) }
+            Comparison(w, summary, benchmarks) { symbol ->
+                benchmarks = if (symbol in benchmarks) benchmarks - symbol else benchmarks + symbol }
+            ReportStatistics(summary, snapshots)
+            ReportContributors(w, summary)
+            ReportMonthYear(snapshots)
+            ReportAllocation(w, selected, current)
+            ReportFlows(w, selected, summary, snapshots)
+        })
 }
 
 @Composable
