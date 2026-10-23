@@ -27,6 +27,7 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("discover_options", 0) }
     val gson = remember { Gson() }
+    var analystOpen by remember { mutableStateOf(false) }
     var tab by remember { mutableIntStateOf(0) }
     var selectedSector by remember { mutableStateOf(
         prefs.getString("sector", "Technology") ?: "Technology") }
@@ -122,9 +123,11 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
         }
         if (descending) ordered.reversed() else ordered
     }
+    if (analystOpen) InvestmentAnalystDialog(vm.services, onClose = { analystOpen = false })
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 12.dp),
         contentPadding = PaddingValues(bottom = 70.dp)) {
         item {
+            OutlinedButton(onClick = { analystOpen = true }, modifier = Modifier.fillMaxWidth()) { Text("Analyste IA · portefeuille, titres et idées") }
             ScreenerHero(rows.size, busy, filters)
             Chips(listOf("Scanner", "Filtres", "Stratégies", "Secteurs"), tab) {
                 tab = it
