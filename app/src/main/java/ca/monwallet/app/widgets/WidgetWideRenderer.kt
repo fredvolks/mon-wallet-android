@@ -114,6 +114,8 @@ internal object WidgetWideRenderer {
         views.setViewVisibility(R.id.widget_total_group,
             if (config.totalPercent && !hidden) View.VISIBLE else View.GONE)
 
+        val held = result?.holdings?.filter { it.quantity > ZERO }
+            ?.map { it.securityId }?.toSet().orEmpty()
         views.setTextViewText(R.id.widget_day, if (hidden) c.getString(R.string.widget_locked)
             else if (ca.monwallet.app.domain.MarketClock.offSession(quoteNow))
                 "Depuis clôture 16 h" else c.getString(R.string.widget_today))
