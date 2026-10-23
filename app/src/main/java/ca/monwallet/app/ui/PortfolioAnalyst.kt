@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import ca.monwallet.app.domain.*
 import ca.monwallet.app.marketdata.*
@@ -12,6 +13,8 @@ import java.math.BigDecimal
 
 @Composable
 internal fun PortfolioAnalyst(vm: WalletViewModel) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("portfolio_analyst", 0) }
     val wallet by vm.wallet.collectAsState()
     val members = wallet.familyMembers()
     var memberIndex by remember { mutableIntStateOf(1) }
@@ -23,7 +26,8 @@ internal fun PortfolioAnalyst(vm: WalletViewModel) {
     var budget by remember { mutableStateOf("500") }
     var chosenSector by remember { mutableIntStateOf(0) }
     var external by remember { mutableStateOf(true) }
-    var cap by remember { mutableStateOf("30") }
+    var cap by remember { mutableStateOf(prefs.getString("sector_cap", "30") ?: "30") }
+    LaunchedEffect(cap) { prefs.edit().putString("sector_cap", cap).apply() }
     val member = members.getOrNull(memberIndex - 1)
     val scoped = (if (memberIndex == 0) wallet else wallet.forMember(member?.id)).let { w ->
         val id = wallet.portfolios.getOrNull(portfolioIndex - 1)?.id
@@ -64,7 +68,13 @@ internal fun PortfolioAnalyst(vm: WalletViewModel) {
             listOf("Tous les comptes") + wallet.portfolios.map { it.name }) { portfolioIndex = it }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         OutlinedButton(onClick = { retry++ }, enabled = !busy) { Text("Actualiser les compositions") }
-        val report = result?.let { PortfolioBalance.analyze(it, wallet.securities.associateBy { s -> s.id }, funds) }
+        val classified = wallet.securities.associate { security ->
+            val known = SectorUniverse.stocks.find { it.symbol == security.symbol &&
+                it.exchange == security.exchange && it.currency == security.currency && it.type == security.type }
+            security.id to if (security.sector.isNullOrBlank() && known != null)
+                security.copy(sector = known.sector) else security
+        }
+        val report = result?.let { PortfolioBalance.analyze(it, classified, funds) }
         if (report == null) Caption("Historique non exploitable. Vérifie tes transactions.")
         else {
             CardBlock {
@@ -78,6 +88,7 @@ internal fun PortfolioAnalyst(vm: WalletViewModel) {
             report.warnings.forEach { Caption(it) }
             CardBlock {
                 Text("Secteurs · portefeuille entier")
+                Caption("Actions : classification enregistrée ou catalogue local; FNB : exposition publiée par le fournisseur indiqué ci-dessous.")
                 report.sectors.forEach { Metric(it.label, money(it.value) + if (report.total != null) " · ${percent(it.weight)}" else " · % indisponible") }
                 if (report.unknownSector > ZERO) Caption("La part non déterminée reste dans le total. Elle n’est pas redistribuée aux secteurs connus.")
             }
