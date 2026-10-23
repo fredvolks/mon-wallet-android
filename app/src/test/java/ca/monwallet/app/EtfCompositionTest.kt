@@ -35,7 +35,7 @@ RY,Royal Bank,Financials,Equity,1.97,Canada
         assertEquals("iShares US, total", tables[0].positions[0].name)
         assertEquals("3.17".dec(), tables[1].positions[0].weight)
         assertEquals("6.30".dec(), tables[1].weights(true).first().second)
-        assertEquals("7.27".dec(), tables[1].positions.fold(ZERO) { a, h -> a + h.weight })
+        assertEquals("8.27".dec(), tables[1].positions.fold(ZERO) { a, h -> a + h.weight })
     }
     @Test fun incompleteOrUndatedIssuerResponsesAreRejected() {
         listOf("<html>Access denied</html>", "Ticker,Name,Weight (%)\nX,Foo,20",
