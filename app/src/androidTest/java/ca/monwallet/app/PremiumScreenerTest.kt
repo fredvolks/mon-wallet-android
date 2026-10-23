@@ -130,7 +130,10 @@ class PremiumScreenerTest {
             for ((query, expected) in listOf("NA" to "NA", "MSFT" to "MSFT", "VFV.TO" to "VFV",
                 "Banque de Montreal" to "BMO", "Microsft" to "MSFT", "NVDA" to "NVDA")) {
                 val edit = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 10_000)!!
+                edit.click()
+                device.waitForIdle()
                 edit.text = query
+                device.waitForIdle()
                 shown(expected)
                 if (query == "NA") capture("search-na")
                 if (query == "NVDA") capture("search-general")

@@ -22,7 +22,8 @@ internal fun ScreenerHero(count: Int, busy: Boolean, filters: Filters) {
         Text("SCREENER", color = Green, fontSize = 11.sp, letterSpacing = 2.sp)
         Text(if (filters.needsDividend()) "Ton prochain revenu" else "Explore le marché",
             fontSize = 25.sp, fontWeight = FontWeight.Bold)
-        Text(if (busy) "Scan en cours · $count correspondances" else "$count titres correspondent à tes critères",
+        Text(if (busy) "Scan en cours · $count " + if (count == 1) "correspondance" else "correspondances"
+            else if (count == 1) "1 titre correspond à tes critères" else "$count titres correspondent à tes critères",
             color = Muted, fontSize = 12.sp)
         Spacer(Modifier.height(10.dp))
         Text(filters.exchange.replace(",", " · "), color = Blue, fontSize = 10.sp)
