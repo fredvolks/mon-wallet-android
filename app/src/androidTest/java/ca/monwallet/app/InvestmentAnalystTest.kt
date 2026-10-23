@@ -104,6 +104,33 @@ class InvestmentAnalystTest {
             services.repo.db.close()
         }
     }
+    @Test fun freeResearchCollectsRealVfvExposureAndDatedSources() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val services = Services(context)
+        val previous = services.repo.owner.value
+        try {
+            services.repo.switch("analyst-network-" + uuid())
+            val security = Security.of("VFV.TO", "Vanguard S&P 500 Index ETF", "TSX", "CAD", "ETF")
+            val wallet = Wallet(portfolios = listOf(Portfolio(id = "research", name = "Fixture")),
+                securities = listOf(security),
+                transactions = listOf(Transaction(portfolioId = "research", securityId = security.id,
+                    quantity = ONE, price = ONE, date = "2026-10-01")))
+            val pack = withTimeout(150_000) { InvestmentResearch(services).collect(wallet, "BALANCE", null, true,
+                "research", null, "500".dec(), "Canada", "3 à 5 ans", "Modéré", 35, {}) }
+            assertNotNull(pack.exposure.total)
+            assertTrue(pack.exposure.total!! > ZERO)
+            assertTrue("Actual VFV sector coverage must be available", (pack.exposure.sectorCoverage ?: ZERO) > ZERO)
+            assertTrue(pack.exposure.sectorCoverage!! <= "100".dec())
+            assertEquals("VFV.TO", pack.positions.single().symbol)
+            assertTrue(pack.sources.any { it.url.startsWith("https://www.vanguard.ca/") })
+            assertTrue(pack.funds[security.id]?.underlying?.positions?.isNotEmpty() == true)
+            android.util.Log.d("InvestmentResearchTest", "VFV total=" + pack.exposure.total + " coverage=" + pack.exposure.sectorCoverage)
+        } finally {
+            services.repo.switch(previous)
+            services.scope.cancel()
+            services.repo.db.close()
+        }
+    }
     private fun capture(context: Context, name: String) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
