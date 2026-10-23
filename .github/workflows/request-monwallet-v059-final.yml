@@ -18,10 +18,10 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 60); do
-            result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=5076afb2b439795388b985fa32b250f7069229e9&event=pull_request" --jq '[.workflow_runs[] | select(.workflow_id == 376285571)][0] | [.status, (.conclusion // "pending")] | @tsv')"
+            result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=cc4fcba400db8de2d9881ba803de474f8e3a2e74&event=pull_request" --jq '[.workflow_runs[] | select(.workflow_id == 376285571)][0] | [.status, (.conclusion // "pending")] | @tsv')"
             if [[ "$result" == $'completed\tsuccess' ]]; then
               current="$(gh api "repos/${GITHUB_REPOSITORY}/branches/feat/widget-design-live-five-seconds-20261022" --jq '.commit.sha')"
-              [[ "$current" == "5076afb2b439795388b985fa32b250f7069229e9" ]] || exit 1
+              [[ "$current" == "cc4fcba400db8de2d9881ba803de474f8e3a2e74" ]] || exit 1
               gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/release-apk.yml/dispatches" \
                 -f ref="feat/widget-design-live-five-seconds-20261022" \
                 -f "inputs[release_version]=0.2.59"
