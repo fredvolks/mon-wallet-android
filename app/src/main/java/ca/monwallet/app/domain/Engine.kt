@@ -84,7 +84,7 @@ object Engine {
     }
 
     fun validate(tx: List<Transaction>) {
-        tx.groupBy { it.portfolioId }.values.forEach { ledger(it) }
+        FamilyLedger.resolve(tx).accounted.groupBy { it.portfolioId to it.memberId }.values.forEach { ledger(it) }
     }
 
     data class SalePreview(
@@ -99,13 +99,15 @@ object Engine {
     )
 
     fun availableAt(tx: List<Transaction>, portfolioId: String, securityId: String, date: String): BigDecimal =
-        ledger(tx.filter { it.portfolioId == portfolioId && it.date <= date })
+        ledger(FamilyLedger.resolve(tx.filter { it.portfolioId == portfolioId && it.date <= date }).accounted)
             .lots[securityId]?.q ?: ZERO
 
     fun salePreview(tx: List<Transaction>, sale: Transaction): SalePreview {
         require(sale.type == TxType.SELL && sale.securityId != null && sale.quantity > ZERO)
-        val prior = tx.filter { it.id != sale.id && it.portfolioId == sale.portfolioId && it.date <= sale.date }
-        val lot = ledger(prior).lots[sale.securityId]
+        val prior = tx.filter { it.id != sale.id && it.portfolioId == sale.portfolioId && it.memberId == sale.memberId && it.date <= sale.date }
+        val resolved = FamilyLedger.resolve(prior)
+        require(resolved.pending.isEmpty()) { "Historique du membre à compléter." }
+        val lot = ledger(resolved.accounted).lots[sale.securityId]
         val available = lot?.q ?: ZERO
         require(available >= sale.quantity) { "Vente supérieure aux parts détenues le ${sale.date}." }
         require(sale.total >= ZERO) { "Le produit net doit être positif." }
@@ -121,8 +123,11 @@ object Engine {
         excludeDailyPnlFor: Set<String> = emptySet(),
         dailyDate: String? = null,
     ): Result {
-        if (tx.map { it.portfolioId }.distinct().size > 1) {
-            return combine(tx.groupBy { it.portfolioId }.values.map {
+        val resolved = FamilyLedger.resolve(tx)
+        if (resolved.pending.isNotEmpty()) return calculate(resolved.accounted, quotes, usd, excludeDailyPnlFor, dailyDate)
+            .copy(value = null, day = null, dayBase = null)
+        if (tx.map { it.portfolioId to it.memberId }.distinct().size > 1) {
+            return combine(tx.groupBy { it.portfolioId to it.memberId }.values.map {
                 calculate(it, quotes, usd, excludeDailyPnlFor, dailyDate)
             })
         }

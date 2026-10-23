@@ -136,6 +136,8 @@ data class Transaction(
     val fxDate: String = date,
     val createdAt: Long = System.currentTimeMillis(),
     val note: String = "",
+    val memberId: String? = null,
+    val allowUnmatchedSale: Boolean? = null,
 ) {
     val gross
         get() = if (type in listOf(TxType.BUY, TxType.SELL)) quantity * price else price
@@ -341,6 +343,8 @@ data class Wallet(
 
     fun result(portfolio: String? = null, now: Long = System.currentTimeMillis()): Result {
         val entries = transactions.filter { portfolio == null || it.portfolioId == portfolio }
+        if (FamilyLedger.resolve(entries).pending.isNotEmpty()) return Engine.calculate(entries, quotes,
+            securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] })
         val datedQuotes = quotes.mapValues { (securityId, quote) ->
             val cachedClose = runCatching {
                 val session = LocalDate.parse(quote.sessionDate)

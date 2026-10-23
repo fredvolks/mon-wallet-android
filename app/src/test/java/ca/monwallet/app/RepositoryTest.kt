@@ -79,6 +79,28 @@ class RepositoryTest {
         assertTrue(repo.decode(emptyList(), emptyList()).prices.isEmpty())
     }
 
+    @Test fun familyTransactionsSurviveBackupRestoreAndPendingSalesReconcile() = runBlocking {
+        val p = portfolio()
+        val security = Catalog.all.first { it.symbol == "XEQT.TO" }
+        repo.setting("family_member_jacob", "Jacob")
+        val buy = Transaction(id = "family-buy", portfolioId = p.id, securityId = security.id,
+            quantity = "3".dec(), price = "45".dec(), date = "2026-10-01", memberId = "jacob")
+        repo.transaction(buy, security)
+        val sale = buy.copy(id = "family-sale", type = TxType.SELL, quantity = "5".dec(),
+            price = "46".dec(), date = "2026-10-02", fxDate = "2026-10-02", allowUnmatchedSale = true)
+        repo.transaction(sale, security)
+        assertEquals(1, FamilyLedger.resolve(repo.current().transactions).pending.size)
+        val backup = repo.exportJson()
+        repo.switch("family-restored")
+        repo.restore(backup)
+        assertEquals("Jacob", repo.current().memberName("jacob"))
+        assertEquals("jacob", repo.current().transactions.first { it.id == sale.id }.memberId)
+        repo.transaction(buy.copy(id = "missing-buy", quantity = "2".dec(),
+            date = "2026-09-30", fxDate = "2026-09-30"), security)
+        assertTrue(FamilyLedger.resolve(repo.current().transactions).pending.isEmpty())
+        assertEquals(1, TradeReports.sales(repo.current().transactions).size)
+    }
+
     @Test fun freshGuestStartsEmpty() = runBlocking {
         assertTrue(repo.current().portfolios.isEmpty())
         assertTrue(repo.current().watchlists.isEmpty())

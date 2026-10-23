@@ -64,6 +64,7 @@ fun PortfolioScreen(
         }
         return
     }
+    var familyOpen by remember { mutableStateOf(false) }
     var period by remember { mutableIntStateOf(6) }
     var compact by
         remember(w.settings["compact"]) { mutableStateOf(w.settings["compact"] == "true") }
@@ -189,6 +190,11 @@ fun PortfolioScreen(
                 listOf(stringResource(R.string.all_portfolios)) + w.portfolios.map { it.name },
                 if (selected == null) 0 else w.portfolios.indexOfFirst { it.id == selected } + 1,
             ) { onSelected(if (it == 0) null else w.portfolios[it - 1].id) }
+        }
+        item {
+            OutlinedButton(onClick = { familyOpen = true }, modifier = Modifier.fillMaxWidth()) { Text("Famille · investissements") }
+            if (runCatching { FamilyLedger.resolve(w.transactions).pending.isNotEmpty() }.getOrDefault(false))
+                Caption("Historique à compléter · une vente dépasse les achats enregistrés. Consulte Famille ou Transactions.")
         }
         item {
             if (compact) {
@@ -363,6 +369,7 @@ fun PortfolioScreen(
             )
         }
     }
+    if (familyOpen) FamilyDialog(vm.services, selected) { familyOpen = false }
     if (showColumns) PortfolioColumnPicker(compactColumns, { updated ->
         compactColumns = updated
         vm.run { vm.services.repo.setting("portfolio_columns", updated.joinToString("|")) }
@@ -819,6 +826,9 @@ fun HistoryScreen(w: Wallet, onEdit: (Transaction) -> Unit, onDelete: (String) -
                         }
                     }
                 }
+                Caption("Pour : " + w.memberName(t.memberId))
+                if (runCatching { FamilyLedger.resolve(w.transactions).pending.any { it.id == t.id } }.getOrDefault(false))
+                    Caption("Profit et quantités : à compléter")
                 if (t.note.isNotBlank()) Caption(t.note, Modifier.padding(top = 5.dp))
             }
             HorizontalDivider(color = Border)

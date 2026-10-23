@@ -7,7 +7,7 @@ pull_status=$?
 adb pull /sdcard/Pictures/MonWallet/widget-4x2-daily-fixture.png widget-4x2-daily-fixture.png || true
 adb pull /sdcard/Pictures/MonWallet/widget-4x2-six-titles.png widget-4x2-six-titles.png || true
 adb pull /sdcard/Pictures/MonWallet/watchlist-diagnostic.png watchlist-diagnostic.png || true
-for name in summary calendar day-detail closed-trades retained-trade transactions export export-month diagnostic etf-allocation etf-detail etf-underlying screener-card screener-filters vfv-detail vfv-underlying search-na search-general; do
+for name in family family-sale family-warning summary calendar day-detail closed-trades retained-trade transactions export export-month diagnostic etf-allocation etf-detail etf-underlying screener-card screener-filters vfv-detail vfv-underlying search-na search-general; do
   adb pull "/sdcard/Pictures/MonWallet/reports-$name.png" "reports-$name.png" || true
 done
 adb logcat -d -s WatchlistNetworkTest:* MonWalletQuote:* FundCoverage:* > watchlist-provider-log.txt
