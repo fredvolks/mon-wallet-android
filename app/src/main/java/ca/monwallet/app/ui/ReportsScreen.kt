@@ -49,8 +49,10 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     var selected by remember(saved, initialPortfolio) { mutableStateOf(
         if (saved == "all") null else saved?.takeIf { id -> w.portfolios.any { it.id == id } }
             ?: initialPortfolio) }
+    var reportNow by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val reportDate = MarketClock.date(reportNow)
     val snapshots by produceState(emptyList<PortfolioDailySnapshot>(), w.transactions, w.prices,
-        w.securities, selected) {
+        w.securities, selected, reportDate) {
         value = withContext(Dispatchers.Default) { runCatching {
             ReportEngine.history(w, selected)
         }.getOrDefault(emptyList()) }
@@ -62,6 +64,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
         loading = true
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (isActive) {
+                reportNow = System.currentTimeMillis()
                 try { vm.services.refreshReportHistory(selected) }
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (error: Exception) { vm.services.reportHistoryStatus.value =
@@ -71,8 +74,8 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
             }
         }
     }
-    val regularHistory = TradeReports.confirmedHistory(snapshots, System.currentTimeMillis())
-    ReportsDashboard(w, snapshots, selected, loading, status,
+    val regularHistory = TradeReports.confirmedHistory(snapshots, reportNow)
+    ReportsDashboard(w, snapshots, selected, loading, status, now = reportNow,
         onPortfolio = { id -> selected = id
             vm.run { vm.services.repo.setting("reports_portfolio", id ?: "all") } },
         onPreference = { key, value -> vm.run { vm.services.repo.setting(key, value) } },
