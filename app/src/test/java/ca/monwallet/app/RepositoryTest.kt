@@ -66,7 +66,10 @@ class RepositoryTest {
         assertEquals(listOf("2026-10-01"), wallet.prices.map { it.date })
     }
 
-    @Test fun historyCacheIsReusedUntilPayloadChanges() {
+    @Test fun historyCacheIsReusedUntilPayloadChanges() = runBlocking {
+        // Exercise the decoder cache in isolation. The startup Room observer may
+        // otherwise decode an empty database between these synthetic payloads.
+        scope.coroutineContext[Job]!!.cancelAndJoin()
         fun row(close: Int) = ca.monwallet.app.database.Cache("history:s", "history",
             """[{"securityId":"s","date":"2026-10-01","close":$close,"timestamp":1}]""", 1)
         val first = repo.decode(emptyList(), listOf(row(10))).prices.single()

@@ -67,7 +67,7 @@ class PremiumScreenerTest {
             WalletTheme {
                 Surface(color = Night) {
                     var mode by remember { mutableIntStateOf(0) }
-                    var filters by remember { mutableStateOf(dividendPreset()) }
+                    var filters by remember { mutableStateOf(dividendPreset().copy(dividendMin = null)) }
                     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(10.dp)) {
                         Row {
                             listOf("Scan", "Critères", "VFV", "Recherche").forEachIndexed { i, text ->
