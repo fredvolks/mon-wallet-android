@@ -49,7 +49,7 @@ internal fun EtfDetailsCard(security: Security, walletValue: BigDecimal? = null,
                 Caption("Détail sous-jacent non fourni par cette source. Les positions directes ne sont pas utilisées comme exposition sectorielle ou géographique.")
             } else {
                 Caption("Composition au ${date(composition.asOf)}")
-                if (tab == 0) Caption("Positions détenues directement par le fonds, incluant ses FNB et ses liquidités.")
+                if (tab == 0) Caption(fund.compositionNote ?: "Positions détenues directement par le fonds, incluant ses FNB et ses liquidités.")
                 else Caption("Exposition sous-jacente publiée par l’émetteur, sans ajouter à nouveau les FNB intermédiaires.")
                 val rows = if (tab <= 1) composition.positions.sortedByDescending { it.weight }
                     .map { Triple(it.symbol, it.name, it.weight) }
@@ -90,7 +90,7 @@ internal fun EtfDetailsCard(security: Security, walletValue: BigDecimal? = null,
             TextButton(onClick = { retry++ }, enabled = !loading) { Text("Actualiser") }
             val url = fund?.sourceUrl ?: EtfData.officialPage(security)
             if (url != null) TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) {
-                Text("Fiche officielle ↗") }
+                Text(if (fund?.compositionNote != null) "Source des données ↗" else "Site de l’émetteur ↗") }
         }
     }
 }

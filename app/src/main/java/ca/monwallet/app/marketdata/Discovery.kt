@@ -19,6 +19,11 @@ data class Filters(
     val peMax: BigDecimal? = null,
     val pePositive: Boolean = false,
     val dividendMin: BigDecimal? = null,
+    val dividendMax: BigDecimal? = null,
+    val dividendOnly: Boolean = false,
+    val dividendFrequency: String = "",
+    val dividendGrowthMin: BigDecimal? = null,
+    val payoutMax: BigDecimal? = null,
     val dollarVolumeMin: BigDecimal? = null,
     val revenueGrowthMin: BigDecimal? = null,
     val epsGrowthMin: BigDecimal? = null,
@@ -65,6 +70,7 @@ data class DiscoveryRow(
     val fundamentals: Map<String, BigDecimal?>,
     val analyst: Analyst? = null,
     val opportunityScore: Int? = null,
+    val dividend: DividendSnapshot? = null,
 ) {
     fun performance(period: PerformancePeriod) = performances[period]
 }
@@ -90,6 +96,14 @@ internal fun selectionEligible(s: Security, f: Filters): Boolean {
     return true
 }
 
+internal fun Filters.needsDividend() = dividendOnly || dividendMin != null || dividendMax != null ||
+    dividendFrequency.isNotBlank() || dividendGrowthMin != null || payoutMax != null || columns.any { it in setOf("dividend", "dividendFrequency", "dividendGrowth", "payout") }
+
+internal fun dividendPreset(minimum: String = "3", monthly: Boolean = false) = Filters(
+    cap = ZERO, volume = ZERO, dividendOnly = true, dividendMin = BigDecimal(minimum),
+    dividendFrequency = if (monthly) "MONTHLY" else "", requireHistory = false,
+    antiPump = false, maxSingleDay = null, columns = listOf("ticker", "price", "dividend", "period", "cap"))
+
 class Discovery(private val s: Services) {
     private val historyCache = mutableMapOf<String, Pair<Long, List<Point>>>()
     private val ratioCache = mutableMapOf<String, Pair<Long, Map<String, BigDecimal?>>>()
@@ -98,13 +112,16 @@ class Discovery(private val s: Services) {
     private val summaryCache = mutableMapOf<String, Pair<Long, Fundamentals?>>()
     private val now get() = System.currentTimeMillis()
 
-    suspend fun screen(f: Filters, period: PerformancePeriod, onProgress: (String) -> Unit):
+    suspend fun screen(f: Filters, period: PerformancePeriod, onRows: (List<DiscoveryRow>) -> Unit = {}, onProgress: (String) -> Unit):
         List<DiscoveryRow> {
+        require(f.dividendMin == null || f.dividendMin >= ZERO)
+        require(f.dividendMax == null || f.dividendMax >= ZERO)
+        require(f.dividendMin == null || f.dividendMax == null || f.dividendMin <= f.dividendMax) { "Le rendement minimum dépasse le maximum." }
         val key = s.secure.get("fmp_key")?.takeIf { it.isNotBlank() }
         val cacheKey = f.toString() + period.name + if (key == null) "selection" else "fmp"
         resultCache[cacheKey]?.takeIf { now - it.first < 10 * 60_000 }?.let { return it.second }
         if (key == null) {
-            val rows = screenSelection(f, period, onProgress)
+            val rows = screenSelection(f, period, onRows, onProgress)
             resultCache[cacheKey] = now to rows
             return rows
         }
@@ -135,7 +152,7 @@ class Discovery(private val s: Services) {
             "fcfGrowth", "debtEquity") } ||
             listOf(f.peMin, f.peMax, f.revenueGrowthMin, f.epsGrowthMin, f.roeMin,
                 f.roaMin, f.roicMin, f.netMarginMin, f.fcfGrowthMin,
-                f.debtEquityMax).any { it != null } || f.pePositive
+                f.debtEquityMax, f.payoutMax).any { it != null } || f.pePositive
         val rows = supervisorScope {
             candidates.map { o -> async {
                 gate.withPermit {
@@ -164,12 +181,14 @@ class Discovery(private val s: Services) {
                         val div = o.number("lastAnnualDividend")?.let {
                             if (price.signum() == 0) null else it * BigDecimal(100) / price
                         }
-                        if (f.dividendMin != null && (div == null || div < f.dividendMin))
-                            return@withPermit null
                         val sec = known.find {
                             it.symbol == symbol && it.currency == currency
                         } ?: Security.of(symbol, o.optString("companyName", symbol),
                             exchange, currency, if (o.optBoolean("isEtf")) "ETF" else "STOCK")
+                        val dividendData = if (f.needsDividend()) try { DividendData.fetch(sec) }
+                            catch (e: CancellationException) { throw e } catch (_: Exception) { null } else null
+                        if (!dividendEligible(f, dividendData, div, null) && f.payoutMax == null)
+                            return@withPermit null
                         val rawRatios = if (needsRatios) runCatching { ratios(sec.symbol, key) }
                             .getOrDefault(emptyMap()) else emptyMap()
                         val needsGrowth = listOf(f.revenueGrowthMin, f.epsGrowthMin,
@@ -179,6 +198,8 @@ class Discovery(private val s: Services) {
                             rawRatios["epsGrowth"] == null || f.fcfGrowthMin != null))
                             runCatching { growth(sec) }.getOrDefault(emptyMap()) else emptyMap()
                         val ratios = rawRatios + growth.filterValues { it != null }
+                        if (f.payoutMax != null && !dividendEligible(f, dividendData, div, ratios["payout"]))
+                            return@withPermit null
                         val pe = ratios["pe"]
                         if (f.pePositive && (pe == null || pe <= ZERO)) return@withPermit null
                         if (f.peMin != null && (pe == null || pe < f.peMin)) return@withPermit null
@@ -226,8 +247,9 @@ class Discovery(private val s: Services) {
                         DiscoveryRow(sec, price, cap, pe, history, metrics,
                             PerformancePeriod.entries.associateWith { MomentumEngine.performance(history, it) },
                             avg, o.number("volume"), o.optString("sector"), o.optString("industry"),
-                            div, ratios)
-                    } catch (_: Exception) {
+                            dividendData?.yield ?: div, ratios, dividend = dividendData)
+                    } catch (e: CancellationException) { throw e }
+                    catch (_: Exception) {
                         failures.incrementAndGet()
                         null
                     } finally {
@@ -247,8 +269,9 @@ class Discovery(private val s: Services) {
      * Missing cap/volume/ratios never pass a positive threshold by assumption.
      */
     private suspend fun screenSelection(f: Filters, period: PerformancePeriod,
-        onProgress: (String) -> Unit): List<DiscoveryRow> {
+        onRows: (List<DiscoveryRow>) -> Unit, onProgress: (String) -> Unit): List<DiscoveryRow> {
         // Prefer sector-tagged entries from the curated free universe over untagged catalog duplicates.
+        val partial = java.util.Collections.synchronizedList(mutableListOf<DiscoveryRow>())
         val candidates = (SectorUniverse.stocks + Catalog.stocks + s.repo.current().securities)
             .distinctBy { it.id }.filter { selectionEligible(it, f) }
         val gate = Semaphore(2)
@@ -258,11 +281,15 @@ class Discovery(private val s: Services) {
             "roe", "roa", "roic", "netMargin", "revenueGrowth", "epsGrowth", "fcfGrowth",
             "debtEquity") } || listOf(f.peMin, f.peMax, f.revenueGrowthMin,
             f.epsGrowthMin, f.fcfGrowthMin, f.roeMin, f.roaMin, f.roicMin,
-            f.netMarginMin, f.debtEquityMax).any { it != null } || f.pePositive
+            f.netMarginMin, f.debtEquityMax, f.payoutMax).any { it != null } || f.pePositive
         val rows = supervisorScope {
             candidates.map { sec -> async {
                 gate.withPermit {
                     try {
+                        val dividendData = if (f.needsDividend()) try { DividendData.fetch(sec) }
+                            catch (e: CancellationException) { throw e } catch (_: Exception) { null } else null
+                        if (f.needsDividend() && !dividendEligible(f, dividendData, null, null) && f.payoutMax == null)
+                            return@withPermit null
                         val history = history(sec, if (period == PerformancePeriod.Y5 ||
                             f.columns.any { it == "5A" || it == "cagr5" }) "10y" else "2y")
                         val quote = s.market.quote(sec)
@@ -283,13 +310,12 @@ class Discovery(private val s: Services) {
                         val dollar = avg?.multiply(price)
                         if (f.dollarVolumeMin != null &&
                             (dollar == null || dollar < f.dollarVolumeMin)) return@withPermit null
-                        val dividend = summary?.metrics?.get("Rendement dividende %")
-                            ?.toBigDecimalOrNull()
-                        if (f.dividendMin != null &&
-                            (dividend == null || dividend < f.dividendMin)) return@withPermit null
+                        val dividend = dividendData?.yield ?: summary?.metrics?.get("Rendement dividende %")?.toBigDecimalOrNull()
                         val details = if (needsDetails) runCatching { s.market.fundamentals(sec) }
                             .getOrNull() else null
                         val values = details?.metrics.orEmpty() + summary?.metrics.orEmpty()
+                        val payout = values["Payout %"]?.toBigDecimalOrNull()
+                        if (!dividendEligible(f, dividendData, dividend, payout)) return@withPermit null
                         val ratios = mapOf(
                             "pe" to values["P/E"]?.toBigDecimalOrNull(),
                             "forwardPe" to values["Forward P/E"]?.toBigDecimalOrNull(),
@@ -302,7 +328,8 @@ class Discovery(private val s: Services) {
                             "netMargin" to values["Marge nette %"]?.toBigDecimalOrNull(),
                             "revenueGrowth" to values["Croissance revenus %"]?.toBigDecimalOrNull(),
                             "epsGrowth" to values["Croissance BPA %"]?.toBigDecimalOrNull(),
-                            "debtEquity" to values["Dette/Equity"]?.toBigDecimalOrNull(),
+                            "debtEquity" to (values["Dette/Equity"] ?: values["Dette / capitaux propres"])?.toBigDecimalOrNull(),
+                            "payout" to payout,
                         ).toMutableMap()
                         if (needsDetails && (f.fcfGrowthMin != null || f.epsGrowthMin != null ||
                                 f.revenueGrowthMin != null || f.columns.any {
@@ -349,7 +376,10 @@ class Discovery(private val s: Services) {
                         }
                         DiscoveryRow(sec, price, cap, pe, history, metrics,
                             PerformancePeriod.entries.associateWith { MomentumEngine.performance(history, it) },
-                            avg, quote.volume, sec.sector.orEmpty(), "", dividend, ratios)
+                            avg, quote.volume, sec.sector.orEmpty(), "", dividend, ratios, dividend = dividendData).also { row ->
+                                partial += row
+                                onRows(synchronized(partial) { partial.toList() })
+                            }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Exception) {
@@ -447,6 +477,7 @@ class Discovery(private val s: Services) {
             "revenueGrowth" to o?.number("revenueGrowthTTM"),
             "epsGrowth" to o?.number("epsGrowthTTM"),
             "debtEquity" to o?.number("debtEquityRatioTTM"),
+            "payout" to o?.number("dividendPayoutRatioTTM")?.multiply(BigDecimal(100)),
         )
         ratioCache[symbol] = now to ratios
         return ratios

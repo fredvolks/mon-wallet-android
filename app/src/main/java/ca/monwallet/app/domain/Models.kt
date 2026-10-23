@@ -49,7 +49,8 @@ data class Security(
     val officialDomain: String? = null,
 ) {
     val ticker
-        get() = symbol.substringBefore('.')
+        get() = listOf(".TO", ".NE", ".CN", ".V").firstOrNull { symbol.endsWith(it, true) }
+            ?.let { symbol.dropLast(it.length) } ?: symbol
 
     companion object {
         fun of(

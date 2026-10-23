@@ -46,6 +46,8 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     var sort by remember { mutableStateOf(prefs.getString("sort", "momentum") ?: "momentum") }
     var descending by remember { mutableStateOf(prefs.getBoolean("sort_descending", true)) }
     var showColumns by remember { mutableStateOf(false) }
+    var cardView by remember { mutableStateOf(true) }
+    var resultQuery by remember { mutableStateOf("") }
     val scroll = rememberScrollState()
     val wallet by vm.wallet.collectAsState()
     LaunchedEffect(period, filters, columns, mode, refresh, tab, selectedSector) {
@@ -53,11 +55,15 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
             .putString("columns", columns.joinToString("|")).apply()
         if (tab != 0 && tab != 3) return@LaunchedEffect
         busy = true
+        rows = emptyList()
+        status = "Préparation du scan…"
         try {
             val activeFilters = if (tab == 3) Filters(sector = selectedSector,
                 cap = BigDecimal.ZERO, volume = BigDecimal.ZERO, price = BigDecimal("5"),
                 columns = columns) else filters.copy(columns = columns)
-            val found = vm.services.discovery.screen(activeFilters, period) {
+            val found = vm.services.discovery.screen(activeFilters, period, onRows = { partial ->
+                if (mode != "analyst") rows = partial
+            }) {
                 status = it
             }
             rows = if (mode == "analyst" || columns.any { it in analystColumns })
@@ -74,9 +80,10 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
             if (rows.isEmpty() && vm.services.secure.get("fmp_key").isNullOrBlank() && tab == 0 &&
                 filters.cap > BigDecimal.ZERO && filters.exchange.split(',').all {
                     it.trim() in setOf("TSX", "TSXV") })
-                status = "Capitalisation canadienne indisponible avec les sources configurées. Une source autorisée est nécessaire pour filtrer par capitalisation; choisir « Toutes » affiche les titres dont les historiques et volumes sont disponibles."
+                status = "Aucun titre ne correspond à tous les critères avec les données reçues. Les valeurs absentes sont exclues; élargis les critères ou réessaie."
             vm.services.foregroundSecurities.value = rows.take(16).map { it.security }
-        } catch (e: Exception) {
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Exception) {
             rows = emptyList()
             status = e.message ?: "Données de marché indisponibles."
         } finally {
@@ -89,38 +96,59 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
     DisposableEffect(Unit) {
         onDispose { vm.services.foregroundSecurities.value = emptyList() }
     }
-    val sorted = remember(rows, wallet.quotes, sort, descending, period) {
+    val sorted = remember(rows, wallet.quotes, sort, descending, period, resultQuery) {
+        val visible = rows.filter { resultQuery.isBlank() ||
+            "${it.security.symbol} ${it.security.name}".contains(resultQuery, true) }
         val ordered = when (sort) {
-            "ticker" -> rows.sortedBy { it.security.ticker }
-            "name" -> rows.sortedBy { it.security.name }
-            "exchange" -> rows.sortedBy { it.security.exchange }
-            "price" -> rows.sortedBy { wallet.quotes[it.security.id]?.price ?: it.price }
-            "dayAmount" -> rows.sortedBy { wallet.quotes[it.security.id]?.change }
-            "dayPercent" -> rows.sortedBy { wallet.quotes[it.security.id]?.percent }
-            "period" -> rows.sortedBy { it.performance(period) }
-            "1S", "1M", "3M", "6M", "1A", "5A" -> rows.sortedBy { r ->
+            "ticker" -> visible.sortedBy { it.security.ticker }
+            "name" -> visible.sortedBy { it.security.name }
+            "exchange" -> visible.sortedBy { it.security.exchange }
+            "price" -> visible.sortedBy { wallet.quotes[it.security.id]?.price ?: it.price }
+            "dayAmount" -> visible.sortedBy { wallet.quotes[it.security.id]?.change }
+            "dayPercent" -> visible.sortedBy { wallet.quotes[it.security.id]?.percent }
+            "period" -> visible.sortedBy { it.performance(period) }
+            "1S", "1M", "3M", "6M", "1A", "5A" -> visible.sortedBy { r ->
                 r.performance(PerformancePeriod.entries.first { it.label == sort }) }
-            "cagr5" -> rows.sortedBy { r -> MomentumEngine.analyze(r.points,
+            "cagr5" -> visible.sortedBy { r -> MomentumEngine.analyze(r.points,
                 PerformancePeriod.Y5, r.averageVolume?.multiply(r.price)?.toDouble())?.cagr5y }
-            "cap" -> rows.sortedBy { it.cap }
-            "pe" -> rows.sortedBy { it.pe }
-            "dividend" -> rows.sortedBy { it.dividendYield }
-            "momentum" -> rows.sortedBy { it.metrics?.score }
-            "upside" -> rows.sortedBy { it.analyst?.target?.let { target ->
+            "cap" -> visible.sortedBy { it.cap }
+            "pe" -> visible.sortedBy { it.pe }
+            "dividend" -> visible.sortedBy { it.dividendYield }
+            "momentum" -> visible.sortedBy { it.metrics?.score }
+            "upside" -> visible.sortedBy { it.analyst?.target?.let { target ->
                 (target - it.price).divide(it.price, java.math.MathContext.DECIMAL128) } }
-            "opportunity" -> rows.sortedBy { it.opportunityScore }
-            else -> rows.sortedBy { it.metrics?.score }
+            "opportunity" -> visible.sortedBy { it.opportunityScore }
+            else -> visible.sortedBy { it.metrics?.score }
         }
         if (descending) ordered.reversed() else ordered
     }
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 12.dp),
         contentPadding = PaddingValues(bottom = 70.dp)) {
         item {
-            Chips(listOf("Top performance", "Filtres", "Idées", "Secteurs"), tab) {
+            ScreenerHero(rows.size, busy, filters)
+            Chips(listOf("Scanner", "Filtres", "Stratégies", "Secteurs"), tab) {
                 tab = it
                 if (it == 3) { mode = "momentum"; sort = "period"; descending = true }
             }
-            if (tab != 3) Surface(
+            if (tab == 0) {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    listOf("Dividendes ≥ 3 %", "Mensuels", "Qualité", "Momentum").forEachIndexed { index, label ->
+                        SuggestionChip(onClick = {
+                            filters = when (index) {
+                                0 -> dividendPreset()
+                                1 -> dividendPreset("0", true)
+                                2 -> Filters(pePositive = true, peMax = BigDecimal("27"), debtEquityMax = BigDecimal("2"))
+                                else -> Filters(minMomentum = 75)
+                            }
+                            if (index <= 1) { columns = listOf("ticker", "price", "dividend", "period", "cap"); sort = "dividend" }
+                            else sort = "momentum"
+                            mode = "momentum"; descending = true
+                        }, label = { Text(label, fontSize = 11.sp) })
+                    }
+                }
+                TextButton(onClick = { tab = 1 }) { Text("Ajuster tous les critères  ›") }
+            }
+            if (tab == 3) Surface(
                 onClick = { tab = 3; mode = "momentum"; sort = "period"; descending = true },
                 modifier = Modifier.fillMaxWidth(),
                 color = Panel,
@@ -154,7 +182,8 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                         mode = "momentum"; period = PerformancePeriod.M3; tab = 0
                     }
                     Idea("Dividendes + momentum", "Rendement ≥ 2 % et tendance positive") {
-                        filters = Filters(dividendMin = BigDecimal("2"), minPerformance = 0.0)
+                        filters = dividendPreset("2").copy(minPerformance = 0.0)
+                        columns = listOf("ticker", "price", "dividend", "period", "cap"); sort = "dividend"
                         mode = "momentum"; period = PerformancePeriod.M3; tab = 0
                     }
                     Idea("Près du sommet 52 semaines", "Tendance positive et titres liquides") {
@@ -203,7 +232,16 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                             Modifier.weight(1f), fontSize = 11.sp, color = Muted)
                         TextButton(onClick = { showColumns = true }) { Text("⚙ Colonnes", fontSize = 11.sp) }
                     }
-                    DiscoverHeader(columns, period, scroll) { key ->
+                    OutlinedTextField(resultQuery, { resultQuery = it }, singleLine = true,
+                        placeholder = { Text("Filtrer les résultats : ticker ou nom") }, modifier = Modifier.fillMaxWidth())
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        listOf("dividend" to "Dividende", "cap" to "Capitalisation", "period" to "Rendement", "ticker" to "Ticker").forEach { (key, label) ->
+                            FilterChip(sort == key, onClick = { if (sort == key) descending = !descending else { sort = key; descending = true } },
+                                label = { Text(label + if (sort == key) if (descending) " ↓" else " ↑" else "", fontSize = 11.sp) })
+                        }
+                    }
+                    Chips(listOf("Cartes", "Tableau"), if (cardView) 0 else 1) { cardView = it == 0 }
+                    if (!cardView) DiscoverHeader(columns, period, scroll) { key ->
                         if (sort == key) descending = !descending
                         else { sort = key; descending = true }
                     }
@@ -211,13 +249,15 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                 itemsIndexed(if (tab == 3) sorted.take(30) else sorted,
                     key = { _, row -> row.security.id }) { index, row ->
                     val quote = wallet.quotes[row.security.id]
-                    DiscoverLine(index + 1, row, quote, columns, period, scroll) {
+                    val open: () -> Unit = {
                         vm.run {
                             vm.services.repo.put("security", row.security.id, row.security)
                             vm.services.repo.points(row.security.id, row.points)
                         }
                         onDetail(row.security)
                     }
+                    if (cardView) ScreenerStockCard(row, quote, period, open)
+                    else DiscoverLine(index + 1, row, quote, columns, period, scroll, open)
                 }
                 if (sorted.isEmpty() && !busy) item {
                     Text(if (status.contains("indisponibles", true)) status
@@ -325,7 +365,10 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
     "pe" -> number(r.pe)
     "forwardPe", "ps", "pb", "evEbitda", "roe", "roa", "revenueGrowth",
     "epsGrowth", "beta" -> number(r.fundamentals[key])
-    "dividend" -> percent(r.dividendYield)
+    "dividend" -> allocationPercent(r.dividendYield)
+    "dividendGrowth" -> percent(r.dividend?.growth)
+    "dividendFrequency" -> dividendFrequencyLabel(r.dividend?.frequency.orEmpty())
+    "payout" -> allocationPercent(r.fundamentals["payout"])
     "sector" -> r.sector.ifBlank { "—" }
     "industry" -> r.industry.ifBlank { "—" }
     "volume" -> number(r.volume, 0)
@@ -355,6 +398,8 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
     var presetName by remember { mutableStateOf("") }
     var saved by remember { mutableStateOf(prefs.all.keys.filter { it.startsWith("preset:") }.sorted()) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        DividendFilterPanel(initial, update)
+        ScreenerFilterGroup("Marchés et liquidité") {
         Text("MARCHÉS", color = Green)
         Row {
             listOf("Canada", "USA", "Tous").forEach { label ->
@@ -404,18 +449,12 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
                     label = { Text(n.dropLast(6) + " M$") })
             }
         }
+        }
+        ScreenerFilterGroup("Valeur et croissance") {
         Text("VALEUR ET CROISSANCE", color = Green)
         FilterNumber("P/E minimum", initial.peMin) { update(initial.copy(peMin = it)) }
         FilterNumber("P/E maximum", initial.peMax) { update(initial.copy(peMax = it)) }
         FilterToggle("P/E positif seulement", initial.pePositive) { update(initial.copy(pePositive = it)) }
-        FilterNumber("Dividend Yield min. (%)", initial.dividendMin) { update(initial.copy(dividendMin = it)) }
-        Row(Modifier.horizontalScroll(rememberScrollState())) {
-            listOf(null, 0, 1, 2, 3, 4, 5).forEach { n ->
-                FilterChip(initial.dividendMin == n?.let { BigDecimal(it) }, onClick = {
-                    update(initial.copy(dividendMin = n?.let { BigDecimal(it) })) },
-                    label = { Text(n?.let { "> $it %" } ?: "Tous") })
-            }
-        }
         FilterNumber("Revenue Growth min.", initial.revenueGrowthMin) { update(initial.copy(revenueGrowthMin = it)) }
         FilterNumber("EPS Growth min.", initial.epsGrowthMin) { update(initial.copy(epsGrowthMin = it)) }
         FilterNumber("FCF Growth min.", initial.fcfGrowthMin) { update(initial.copy(fcfGrowthMin = it)) }
@@ -424,6 +463,8 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
         FilterNumber("ROIC min.", initial.roicMin) { update(initial.copy(roicMin = it)) }
         FilterNumber("Marge nette min.", initial.netMarginMin) { update(initial.copy(netMarginMin = it)) }
         FilterNumber("Debt/Equity max.", initial.debtEquityMax) { update(initial.copy(debtEquityMax = it)) }
+        }
+        ScreenerFilterGroup("Secteurs") {
         Text("SECTEURS", color = Green)
         Row(Modifier.horizontalScroll(rememberScrollState())) {
             listOf("Technology", "Financial Services", "Healthcare", "Industrials",
@@ -436,6 +477,8 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
                 }, label = { Text(sector) })
             }
         }
+        }
+        ScreenerFilterGroup("Momentum et volatilité") {
         Text("MOMENTUM", color = Green)
         FilterNumber("Performance min. (%)", initial.minPerformance?.let(BigDecimal::valueOf)) {
             update(initial.copy(minPerformance = it?.toDouble())) }
@@ -458,6 +501,8 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
         FilterToggle("Anti-pump", initial.antiPump) { update(initial.copy(antiPump = it)) }
         FilterToggle("Historique suffisant", initial.requireHistory) { update(initial.copy(requireHistory = it)) }
         FilterToggle("Exclure ETF", initial.excludeEtf) { update(initial.copy(excludeEtf = it)) }
+        }
+        ScreenerFilterGroup("Analystes") {
         Text("ANALYSTES", color = Green)
         FilterNumber("Analystes minimum", BigDecimal(initial.analystMin), false) {
             update(initial.copy(analystMin = it?.toInt() ?: 0)) }
@@ -490,6 +535,8 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
         }
         FilterToggle("Exclure forte dispersion", initial.excludeDispersion) {
             update(initial.copy(excludeDispersion = it)) }
+        }
+        ScreenerFilterGroup("Mes scans enregistrés") {
         OutlinedTextField(presetName, { presetName = it }, label = { Text("Nom du preset") },
             singleLine = true, modifier = Modifier.fillMaxWidth())
         Row {
@@ -507,11 +554,13 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
                 }
             }) { Text(key.removePrefix("preset:")) }
         }
-        Button(onClick = apply, modifier = Modifier.fillMaxWidth()) { Text("Appliquer les filtres") }
+        }
+        OutlinedButton(onClick = { update(Filters()) }, modifier = Modifier.fillMaxWidth()) { Text("Réinitialiser les critères") }
+        Button(onClick = apply, modifier = Modifier.fillMaxWidth()) { Text("Lancer le scan") }
     }
 }
 
-@Composable private fun FilterNumber(label: String, value: BigDecimal?,
+@Composable internal fun FilterNumber(label: String, value: BigDecimal?,
     optional: Boolean = true, update: (BigDecimal?) -> Unit) {
     var raw by remember { mutableStateOf(value?.stripTrailingZeros()?.toPlainString() ?: "") }
     LaunchedEffect(value) {
@@ -525,7 +574,7 @@ private fun discoveryCell(r: DiscoveryRow, q: Quote?, key: String,
     }, label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth())
 }
 
-@Composable private fun FilterToggle(label: String, enabled: Boolean, change: (Boolean) -> Unit) {
+@Composable internal fun FilterToggle(label: String, enabled: Boolean, change: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), fontSize = 13.sp)
         Switch(enabled, onCheckedChange = change)

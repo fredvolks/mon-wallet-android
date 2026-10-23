@@ -27,7 +27,7 @@ object MarketColumns {
         MarketColumn("cap", "Market Cap", 94), MarketColumn("pe", "P/E"),
         MarketColumn("forwardPe", "Forward P/E"), MarketColumn("ps", "P/S"),
         MarketColumn("pb", "P/B"), MarketColumn("evEbitda", "EV/EBITDA"),
-        MarketColumn("dividend", "Dividend Yield"), MarketColumn("sector", "Secteur", 130),
+        MarketColumn("dividend", "Dividende %"), MarketColumn("dividendGrowth", "Croiss. dividende %", 115), MarketColumn("dividendFrequency", "Fréquence", 110), MarketColumn("payout", "Distribution %", 105), MarketColumn("sector", "Secteur", 130),
         MarketColumn("industry", "Industrie", 150), MarketColumn("volume", "Volume"),
         MarketColumn("avgVolume", "Volume moyen"), MarketColumn("dollarVolume", "Dollar Volume"),
         MarketColumn("beta", "Beta"), MarketColumn("high52", "52W High"),

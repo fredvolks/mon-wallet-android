@@ -20,7 +20,7 @@ data class FundComposition(val asOf: String, val positions: List<FundPosition>) 
 data class EtfDetails(val name: String, val issuer: String, val sourceUrl: String,
     val direct: FundComposition, val underlying: FundComposition?,
     val managementFee: String?, val mer: String?, val distributionFrequency: String?,
-    val netAssets: String?, val fetchedAt: Long = System.currentTimeMillis())
+    val netAssets: String?, val fetchedAt: Long = System.currentTimeMillis(), val compositionNote: String? = null)
 
 data class EtfLoad(val details: EtfDetails?, val cached: Boolean = false, val error: String? = null)
 
@@ -67,6 +67,17 @@ object EtfData {
     }
 
     suspend fun fetch(s: Security): EtfDetails {
+        if (s.type.uppercase() != "ETF") error("Ce titre n’est pas un FNB.")
+        if (s.currency == "CAD" && (s.symbol.uppercase().removeSuffix(".TO").startsWith("V"))) {
+            try { return VanguardFunds.fetch(s) }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        }
+        try { return fetchIshares(s) }
+        catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: Exception) { return BroadFundData.fetch(s) }
+    }
+
+    private suspend fun fetchIshares(s: Security): EtfDetails {
         val page = resolvePage(s) ?: error("Composition non couverte pour ce FNB pour le moment.")
         check(page.startsWith(root)) { "Composition automatique non couverte pour ce fournisseur pour le moment. La fiche officielle reste accessible." }
         val html = get(page)

@@ -597,7 +597,16 @@ class Router(private val settings: SecureSettings) : MarketDataProvider {
         }
     }
 
-    override suspend fun search(q: String) = provider().search(q)
+    override suspend fun search(q: String): List<Security> = supervisorScope {
+        val local = ca.monwallet.app.data.Catalog.all + SectorUniverse.stocks
+        val remote = SecuritySearch.remoteQueries(q).map { term -> async {
+            try { withTimeout(15_000) { provider().search(term) } }
+            catch (e: TimeoutCancellationException) { emptyList() }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { emptyList() }
+        } }.awaitAll().flatten()
+        SecuritySearch.rank(q, local + remote)
+    }
 
     override suspend fun news(s: Security) = provider().news(s)
 

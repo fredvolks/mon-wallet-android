@@ -5,6 +5,12 @@ import ca.monwallet.app.domain.Security
 object Catalog {
     val stocks =
         listOf(
+            Security.of("NA.TO", "Banque Nationale du Canada / National Bank of Canada", "TSX", "CAD"),
+            Security.of("RY.TO", "Banque Royale du Canada / Royal Bank of Canada", "TSX", "CAD"),
+            Security.of("TD.TO", "Toronto-Dominion Bank", "TSX", "CAD"),
+            Security.of("BMO.TO", "Banque de Montréal / Bank of Montreal", "TSX", "CAD"),
+            Security.of("BNS.TO", "Banque Scotia / Bank of Nova Scotia", "TSX", "CAD"),
+            Security.of("CM.TO", "CIBC / Banque Canadienne Impériale de Commerce", "TSX", "CAD"),
             Security.of("XEQT.TO", "iShares Core Equity ETF Portfolio", "TSX", "CAD", "ETF"),
             Security.of("VFV.TO", "Vanguard S&P 500 Index ETF", "TSX", "CAD", "ETF"),
             Security.of("QQC.TO", "Invesco NASDAQ 100 Index ETF", "TSX", "CAD", "ETF"),
