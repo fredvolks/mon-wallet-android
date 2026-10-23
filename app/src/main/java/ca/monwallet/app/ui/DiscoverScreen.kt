@@ -126,7 +126,7 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
         contentPadding = PaddingValues(bottom = 70.dp)) {
         item {
             ScreenerHero(rows.size, busy, filters)
-            Chips(listOf("Scanner", "Filtres", "Stratégies", "Secteurs"), tab) {
+            Chips(listOf("Scanner", "Filtres", "Stratégies", "Secteurs", "Analyste IA"), tab) {
                 tab = it
                 if (it == 3) { mode = "momentum"; sort = "period"; descending = true }
             }
@@ -165,9 +165,10 @@ fun DiscoverScreen(vm: WalletViewModel, onDetail: (Security) -> Unit) {
                 }
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            Text(status, fontSize = 10.sp, color = Muted)
+            if (tab != 4) Text(status, fontSize = 10.sp, color = Muted)
         }
         when (tab) {
+            4 -> item { PortfolioAnalyst(vm) }
             1 -> item {
                 FilterPanel(filters, { filters = it }, prefs, gson) { tab = 0; refresh++ }
             }
