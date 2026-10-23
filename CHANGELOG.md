@@ -1,3 +1,11 @@
+# 0.2.68 — Analyste IA : idées visibles et fiches séparées
+
+- Ouverture sur les idées : cartes avec logo, titre, quantité en actions entières et coût estimé en CAD.
+- Fiche dédiée au toucher : quantité, coût, budget restant et onglets Résumé / Chiffres / Sources.
+- Sections repliables pour les raisons, points à surveiller et effet sur le portefeuille; simulation séparée sans ordre de bourse.
+- Réglages regroupés dans Filtres, avec brouillons annulés à la fermeture et application explicite; choix du membre conservé.
+- Analyse IA et copie du dossier accessibles dans la fiche; données manquantes et dates conservées.
+
 # 0.2.67 — Widget : séance du jour et AFTER séparés
 
 - P&L régulier conservé après la clôture, remis à zéro à minuit.

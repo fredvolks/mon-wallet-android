@@ -54,13 +54,18 @@ class InvestmentAnalystTest {
                 Fundamentals(mapOf("P/E" to "20", "Dette / capitaux propres" to "1", "Capitalisation (M)" to "2000"), source = "Fixture Android", asOf = date),
                 emptyList(), emptyList(), emptyList(), listOf("Historique de tendance incomplet"))
             val research = InvestmentResearch(services)
-            val pack = ResearchPack(now, "TITLE", exposure, mapOf(fund.id to detail), listOf(stockResearch),
+            val second = stock.copy(id = "second-" + uuid(), symbol = "SECOND.TO", name = "Deuxième société")
+            val third = stock.copy(id = "third-" + uuid(), symbol = "THIRD.TO", name = "Troisième société")
+            val pack = ResearchPack(now, "IDEAS", exposure, mapOf(fund.id to detail), listOf(stockResearch,
+                stockResearch.copy(security = second, quote = stockResearch.quote!!.copy(securityId = second.id, price = "150".dec())),
+                stockResearch.copy(security = third, quote = stockResearch.quote!!.copy(securityId = third.id, price = "200".dec()))),
                 emptyList(), listOf(ResearchSource("fixture", "Source de test", "https://example.com", date)),
                 "500".dec(), "Canada", "3 à 5 ans", "Modéré", 35, emptyList(),
                 ledgerKey = research.ledgerKey(wallet, null, false, null),
                 positions = listOf(ResearchPosition(stock.symbol, stock.name, "3".dec(), "300".dec(), "CAD", stock.sector, now)))
-            research.save("self:all:TITLE", pack, null)
-            ReportsTestActivity.content = { WalletTheme { InvestmentAnalystDialog(services, stock, {}) } }
+            research.save("self:all:IDEAS", pack, null)
+            research.save("self:all:BALANCE", pack.copy(mode = "BALANCE", stocks = emptyList()), null)
+            ReportsTestActivity.content = { WalletTheme { InvestmentAnalystDialog(services, null, {}) } }
             val intent = Intent(context, ReportsTestActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             ActivityScenario.launch<ReportsTestActivity>(intent).use { scenario ->
                 val device = UiDevice.getInstance(instrumentation)
@@ -74,11 +79,27 @@ class InvestmentAnalystTest {
                     error("Missing analyst UI: " + text)
                 }
                 assertTrue(device.wait(Until.hasObject(By.text("Analyste IA")), 10000))
-                find("Équilibre du portefeuille")
-                assertNotNull(device.findObject(By.textContains("Valeur totale")))
-                capture(context, "reports-analyst-balance.png")
-                find("Société de test")
+                assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 10000))
+                assertTrue(device.hasObject(By.text("5 actions")))
+                assertFalse(device.hasObject(By.text("Équilibre du portefeuille")))
+                assertFalse(device.hasObject(By.textContains("Tolérance au risque")))
+                capture(context, "reports-analyst-ideas.png")
+                find("DEMO").click()
+                assertTrue(device.wait(Until.hasObject(By.text("Résumé")), 5000))
+                assertTrue(device.hasObject(By.text("Budget restant")))
+                assertTrue(device.hasObject(By.text("5 actions")))
+                assertFalse(device.hasObject(By.text("Deuxième société")))
                 capture(context, "reports-analyst-title.png")
+                find("Chiffres").click()
+                find("Ratios financiers")
+                capture(context, "reports-analyst-figures.png")
+                find("Sources", true).click()
+                find("Sources du titre")
+                find("Dossier complet").click()
+                find("Source de test")
+                capture(context, "reports-analyst-sources.png")
+                find("Résumé", true).click()
+                find("Analyse IA et copie pour ChatGPT").click()
                 find("Copier le dossier pour ChatGPT").click()
                 var copied = ""
                 scenario.onActivity { activity ->
@@ -89,11 +110,27 @@ class InvestmentAnalystTest {
                 assertTrue(copied.contains("unknownSector"))
                 assertFalse(copied.contains("Jacob"))
                 assertFalse(copied.contains("memberId"))
-                find("Pour qui?", true).click()
+                device.pressBack()
+                assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 5000))
+                find("Mon équilibre").click()
+                find("Équilibre du portefeuille")
+                capture(context, "reports-analyst-balance.png")
+                find("Idées", true).click()
+                find("Filtres", true).click()
+                find("Pour qui?").click()
                 assertTrue(device.wait(Until.hasObject(By.text("Jacob")), 3000))
                 device.findObject(By.text("Jacob")).click()
+                capture(context, "reports-analyst-filters.png")
+                // Closing filters cancels their drafts and preserves the current member.
+                find("Fermer", true).click()
+                assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 5000))
+                assertTrue(device.hasObject(By.text("5 actions")))
+                find("Filtres", true).click()
+                find("Pour qui?").click()
+                device.findObject(By.text("Jacob")).click()
+                find("Afficher les résultats").click()
                 instrumentation.waitForIdleSync()
-                assertFalse(device.hasObject(By.textContains("Dossier du")))
+                assertFalse(device.hasObject(By.text("DEMO")))
                 capture(context, "reports-analyst-scope.png")
             }
         } finally {
