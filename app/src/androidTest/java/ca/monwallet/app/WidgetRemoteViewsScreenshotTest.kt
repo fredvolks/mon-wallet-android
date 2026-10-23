@@ -51,12 +51,15 @@ class WidgetRemoteViewsScreenshotTest {
             java.time.ZoneId.of("America/New_York")).toInstant().toEpochMilli()
         val now = java.time.ZonedDateTime.of(2026, 10, 23, 9, 29, 0, 0,
             java.time.ZoneId.of("America/New_York")).toInstant().toEpochMilli()
-        val wallet = Wallet(portfolios = listOf(portfolio), securities = securities,
+        val fx = Security.of("CAD=X", "USD/CAD", "FX", "CAD")
+        val wallet = Wallet(portfolios = listOf(portfolio), securities = securities + fx,
+            transactions = securities.map { Transaction(portfolioId = portfolio.id, securityId = it.id,
+                quantity = ONE, price = BigDecimal("10"), currency = it.currency, date = "2026-10-20") },
             quotes = securities.mapIndexed { index, security ->
                 security.id to Quote(security.id, BigDecimal(amounts[index]),
                     BigDecimal(amounts[index]).divide(BigDecimal.ONE.add(
                         BigDecimal(changes[index]).divide(BigDecimal("100"))), MathContext.DECIMAL128),
-                    security.currency, now, LocalDate.now().toString(), "exemple visuel",
+                    security.currency, now, "2026-10-22", "exemple visuel",
                     preMarketPrice = if (preMarket && index in setOf(1, 5))
                         BigDecimal(amounts[index]) + BigDecimal("0.50") else null,
                     preMarketTimestamp = if (preMarket && index in setOf(1, 5)) now else null,
@@ -65,14 +68,20 @@ class WidgetRemoteViewsScreenshotTest {
                     afterHoursTimestamp = if (index in setOf(1, 5)) printAt else null,
                     afterHoursChangePercent = if (index in setOf(1, 5)) BigDecimal("0.27") else null,
                     marketSession = "CLOSED")
-            }.toMap())
+            }.toMap() + (fx.id to Quote(fx.id, ONE, ONE, "CAD", now, "2026-10-22", "fixture")))
         val result = Result(holdings, BigDecimal("9300"), ZERO, BigDecimal("9348.36"),
             ZERO, ZERO, BigDecimal("48.36"), BigDecimal("6535.135"))
         val settings = WidgetSettings(style = "Daily + Titres", titleCount = count,
-            custom = true, titleIds = securities.map { it.id }, price = true, chart = false,
+            custom = true, titleIds = securities.map { it.id }, price = true, chart = true,
             logo = true, titleTotalPercent = false)
+        val points = securities.flatMap { security ->
+            val q = wallet.quotes.getValue(security.id)
+            listOf(Point(security.id, "2026-10-22", q.previous!!, printAt - 8 * 3600000L),
+                Point(security.id, "2026-10-22", q.price, printAt - 90 * 60000L),
+                Point(security.id, "2026-10-22", q.afterHoursPrice ?: q.price, printAt))
+        }
         val remote = WidgetWideRenderer.render(context, 101, null, settings, wallet,
-            portfolio.id, result, false, emptyList(), widthDp to heightDp, quoteNow = now)
+            portfolio.id, result, false, points, widthDp to heightDp, quoteNow = now)
         var screenshot: Bitmap? = null
         instrumentation.runOnMainSync {
             val parcel = android.os.Parcel.obtain()
@@ -89,7 +98,12 @@ class WidgetRemoteViewsScreenshotTest {
             view.layout(0, 0, width, height)
             val rows = view.findViewById<LinearLayout>(R.id.widget_rows)
             assertEquals(count, rows.childCount)
-            assertEquals("Depuis clôture 16 h", view.findViewById<TextView>(R.id.widget_day).text.toString())
+            assertEquals(context.getString(R.string.widget_today), view.findViewById<TextView>(R.id.widget_day).text.toString())
+            val after = view.findViewById<TextView>(R.id.widget_after)
+            assertEquals(View.VISIBLE, after.visibility)
+            assertTrue(after.text.toString().startsWith("AFTER"))
+            assertTrue(after.paint.measureText(after.text.toString()) <= after.width)
+            assertEquals(View.VISIBLE, view.findViewById<ImageView>(R.id.widget_chart).visibility)
             val amount = view.findViewById<TextView>(R.id.widget_amount)
             assertTrue(amount.textSize >
                 view.findViewById<TextView>(R.id.widget_total).textSize)

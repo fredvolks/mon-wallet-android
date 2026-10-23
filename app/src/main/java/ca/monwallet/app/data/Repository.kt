@@ -222,10 +222,13 @@ class Repository(val db: Database, val scope: CoroutineScope) {
         val kind = if (intraday) "intraday" else "history"
         val key = "$kind:$id"
         mutex.withLock {
-            val saved = if (intraday) emptyList() else dao.cache().firstOrNull { it.id == key }
+            val saved = dao.cache().firstOrNull { it.id == key }
                 ?.let { runCatching { gson.fromJson(it.payload, Array<Point>::class.java).toList() }
                     .getOrDefault(emptyList()) }.orEmpty()
-            val combined = if (intraday) points else (saved + points)
+            val combined = if (intraday) (saved + points)
+                .filter { it.securityId == id && it.timestamp >= System.currentTimeMillis() - java.util.concurrent.TimeUnit.DAYS.toMillis(10) }
+                .associateBy { it.timestamp }.values.sortedBy { it.timestamp }
+                else (saved + points)
                 .filter { it.securityId == id }
                 .associateBy { it.date }.values.sortedBy { it.date }
             dao.cache(Cache(key, kind, gson.toJson(combined), System.currentTimeMillis()))

@@ -6,12 +6,12 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import ca.monwallet.app.domain.Engine
-import ca.monwallet.app.domain.CivilDayPnl
 import ca.monwallet.app.domain.MarketClock
 import ca.monwallet.app.domain.MarketHoliday
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Wallet
 import ca.monwallet.app.domain.ZERO
+import ca.monwallet.app.domain.pct
 import java.time.LocalDate
 
 /** Uses the same accounting engine as the portfolio page; never synthesizes market points. */
@@ -47,53 +47,93 @@ internal object WidgetChartData {
         }.getOrDefault(emptyList())
     }
 
-    private fun intraday(wallet: Wallet, portfolio: String?, cached: List<Point>): List<Float> {
+    internal data class DaySeries(val values: List<Float>, val afterStart: Int? = null)
+
+    internal fun sessionStart(now: Long): Long {
+        val date = if (MarketClock.offSession(now)) MarketClock.date(MarketClock.lastClose(now))
+            else MarketClock.date(now)
+        return date.atTime(9, 30).atZone(MarketClock.zone).toInstant().toEpochMilli()
+    }
+
+    internal fun regularResult(wallet: Wallet, portfolio: String?, now: Long): ca.monwallet.app.domain.Result {
+        val date = MarketClock.date(now).toString()
+        val quotes = wallet.quotes.mapValues { (_, q) ->
+            if (q.sessionDate == date) q else q.copy(previous = q.price, sessionDate = date)
+        }
+        val excluded = wallet.securities.filter { MarketHoliday.excludesDailyPnl(it, now) }.map { it.id }.toSet()
+        return Engine.calculate(wallet.transactions.filter { portfolio == null || it.portfolioId == portfolio },
+            quotes, wallet.securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id] }, excluded,
+            dailyDate = date)
+    }
+
+    /** Retain actual extended prints through midnight/weekends, until the next regular open. */
+    internal fun afterResult(wallet: Wallet, portfolio: String?, now: Long): Pair<java.math.BigDecimal?, java.math.BigDecimal?>? {
+        if (!MarketClock.offSession(now)) return null
+        val close = MarketClock.lastClose(now)
+        val result = wallet.result(portfolio, now)
+        var pnl = ZERO
+        if (result.value == null) return Pair(null, null)
+        var hasPrint = false
+        for (h in result.holdings.filter { it.quantity > ZERO }) {
+            val q = wallet.quotes[h.securityId] ?: return Pair(null, null)
+            val security = wallet.security(h.securityId)
+            if (security == null || !ca.monwallet.app.marketdata.supportsUsExtendedHours(security)) continue
+            val prints = listOfNotNull(
+                q.afterHoursTimestamp?.let { t -> q.afterHoursPrice?.let { Pair(t, it) } },
+                q.preMarketTimestamp?.let { t -> q.preMarketPrice?.let { Pair(t, it) } }
+            ).filter { it.first in close..now }
+            val price = prints.maxByOrNull { it.first }?.second ?: continue
+            val fx = if (q.currency == "CAD") java.math.BigDecimal.ONE else wallet.securities
+                .find { it.symbol == "CAD=X" }?.let { wallet.quotes[it.id]?.price } ?: return Pair(null, null)
+            pnl += h.quantity * (price - q.price) * fx
+            hasPrint = true
+        }
+        if (!hasPrint) return Pair(null, null)
+        // Use regular close portfolio value as the percentage denominator.
+        val base = Engine.calculate(wallet.transactions.filter { portfolio == null || it.portfolioId == portfolio },
+            wallet.quotes, wallet.securities.find { it.symbol == "CAD=X" }?.let { wallet.quotes[it.id] }).value
+            ?: return Pair(null, null)
+        return Pair(pnl, base.takeIf { it.signum() > 0 }?.let { pnl.pct(it) })
+    }
+
+    internal fun daySeries(wallet: Wallet, portfolio: String?, cached: List<Point>, now: Long): DaySeries {
         val tx = wallet.transactions.filter { portfolio == null || it.portfolioId == portfolio }
-        val excluded = wallet.securities.filter { MarketHoliday.isHolidayToday(it) }
-            .map { it.id }.toSet()
-        val holdings = wallet.result(portfolio).holdings
-        val held = holdings
-            .filter { it.quantity > ZERO && it.securityId !in excluded }
-            .map { it.securityId }.toSet()
-        if (held.isEmpty()) return emptyList()
-        val now = System.currentTimeMillis()
-        val session = CivilDayPnl.date(now)
-        val start = MarketClock.chartStart(now)
-        val outside = MarketClock.offSession(now)
+        val held = wallet.result(portfolio, now).holdings.filter { it.quantity > ZERO }.map { it.securityId }.toSet()
+        val start = sessionStart(now)
+        val close = MarketClock.date(start).atTime(16, 0).atZone(MarketClock.zone).toInstant().toEpochMilli()
+        val sessionDate = MarketClock.date(start).toString()
+        val previousCloses = wallet.prices.filter { it.date < sessionDate && it.securityId in held }
+            .groupBy { it.securityId }.mapValues { (_, bars) -> bars.maxByOrNull { it.date }!!.close }
         val points = cached.filter { it.securityId in held && it.timestamp in start..now }
         val times = points.map { it.timestamp }.distinct().sorted()
-        val bySecurity = points.groupBy { it.securityId }
-            .mapValues { (_, series) -> series.sortedBy { it.timestamp } }
+        val bySecurity = points.groupBy { it.securityId }.mapValues { it.value.sortedBy { p -> p.timestamp } }
         val fx = wallet.securities.find { it.symbol == "CAD=X" }
-        return times.mapNotNull { timestamp ->
-            val quotes = wallet.quotes.mapValues { (id, quote) ->
-                CivilDayPnl.dailyQuote(quote, wallet.security(id), now)
-            }.toMutableMap()
-            if (held.any { it !in quotes }) return@mapNotNull null
-            for (securityId in held) {
-                val point = bySecurity[securityId]?.lastOrNull { it.timestamp <= timestamp }
-                val quote = quotes.getValue(securityId)
-                // Other holdings retain their actual day reference until their first bar.
-                quotes[securityId] = if (point != null)
-                    quote.copy(price = point.close, timestamp = point.timestamp)
-                    else quote.copy(price = quote.previous ?: return@mapNotNull null)
+        val values = mutableListOf<Float>()
+        var after: Int? = null
+        for (time in times) {
+            val quotes = wallet.quotes.toMutableMap()
+            var complete = true
+            for (id in held) {
+                val original = quotes[id]
+                if (original == null) { complete = false; break }
+                val point = bySecurity[id]?.lastOrNull { it.timestamp <= time }
+                val reference = previousCloses[id] ?: original.previous
+                val price = point?.close ?: reference
+                if (price == null) { complete = false; break }
+                quotes[id] = original.copy(price = price, previous = reference, sessionDate = sessionDate)
             }
-            // Same close reference and current-position quantities as the off-session hero.
-            val value = if (outside) {
-                var sum = ZERO
-                for (holding in holdings.filter { it.securityId in held }) {
-                    val quote = quotes[holding.securityId] ?: return@mapNotNull null
-                    val close = quote.previous ?: return@mapNotNull null
-                    val rate = if (quote.currency == "CAD") java.math.BigDecimal.ONE
-                        else fx?.let { quotes[it.id]?.price } ?: return@mapNotNull null
-                    sum += holding.quantity * (quote.price - close) * rate
-                }
-                sum.toFloat()
-            } else runCatching { Engine.calculate(tx, quotes, fx?.let { quotes[it.id] },
-                excluded, dailyDate = session).day?.toFloat() }.getOrNull()
-            value?.takeIf { it.isFinite() }
+            if (!complete) continue
+            val value = Engine.calculate(tx, quotes, fx?.let { quotes[it.id] },
+                dailyDate = MarketClock.date(start).toString()).day?.toFloat() ?: continue
+            if (!value.isFinite()) continue
+            if (time > close && after == null) after = values.size
+            values.add(value)
         }
+        return DaySeries(values, after)
     }
+
+    private fun intraday(wallet: Wallet, portfolio: String?, cached: List<Point>): List<Float> =
+        daySeries(wallet, portfolio, cached, System.currentTimeMillis()).values
 
     internal data class SegmentPiece(val startFraction: Float, val endFraction: Float, val sign: Int)
 
@@ -114,7 +154,7 @@ internal object WidgetChartData {
         return listOf(SegmentPiece(0f, 1f, sign))
     }
 
-    fun bitmap(values: List<Float>, width: Int = 720, height: Int = 55): Bitmap {
+    fun bitmap(values: List<Float>, width: Int = 720, height: Int = 55, afterStart: Int? = null): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         if (values.size < 2) return bitmap
         val min = minOf(values.minOrNull() ?: 0f, 0f)
@@ -133,12 +173,13 @@ internal object WidgetChartData {
             val y1 = y(start)
             val y2 = y(end)
             segmentPieces(start, end).forEach { piece ->
-                if (piece.sign == 0) return@forEach
+                if (piece.sign == 0 && (afterStart == null || index + 1 < afterStart)) return@forEach
                 val px1 = x1 + (x2 - x1) * piece.startFraction
                 val px2 = x1 + (x2 - x1) * piece.endFraction
                 val py1 = y1 + (y2 - y1) * piece.startFraction
                 val py2 = y1 + (y2 - y1) * piece.endFraction
-                val color = if (piece.sign > 0) Color.rgb(79, 239, 142)
+                val color = if (afterStart != null && index + 1 >= afterStart) Color.rgb(181, 150, 241)
+                    else if (piece.sign > 0) Color.rgb(79, 239, 142)
                     else Color.rgb(255, 93, 117)
 
                 val fill = Path().apply {

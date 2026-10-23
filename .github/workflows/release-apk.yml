@@ -2,6 +2,7 @@ name: Signed release
 on:
   push:
     tags: ['v*.*.*']
+    branches: ['release/monwallet-v*']
   workflow_dispatch:
     inputs:
       release_version:
@@ -33,6 +34,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" == release/monwallet-v* ]]; then TAG="${GITHUB_REF_NAME#release/monwallet-}"; fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
           [[ "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || exit 1
           major=${BASH_REMATCH[1]}; minor=${BASH_REMATCH[2]}; patch=${BASH_REMATCH[3]}
           (( minor < 1000 && patch < 1000 )) || exit 1
@@ -54,7 +57,7 @@ jobs:
             exit 1
           fi
       - name: Create tag for manually requested release
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref_name, 'release/monwallet-v')
         run: |
           set -euo pipefail
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
