@@ -405,7 +405,7 @@ data class Wallet(
             val byId = sessionResult.holdings.associateBy { it.securityId }
             return copy(day = sessionResult.day, dayBase = sessionResult.dayBase,
                 holdings = holdings.map { holding ->
-                    holding.copy(day = byId[holding.securityId]?.day,
+                    holding.copy(day = if (holding.securityId in holidayIds) ZERO else byId[holding.securityId]?.day,
                         dayBase = byId[holding.securityId]?.dayBase)
                 })
         }
