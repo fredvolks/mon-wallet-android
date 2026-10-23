@@ -129,6 +129,25 @@ class WidgetRemoteViewsScreenshotTest {
             screenshot = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
                 view.draw(Canvas(it))
             }
+            for (index in listOf(1, 5).filter { it < count }) {
+                val cell = rows.getChildAt(index).findViewById<TextView>(R.id.widget_row_ticker)
+                val rect = android.graphics.Rect()
+                cell.getDrawingRect(rect)
+                (view as android.view.ViewGroup).offsetDescendantRectToMyCoords(cell, rect)
+                val extraWidth = cell.paint.measureText("+0,27 %").toInt() + 4
+                val xStart = (rect.right - extraWidth).coerceAtLeast(rect.left)
+                val drawn = (rect.top until rect.bottom).any { py ->
+                    (xStart until rect.right).any { px ->
+                        val color = requireNotNull(screenshot).getPixel(px, py)
+                        val r = android.graphics.Color.red(color)
+                        val g = android.graphics.Color.green(color)
+                        val b = android.graphics.Color.blue(color)
+                        if (preMarket) b > 150 && b > r + 40 && g > 100
+                        else b > 180 && b > g + 40 && r > 100
+                    }
+                }
+                assertTrue("PRE/AFTER numbers must actually be painted at the right edge", drawn)
+            }
             val body = view.findViewById<View>(R.id.widget_body)
             val first = rows.getChildAt(0)
             val title = first.findViewById<TextView>(R.id.widget_row_ticker)
