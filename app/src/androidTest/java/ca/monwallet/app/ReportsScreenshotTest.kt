@@ -136,7 +136,7 @@ class ReportsScreenshotTest {
             capture(context, "reports-closed-trades.png")
             click(By.text("ⓘ"))
             shown("Si tu l’avais gardé")
-            shown("000,00")
+            shown("Valeur actuelle")
             capture(context, "reports-retained-trade.png")
             click(By.text("ⓘ"))
             click(By.text("Transactions"))

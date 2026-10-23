@@ -139,6 +139,7 @@ class Repository(val db: Database, val scope: CoroutineScope) {
                     require(security != null && security.currency == t.currency) {
                         "Vérifie le marché et la devise."
                     }
+                require(t.memberId == null || s.familyMembers().any { it.id == t.memberId }) { "Membre introuvable." }
                 Engine.validate(s.transactions.filter { it.id != t.id } + t)
                 security?.let { raw("security", it.id, it) }
                 raw("transaction", t.id, t)

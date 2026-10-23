@@ -250,8 +250,14 @@ internal fun ReportsDashboard(
                             Text("${sales.size} / ${sales.count { it.closed }}", fontWeight = FontWeight.Bold) }
                     }
                 }
+                val pending = runCatching { FamilyLedger.resolve(tx).pending }.getOrDefault(emptyList())
+                items(pending, key = { "pending_" + it.id }) { sale ->
+                    ReportCard { Text("Vente à compléter", color = Blue, fontWeight = FontWeight.Bold)
+                        ReportTransactionRow(wallet, sale)
+                        ReportCaption("Prix d’achat ou quantité manquante. Corrige l’historique dans Transactions; le calcul reprendra automatiquement.") }
+                }
                 salesResult.exceptionOrNull()?.let { error -> item { ReportCaption("Calcul indisponible : ${error.message}") } }
-                if (sales.isEmpty() && salesResult.isSuccess) item { Empty("Aucune vente sur cette période",
+                if (sales.isEmpty() && pending.isEmpty() && salesResult.isSuccess) item { Empty("Aucune vente sur cette période",
                     "Les achats sont visibles dans Transactions. Les ventes apparaîtront avec leur profit net.") }
                 items(sales, key = { it.saleId }) { trade -> ReportTradeCard(wallet, trade, fetchQuote) }
                 item { ReportCaption("Coût moyen et frais inclus. Profit net en CAD, avec les taux FX enregistrés. La période filtre les ventes; les achats antérieurs restent inclus dans le coût.") }
@@ -345,7 +351,7 @@ internal fun ReportTradeCard(wallet: Wallet, trade: ClosedTrade, fetchQuote: (su
         }
         if (!trade.closed) ReportCaption("Reste après cette vente : ${number(trade.remaining, 6)} action(s)")
         if (retainedOpen) RetainedTradeInfo(wallet, trade, fetchQuote)
-        ReportCaption(wallet.portfolios.find { it.id == trade.portfolioId }?.name.orEmpty())
+        ReportCaption(wallet.memberName(wallet.transactions.find { it.id == trade.saleId }?.memberId) + " · " + wallet.portfolios.find { it.id == trade.portfolioId }?.name.orEmpty())
     }
 }
 
@@ -385,17 +391,17 @@ private fun RetainedTradeInfo(wallet: Wallet, trade: ClosedTrade, fetchQuote: (s
             if (value == null) ReportCaption("Cours ou taux USD/CAD indisponible. Aucun montant estimé.")
             else {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SmallReportMetric("Investissement · CAD", money(value.invested), Modifier.weight(1f))
+                    SmallReportMetric("Vendu pour · CAD", money(value.saleProceeds), Modifier.weight(1f))
                     SmallReportMetric("Valeur actuelle · CAD", money(value.value), Modifier.weight(1f))
                 }
-                Text("${signed(value.profit)} · ${percent(value.percent)}", color = tint(value.profit), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                ReportCaption("Écart avec ta vente : ${signed(value.versusSale)} CAD")
+                Text("${signed(value.versusSale)} · ${percent(value.versusSalePercent)}", color = tint(value.versusSale), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                ReportCaption("Depuis ta vente · valeur actuelle moins produit net encaissé.")
                 ReportCaption("${number(trade.quantity, 6)} action(s) vendue(s) · cours ${money(current?.price, trade.currency)}")
                 quote?.let { q -> ReportCaption("${q.source} · cours du " + java.time.Instant.ofEpochMilli(q.timestamp).atZone(MarketClock.zone)
                     .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm", Locale.CANADA_FRENCH))) }
                 if (trade.currency == "USD") fx?.let { q -> ReportCaption("USD/CAD ${number(q.price, 4)} · taux du " + java.time.Instant.ofEpochMilli(q.timestamp).atZone(MarketClock.zone)
                     .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm", Locale.CANADA_FRENCH))) }
-                ReportCaption("Simulation depuis le coût d’achat, frais d’achat inclus. Sans dividendes ni nouveaux frais de vente. Ne modifie pas ton rendement réel.")
+                ReportCaption("Comparaison depuis ta vente, en CAD au taux actuel. Sans dividendes ni nouveaux frais de vente. Ne modifie pas ton rendement réel.")
             }
         }
     }
@@ -416,6 +422,8 @@ internal fun ReportTransactionRow(wallet: Wallet, tx: Transaction) {
             ReportCaption("${number(tx.quantity, 6)} × ${money(tx.price, tx.currency)} · Frais ${money(tx.fees, tx.currency)}")
         ReportCaption(wallet.portfolios.find { it.id == tx.portfolioId }?.name.orEmpty() +
             if (tx.currency == "USD") " · FX ${number(tx.fxRate, 6)} CAD/USD" else "")
+        ReportCaption("Pour : " + wallet.memberName(tx.memberId))
+        if (FamilyLedger.resolve(wallet.transactions).pending.any { it.id == tx.id }) ReportCaption("Profit et quantités : à compléter · achat manquant")
         if (tx.note.isNotBlank()) Text(tx.note, fontSize = 12.sp, lineHeight = 17.sp)
     }
 }

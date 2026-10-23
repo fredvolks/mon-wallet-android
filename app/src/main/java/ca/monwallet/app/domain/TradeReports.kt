@@ -34,6 +34,7 @@ data class RetainedTradeValue(val invested: BigDecimal, val value: BigDecimal, v
     val profit get() = value - invested
     val percent get() = profit.pct(invested)
     val versusSale get() = value - saleProceeds
+    val versusSalePercent get() = versusSale.pct(saleProceeds)
 }
 
 fun ClosedTrade.ifRetained(price: BigDecimal?, quoteCurrency: String?, cadRate: BigDecimal?): RetainedTradeValue? {
@@ -51,15 +52,15 @@ object TradeReports {
         var original: BigDecimal = ZERO, var grossOriginal: BigDecimal = ZERO,
         var buyFeesCad: BigDecimal = ZERO, var firstBuy: String = "", var lastBuy: String = "")
     fun sales(transactions: List<Transaction>): List<ClosedTrade> {
-        val positions = mutableMapOf<Pair<String, String>, Position>()
+        val positions = mutableMapOf<Triple<String, String?, String>, Position>()
         val results = mutableListOf<ClosedTrade>()
-        transactions.sortedWith(compareBy<Transaction> { it.date }
+        FamilyLedger.resolve(transactions).accounted.sortedWith(compareBy<Transaction> { it.date }
             .thenBy { when (it.type) { TxType.DEPOSIT -> 0; TxType.WITHDRAWAL -> 2; else -> 1 } }
             .thenBy { it.createdAt }.thenBy { it.id }).forEach { tx ->
             val id = tx.securityId ?: return@forEach
             if (tx.type !in setOf(TxType.BUY, TxType.SELL)) return@forEach
             require(tx.quantity > ZERO && tx.fxRate > ZERO && tx.price >= ZERO && tx.fees >= ZERO)
-            val position = positions.getOrPut(tx.portfolioId to id) { Position() }
+            val position = positions.getOrPut(Triple(tx.portfolioId, tx.memberId, id)) { Position() }
             if (tx.type == TxType.BUY) {
                 if (position.quantity.signum() == 0) position.firstBuy = tx.date
                 position.lastBuy = tx.date

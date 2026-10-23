@@ -130,8 +130,13 @@ fun TransactionDialog(
     onClose: () -> Unit,
     onSaved: (Transaction, Security?) -> Unit,
     initialType: TxType = TxType.BUY,
+    initialMemberId: String? = null,
 ) {
     val checkAmounts = stringResource(R.string.check_amounts)
+    val familyWallet by s.repo.state.collectAsState()
+    var memberId by remember { mutableStateOf(edit?.memberId ?: initialMemberId) }
+    var addMember by remember { mutableStateOf(false) }
+    var pendingSale by remember { mutableStateOf<Transaction?>(null) }
     var security by remember { mutableStateOf(initial ?: w.security(edit?.securityId)) }
     var chosen by remember {
         mutableStateOf(edit?.portfolioId ?: portfolio ?: w.portfolios.firstOrNull()?.id)
@@ -179,6 +184,9 @@ fun TransactionDialog(
         ) {
             chosen = w.portfolios[it].id
         }
+        val members = familyWallet.familyMembers()
+        Choice("Pour qui?", familyWallet.memberName(memberId), members.map { it.name }) { memberId = members[it].id }
+        TextButton(onClick = { addMember = true }) { Text("+ Ajouter un membre") }
         if (w.portfolios.isEmpty()) Caption(stringResource(R.string.ui_cree_dabord_un_portefeuille_dans_profil_de99b))
         if (needSecurity)
             OutlinedButton(onClick = { search = true }, modifier = Modifier.fillMaxWidth()) {
@@ -190,12 +198,12 @@ fun TransactionDialog(
         if (hasShares) TextEntry(stringResource(R.string.ui_quantite_09a38), quantity, { quantity = it }, true)
         if (type == TxType.SELL && chosen != null && security != null) {
             val available = runCatching {
-                Engine.availableAt(w.transactions.filter { it.id != edit?.id }, chosen!!, security!!.id, day)
+                FamilyLedger.availableAt(w.transactions.filter { it.id != edit?.id }, chosen!!, security!!.id, memberId, day)
             }.getOrNull()
-            Metric(stringResource(R.string.shares_available), number(available, 6))
+            Metric("Parts de " + familyWallet.memberName(memberId), number(available, 6))
             if (available != null && available > ZERO)
                 TextButton(onClick = { quantity = available.toPlainString() }) {
-                    Text(stringResource(R.string.sell_all_shares))
+                    Text("Tout vendre — " + number(available, 6) + " action(s)")
                 }
         }
         TextEntry(stringResource(if (hasShares) R.string.price_per_share else R.string.ui_montant_4adcd), price, { price = it }, true)
@@ -227,7 +235,7 @@ fun TransactionDialog(
                     id = edit?.id ?: "preview", portfolioId = chosen!!, securityId = security!!.id,
                     type = TxType.SELL, quantity = quantity.dec(), price = price.dec(),
                     currency = currency, fxRate = if (currency == "CAD") ONE else fx.dec(),
-                    fees = fees.dec(), date = day,
+                    fees = fees.dec(), date = day, memberId = memberId,
                 ))
             }
             preview.getOrNull()?.let {
@@ -261,10 +269,17 @@ fun TransactionDialog(
                                 fxDate = if (currency == "CAD") day else fxDate,
                                 createdAt = edit?.createdAt ?: System.currentTimeMillis(),
                                 note = note,
+                                memberId = memberId,
+                                allowUnmatchedSale = edit?.allowUnmatchedSale,
                             )
-                        s.repo.transaction(t, if (needSecurity) security else null)
-                        onSaved(t, security)
-                        onClose()
+                        val available = if (t.type == TxType.SELL) FamilyLedger.availableAt(
+                            w.transactions.filter { it.id != t.id }, t.portfolioId, t.securityId!!, t.memberId, t.date) else ZERO
+                        if (t.type == TxType.SELL && t.quantity > available) pendingSale = t
+                        else {
+                            s.repo.transaction(t, if (needSecurity) security else null)
+                            onSaved(t, security)
+                            onClose()
+                        }
                     } catch (e: Exception) {
                         error = e.message ?: checkAmounts
                     } finally {
@@ -284,6 +299,29 @@ fun TransactionDialog(
         Caption(
             stringResource(R.string.ui_les_ventes_conservent_les_achats_historiques__97c24)
         )
+    }
+    if (addMember) FamilyMemberDialog(s, { addMember = false }) { memberId = it; addMember = false }
+    pendingSale?.let { sale ->
+        val available = FamilyLedger.availableAt(w.transactions.filter { it.id != sale.id },
+            sale.portfolioId, sale.securityId!!, sale.memberId, sale.date)
+        AlertDialog(onDismissRequest = { pendingSale = null },
+            title = { Text("Historique à compléter") },
+            text = { Text(familyWallet.memberName(sale.memberId) + " possède " + number(available, 6) +
+                " action(s) selon l’historique, mais tu en vends " + number(sale.quantity, 6) +
+                ". Il manque peut-être un achat. Le profit, les soldes et les quantités concernés resteront à compléter tant que l’historique manque.") },
+            dismissButton = { TextButton(onClick = { pendingSale = null }) { Text("Corriger") } },
+            confirmButton = { TextButton(enabled = !saving, onClick = {
+                scope.launch {
+                    saving = true
+                    try {
+                        val accepted = sale.copy(allowUnmatchedSale = true)
+                        s.repo.transaction(accepted, security)
+                        onSaved(accepted, security); pendingSale = null; onClose()
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (e: Exception) { error = e.message; pendingSale = null }
+                    finally { saving = false }
+                }
+            }) { Text("Enregistrer quand même") } })
     }
     if (search)
         SearchDialog(s, w, { search = false }) {
