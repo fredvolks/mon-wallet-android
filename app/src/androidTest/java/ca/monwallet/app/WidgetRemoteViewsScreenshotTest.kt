@@ -90,14 +90,18 @@ class WidgetRemoteViewsScreenshotTest {
             for (index in 0 until count) {
                 val row = rows.getChildAt(index)
                 assertNotNull(row.findViewById<ImageView>(R.id.widget_row_logo).drawable)
-                if (index in setOf(1, 5)) {
-                    val after = row.findViewById<TextView>(R.id.widget_row_after)
-                    assertEquals(View.VISIBLE, after.visibility)
-                    assertTrue(after.text.contains("AFTER"))
-                    assertTrue("AFTER has no drawing space", after.height > 0)
-                    assertEquals("AFTER must not be ellipsized", 0, after.layout.getEllipsisCount(0))
-                }
                 val text = row.findViewById<TextView>(R.id.widget_row_ticker)
+                assertEquals("No AFTER subline", View.GONE,
+                    row.findViewById<TextView>(R.id.widget_row_after).visibility)
+                if (index in setOf(1, 5)) {
+                    assertTrue("AFTER belongs on the price line", text.text.contains("☾ +0,27 %"))
+                    val spans = text.text as android.text.Spanned
+                    assertTrue("AFTER must inherit the main font size",
+                        spans.getSpans(0, spans.length,
+                            android.text.style.RelativeSizeSpan::class.java).isEmpty())
+                }
+                assertTrue("Compact widget text must stay readable",
+                    text.textSize / context.resources.displayMetrics.scaledDensity >= 10f)
                 assertEquals("All price columns need the same character width",
                     commonTextSize, text.textSize, 0.1f)
                 assertTrue("Missing title ${tickers[index]} in ${text.text}",

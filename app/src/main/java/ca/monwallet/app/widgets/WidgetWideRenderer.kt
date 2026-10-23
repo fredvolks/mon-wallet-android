@@ -227,26 +227,22 @@ internal object WidgetWideRenderer {
         // Reserve only as many characters as this widget's selected titles need.
         // Ten fixed price characters made the type needlessly tiny on a real 4x2.
         val tickerChars = (quoteDetails.maxOfOrNull { it.label.length } ?: 4).coerceIn(4, 5)
-        val priceChars = (quoteDetails.maxOfOrNull { it.price.length } ?: 6).coerceAtLeast(6)
+        val priceChars = (quoteDetails.maxOfOrNull { it.price.length } ?: 6).coerceAtLeast(6) + 1
         val summaries = quoteDetails.associate { detail ->
             detail.id to titleSummary(detail.label, detail.price, detail.dayPercent,
-                config.price && !config.hideAmounts, config.titleDayPercent, null,
-                tickerChars, priceChars, null, detail.holiday)
+                config.price && !config.hideAmounts, config.titleDayPercent, detail.session,
+                tickerChars, priceChars, detail.extendedPercent, detail.holiday)
         }
         // One text size for every title keeps the monospace price/% columns aligned.
         // Account for the actual 4x2 width, the divider, and the larger logos.
-        val logoWidth = if (!config.logo) 0f else when (plan.density) {
-            WidgetTitleLayout.Density.SPACIOUS -> 31f
-            WidgetTitleLayout.Density.COMPACT -> 25f
-            WidgetTitleLayout.Density.ULTRA -> 22f
-        }
-        val maxSp = if (quoteDetails.any { it.extendedPercent != null } && titles.size >= 6) 9f else when (plan.density) {
+        val logoWidth = if (config.logo) 21f else 0f
+        val maxSp = when (plan.density) {
             WidgetTitleLayout.Density.SPACIOUS -> 13f
             WidgetTitleLayout.Density.COMPACT -> 12f
             WidgetTitleLayout.Density.ULTRA -> 11f
         }
         val metrics = c.resources.displayMetrics
-        val roomPx = (((minWidth - 30f) * .59f - logoWidth - 3f).coerceAtLeast(60f)) *
+        val roomPx = (((minWidth - 30f) * .66f - logoWidth - 3f).coerceAtLeast(60f)) *
             metrics.density
         val measure = Paint().apply {
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
@@ -290,11 +286,9 @@ internal object WidgetWideRenderer {
             row.setTextViewTextSize(R.id.widget_row_ticker,
                 android.util.TypedValue.COMPLEX_UNIT_SP, rowTextSp)
             row.setTextViewText(R.id.widget_row_ticker, summaries[security.id] ?: label)
-            val details = quoteDetails.firstOrNull { it.id == security.id }
-            val after = details?.extendedPercent
-            row.setViewVisibility(R.id.widget_row_after, if (after != null) View.VISIBLE else View.GONE)
-            row.setTextViewText(R.id.widget_row_after, if (after == null) "" else
-                (if (details.session == MarketSession.PRE_MARKET) "☀ PRE " else "☾ AFTER ") + percent(after))
+            // Extended change is part of the same text cell and inherits its font size.
+            row.setViewVisibility(R.id.widget_row_after, View.GONE)
+            row.setTextViewText(R.id.widget_row_after, "")
 
             row.setOnClickPendingIntent(R.id.widget_row,
                 PendingIntent.getActivity(c, id xor security.id.hashCode(),
