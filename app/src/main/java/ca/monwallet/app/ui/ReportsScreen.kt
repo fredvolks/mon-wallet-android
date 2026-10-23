@@ -27,6 +27,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -34,165 +39,62 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val reportTabs = listOf("Vue d’ensemble", "Performance", "Calendrier", "Allocation", "Flux")
 private val benchmarkNames = linkedMapOf(
     "^GSPC" to "S&P 500", "^IXIC" to "NASDAQ", "^GSPTSE" to "TSX", "XEQT.TO" to "XEQT")
 private val benchmarkColors = listOf(Blue, Color(0xFF9F76FF), Color(0xFFFFA04D), Color(0xFFFF70A6))
 
 @Composable
 fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
-    val savedPortfolio = w.settings["reports_portfolio"]
-    val validId = savedPortfolio?.takeIf { id -> w.portfolios.any { it.id == id } }
-    var selected by remember(savedPortfolio, initialPortfolio) {
-        mutableStateOf(if (savedPortfolio == "all") null else validId ?: initialPortfolio)
-    }
-    var portfolioMenu by remember { mutableStateOf(false) }
-    var tab by remember(w.settings["reports_tab"]) {
-        mutableIntStateOf(w.settings["reports_tab"]?.toIntOrNull()?.coerceIn(0, 4) ?: 0)
-    }
-    var range by remember(w.settings["reports_range"]) {
-        mutableStateOf(runCatching { ReportRange.valueOf(w.settings["reports_range"].orEmpty()) }
-            .getOrDefault(ReportRange.SIX_MONTHS))
-    }
-    var mode by remember(w.settings["reports_chart"]) {
-        mutableIntStateOf(w.settings["reports_chart"]?.toIntOrNull()?.coerceIn(0, 2) ?: 0)
-    }
-    var month by remember(w.settings["reports_month"]) {
-        mutableStateOf(runCatching { YearMonth.parse(w.settings["reports_month"]) }
-            .getOrDefault(YearMonth.now()))
-    }
-    var benchmarks by remember(w.settings["reports_benchmarks"]) {
-        mutableStateOf(w.settings["reports_benchmarks"]?.split('|')?.filter { it in benchmarkNames }?.toSet()
-            ?: setOf("^GSPC", "^IXIC", "^GSPTSE", "XEQT.TO"))
-    }
-    fun selectTab(index: Int) {
-        tab = index
-        vm.run { vm.services.repo.setting("reports_tab", index.toString()) }
-    }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val reportHistoryStatus by vm.services.reportHistoryStatus.collectAsState()
-    val snapshots by produceState(emptyList<PortfolioDailySnapshot>(), w.transactions, w.prices, selected) {
+    val saved = w.settings["reports_portfolio"]
+    var selected by remember(saved, initialPortfolio) { mutableStateOf(
+        if (saved == "all") null else saved?.takeIf { id -> w.portfolios.any { it.id == id } }
+            ?: initialPortfolio) }
+    var reportNow by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val reportDate = MarketClock.date(reportNow)
+    val snapshots by produceState(emptyList<PortfolioDailySnapshot>(), w.transactions, w.prices,
+        w.securities, selected, reportDate) {
         value = withContext(Dispatchers.Default) { runCatching {
             ReportEngine.history(w, selected)
         }.getOrDefault(emptyList()) }
     }
+    val status by vm.services.reportHistoryStatus.collectAsState()
     var loading by remember { mutableStateOf(false) }
-    LaunchedEffect(selected, range, w.transactions) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(selected, w.transactions, lifecycle) {
         loading = true
-        try {
-            vm.services.refreshReportHistory(selected)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            android.util.Log.e("MonWalletReports", "Historical refresh failed", error)
-            vm.services.reportHistoryStatus.value =
-                "Historique temporairement indisponible : ${error.message ?: "erreur inconnue"}"
-        } finally {
-            loading = false
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                reportNow = System.currentTimeMillis()
+                try { vm.services.refreshReportHistory(selected) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (error: Exception) { vm.services.reportHistoryStatus.value =
+                    "Historique indisponible : ${error.message ?: "erreur inconnue"}" }
+                finally { loading = false }
+                delay(60_000)
+            }
         }
     }
-    val summary = remember(w.transactions, w.prices, selected, range, snapshots) {
-        ReportEngine.summary(w, snapshots, range, portfolioId = selected)
-    }
-    val current = remember(w.transactions, w.quotes, selected) {
-        runCatching { w.result(selected) }.getOrNull()
-    }
-    val csvLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
-        if (uri != null) scope.launch {
-            runCatching { withContext(Dispatchers.IO) {
-                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { out ->
-                    out.appendLine("date,valeur,capital_investi,pnl_jour,rendement_jour_pct,dividendes_cumules,flux_externe,rendement_cumule_pct")
-                    val cumulative = summary.cumulative.toMap()
-                    summary.days.forEach { day -> out.appendLine(listOf(day.date, day.closingValue,
-                        day.capitalInvested, day.dailyPnl, day.dailyReturn, day.dividends,
-                        day.netExternalFlow, cumulative[day.date]).joinToString(",") { it?.toString().orEmpty() }) }
-                } ?: error("Fichier inaccessible")
-            } }.onFailure { Toast.makeText(context, "Export impossible : ${it.message}", Toast.LENGTH_LONG).show() }
-        }
-    }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(11.dp)) {
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Box {
-                    AssistChip(onClick = { portfolioMenu = true },
-                        label = { Text(w.portfolios.firstOrNull { it.id == selected }?.name ?: "Tous") })
-                    DropdownMenu(portfolioMenu, { portfolioMenu = false }) {
-                        (listOf(null) + w.portfolios.map { it.id }).forEach { id ->
-                            DropdownMenuItem(text = { Text(w.portfolios.firstOrNull { it.id == id }?.name ?: "Tous") },
-                                onClick = {
-                                    portfolioMenu = false
-                                    selected = id
-                                    vm.run { vm.services.repo.setting("reports_portfolio", id ?: "all") }
-                                })
-                        }
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = { vm.run { vm.services.refreshReportHistory(selected, true) } }) {
-                    Text("↻ Actualiser", color = Blue, fontSize = 12.sp)
-                }
-                TextButton(onClick = { csvLauncher.launch("MonWallet-Rapports-${LocalDate.now()}.csv") }) {
-                    Text("CSV", color = Blue, fontSize = 12.sp)
-                }
-            }
-            Chips(reportTabs, tab, ::selectTab)
-            Chips(ReportRange.entries.map { it.label }, range.ordinal) { index ->
-                range = ReportRange.entries[index]
-                vm.run { vm.services.repo.setting("reports_range", range.name) }
-            }
-            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Green)
-            if (reportHistoryStatus.isNotBlank()) Caption(reportHistoryStatus)
-        }
-        when (tab) {
-            0 -> {
-                item { ReportHero(summary, current, mode, onMode = { mode = it; vm.run {
-                    vm.services.repo.setting("reports_chart", it.toString()) } }) }
-                item { ReportMetrics(summary, current) }
-                item { Comparison(w, summary, benchmarks) { selectTab(1) } }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.weight(1f)) { ReportMini("Calendrier", "Rendement quotidien", { selectTab(2) }) }
-                        Box(Modifier.weight(1f)) { ReportMini("Allocation", "Positions actuelles", { selectTab(3) }) }
-                    }
-                }
-            }
-            1 -> {
-                item { ReportHero(summary, current, mode, onMode = { mode = it; vm.run {
-                    vm.services.repo.setting("reports_chart", it.toString()) } }) }
-                item { ReportMetrics(summary, current) }
-                item { Comparison(w, summary, benchmarks) { symbol ->
-                    benchmarks = if (symbol in benchmarks) benchmarks - symbol else benchmarks + symbol
-                    vm.run { vm.services.repo.setting("reports_benchmarks", benchmarks.joinToString("|")) }
-                } }
-                item { ReportStatistics(summary, snapshots) }
-                item { ReportContributors(w, summary) }
-                item { ReportMonthYear(snapshots) }
-            }
-            2 -> {
-                item { ReportCalendar(w, snapshots,
-                    w.transactions.filter { selected == null || it.portfolioId == selected },
-                    month, { month = it; vm.run { vm.services.repo.setting("reports_month", month.toString()) } },
-                    refreshing = loading,
-                    onRefresh = { vm.run { vm.services.refreshReportHistory(selected, true) } }) }
-                item { ReportMonthYear(snapshots) }
-            }
-            3 -> item { ReportAllocation(w, selected, current) }
-            4 -> item { ReportFlows(w, selected, summary, snapshots) }
-        }
-        item { Caption("Rendement ajusté des flux : clôtures historiques en CAD. Les transactions n’ayant pas d’heure, les flux du jour sont supposés avant la clôture; le TWR exact exige une valorisation à chaque flux.") }
-    }
-}
-
-@Composable
-private fun ReportMini(title: String, subtitle: String, onClick: () -> Unit) {
-    CardBlock {
-        Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-            Text("$title  ›", fontWeight = FontWeight.SemiBold)
-            Caption(subtitle)
-        }
-    }
+    val regularHistory = TradeReports.confirmedHistory(snapshots, reportNow)
+    ReportsDashboard(w, snapshots, selected, loading, status, now = reportNow,
+        onPortfolio = { id -> selected = id
+            vm.run { vm.services.repo.setting("reports_portfolio", id ?: "all") } },
+        onPreference = { key, value -> vm.run { vm.services.repo.setting(key, value) } },
+        onRefresh = { vm.run { vm.services.refreshReportHistory(selected, true) } },
+        advanced = { summary ->
+            var mode by remember { mutableIntStateOf(0) }
+            val current = remember(w.transactions, w.quotes, selected) {
+                runCatching { w.result(selected) }.getOrNull() }
+            ReportHero(summary, current, mode) { mode = it }
+            ReportMetrics(summary, current)
+            var benchmarks by remember { mutableStateOf(benchmarkNames.keys.toSet()) }
+            Comparison(w, summary, benchmarks) { symbol ->
+                benchmarks = if (symbol in benchmarks) benchmarks - symbol else benchmarks + symbol }
+            ReportStatistics(summary, regularHistory)
+            ReportContributors(w, summary)
+            ReportMonthYear(regularHistory)
+            ReportAllocation(w, selected, current)
+            ReportFlows(w, selected, summary, regularHistory)
+        })
 }
 
 @Composable
@@ -397,143 +299,6 @@ private fun ReportMonthYear(history: List<PortfolioDailySnapshot>) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("$year${if (year == LocalDate.now().year) " YTD" else ""}")
                 Text(if (valid) percent((factor - ONE) * BigDecimal(100)) else "Historique insuffisant")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReportCalendar(wallet: Wallet, history: List<PortfolioDailySnapshot>, transactions: List<Transaction>,
-    month: YearMonth, onMonth: (YearMonth) -> Unit, refreshing: Boolean, onRefresh: () -> Unit) {
-    var day by remember { mutableStateOf<PortfolioDailySnapshot?>(null) }
-    var yearMenu by remember { mutableStateOf(false) }
-    val byDate = history.associateBy { it.date }
-    CardBlock {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = { onMonth(month.minusMonths(1)) }) { Text("‹", fontSize = 24.sp) }
-            Box {
-                TextButton(onClick = { yearMenu = true }) {
-                    Text("${month.month.getDisplayName(TextStyle.FULL, Locale.FRENCH)} ${month.year} ▾",
-                        color = Color.White, fontWeight = FontWeight.SemiBold)
-                }
-                DropdownMenu(yearMenu, { yearMenu = false }) {
-                    val oldest = history.getOrNull(1)?.date?.year ?: LocalDate.now().year
-                    (LocalDate.now().year downTo oldest).forEach { year ->
-                        DropdownMenuItem(text = { Text(year.toString()) }, onClick = {
-                            yearMenu = false
-                            onMonth(YearMonth.of(year, month.month).coerceAtMost(YearMonth.now()))
-                        })
-                    }
-                }
-            }
-            TextButton(onClick = { onMonth(month.plusMonths(1)) },
-                enabled = month < YearMonth.now()) { Text("›", fontSize = 24.sp) }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            listOf("D", "L", "M", "M", "J", "V", "S").forEach { label ->
-                Text(label, Modifier.weight(1f), color = Muted, textAlign = TextAlign.Center, fontSize = 11.sp)
-            }
-        }
-        val offset = month.atDay(1).dayOfWeek.value % 7
-        (0 until ((offset + month.lengthOfMonth() + 6) / 7)).forEach { week ->
-            Row(Modifier.fillMaxWidth()) {
-                repeat(7) { weekday ->
-                    val n = week * 7 + weekday - offset + 1
-                    if (n !in 1..month.lengthOfMonth()) Spacer(Modifier.weight(1f).height(47.dp))
-                    else {
-                        val snapshot = byDate[month.atDay(n)]
-                        val daily = snapshot?.dailyReturn
-                        val shade = if (daily == null) Color.Transparent
-                            else tint(daily).copy(alpha = (.10f + (daily.abs().toFloat() / 8f).coerceIn(0f, .38f)))
-                        Column(Modifier.weight(1f).height(47.dp).padding(2.dp)
-                            .clip(RoundedCornerShape(7.dp)).background(shade)
-                            .clickable(enabled = snapshot != null) { day = snapshot },
-                            horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("$n", fontSize = 11.sp)
-                            if (daily != null) Text(percent(daily), fontSize = 9.sp,
-                                color = tint(daily), maxLines = 1)
-                        }
-                    }
-                }
-            }
-        }
-        val monthSnapshots = history.filter { it.date.year == month.year && it.date.month == month.month }
-        val returnCount = monthSnapshots.count { it.dailyReturn != null }
-        val weeks = weeklyReports(history, month)
-        Spacer(Modifier.height(10.dp))
-        Text("Rendement par semaine", fontWeight = FontWeight.SemiBold)
-        weeks.forEachIndexed { index, week ->
-            val inProgress = week.startDate <= LocalDate.now() && week.endDate >= LocalDate.now()
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(Modifier.weight(1f)) {
-                    Text("Semaine ${index + 1}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Caption("${date(week.startDate.toString())} – ${date(week.endDate.toString())}" +
-                        if (inProgress) " · en cours" else "")
-                }
-                when {
-                    week.complete -> Column(horizontalAlignment = Alignment.End) {
-                        Text(percent(week.performance), color = tint(week.performance),
-                            fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text(signed(week.gain), color = tint(week.gain), fontSize = 11.sp)
-                    }
-                    week.startDate.isAfter(LocalDate.now()) -> Caption("À venir")
-                    week.availableDays > 0 -> Caption("Historique incomplet")
-                    else -> Caption("Aucune clôture")
-                }
-            }
-        }
-        Caption("$returnCount rendement(s) quotidien(s) disponible(s) en $month.")
-        val firstTrade = transactions.filter { it.type in setOf(TxType.BUY, TxType.SELL) }
-            .minOfOrNull { it.date }
-        if (firstTrade != null)
-            Caption("Historique des transactions depuis le ${date(firstTrade)}.")
-        if (returnCount == 0) {
-            Caption(if (history.isEmpty())
-                "Aucune clôture historique chargée pour ce portefeuille."
-            else "Aucune clôture complète n’est disponible pour ce mois.")
-        } else {
-            Caption("Sélectionne une journée pour voir le P&L, la valeur et les transactions.")
-        }
-        TextButton(onClick = onRefresh, enabled = !refreshing) {
-            Text(if (refreshing) "Chargement des clôtures…" else "Recharger les clôtures historiques")
-        }
-        Caption("Les jours sans clôture confirmée n’affichent aucun rendement.")
-    }
-    day?.let { selected ->
-        ModalBottomSheet(onDismissRequest = { day = null }, containerColor = Panel) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 30.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text(date(selected.date.toString()), fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                Metric("P&L du jour", signed(selected.dailyPnl), tint(selected.dailyPnl))
-                Metric("Rendement du jour", percent(selected.dailyReturn), tint(selected.dailyReturn))
-                Metric("Valeur début", money(selected.openingValue))
-                Metric("Valeur fin", money(selected.closingValue))
-                Metric("Capital net investi", money(selected.capitalInvested))
-                val today = transactions.filter { it.date == selected.date.toString() }
-                Metric("Dépôts", money(today.filter { it.type == TxType.DEPOSIT }.fold(ZERO) { a, t -> a + t.cad }))
-                Metric("Retraits", money(today.filter { it.type == TxType.WITHDRAWAL }.fold(ZERO) { a, t -> a + t.price * t.fxRate }))
-                Metric("Dividendes", money(today.filter { it.type == TxType.DIVIDEND }.fold(ZERO) { a, t -> a + t.cad }))
-                Caption("Achats : ${today.count { it.type == TxType.BUY }} · Ventes : ${today.count { it.type == TxType.SELL }}")
-                val previous = history.lastOrNull { it.date < selected.date && it.closingValue != null }
-                if (selected.dailyReturn != null && previous != null) {
-                    val contributions = (selected.positions.keys + previous.positions.keys +
-                        today.mapNotNull { it.securityId }).distinct().map { id ->
-                        val changes = today.filter { it.securityId == id }
-                        val buy = changes.filter { it.type == TxType.BUY }.fold(ZERO) { a, t -> a + t.cad }
-                        val sale = changes.filter { it.type == TxType.SELL }.fold(ZERO) { a, t -> a + t.cad }
-                        val income = changes.filter { it.type == TxType.DIVIDEND }.fold(ZERO) { a, t -> a + t.cad }
-                        id to ((selected.positions[id] ?: ZERO) - (previous.positions[id] ?: ZERO)
-                            - buy + sale + income)
-                    }
-                    contributions.maxByOrNull { it.second }?.let { (id, pnl) ->
-                        Metric("Meilleur titre", "${wallet.security(id)?.ticker ?: "—"} · ${signed(pnl)}", tint(pnl)) }
-                    contributions.minByOrNull { it.second }?.let { (id, pnl) ->
-                        Metric("Pire titre", "${wallet.security(id)?.ticker ?: "—"} · ${signed(pnl)}", tint(pnl)) }
-                }
-                if (selected.dailyReturn == null) Caption("Aucune séance ou historique incomplet ce jour-là.")
             }
         }
     }

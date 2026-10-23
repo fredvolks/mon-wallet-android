@@ -1,5 +1,15 @@
 # Versions
 
+## Mon Wallet v0.2.61 — 2026-10-23
+
+- Refonte Rapports : Résumé, Calendrier, Trades clôturés et Transactions, avec cartes bleu nuit et accents verts.
+- Valeur du wallet jour par jour à la clôture, P&L en dollars et pourcentage, et détail des transactions en touchant une date. Les jours hors séance et les historiques incomplets sont identifiés.
+- Chaque vente montre ses dates d’achat/vente, le prix moyen d’achat, le prix vendu, les frais alloués, le profit net CAD et son pourcentage. Comptes séparés, ventes partielles et rachats après fermeture pris en charge.
+- Export CSV des transactions, des ventes réalisées ou du wallet quotidien : dates inclusives, mois, année ou historique complet. Les ventes sont filtrées par date de vente tout en conservant le coût des achats antérieurs.
+- Calendrier basé sur les clôtures régulières uniquement; la journée en cours reste en attente avant 16 h.
+- Analyse détaillée conserve les graphiques de performance, comparaisons, statistiques, allocation et flux.
+
+
 ## Mon Wallet v0.2.60 — 2026-10-23
 
 - Remplace la référence de minuit par la clôture régulière de 16 h pour tout le hors séance, jusqu’à 9 h 30 le prochain jour de Bourse. Le graphique conserve la même période en passant minuit.

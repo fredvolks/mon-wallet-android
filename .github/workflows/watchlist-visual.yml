@@ -28,6 +28,7 @@ jobs:
         with:
           name: Watchlist-real-provider
           path: |
+            reports-*.png
             watchlist-real.png
             widget-4x2-daily-fixture.png
             widget-4x2-six-titles.png
