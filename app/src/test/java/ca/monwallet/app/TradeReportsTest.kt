@@ -21,6 +21,23 @@ class TradeReportsTest {
     }
     private fun at(time: String) = LocalDateTime.parse(time).atZone(MarketClock.zone).toInstant().toEpochMilli()
 
+    @Test fun retainedValueShowsTotalNotJustProfitAndUsesSoldQuantity() {
+        val sale = TradeReports.sales(listOf(tx("b", TxType.BUY, "10", "100", "2026-10-01"),
+            tx("s", TxType.SELL, "5", "113", "2026-10-02"))).single()
+        val retained = sale.ifRetained(d("300"), "CAD", null)!!
+        equal("500", retained.invested); equal("1500", retained.value)
+        equal("1000", retained.profit); equal("200", retained.percent); equal("935", retained.versusSale)
+        assertNull(sale.ifRetained(null, "CAD", null))
+        assertNull(sale.ifRetained(d("300"), "USD", d("1.4")))
+    }
+    @Test fun retainedUsdUsesCurrentFxAgainstActualCadCostAndDoesNotInventMissingRate() {
+        val sale = TradeReports.sales(listOf(tx("b", TxType.BUY, "10", "10", "2026-10-01", fees = "1", fx = "1.3", currency = "USD"),
+            tx("s", TxType.SELL, "10", "12", "2026-10-02", fx = "1.35", currency = "USD"))).single()
+        val retained = sale.ifRetained(d("9"), "USD", d("1.4"))!!
+        equal("131.3", retained.invested); equal("126", retained.value); equal("-5.3", retained.profit)
+        assertNull(sale.ifRetained(d("9"), "USD", null))
+        assertNull(sale.ifRetained(ZERO, "USD", ONE))
+    }
     @Test fun dollaramaExitShows13PercentAndMatchesTotalRealized() {
         val tx = listOf(tx("b", TxType.BUY, "10", "100", "2026-10-08"),
             tx("v", TxType.SELL, "10", "113", "2026-10-22"))
