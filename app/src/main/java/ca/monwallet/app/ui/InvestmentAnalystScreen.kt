@@ -161,8 +161,9 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                 }
             }
             p.notes.forEach { Caption(it) }
+            if (fromCash && p.budget > p.exposure.cash) Caption("Budget supérieur aux liquidités : choisis un nouvel apport ou réduis le budget.")
             TextEntry("Ta question à l’IA", question, { question = it.take(500) })
-            Button(enabled = !loading && !asking && !budgetChanged && !stockChanged && !settingsChanged && !outdated && !ledgerChanged, modifier = Modifier.fillMaxWidth(), onClick = {
+            Button(enabled = !loading && !asking && !budgetChanged && !stockChanged && !settingsChanged && !outdated && !ledgerChanged && (!fromCash || p.budget <= p.exposure.cash), modifier = Modifier.fillMaxWidth(), onClick = {
                 job = scope.launch {
                     asking = true; error = null
                     try {

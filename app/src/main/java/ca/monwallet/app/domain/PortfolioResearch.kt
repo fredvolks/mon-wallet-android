@@ -32,6 +32,19 @@ object PortfolioResearch {
             else -> it
         }
     }
+    fun country(raw: String?): String? = raw?.trim()?.takeIf { it.isNotBlank() && it !in setOf("-", "Unknown", "Non déterminé") }?.let {
+        when (it.lowercase()) {
+            "us", "usa", "united states", "united states of america", "états-unis" -> "États-Unis"
+            "ca", "canada" -> "Canada"
+            "gb", "uk", "united kingdom", "royaume-uni" -> "Royaume-Uni"
+            "jp", "japan", "japon" -> "Japon"
+            "cn", "china", "chine" -> "Chine"
+            "tw", "taiwan", "taïwan" -> "Taïwan"
+            "fr", "france" -> "France"
+            "de", "germany", "allemagne" -> "Allemagne"
+            else -> it
+        }
+    }
     fun classified(security: Security): Security = if (security.sector != null) security else
         security.copy(sector = SectorUniverse.stocks.find {
             it.symbol.equals(security.symbol, true) && it.currency == security.currency }?.sector)
@@ -42,7 +55,7 @@ object PortfolioResearch {
         val explicit = if (sectorMode) fund.sectorExposure else fund.countryExposure
         val raw = explicit?.weights ?: fund.underlying?.weights(sectorMode)?.toMap() ?: emptyMap()
         val map = raw.entries.mapNotNull { (key, v) ->
-            val label = if (sectorMode) sector(key) else key.takeIf { it !in setOf("Non déterminé", "-", "Unknown") && it.isNotBlank() }
+            val label = if (sectorMode) sector(key) else country(key)
             if (label == null || v < ZERO) null else label to v
         }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.fold(ZERO, BigDecimal::add) }
         // Rounding above 100 is not silently re-scaled; leave the composition unknown.
@@ -71,7 +84,8 @@ object PortfolioResearch {
         fun convert(rows: List<AllocationSlice>) = rows.map { ExposureLine(
             sector(it.label) ?: it.label, it.value, it.weight) }
         return PortfolioExposure(report.total, convert(report.sectors),
-            report.countries.map { ExposureLine(it.label, it.value, it.weight) },
+            report.countries.groupBy { country(it.label) ?: "Non déterminé" }.map { (label, rows) ->
+                val value = rows.fold(ZERO) { n, row -> n + row.value }; ExposureLine(label, value, report.total?.let { value.pct(it) } ?: ZERO) }.sortedByDescending { it.value },
             report.total?.let { lines(currency, it) } ?: emptyList(),
             report.unknownSector, report.unknownCountry, report.cash, notes)
     }
@@ -103,7 +117,7 @@ object PortfolioResearch {
             add(countryValues, "Non déterminé", spent * (BigDecimal("100") - cw.values.fold(ZERO, BigDecimal::add)) / BigDecimal("100"))
         } else {
             add(sectorValues, sector(s.sector) ?: "Non déterminé", spent)
-            add(countryValues, s.country ?: "Non déterminé", spent)
+            add(countryValues, country(s.country) ?: "Non déterminé", spent)
         }
         return PurchaseImpact(qty, spent, PortfolioExposure(afterTotal, lines(sectorValues, afterTotal),
             lines(countryValues, afterTotal), lines(currencyValues, afterTotal), sectorValues["Non déterminé"] ?: ZERO,

@@ -1,3 +1,11 @@
+# 0.2.66 — Dossier de recherche et Analyste IA
+
+- Découvrir et fiche de titre : équilibre du portefeuille, analyse de titre et idées selon budget/horizon/risque, avec choix du membre et du compte.
+- Pondérations FNB sous-jacentes publiées, part inconnue conservée dans le total, pays des émetteurs et devises de cotation.
+- Simulation en parts entières avec nouvel apport ou liquidités, conversion CAD/USD et effet sur les secteurs.
+- Dossier daté : cours, tendance TSX/S&P 500, ratios disponibles, résultats et nouvelles; copie pour ChatGPT et cache local.
+- Service IA authentifié, clé uniquement au serveur, quota journalier et sources limitées au dossier. Le test réel a détecté des crédits API épuisés : aucune analyse IA de remplacement n’est simulée; les calculs gratuits restent utilisables.
+
 # 0.2.65 — Famille et comparaison depuis la vente
 
 - Transactions attribuées à un membre; suivi des dépôts, parts, liquidités, rendement et historique.
