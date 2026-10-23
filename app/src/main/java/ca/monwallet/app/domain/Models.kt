@@ -372,18 +372,42 @@ data class Wallet(
                 }
             )
         }
-        val civilQuotes = datedQuotes.mapValues { (id, quote) ->
+        val sessionQuotes = datedQuotes.mapValues { (id, quote) ->
             CivilDayPnl.dailyQuote(quote, security(id), now)
         }
-        val civil = Engine.calculate(entries, civilQuotes,
-            securities.find { it.symbol == "CAD=X" }?.let { civilQuotes[it.id] }, holidayIds,
+        val outside = MarketClock.offSession(now)
+        val sessionResult = if (outside) {
+            // Off-session P&L measures current positions against the last regular close.
+            // Regular-session realized gains stay in total P&L, not in the new overnight move.
+            val rows = regular.holdings.map { holding ->
+                val quote = sessionQuotes[holding.securityId]
+                val rate = when (quote?.currency) {
+                    "CAD" -> ONE
+                    "USD" -> usd?.price
+                    else -> null
+                }
+                val day = if (holding.quantity == ZERO || holding.securityId in holidayIds) ZERO
+                    else quote?.previous?.let { close -> rate?.let {
+                        holding.quantity * (quote.price - close) * it
+                    } }
+                val base = if (holding.quantity == ZERO) ZERO
+                    else quote?.previous?.let { close -> rate?.let { holding.quantity * close * it } }
+                holding.copy(day = day, dayBase = base)
+            }
+            regular.copy(holdings = rows,
+                day = if (rows.all { it.day != null }) rows.fold(ZERO) { n, h -> n + h.day!! } else null,
+                dayBase = if (rows.all { it.dayBase != null })
+                    rows.fold(regular.cash) { n, h -> n + h.dayBase!! } else null)
+        } else Engine.calculate(entries, sessionQuotes,
+            securities.find { it.symbol == "CAD=X" }?.let { sessionQuotes[it.id] }, holidayIds,
             dailyDate = CivilDayPnl.date(now))
         fun Result.withCivilDay(): Result {
-            val byId = civil.holdings.associateBy { it.securityId }
-            return copy(day = civil.day, dayBase = civil.dayBase, holdings = holdings.map { holding ->
-                holding.copy(day = if (holding.securityId in holidayIds) ZERO else byId[holding.securityId]?.day,
-                    dayBase = byId[holding.securityId]?.dayBase)
-            })
+            val byId = sessionResult.holdings.associateBy { it.securityId }
+            return copy(day = sessionResult.day, dayBase = sessionResult.dayBase,
+                holdings = holdings.map { holding ->
+                    holding.copy(day = byId[holding.securityId]?.day,
+                        dayBase = byId[holding.securityId]?.dayBase)
+                })
         }
         if (settings["portfolio_extended"] == "REGULAR") return regular.withCivilDay()
         val adjusted = datedQuotes.mapValues { (securityId, quote) ->

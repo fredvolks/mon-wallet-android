@@ -114,6 +114,7 @@ internal fun reportHistoryRange(first: LocalDate, today: LocalDate): String =
 class Services(val context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val secure = SecureSettings(context)
+    init { MarketClock.mode = secure.get("market_clock") ?: "AUTO" }
     val repo = Repository(Database.create(context), scope)
     val auth = AuthManager(secure, repo)
     val sync = SyncManager(repo, auth)

@@ -406,6 +406,21 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
                 Caption(stringResource(R.string.settings_fx_caption))
                 Metric(stringResource(R.string.settings_background_refresh), stringResource(R.string.settings_refresh_interval))
                 Caption(stringResource(R.string.settings_refresh_caption))
+                Text("Heure des marchés", fontWeight = FontWeight.SemiBold)
+                var clockMode by remember { mutableStateOf(s.secure.get("market_clock") ?: "AUTO") }
+                listOf("AUTO" to "Automatique · New York",
+                    "SUMMER" to "Heure d’été · UTC−4",
+                    "WINTER" to "Heure d’hiver · UTC−5").forEach { (mode, label) ->
+                    FilterChip(clockMode == mode, onClick = {
+                        clockMode = mode
+                        s.secure.put("market_clock", mode)
+                        MarketClock.mode = mode
+                        WalletWidget.updateAll(context)
+                        vm.refresh()
+                    }, label = { Text(label) })
+                }
+                Caption("Automatique suit les changements d’heure de New York. Les modes manuels forcent le décalage choisi pour les limites de séance, dans l’app et les widgets.")
+                Caption("Hors séance : de 16 h à 9 h 30 le prochain jour de Bourse, variation depuis la clôture de 16 h. Aucun reset à minuit. À 9 h 30, retour à la séance régulière.")
                 Text("Valorisation hors séance", fontWeight = FontWeight.SemiBold)
                 val extendedValuation = w.settings["portfolio_extended"] != "REGULAR"
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -89,6 +89,7 @@ class WidgetRemoteViewsScreenshotTest {
             view.layout(0, 0, width, height)
             val rows = view.findViewById<LinearLayout>(R.id.widget_rows)
             assertEquals(count, rows.childCount)
+            assertEquals("Depuis clôture 16 h", view.findViewById<TextView>(R.id.widget_day).text.toString())
             val amount = view.findViewById<TextView>(R.id.widget_amount)
             assertTrue(amount.textSize >
                 view.findViewById<TextView>(R.id.widget_total).textSize)
@@ -116,9 +117,8 @@ class WidgetRemoteViewsScreenshotTest {
                     commonTextSize, text.textSize, 0.1f)
                 assertTrue("Missing title ${tickers[index]} in ${text.text}",
                     text.text.contains(tickers[index]))
-                val visiblePrice = if (index in setOf(1, 5))
-                    BigDecimal(amounts[index]).add(BigDecimal("0.50"))
-                        .setScale(2).toPlainString() else amounts[index]
+                // Main columns retain regular-close price/change, matching the stock page.
+                val visiblePrice = amounts[index]
                 assertTrue("Missing price in ${text.text}",
                     text.text.contains(visiblePrice.replace('.', ',')))
                 assertTrue("Missing day percent in ${text.text}", text.text.contains("%"))

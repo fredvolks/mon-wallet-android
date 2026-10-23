@@ -3,46 +3,25 @@ package ca.monwallet.app.domain
 import ca.monwallet.app.marketdata.MarketSession
 import ca.monwallet.app.marketdata.NormalizedQuote
 import ca.monwallet.app.marketdata.supportsUsExtendedHours
-import java.math.BigDecimal
-import java.time.Instant
 import java.time.ZoneId
 
-/** Civil-day P&L uses actual recorded prices, never yesterday's full-session change. */
+/** Session reference: last regular close outside 09:30–16:00; never a midnight price.
+ * The legacy object/JSON field names remain readable for existing installations.
+ */
 object CivilDayPnl {
-    val zone: ZoneId = ZoneId.of("America/Toronto")
-    fun date(now: Long): String = Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString()
-
-    private fun prints(q: Quote): List<Pair<Long, BigDecimal>> = listOfNotNull(
-        q.timestamp.takeIf { it > 0 &&
-            runCatching {
-                kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(
-                    Instant.ofEpochMilli(it).atZone(zone).toLocalDate(),
-                    java.time.LocalDate.parse(q.sessionDate))) <= 1
-            }.getOrDefault(false)
-        }?.let { it to q.price },
-        q.preMarketTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.preMarketPrice?.let { time to it } },
-        q.afterHoursTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.afterHoursPrice?.let { time to it } })
+    val zone: ZoneId get() = MarketClock.zone
+    fun date(now: Long): String = MarketClock.date(now).toString()
 
     fun capture(q: Quote, previous: Quote?, now: Long): Quote {
-        val date = date(now)
-        if (previous?.dayReferenceDate == date && previous.dayReferencePrice != null)
-            return q.copy(dayReferenceDate = date, dayReferencePrice = previous.dayReferencePrice,
-                dayReferenceTimestamp = previous.dayReferenceTimestamp)
-        if (q.dayReferenceDate == date && q.dayReferencePrice != null) return q
-        val midnight = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-            .atStartOfDay(zone).toInstant().toEpochMilli()
-        val lastBeforeMidnight = (prints(q) + previous?.let { prints(it) }.orEmpty())
-            .filter { it.first <= midnight && it.second.signum() > 0 }
-            .maxByOrNull { it.first }
-        // A first intraday install may only have the provider's preceding close.
-        // Keep the reference timestamp absent in that case; do not invent a midnight trade.
-        val reference = lastBeforeMidnight?.second ?: q.previous ?: q.price
-        return q.copy(dayReferenceDate = date, dayReferencePrice = reference,
-            dayReferenceTimestamp = lastBeforeMidnight?.first)
+        // Deliberately discard v58/v59 midnight references, including already persisted ones.
+        val outside = MarketClock.offSession(now)
+        return q.copy(dayReferenceDate = date(now),
+            dayReferencePrice = if (outside || q.sessionDate != date(now)) q.price else q.previous,
+            dayReferenceTimestamp = if (outside) q.timestamp else null)
     }
 
     fun dailyQuote(q: Quote, security: Security?, now: Long): Quote {
-        val referenced = capture(q, null, now)
+        val outside = MarketClock.offSession(now)
         val normalized = security?.takeIf { supportsUsExtendedHours(it) }
             ?.let { NormalizedQuote.from(q, now) }
         val current = when (normalized?.marketSession) {
@@ -50,7 +29,10 @@ object CivilDayPnl {
             MarketSession.AFTER_HOURS -> normalized.afterHoursPrice
             else -> null
         } ?: q.price
-        return referenced.copy(price = current, previous = referenced.dayReferencePrice,
-            sessionDate = date(now))
+        // At 09:30 yesterday's cached regular move must not reappear while awaiting a new print.
+        val reference = if (outside || q.sessionDate != date(now)) q.price else q.previous
+        return q.copy(price = if (outside) current else q.price, previous = reference,
+            sessionDate = date(now), dayReferenceDate = date(now),
+            dayReferencePrice = reference, dayReferenceTimestamp = null)
     }
 }

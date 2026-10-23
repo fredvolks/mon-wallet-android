@@ -46,7 +46,7 @@ data class NormalizedQuote(
     val afterHoursFreshness: QuoteFreshness?,
 ) {
     companion object {
-        private val newYork = ZoneId.of("America/New_York")
+        private val newYork: ZoneId get() = ca.monwallet.app.domain.MarketClock.zone
 
         private fun currentExtendedSession(now: Long): MarketSession? {
             val time = Instant.ofEpochMilli(now).atZone(newYork)

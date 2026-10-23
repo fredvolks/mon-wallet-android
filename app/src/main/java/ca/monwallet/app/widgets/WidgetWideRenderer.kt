@@ -40,7 +40,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 internal object WidgetIndexMode {
-    private val eastern = ZoneId.of("America/Toronto")
+    private val eastern: ZoneId get() = ca.monwallet.app.domain.MarketClock.zone
     private val futureSymbols = listOf("ES=F", "NQ=F", "YM=F")
 
     fun isOvernightWindow(now: ZonedDateTime): Boolean {
@@ -114,14 +114,9 @@ internal object WidgetWideRenderer {
         views.setViewVisibility(R.id.widget_total_group,
             if (config.totalPercent && !hidden) View.VISIBLE else View.GONE)
 
-        val held = result?.holdings?.filter { it.quantity > ZERO }
-            ?.map { it.securityId }?.toSet().orEmpty()
-        val currentDay = held.isNotEmpty() && held.all { key ->
-            wallet.quotes[key]?.sessionDate == LocalDate.now().toString()
-        }
-        views.setTextViewText(R.id.widget_day,
-            if (hidden) c.getString(R.string.widget_locked) else if (currentDay || result?.day == null)
-                c.getString(R.string.widget_today) else c.getString(R.string.widget_today))
+        views.setTextViewText(R.id.widget_day, if (hidden) c.getString(R.string.widget_locked)
+            else if (ca.monwallet.app.domain.MarketClock.offSession(quoteNow))
+                "Depuis clôture 16 h" else c.getString(R.string.widget_today))
         views.setViewVisibility(R.id.widget_day,
             if (config.showDailyLabel) View.VISIBLE else View.GONE)
         val unavailable = result?.day == null && result?.dayPercent == null && !hidden
@@ -232,10 +227,9 @@ internal object WidgetWideRenderer {
                 else -> null
             }
             val showPrice = config.price && !config.hideAmounts
-            val dailyQuote = q?.let { ca.monwallet.app.domain.CivilDayPnl.dailyQuote(it, security, quoteNow) }
             TitleQuote(security.id, if (config.ticker) security.ticker else security.name,
-                if (showPrice) number(dailyQuote?.price) else "",
-                MarketHoliday.dailyPercent(security, dailyQuote, quoteNow),
+                if (showPrice) number(q?.price) else "",
+                MarketHoliday.dailyPercent(security, q, quoteNow),
                 session.takeIf { extraPrice != null },
                 extraPercent.takeIf { extraPrice != null }, holiday)
         }
