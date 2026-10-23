@@ -114,12 +114,14 @@ internal fun reportHistoryRange(first: LocalDate, today: LocalDate): String =
 class Services(val context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val secure = SecureSettings(context)
+    init { MarketClock.mode = secure.get("market_clock") ?: "AUTO" }
     val repo = Repository(Database.create(context), scope)
     val auth = AuthManager(secure, repo)
     val sync = SyncManager(repo, auth)
     val market = Router(secure)
     val news = NewsRepository(repo, market, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY)
     val discovery by lazy { Discovery(this) }
+    val widgetLiveActive = MutableStateFlow(false)
     val foregroundSecurities = MutableStateFlow<List<Security>>(emptyList())
     val updater = Updater(context, secure)
     val initialized = MutableStateFlow(false)
@@ -276,7 +278,12 @@ class Services(val context: Context) {
                 val changed = previous == null ||
                     previous.copy(fetchedAt = fresh.fetchedAt) != fresh
                 val refreshAge = previous?.let { fresh.fetchedAt - it.fetchedAt } ?: Long.MAX_VALUE
-                if (changed || refreshAge >= 60_000L) repo.quote(fresh)
+                val sessionBoundary = previous?.let {
+                    MarketClock.offSession(it.fetchedAt) != MarketClock.offSession(fresh.fetchedAt)
+                } == true
+                if (changed || sessionBoundary || refreshAge >= 60_000L ||
+                    repo.state.value.quotes[security.id]?.dayReferenceDate !=
+                        CivilDayPnl.date(System.currentTimeMillis())) repo.quote(fresh)
                 recentQuotes[security.id] = fresh
             }
         }

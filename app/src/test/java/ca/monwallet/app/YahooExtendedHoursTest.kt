@@ -86,7 +86,18 @@ class YahooExtendedHoursTest {
         assertEquals(0, normalized.afterHoursChangePercent!!.compareTo(BigDecimal("0.25")))
         assertEquals(0, normalized.regularChange!!.compareTo(BigDecimal("2")))
         assertNull(normalized.preMarketPrice)
-        assertNull(NormalizedQuote.from(mapped, at(20) * 1000).afterHoursPrice)
+        assertNotNull(NormalizedQuote.from(mapped, at(20) * 1000).afterHoursPrice)
+    }
+
+    @Test fun closedYahooResponseStillProvidesLastAfterPrintUntilNextOpen() {
+        val s = Security.of("TSM", "TSM", "NYSE", "USD")
+        val mapped = YahooQuoteMapper.map(s, chart(pre = false, metaPrint = true),
+            at(21), "Yahoo test")
+        assertEquals("CLOSED", mapped.marketSession)
+        assertNotNull(mapped.afterHoursPrice)
+        val morning = date.plusDays(1).atTime(9, 29).atZone(ny).toInstant().toEpochMilli()
+        assertNotNull(NormalizedQuote.from(mapped, morning).afterHoursPrice)
+        assertNull(NormalizedQuote.from(mapped, morning + 60_000).afterHoursPrice)
     }
 
     @Test fun noCurrentPrintAndCanadianListingShowNoExtendedPrice() {

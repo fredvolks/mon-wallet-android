@@ -82,6 +82,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
+        ca.monwallet.app.widgets.WidgetLiveService.start(this)
         if (services.secure.get("biometric") == "true")
             window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)

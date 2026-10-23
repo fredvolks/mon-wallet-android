@@ -52,6 +52,8 @@ interface Dao {
     @Query("SELECT * FROM market_cache") fun observeCache(): Flow<List<Cache>>
 
     @Query("SELECT * FROM market_cache") suspend fun cache(): List<Cache>
+    @Query("SELECT * FROM market_cache WHERE id = :id AND kind = 'quote' LIMIT 1")
+    suspend fun cachedQuote(id: String): Cache?
 
     @Upsert suspend fun cache(row: Cache)
 }

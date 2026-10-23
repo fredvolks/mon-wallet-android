@@ -4,6 +4,7 @@ import android.util.Log
 import ca.monwallet.app.BuildConfig
 import ca.monwallet.app.domain.Quote
 import ca.monwallet.app.domain.Security
+import ca.monwallet.app.domain.MarketHoliday
 import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.Instant
@@ -11,22 +12,12 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 
-/**
- * While the app is RESUMED, fetch visible quotes at a bounded cadence.
- * Check up to 8 visible symbols every 3 seconds while active. Larger watchlists\n * use 5-10 seconds to avoid excessive unauthenticated Yahoo requests.\n * Back off after outages or rate limiting.
- * This is polling, not an exchange-entitled streaming feed.
- */
+/** Five-second polling while visible; failures back off. Provider delays still apply. */
 fun foregroundQuoteRefreshDelayMillis(
     active: Boolean,
     symbolCount: Int,
     providerUnavailable: Boolean,
-): Long = when {
-    providerUnavailable -> 60_000L
-    !active -> 120_000L
-    symbolCount <= 8 -> 3_000L
-    symbolCount <= 15 -> 5_000L
-    else -> 10_000L
-}
+): Long = if (providerUnavailable) 60_000L else 5_000L
 
 enum class QuoteFreshness { REALTIME, DELAYED, CACHED, STALE }
 enum class MarketSession { PRE_MARKET, REGULAR, AFTER_HOURS, CLOSED }
@@ -55,7 +46,7 @@ data class NormalizedQuote(
     val afterHoursFreshness: QuoteFreshness?,
 ) {
     companion object {
-        private val newYork = ZoneId.of("America/New_York")
+        private val newYork: ZoneId get() = ca.monwallet.app.domain.MarketClock.zone
 
         private fun currentExtendedSession(now: Long): MarketSession? {
             val time = Instant.ofEpochMilli(now).atZone(newYork)
@@ -67,6 +58,42 @@ data class NormalizedQuote(
                     time.toLocalTime() < LocalTime.of(20, 0) -> MarketSession.AFTER_HOURS
                 else -> null
             }
+        }
+
+        private val usCalendar = Security.of("SPY", "US calendar", "NYSE", "USD")
+
+        /** Retain a real post-market print until the next regular opening, never as a live print. */
+        fun retainsAfterHours(timestamp: Long?, now: Long): Boolean {
+            if (timestamp == null || timestamp > now) return false
+            val print = Instant.ofEpochMilli(timestamp).atZone(newYork)
+            if (print.toLocalTime() >= LocalTime.of(4, 0) &&
+                print.toLocalTime() < LocalTime.of(16, 0)) return false
+            val overnightMorning = print.toLocalTime() < LocalTime.of(4, 0)
+            if (print.dayOfWeek == DayOfWeek.SATURDAY ||
+                (print.dayOfWeek == DayOfWeek.SUNDAY && !(!overnightMorning &&
+                    print.toLocalTime() >= LocalTime.of(20, 0)))) return false
+            if (!overnightMorning && MarketHoliday.isHoliday(usCalendar, print.toLocalDate())) return false
+            var next = if (overnightMorning) print.toLocalDate() else print.toLocalDate().plusDays(1)
+            while (next.dayOfWeek in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) ||
+                MarketHoliday.isHoliday(usCalendar, next)) next = next.plusDays(1)
+            return now < next.atTime(9, 30).atZone(newYork).toInstant().toEpochMilli()
+        }
+
+        /** Closed/pre-market responses can omit the preceding real after-hours print. */
+        fun retainPreviousAfterHours(q: Quote, previous: Quote?, now: Long): Quote {
+            if (previous == null || previous.securityId != q.securityId ||
+                previous.currency != q.currency ||
+                !retainsAfterHours(previous.afterHoursTimestamp, now) ||
+                previous.afterHoursPrice == null ||
+                (q.afterHoursPrice != null &&
+                    (q.afterHoursTimestamp ?: Long.MIN_VALUE) >=
+                    (previous.afterHoursTimestamp ?: Long.MIN_VALUE))) return q
+            // Changes from the preceding response must retain their original regular-close reference.
+            if (q.price.compareTo(previous.price) != 0) return q
+            return q.copy(afterHoursPrice = previous.afterHoursPrice,
+                afterHoursTimestamp = previous.afterHoursTimestamp,
+                afterHoursChange = previous.afterHoursChange,
+                afterHoursChangePercent = previous.afterHoursChangePercent)
         }
 
         fun from(q: Quote, now: Long = System.currentTimeMillis()): NormalizedQuote {
@@ -83,9 +110,19 @@ data class NormalizedQuote(
                 Instant.ofEpochMilli(it).atZone(newYork).toLocalDate() ==
                     Instant.ofEpochMilli(now).atZone(newYork).toLocalDate()
             } == true
-            val session = if (providerSession in setOf(MarketSession.PRE_MARKET,
-                    MarketSession.AFTER_HOURS) && (active != providerSession || !sameDay))
-                MarketSession.CLOSED else providerSession
+            val session = when {
+                active == MarketSession.PRE_MARKET && q.preMarketPrice != null &&
+                    q.preMarketTimestamp?.let {
+                        Instant.ofEpochMilli(it).atZone(newYork).toLocalDate() ==
+                            Instant.ofEpochMilli(now).atZone(newYork).toLocalDate() &&
+                            it <= now && it > (q.afterHoursTimestamp ?: Long.MIN_VALUE)
+                    } == true -> MarketSession.PRE_MARKET
+                q.afterHoursPrice != null && retainsAfterHours(q.afterHoursTimestamp, now) ->
+                    MarketSession.AFTER_HOURS
+                providerSession in setOf(MarketSession.PRE_MARKET, MarketSession.AFTER_HOURS) &&
+                    (active != providerSession || !sameDay) -> MarketSession.CLOSED
+                else -> providerSession
+            }
             val age = (now - q.fetchedAt).coerceAtLeast(0)
             val freshness = when {
                 age > 30 * 60_000 -> QuoteFreshness.STALE

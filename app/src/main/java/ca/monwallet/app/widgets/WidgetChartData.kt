@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import ca.monwallet.app.domain.Engine
+import ca.monwallet.app.domain.CivilDayPnl
+import ca.monwallet.app.domain.MarketClock
 import ca.monwallet.app.domain.MarketHoliday
 import ca.monwallet.app.domain.Point
 import ca.monwallet.app.domain.Wallet
@@ -49,29 +51,47 @@ internal object WidgetChartData {
         val tx = wallet.transactions.filter { portfolio == null || it.portfolioId == portfolio }
         val excluded = wallet.securities.filter { MarketHoliday.isHolidayToday(it) }
             .map { it.id }.toSet()
-        val held = wallet.result(portfolio).holdings
+        val holdings = wallet.result(portfolio).holdings
+        val held = holdings
             .filter { it.quantity > ZERO && it.securityId !in excluded }
             .map { it.securityId }.toSet()
         if (held.isEmpty()) return emptyList()
-        val session = wallet.quotes.values.filter { it.securityId in held }
-            .minOfOrNull { it.sessionDate } ?: return emptyList()
-        val points = cached.filter { it.securityId in held && it.date == session }
+        val now = System.currentTimeMillis()
+        val session = CivilDayPnl.date(now)
+        val start = MarketClock.chartStart(now)
+        val outside = MarketClock.offSession(now)
+        val points = cached.filter { it.securityId in held && it.timestamp in start..now }
         val times = points.map { it.timestamp }.distinct().sorted()
         val bySecurity = points.groupBy { it.securityId }
             .mapValues { (_, series) -> series.sortedBy { it.timestamp } }
         val fx = wallet.securities.find { it.symbol == "CAD=X" }
         return times.mapNotNull { timestamp ->
-            val quotes = wallet.quotes.toMutableMap()
+            val quotes = wallet.quotes.mapValues { (id, quote) ->
+                CivilDayPnl.dailyQuote(quote, wallet.security(id), now)
+            }.toMutableMap()
             if (held.any { it !in quotes }) return@mapNotNull null
             for (securityId in held) {
                 val point = bySecurity[securityId]?.lastOrNull { it.timestamp <= timestamp }
-                    ?: return@mapNotNull null
-                quotes[securityId] = quotes.getValue(securityId)
-                    .copy(price = point.close, timestamp = point.timestamp)
+                val quote = quotes.getValue(securityId)
+                // Other holdings retain their actual day reference until their first bar.
+                quotes[securityId] = if (point != null)
+                    quote.copy(price = point.close, timestamp = point.timestamp)
+                    else quote.copy(price = quote.previous ?: return@mapNotNull null)
             }
-            // Keep the existing FX quote; no inferred exchange rate is introduced.
-            runCatching { Engine.calculate(tx, quotes, fx?.let { quotes[it.id] }, excluded).day?.toFloat() }
-                .getOrNull()?.takeIf { it.isFinite() }
+            // Same close reference and current-position quantities as the off-session hero.
+            val value = if (outside) {
+                var sum = ZERO
+                for (holding in holdings.filter { it.securityId in held }) {
+                    val quote = quotes[holding.securityId] ?: return@mapNotNull null
+                    val close = quote.previous ?: return@mapNotNull null
+                    val rate = if (quote.currency == "CAD") java.math.BigDecimal.ONE
+                        else fx?.let { quotes[it.id]?.price } ?: return@mapNotNull null
+                    sum += holding.quantity * (quote.price - close) * rate
+                }
+                sum.toFloat()
+            } else runCatching { Engine.calculate(tx, quotes, fx?.let { quotes[it.id] },
+                excluded, dailyDate = session).day?.toFloat() }.getOrNull()
+            value?.takeIf { it.isFinite() }
         }
     }
 

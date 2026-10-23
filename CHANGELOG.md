@@ -1,5 +1,14 @@
 # Versions
 
+## Mon Wallet v0.2.60 — 2026-10-23
+
+- Remplace la référence de minuit par la clôture régulière de 16 h pour tout le hors séance, jusqu’à 9 h 30 le prochain jour de Bourse. Le graphique conserve la même période en passant minuit.
+- À 9 h 30, fin du hors séance et retour au calcul régulier contre la clôture précédente. Un ancien cours en cache ne rejoue pas la variation de la veille.
+- Le widget affiche les cours/variations réguliers dans les colonnes principales; le PRE/AFTER à droite utilise la clôture régulière comme référence. Retire les pourcentages calculés contre minuit.
+- Profil → Paramètres → Heure des marchés : Automatique (New York), heure d’été (UTC−4) ou heure d’hiver (UTC−5), mémorisé sur l’appareil et appliqué aussi aux widgets.
+- Le total du portefeuille conserve les gains réalisés. Les gains de vente en séance régulière ne sont pas rejoués comme gains hors séance.
+
+
 ## Mon Wallet v0.2.47 — 2026-10-13 (P&L à 0 % les jours fériés)
 
 - Les titres dont la bourse est fermée pour congé affichent un P&L individuel de 0 $ et 0,00 %, avec le logo de congé dans Mes titres et la Watchlist.

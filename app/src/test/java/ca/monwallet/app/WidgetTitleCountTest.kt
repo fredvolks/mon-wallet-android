@@ -69,15 +69,11 @@ class WidgetTitleCountTest {
             val rows = widget.findViewById<LinearLayout>(R.id.widget_rows)
             repeat(count) { index ->
                 val row = inflater.inflate(layout, rows, false)
+                val label = listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "DOL")[index]
                 row.findViewById<TextView>(R.id.widget_row_ticker).text =
-                    listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "DOL")[index]
-                row.findViewById<TextView>(R.id.widget_row_price).text = "485,80 USD"
-                row.findViewById<TextView>(R.id.widget_row_values).text = "+0,54 %"
-                if (index == 1) {
-                    row.findViewById<TextView>(R.id.widget_row_session).apply {
-                        text = "☀"; visibility = View.VISIBLE
-                    }
-                }
+                    ca.monwallet.app.widgets.WidgetWideRenderer.titleSummary(label, "485,80",
+                        java.math.BigDecimal("0.54"), true, true, null, 4, 6)
+                row.findViewById<TextView>(R.id.widget_row_ticker).textSize = 10f
                 rows.addView(row)
             }
             widget.findViewById<View>(R.id.widget_chart).visibility = View.GONE
@@ -98,9 +94,9 @@ class WidgetTitleCountTest {
                 rows.height, rows.getChildAt(count - 1).bottom)
             for (index in 0 until count) {
                 val row = rows.getChildAt(index)
-                for (cell in listOf(R.id.widget_row_ticker, R.id.widget_row_price,
-                    R.id.widget_row_values)) {
+                for (cell in listOf(R.id.widget_row_ticker, R.id.widget_row_after)) {
                     val text = row.findViewById<TextView>(cell)
+                    if (text.visibility != View.VISIBLE) continue
                     assertTrue("$count rows: ${text.text} clipped", text.paint.measureText(
                         text.text.toString()) <= text.width - text.paddingLeft - text.paddingRight + 1)
                 }

@@ -70,14 +70,14 @@ class Widget4x2LayoutTest {
         assertTrue(futures.containsAll(setOf("ES=F", "NQ=F", "YM=F", "RTY=F")))
     }
 
-    @Test fun dailyPnlAmountAndPercentAreCenteredInTheHero() {
+    @Test fun dailyPnlAmountAndPercentUseStartAlignmentAboveTheChart() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val widget = LayoutInflater.from(context).inflate(R.layout.wallet_widget_wide, null)
         val amount = widget.findViewById<TextView>(R.id.widget_amount)
         val percent = widget.findViewById<TextView>(R.id.widget_percent)
-        assertEquals(Gravity.CENTER_HORIZONTAL,
+        assertEquals(Gravity.START and Gravity.HORIZONTAL_GRAVITY_MASK,
             amount.gravity and Gravity.HORIZONTAL_GRAVITY_MASK)
-        assertEquals(Gravity.CENTER_HORIZONTAL,
+        assertEquals(Gravity.START and Gravity.HORIZONTAL_GRAVITY_MASK,
             percent.gravity and Gravity.HORIZONTAL_GRAVITY_MASK)
     }
 
@@ -110,7 +110,7 @@ class Widget4x2LayoutTest {
         val hero = widget.findViewById<View>(R.id.widget_day_pill)
         assertTrue(hero.height > total.height)
         assertTrue(indices.height > 0)
-        assertTrue(indices.bottom <= titleRows.bottom)
+        assertTrue(indices.top >= widget.findViewById<View>(R.id.widget_body).bottom)
         assertTrue(rows.getChildAt(4).bottom <= rows.height)
         assertTrue(titleRows.bottom <= footer.top)
         assertTrue(footer.bottom <= height)

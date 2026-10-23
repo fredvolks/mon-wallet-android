@@ -78,6 +78,17 @@ object OfficialDomains {
         "MSFT|NASDAQ|USD|STOCK" to "microsoft.com",
         "NVDA|NASDAQ|USD|STOCK" to "nvidia.com",
         "TSM|NYSE|USD|STOCK" to "tsmc.com",
+        "SPCX|NASDAQ|USD|STOCK" to "spacex.com",
+        "MCD.TO|TSX|CAD|STOCK" to "mcdonalds.com",
+        "MA|NYSE|USD|STOCK" to "mastercard.com",
+        "V|NYSE|USD|STOCK" to "visa.com",
+        "ATD.TO|TSX|CAD|STOCK" to "corpo.couche-tard.com",
+        "TNZ.TO|TSX|CAD|STOCK" to "tenazenergy.com",
+        "AVGO|NASDAQ|USD|STOCK" to "broadcom.com",
+        "META|NASDAQ|USD|STOCK" to "meta.com",
+        "GOOG|NASDAQ|USD|STOCK" to "google.com",
+        "GOOGL|NASDAQ|USD|STOCK" to "google.com",
+        "ASML|NASDAQ|USD|STOCK" to "asml.com",
         "MCD|NYSE|USD|STOCK" to "mcdonalds.com",
         "DOL.TO|TSX|CAD|STOCK" to "dollarama.com",
         "GURU.TO|TSX|CAD|STOCK" to "guruenergy.com",
@@ -95,7 +106,18 @@ object OfficialDomains {
             "NYQ", "NYSE" -> "NYSE"
             else -> exchange.uppercase()
         }
-        return domains["${symbol.uppercase()}|$market|${currency.uppercase()}|${type.uppercase()}"]
+        val rawSymbol = symbol.uppercase()
+        if (currency.uppercase() == "CAD" && type.uppercase() == "STOCK" &&
+            market in setOf("TSX", "NEO", "NE", "CBOE", "CBOE CANADA") &&
+            rawSymbol in setOf("MCD.TO", "MCD.NE", "MCD-C", "MCDS.NE", "MCDS.TO"))
+            return "mcdonalds.com"
+        val normalizedSymbol = when {
+            market == "TSX" && currency.uppercase() == "CAD" &&
+                rawSymbol in setOf("GURU", "DOL", "BLDP", "XEQT", "VFV", "ATD", "TNZ") -> "$rawSymbol.TO"
+            market == "CSE" && currency.uppercase() == "CAD" && rawSymbol == "PHOS" -> "PHOS.CN"
+            else -> rawSymbol
+        }
+        return domains["$normalizedSymbol|$market|${currency.uppercase()}|${type.uppercase()}"]
     }
 }
 
@@ -188,6 +210,9 @@ data class Quote(
     val preMarketChangePercent: BigDecimal? = null,
     val afterHoursChange: BigDecimal? = null,
     val afterHoursChangePercent: BigDecimal? = null,
+    val dayReferenceDate: String? = null,
+    val dayReferencePrice: BigDecimal? = null,
+    val dayReferenceTimestamp: Long? = null,
 ) {
     val change
         get() = previous?.let { price - it }
@@ -347,7 +372,44 @@ data class Wallet(
                 }
             )
         }
-        if (settings["portfolio_extended"] == "REGULAR") return regular
+        val sessionQuotes = datedQuotes.mapValues { (id, quote) ->
+            CivilDayPnl.dailyQuote(quote, security(id), now)
+        }
+        val outside = MarketClock.offSession(now)
+        val sessionResult = if (outside) {
+            // Off-session P&L measures current positions against the last regular close.
+            // Regular-session realized gains stay in total P&L, not in the new overnight move.
+            val rows = regular.holdings.map { holding ->
+                val quote = sessionQuotes[holding.securityId]
+                val rate = when (quote?.currency) {
+                    "CAD" -> ONE
+                    "USD" -> usd?.price
+                    else -> null
+                }
+                val day = if (holding.quantity == ZERO || holding.securityId in holidayIds) ZERO
+                    else quote?.previous?.let { close -> rate?.let {
+                        holding.quantity * (quote.price - close) * it
+                    } }
+                val base = if (holding.quantity == ZERO) ZERO
+                    else quote?.previous?.let { close -> rate?.let { holding.quantity * close * it } }
+                holding.copy(day = day, dayBase = base)
+            }
+            regular.copy(holdings = rows,
+                day = if (rows.all { it.day != null }) rows.fold(ZERO) { n, h -> n + h.day!! } else null,
+                dayBase = if (rows.all { it.dayBase != null })
+                    rows.fold(regular.cash) { n, h -> n + h.dayBase!! } else null)
+        } else Engine.calculate(entries, sessionQuotes,
+            securities.find { it.symbol == "CAD=X" }?.let { sessionQuotes[it.id] }, holidayIds,
+            dailyDate = CivilDayPnl.date(now))
+        fun Result.withCivilDay(): Result {
+            val byId = sessionResult.holdings.associateBy { it.securityId }
+            return copy(day = sessionResult.day, dayBase = sessionResult.dayBase,
+                holdings = holdings.map { holding ->
+                    holding.copy(day = if (holding.securityId in holidayIds) ZERO else byId[holding.securityId]?.day,
+                        dayBase = byId[holding.securityId]?.dayBase)
+                })
+        }
+        if (settings["portfolio_extended"] == "REGULAR") return regular.withCivilDay()
         val adjusted = datedQuotes.mapValues { (securityId, quote) ->
             val normalized = securities.find { it.id == securityId }
                 ?.takeIf { supportsUsExtendedHours(it) }
@@ -360,15 +422,8 @@ data class Wallet(
             if (extended != null && quote.currency == "USD") quote.copy(price = extended)
             else quote
         }
-        if (adjusted == datedQuotes) return regular
+        if (adjusted == datedQuotes) return regular.withCivilDay()
         val estimated = Engine.calculate(entries, adjusted, usd, holidayIds)
-        val byId = regular.holdings.associateBy { it.securityId }
-        // Today's P&L retains the regular-session reference; only valuation uses
-        // extended hours, and only when the provider supplied a current quote.
-        return estimated.copy(day = regular.day, dayBase = regular.dayBase,
-            holdings = estimated.holdings.map { holding ->
-                holding.copy(day = byId[holding.securityId]?.day,
-                    dayBase = byId[holding.securityId]?.dayBase)
-            })
+        return estimated.withCivilDay()
     }
 }

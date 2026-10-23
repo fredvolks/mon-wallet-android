@@ -216,7 +216,7 @@ class EngineTest {
                 0, "2026-10-08", "Test")),
             prices = listOf(Point("XEQT", "2026-10-07", d("100"), 0)),
         )
-        equal("100", wallet.result(now = Instant.parse("2026-10-08T20:00:00Z").toEpochMilli()).day)
+        equal("100", wallet.result(now = Instant.parse("2026-10-08T19:59:00Z").toEpochMilli()).day)
     }
 
     @Test

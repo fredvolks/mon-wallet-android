@@ -119,10 +119,11 @@ object Engine {
         quotes: Map<String, Quote> = emptyMap(),
         usd: Quote? = null,
         excludeDailyPnlFor: Set<String> = emptySet(),
+        dailyDate: String? = null,
     ): Result {
         if (tx.map { it.portfolioId }.distinct().size > 1) {
             return combine(tx.groupBy { it.portfolioId }.values.map {
-                calculate(it, quotes, usd, excludeDailyPnlFor)
+                calculate(it, quotes, usd, excludeDailyPnlFor, dailyDate)
             })
         }
         val l = ledger(tx)
@@ -178,7 +179,7 @@ object Engine {
         }
         val dailyHeld = held.filter { it.securityId !in excludeDailyPnlFor }
         val dailySessions = dailyHeld.mapNotNull { quotes[it.securityId]?.sessionDate }.distinct()
-        val session = dailySessions.maxOrNull() ?: LocalDate.now().toString()
+        val session = dailyDate ?: dailySessions.maxOrNull() ?: LocalDate.now().toString()
         val dailyPrices = dailyHeld.all { holding ->
             val quote = quotes[holding.securityId]
             quote != null && quote.previous != null &&

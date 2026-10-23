@@ -289,6 +289,16 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
                 Caption(
                     stringResource(R.string.ui_maintiens_un_espace_vide_de_lecran_daccueil_s_93dbb)
                 )
+                var liveEnabled by remember { mutableStateOf(s.secure.get("widget_live") != "false") }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("Suivi du widget aux 5 secondes", modifier = Modifier.weight(1f))
+                    Switch(liveEnabled, { enabled ->
+                        liveEnabled = enabled
+                        if (enabled) WidgetLiveService.start(context, explicit = true)
+                        else WidgetLiveService.stop(context)
+                    })
+                }
+                Caption("Écran allumé et déverrouillé seulement. Une notification permet d’arrêter le suivi. Android peut limiter la durée; ouvre l’app ou touche ↻ pour reprendre. Les prix restent soumis au délai du fournisseur.")
                 WalletWidget.ids(context).forEachIndexed { index, id ->
                     val config = WidgetSettings.load(context, id)
                     Section(stringResource(R.string.profile_widget_number, index + 1))
@@ -396,6 +406,21 @@ fun ProfileScreen(w: Wallet, vm: WalletViewModel, biometric: (() -> Unit) -> Uni
                 Caption(stringResource(R.string.settings_fx_caption))
                 Metric(stringResource(R.string.settings_background_refresh), stringResource(R.string.settings_refresh_interval))
                 Caption(stringResource(R.string.settings_refresh_caption))
+                Text("Heure des marchés", fontWeight = FontWeight.SemiBold)
+                var clockMode by remember { mutableStateOf(s.secure.get("market_clock") ?: "AUTO") }
+                listOf("AUTO" to "Automatique · New York",
+                    "SUMMER" to "Heure d’été · UTC−4",
+                    "WINTER" to "Heure d’hiver · UTC−5").forEach { (mode, label) ->
+                    FilterChip(clockMode == mode, onClick = {
+                        clockMode = mode
+                        s.secure.put("market_clock", mode)
+                        MarketClock.mode = mode
+                        WalletWidget.updateAll(context)
+                        vm.refresh()
+                    }, label = { Text(label) })
+                }
+                Caption("Automatique suit les changements d’heure de New York. Les modes manuels forcent le décalage choisi pour les limites de séance, dans l’app et les widgets.")
+                Caption("Hors séance : de 16 h à 9 h 30 le prochain jour de Bourse, variation depuis la clôture de 16 h. Aucun reset à minuit. À 9 h 30, retour à la séance régulière.")
                 Text("Valorisation hors séance", fontWeight = FontWeight.SemiBold)
                 val extendedValuation = w.settings["portfolio_extended"] != "REGULAR"
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
