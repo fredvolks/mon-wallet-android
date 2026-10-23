@@ -1,0 +1,25 @@
+name: Publish verified Mon Wallet v0.2.60
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/request-monwallet-v060.yml'
+permissions:
+  actions: write
+  contents: read
+jobs:
+  request-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require verified source and checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/branches/feat/widget-design-live-five-seconds-20261022" --jq '.commit.sha')"
+          [[ "$current" == "12bbabf2c0244578da9ba5bbe85d89cfab4f7b87" ]] || exit 1
+          passed="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=12bbabf2c0244578da9ba5bbe85d89cfab4f7b87&event=pull_request" --jq '[.workflow_runs[] | select((.workflow_id == 376285571 or .workflow_id == 375003618) and .status == "completed" and .conclusion == "success") | .workflow_id] | unique | length')"
+          [[ "$passed" == "2" ]] || exit 1
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/release-apk.yml/dispatches" \
+            -f ref="feat/widget-design-live-five-seconds-20261022" \
+            -f "inputs[release_version]=0.2.60"
