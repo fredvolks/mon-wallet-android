@@ -6,6 +6,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class EtfCompositionTest {
+    @Test fun issuerCatalogOnlyMatchesExactTickersOnOfficialProductLinks() {
+        val catalog = EtfData.parseCatalog("""<table><tr>
+            <td><a href="/ca/investors/en/products/239837/example-fund">XIC</a></td>
+            <td><a href="/ca/investors/en/products/239837/example-fund">iShares Canadian fund</a></td>
+            <td><a href="https://example.com/fund">GURU</a></td>
+            </tr></table>""")
+        assertEquals(setOf("XIC"), catalog.keys)
+        assertTrue(catalog.getValue("XIC").startsWith("https://www.blackrock.com/ca/"))
+    }
+
     @Test fun directAndUnderlyingTablesKeepSeparateDatesAndPublishedWeights() {
         val csv = """Fund Holdings as of,"Oct 22, 2026"
 Ticker,Name,Sector,Asset Class,Weight (%),Location

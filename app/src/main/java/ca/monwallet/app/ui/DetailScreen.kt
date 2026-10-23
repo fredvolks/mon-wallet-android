@@ -122,7 +122,7 @@ fun DetailScreen(
         if (tab in listOf(0, 1, 2, 3)) {
             status = null
             try {
-                if (tab in listOf(0, 1) && (fundamentals == null || financeRetry > 0)) {
+                if (security.type.uppercase() != "ETF" && tab in listOf(0, 1) && (fundamentals == null || financeRetry > 0)) {
                     financeLoading = true
                     financeError = null
                     financeNoData = false
@@ -447,6 +447,7 @@ fun DetailScreen(
                 if (security.type.uppercase() == "ETF") item {
                     EtfDetailsCard(security, holding?.value, load = s::etfDetails)
                 }
+                if (security.type.uppercase() != "ETF") {
                 item {
                     Section(
                         if (security.type == "ETF") "Données du fonds" else "Données financières"
@@ -570,6 +571,7 @@ fun DetailScreen(
                             Caption(stringResource(R.string.finance_updated_at, time(fetched)))
                         }
                     }
+                }
                 }
             }
             2 -> {

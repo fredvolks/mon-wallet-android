@@ -40,13 +40,39 @@ object EtfData {
     private suspend fun get(url: String) = Http.raw(Request.Builder().url(url)
         .header("User-Agent", "Mozilla/5.0 MonWallet ETF holdings").build())
 
+    @Volatile private var catalog: Pair<Long, Map<String, String>>? = null
+
+    internal fun parseCatalog(html: String): Map<String, String> = Jsoup.parse(html, root)
+        .select("table a[href]").mapNotNull { a ->
+            val ticker = a.text().trim()
+            val url = a.absUrl("href").substringBefore('?').substringBefore('#')
+            if (ticker.matches(Regex("[A-Z0-9][A-Z0-9.\\-]{0,14}")) &&
+                url.startsWith("$root/ca/investors/en/products/") &&
+                url.substringAfter("/products/").substringBefore('/').toLongOrNull() != null)
+                ticker to url else null
+        }.toMap()
+
+    private suspend fun resolvePage(s: Security): String? {
+        officialPage(s)?.let { return it }
+        if (s.type.uppercase() != "ETF" || s.currency !in setOf("CAD", "USD") ||
+            s.exchange.uppercase() !in setOf("TSX", "TOR", "TORONTO")) return null
+        var current = catalog
+        if (current == null || System.currentTimeMillis() - current.first > 24 * 3600_000L) {
+            val fresh = parseCatalog(get("$root/ca/investors/en/products/product-list"))
+            check(fresh.isNotEmpty()) { "Catalogue de l’émetteur indisponible." }
+            current = System.currentTimeMillis() to fresh
+            catalog = current
+        }
+        return current.second[s.symbol.uppercase().removeSuffix(".TO")]
+    }
+
     suspend fun fetch(s: Security): EtfDetails {
-        val page = officialPage(s) ?: error("Composition non couverte pour ce FNB pour le moment.")
+        val page = resolvePage(s) ?: error("Composition non couverte pour ce FNB pour le moment.")
         check(page.startsWith(root)) { "Composition automatique non couverte pour ce fournisseur pour le moment. La fiche officielle reste accessible." }
         val html = get(page)
         val doc = Jsoup.parse(html, page)
         // Reject consent/error pages and fund identity changes instead of caching unrelated data.
-        check(doc.title().substringAfterLast('|').trim().equals(s.ticker, ignoreCase = true)) { "Identité du fonds non confirmée." }
+        check(doc.title().substringAfterLast('|').trim().equals(s.symbol.removeSuffix(".TO"), ignoreCase = true)) { "Identité du fonds non confirmée." }
         val link = doc.select("#holdings a[href]").firstOrNull {
             it.attr("href").contains("fileType=csv") }?.absUrl("href")
             ?: error("Fichier de composition indisponible chez l’émetteur.")
@@ -54,7 +80,8 @@ object EtfData {
         val compositions = parseHoldingsCsv(get(link))
         fun field(selector: String) = doc.selectFirst(selector)?.text()?.takeIf { it.isNotBlank() && it != "-" }
         return EtfDetails(doc.select("h1").firstOrNull { it.text().isNotBlank() }?.text() ?: s.name,
-            "BlackRock / iShares", page, compositions.first(), compositions.getOrNull(1),
+            "BlackRock / iShares", page, compositions.first(), compositions.getOrNull(1) ?: compositions.first().takeIf {
+                !doc.select("#holdingsTabs").text().contains("Aggregate Underlying Holdings") },
             field(".fee-code-mgt .data"), field(".fee-code-mer .data"),
             field(".col-distributionFrequency .data"), field(".col-totalNetAssets .data"))
     }

@@ -324,6 +324,7 @@ internal fun ReportAllocation(wallet: Wallet, portfolioId: String?, result: Resu
                     }
                     val value = result?.holdings?.find { it.securityId == fund.id }?.value
                     val total = result?.holdings?.filter { it.quantity > ZERO }?.fold(ZERO) { a, h -> a + (h.value ?: ZERO) }
+                        ?.plus(if (cash) result.cash.max(ZERO) else ZERO)
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(8.dp)) {
                         EtfDetailsCard(fund, value, total?.let { value?.pct(it) }, loadEtf)
                     }
