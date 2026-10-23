@@ -77,7 +77,8 @@ object EtfData {
         }
         if (s.currency == "CAD" && (s.symbol.startsWith("H", true) || s.symbol.uppercase() in setOf("CASH.TO", "CBIL.TO") || s.name.contains("Global X", true))) {
             try { return GlobalXFunds.fetch(s) }
-            catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { if (ca.monwallet.app.BuildConfig.DEBUG) android.util.Log.d("FundCoverage", "Global X ${s.symbol}: ${e.message}") }
         }
         try { return fetchIshares(s) }
         catch (e: kotlinx.coroutines.CancellationException) { throw e }

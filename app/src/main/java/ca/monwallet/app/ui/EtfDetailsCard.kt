@@ -49,7 +49,8 @@ internal fun EtfDetailsCard(security: Security, walletValue: BigDecimal? = null,
             if (composition == null && exposure == null) {
                 Caption("Détail sous-jacent non fourni par cette source. Les positions directes ne sont pas utilisées comme exposition sectorielle ou géographique.")
             } else {
-                Caption("Composition au ${date(exposure?.asOf ?: composition!!.asOf)}")
+                val asOf = exposure?.asOf ?: composition!!.asOf
+                Caption(if (asOf.isBlank()) "Date de composition non fournie" else "Composition au ${date(asOf)}")
                 if (tab == 0) Caption(fund.compositionNote ?: "Positions détenues directement par le fonds, incluant ses FNB et ses liquidités.")
                 else Caption(if (exposure != null) "Répartition publiée séparément par l’émetteur; couverture selon les catégories fournies."
                     else "Exposition sous-jacente publiée par l’émetteur, sans ajouter à nouveau les FNB intermédiaires.")

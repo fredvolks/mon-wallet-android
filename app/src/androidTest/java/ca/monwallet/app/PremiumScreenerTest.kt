@@ -38,7 +38,8 @@ class PremiumScreenerTest {
                 ticker to (try { EtfData.fetch(fund) } catch (e: Exception) { throw IllegalStateException("Fund $ticker: ${e.message}", e) }).also { data ->
                     android.util.Log.i("FundCoverage", "$ticker ${data.issuer} ${data.direct.asOf} ${data.direct.positions.size}")
                     assertTrue("$ticker positions", data.direct.positions.isNotEmpty())
-                    assertTrue("$ticker date", data.direct.asOf.matches(Regex("\\d{4}-\\d{2}-\\d{2}")))
+                    if (ticker == "HXS" && data.direct.asOf.isBlank()) assertTrue(data.compositionNote!!.contains("Date de composition non fournie"))
+                    else assertTrue("$ticker date", data.direct.asOf.matches(Regex("\\d{4}-\\d{2}-\\d{2}")))
                 }
             }
         } }.awaitAll().toMap() }

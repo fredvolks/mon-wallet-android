@@ -10,6 +10,6 @@ adb pull /sdcard/Pictures/MonWallet/watchlist-diagnostic.png watchlist-diagnosti
 for name in summary calendar day-detail closed-trades transactions export export-month diagnostic etf-allocation etf-detail etf-underlying screener-card screener-filters vfv-detail vfv-underlying search-na search-general; do
   adb pull "/sdcard/Pictures/MonWallet/reports-$name.png" "reports-$name.png" || true
 done
-adb logcat -d -s WatchlistNetworkTest:* MonWalletQuote:* > watchlist-provider-log.txt
+adb logcat -d -s WatchlistNetworkTest:* MonWalletQuote:* FundCoverage:* > watchlist-provider-log.txt
 if [ "$test_status" -ne 0 ]; then exit "$test_status"; fi
 if [ "$pull_status" -ne 0 ] || [ ! -s watchlist-real.png ]; then exit 1; fi
