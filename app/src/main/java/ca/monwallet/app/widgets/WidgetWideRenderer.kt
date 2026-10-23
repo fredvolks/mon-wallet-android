@@ -182,7 +182,7 @@ internal object WidgetWideRenderer {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textSize = desiredSp * c.resources.displayMetrics.scaledDensity
             }
-            val availablePx = ((minWidth - 30f) * .34f - 6f).coerceAtLeast(40f) *
+            val availablePx = ((minWidth - 30f) * .37f - 6f).coerceAtLeast(40f) *
                 c.resources.displayMetrics.density
             val fittedSp = (desiredSp * availablePx / paint.measureText(amountText).coerceAtLeast(1f))
                 .coerceIn(12f, desiredSp)
@@ -257,7 +257,7 @@ internal object WidgetWideRenderer {
             WidgetTitleLayout.Density.ULTRA -> 11f
         }
         val metrics = c.resources.displayMetrics
-        val roomPx = (((minWidth - 30f) * .66f - logoWidth - 3f).coerceAtLeast(60f)) *
+        val roomPx = (((minWidth - 30f) * .63f - logoWidth - 3f).coerceAtLeast(60f)) *
             metrics.density
         val measure = Paint().apply {
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
@@ -295,15 +295,24 @@ internal object WidgetWideRenderer {
                 else Color.rgb(181, 150, 241))
             row.setViewVisibility(R.id.widget_row_price, View.GONE)
             row.setViewVisibility(R.id.widget_row_values, View.GONE)
-            // A single text cell keeps all quote figures in the actual RemoteViews
-            // draw pass. Separate nested numeric TextViews can measure normally yet
-            // paint nothing on some Android widget hosts.
+            // Keep regular figures together; the end cell anchors PRE/AFTER to the inner edge.
             row.setTextViewTextSize(R.id.widget_row_ticker,
                 android.util.TypedValue.COMPLEX_UNIT_SP, rowTextSp)
-            row.setTextViewText(R.id.widget_row_ticker, summaries[security.id] ?: label)
-            // Extended change is part of the same text cell and inherits its font size.
-            row.setViewVisibility(R.id.widget_row_after, View.GONE)
-            row.setTextViewText(R.id.widget_row_after, "")
+            val detail = quoteDetails.firstOrNull { it.id == security.id }
+            row.setTextViewText(R.id.widget_row_ticker, if (detail == null) label else
+                titleSummary(detail.label, detail.price, detail.dayPercent,
+                    config.price && !config.hideAmounts, config.titleDayPercent, null,
+                    tickerChars, priceChars, null, detail.holiday))
+            val extraPercent = detail?.extendedPercent
+            row.setViewVisibility(R.id.widget_row_after,
+                if (extraPercent == null) View.GONE else View.VISIBLE)
+            row.setTextViewTextSize(R.id.widget_row_after,
+                android.util.TypedValue.COMPLEX_UNIT_SP, rowTextSp)
+            row.setTextColor(R.id.widget_row_after,
+                if (detail?.session == MarketSession.PRE_MARKET) Color.rgb(90, 183, 255)
+                else Color.rgb(181, 150, 241))
+            row.setTextViewText(R.id.widget_row_after, if (extraPercent == null) "" else
+                (if (detail.session == MarketSession.PRE_MARKET) "☀ " else "☾ ") + percent(extraPercent))
 
             row.setOnClickPendingIntent(R.id.widget_row,
                 PendingIntent.getActivity(c, id xor security.id.hashCode(),

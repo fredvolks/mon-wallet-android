@@ -74,8 +74,10 @@ class WidgetTitleCountTest {
                     ca.monwallet.app.widgets.WidgetWideRenderer.titleSummary(label, "485,80",
                         java.math.BigDecimal("0.54"), true, true, null, 4, 6)
                 if (index == 1) row.findViewById<TextView>(R.id.widget_row_after).apply {
-                    text = "☀ PRE +0,12 %"; visibility = View.VISIBLE
+                    text = "☀ +0,12 %"; visibility = View.VISIBLE
+                    textSize = 10f
                 }
+                row.findViewById<TextView>(R.id.widget_row_ticker).textSize = 10f
                 rows.addView(row)
             }
             widget.findViewById<View>(R.id.widget_chart).visibility = View.GONE

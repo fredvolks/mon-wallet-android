@@ -91,15 +91,16 @@ class WidgetRemoteViewsScreenshotTest {
                 val row = rows.getChildAt(index)
                 assertNotNull(row.findViewById<ImageView>(R.id.widget_row_logo).drawable)
                 val text = row.findViewById<TextView>(R.id.widget_row_ticker)
-                assertEquals("No AFTER subline", View.GONE,
-                    row.findViewById<TextView>(R.id.widget_row_after).visibility)
+                val after = row.findViewById<TextView>(R.id.widget_row_after)
                 if (index in setOf(1, 5)) {
-                    assertTrue("AFTER belongs on the price line", text.text.contains("☾ +0,27 %"))
-                    val spans = text.text as android.text.Spanned
-                    assertTrue("AFTER must inherit the main font size",
-                        spans.getSpans(0, spans.length,
-                            android.text.style.RelativeSizeSpan::class.java).isEmpty())
-                }
+                    assertEquals(View.VISIBLE, after.visibility)
+                    assertTrue(after.text.contains("☾ +0,27 %"))
+                    assertEquals("Same quote font", text.textSize, after.textSize, 0.1f)
+                    assertEquals("Extended return at the right edge", row.width, after.right)
+                    assertEquals("One baseline", text.top + text.baseline, after.top + after.baseline)
+                    assertTrue("Extended return must fit", after.paint.measureText(
+                        after.text.toString()) <= after.width)
+                } else assertEquals(View.GONE, after.visibility)
                 assertTrue("Compact widget text must stay readable",
                     text.textSize / context.resources.displayMetrics.scaledDensity >= 10f)
                 assertEquals("All price columns need the same character width",
