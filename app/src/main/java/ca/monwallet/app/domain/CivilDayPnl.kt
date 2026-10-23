@@ -14,8 +14,8 @@ object CivilDayPnl {
 
     private fun prints(q: Quote): List<Pair<Long, BigDecimal>> = listOfNotNull(
         q.timestamp.takeIf { it > 0 }?.let { it to q.price },
-        q.preMarketTimestamp?.let { time -> q.preMarketPrice?.let { time to it } },
-        q.afterHoursTimestamp?.let { time -> q.afterHoursPrice?.let { time to it } })
+        q.preMarketTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.preMarketPrice?.let { time to it } },
+        q.afterHoursTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.afterHoursPrice?.let { time to it } })
 
     fun capture(q: Quote, previous: Quote?, now: Long): Quote {
         val date = date(now)

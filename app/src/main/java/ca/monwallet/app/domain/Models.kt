@@ -376,7 +376,8 @@ data class Wallet(
             CivilDayPnl.dailyQuote(quote, security(id), now)
         }
         val civil = Engine.calculate(entries, civilQuotes,
-            securities.find { it.symbol == "CAD=X" }?.let { civilQuotes[it.id] }, holidayIds)
+            securities.find { it.symbol == "CAD=X" }?.let { civilQuotes[it.id] }, holidayIds,
+            dailyDate = CivilDayPnl.date(now))
         fun Result.withCivilDay(): Result {
             val byId = civil.holdings.associateBy { it.securityId }
             return copy(day = civil.day, dayBase = civil.dayBase, holdings = holdings.map { holding ->
