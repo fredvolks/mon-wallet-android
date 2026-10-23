@@ -195,7 +195,7 @@ internal object WidgetWideRenderer {
         val minWidth = size.first
         val minHeight = size.second
         if (showAmount) {
-            val amountText = signed(result?.day)
+            val amountText = signed(regular.day)
             val desiredSp = if (config.dailyHero) 26f else 22f
             val paint = Paint().apply {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
