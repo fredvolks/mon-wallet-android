@@ -13,7 +13,9 @@ object CivilDayPnl {
     fun date(now: Long): String = Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString()
 
     private fun prints(q: Quote): List<Pair<Long, BigDecimal>> = listOfNotNull(
-        q.timestamp.takeIf { it > 0 }?.let { it to q.price },
+        q.timestamp.takeIf { it > 0 &&
+            Instant.ofEpochMilli(it).atZone(zone).toLocalDate().toString() == q.sessionDate
+        }?.let { it to q.price },
         q.preMarketTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.preMarketPrice?.let { time to it } },
         q.afterHoursTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.afterHoursPrice?.let { time to it } })
 
