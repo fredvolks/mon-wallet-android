@@ -25,11 +25,13 @@ fun SearchDialog(s: Services, w: Wallet, onClose: () -> Unit, onChoose: (Securit
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     var manual by remember { mutableStateOf(false) }
+    var marketFilter by remember { mutableIntStateOf(0) }
     LaunchedEffect(query) {
         error = null
         results = emptyList()
-        if (query.length >= 2) {
-            delay(450)
+        loading = false
+        if (query.trim().isNotEmpty()) {
+            delay(250)
             loading = true
             try {
                 results =
@@ -48,15 +50,17 @@ fun SearchDialog(s: Services, w: Wallet, onClose: () -> Unit, onChoose: (Securit
     }
     FullDialog(stringResource(R.string.ui_rechercher_un_titre_d9a8e), onClose) {
         TextEntry(stringResource(R.string.ui_ticker_nom_ou_marche_2ccf9), query, { query = it })
+        Chips(listOf("Tous", "Canada", "États-Unis"), marketFilter) { marketFilter = it }
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Caption(it) }
-        val local =
-            w.securities.filter {
-                it.type !in listOf("INDEX", "FX", "COMMODITY") &&
-                    (query.isBlank() ||
-                        "${it.symbol} ${it.name} ${it.exchange}".contains(query, true))
-            }
-        val all = (local + results).distinctBy { it.symbol + it.currency + it.exchange }
+        val candidates = (w.securities + ca.monwallet.app.data.Catalog.all +
+            ca.monwallet.app.marketdata.SectorUniverse.stocks + results)
+            .filter { it.type !in listOf("INDEX", "FX", "COMMODITY", "FUTURE") }
+        val all = ca.monwallet.app.marketdata.SecuritySearch.rank(query, candidates).filter { security ->
+            when (marketFilter) { 1 -> security.exchange.uppercase() in setOf("TSX", "TOR", "TORONTO", "TSXV", "CSE", "CBOE CANADA", "NEO")
+                2 -> security.currency == "USD" && security.exchange.uppercase() !in setOf("TSX", "TOR", "TORONTO", "TSXV", "CSE")
+                else -> true }
+        }
         if (all.isEmpty()) Caption(stringResource(R.string.ui_aucun_resultat_53a59))
         all.take(40).forEach { security ->
             Row(
