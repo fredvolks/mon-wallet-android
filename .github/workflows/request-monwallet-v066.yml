@@ -1,0 +1,33 @@
+name: Publish verified Mon Wallet v0.2.66
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/request-monwallet-v066.yml']
+permissions:
+  actions: write
+  contents: read
+jobs:
+  request-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require exact search screener ETF build and emulator checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            current="$(gh api "repos/${GITHUB_REPOSITORY}/branches/feat/investment-analyst-20261023" --jq '.commit.sha')"
+            [[ "$current" == "70505b67c5e3a5237abf93cb263ea06520bf3711" ]] || exit 1
+            checks="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=70505b67c5e3a5237abf93cb263ea06520bf3711&event=pull_request" --jq '[.workflow_runs[] | select(.workflow_id == 376285571 or .workflow_id == 375003618)]')"
+            failed="$(echo "$checks" | jq '[.[] | select(.status == "completed" and .conclusion != "success")] | length')"
+            [[ "$failed" == "0" ]] || exit 1
+            passed="$(echo "$checks" | jq '[.[] | select(.status == "completed" and .conclusion == "success") | .workflow_id] | unique | length')"
+            if [[ "$passed" == "2" ]]; then
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/release-apk.yml/dispatches" \
+                -f ref="feat/investment-analyst-20261023" -f "inputs[release_version]=0.2.66"
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
