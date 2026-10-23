@@ -92,7 +92,12 @@ class InvestmentResearch(private val services: Services) {
             else stock(resolved, mode == "TITLE")
         } } }.awaitAll()
         val stocks = if (mode == "IDEAS") {
-            val sorted = basic.filter { it.quote != null }.sortedBy { row ->
+            val currentFx = wallet.securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id]?.price }
+            val sorted = basic.filter { row ->
+                val q = row.quote
+                val rate = if (q?.currency == "CAD") ONE else if (q?.currency == "USD") currentFx else null
+                q != null && q.currency == row.security.currency && q.price > ZERO && rate != null && q.price * rate <= budget
+            }.sortedBy { row ->
                 exposure.sectors.find { it.label == PortfolioResearch.sector(row.security.sector) }?.percent ?: ZERO }
             sorted.take(3).mapIndexed { i, row -> async {
                 status("Vérification des ratios et nouvelles : ${i + 1}/3")
@@ -118,6 +123,7 @@ class InvestmentResearch(private val services: Services) {
             fund.sourceUrl, fund.underlying?.asOf ?: fund.direct.asOf) }
         ResearchPack(System.currentTimeMillis(), mode, exposure, funds, stocks, benchmarks, sources, budget,
             country, horizon, risk, threshold, listOfNotNull(
+                if (mode == "IDEAS" && stocks.isEmpty()) "Aucune idée évaluable dans ce petit univers avec ce budget, les cours et les taux reçus." else null,
                 if (mode == "IDEAS") "Sélection de 12 titres au maximum dans le catalogue sectoriel, et non tout le marché. Les 3 premières idées font l’objet d’une collecte financière détaillée." else null,
                 if (held.size > 30) "Cours actualisés pour les 30 premiers titres; les autres restent en cache." else null,
                 if (held.count { it.type.uppercase() == "ETF" } > 12) "Composition chargée pour les 12 premiers FNB." else null,
