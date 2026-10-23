@@ -55,6 +55,7 @@ class WidgetRemoteViewsScreenshotTest {
                     security.currency, now, LocalDate.now().toString(), "exemple visuel",
                     afterHoursPrice = if (index in setOf(1, 5)) BigDecimal(amounts[index]) + BigDecimal("0.50") else null,
                     afterHoursTimestamp = if (index in setOf(1, 5)) now else null,
+                    afterHoursChangePercent = if (index in setOf(1, 5)) BigDecimal("0.27") else null,
                     marketSession = if (index in setOf(1, 5)) "AFTER_HOURS" else "CLOSED")
             }.toMap())
         val result = Result(holdings, BigDecimal("9300"), ZERO, BigDecimal("9348.36"),
@@ -86,6 +87,12 @@ class WidgetRemoteViewsScreenshotTest {
             for (index in 0 until count) {
                 val row = rows.getChildAt(index)
                 assertNotNull(row.findViewById<ImageView>(R.id.widget_row_logo).drawable)
+                if (index in setOf(1, 5)) {
+                    val after = row.findViewById<TextView>(R.id.widget_row_after)
+                    assertEquals(View.VISIBLE, after.visibility)
+                    assertTrue(after.text.contains("AFTER"))
+                    assertTrue(after.height >= after.lineHeight)
+                }
                 val text = row.findViewById<TextView>(R.id.widget_row_ticker)
                 assertEquals("All price columns need the same character width",
                     commonTextSize, text.textSize, 0.1f)
