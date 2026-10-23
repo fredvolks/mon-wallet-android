@@ -46,7 +46,8 @@ class WidgetRemoteViewsScreenshotTest {
             Holding(security.id, ONE, BigDecimal("100"), BigDecimal("100"), ZERO, ZERO,
                 BigDecimal("105"), ZERO, ZERO, BigDecimal(changes[index]), BigDecimal("100"))
         }
-        val now = System.currentTimeMillis()
+        val now = java.time.ZonedDateTime.of(2026, 10, 22, 17, 30, 0, 0,
+            java.time.ZoneId.of("America/New_York")).toInstant().toEpochMilli()
         val wallet = Wallet(portfolios = listOf(portfolio), securities = securities,
             quotes = securities.mapIndexed { index, security ->
                 security.id to Quote(security.id, BigDecimal(amounts[index]),
@@ -64,7 +65,7 @@ class WidgetRemoteViewsScreenshotTest {
             custom = true, titleIds = securities.map { it.id }, price = true, chart = false,
             logo = true, titleTotalPercent = false)
         val remote = WidgetWideRenderer.render(context, 101, null, settings, wallet,
-            portfolio.id, result, false, emptyList(), widthDp to heightDp)
+            portfolio.id, result, false, emptyList(), widthDp to heightDp, quoteNow = now)
         var screenshot: Bitmap? = null
         instrumentation.runOnMainSync {
             val view = remote.apply(context, null)

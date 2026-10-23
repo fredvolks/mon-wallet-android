@@ -102,6 +102,7 @@ internal object WidgetWideRenderer {
         config: WidgetSettings, wallet: Wallet, portfolio: String?,
         result: Result?, hidden: Boolean, cached: List<Point>,
         sizeOverrideDp: Pair<Int, Int>? = null,
+        quoteNow: Long = System.currentTimeMillis(),
     ): RemoteViews {
         val views = RemoteViews(c.packageName, R.layout.wallet_widget_wide)
         val title = if (portfolio == null) c.getString(R.string.all_portfolios)
@@ -204,7 +205,7 @@ internal object WidgetWideRenderer {
             val q = wallet.quotes[security.id]
             val holiday = MarketHoliday.isHolidayToday(security)
             val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) && !holiday }
-                ?.let { NormalizedQuote.from(it) }
+                ?.let { NormalizedQuote.from(it, quoteNow) }
             val session = extended?.marketSession
             val extraPrice = when (session) {
                 MarketSession.PRE_MARKET -> extended.preMarketPrice
@@ -267,7 +268,7 @@ internal object WidgetWideRenderer {
             if (logo != null) row.setImageViewBitmap(R.id.widget_row_logo, logo)
             val q = wallet.quotes[security.id]
             val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) }
-                ?.let { NormalizedQuote.from(it) }
+                ?.let { NormalizedQuote.from(it, quoteNow) }
             val session = extended?.marketSession
             val extraPrice = when (session) {
                 MarketSession.PRE_MARKET -> extended.preMarketPrice
