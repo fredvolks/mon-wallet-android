@@ -41,6 +41,10 @@ class WidgetDayAfterTest {
         assertEquals(listOf(0f, 20f, 50f), friday.values)
         assertEquals(2, friday.afterStart)
         assertEquals(friday, WidgetChartData.daySeries(w, "p", points, at("2026-10-26T09:29:59")))
+        val refreshed = w.copy(quotes = w.quotes + (stock.id to w.quotes.getValue(stock.id)
+            .copy(previous = "100".dec())), prices = listOf(
+            Point(stock.id, "2026-10-22", "98".dec(), at("2026-10-22T16:00:00"))))
+        assertEquals(friday, WidgetChartData.daySeries(refreshed, "p", points, at("2026-10-26T09:29:59")))
         assertTrue(WidgetChartData.daySeries(w, "p", points, at("2026-10-26T09:30:00")).values.isEmpty())
     }
 }

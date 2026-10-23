@@ -1,3 +1,10 @@
+# 0.2.67 — Widget : séance du jour et AFTER séparés
+
+- P&L régulier conservé après la clôture, remis à zéro à minuit.
+- Ligne AFTER distincte en mauve, variation depuis la clôture régulière en dollars et pourcentage.
+- Graphique de la séance prolongé en mauve après 16 h, conservé après minuit et durant les jours fermés jusqu’à la prochaine ouverture.
+- Conservation du cache intrajournalier sur dix jours pour éviter que les rafraîchissements effacent la séance précédente.
+
 # 0.2.66 — Dossier de recherche et Analyste IA
 
 - Découvrir et fiche de titre : équilibre du portefeuille, analyse de titre et idées selon budget/horizon/risque, avec choix du membre et du compte.

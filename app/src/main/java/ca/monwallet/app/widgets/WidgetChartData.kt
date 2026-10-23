@@ -101,6 +101,9 @@ internal object WidgetChartData {
         val held = wallet.result(portfolio, now).holdings.filter { it.quantity > ZERO }.map { it.securityId }.toSet()
         val start = sessionStart(now)
         val close = MarketClock.date(start).atTime(16, 0).atZone(MarketClock.zone).toInstant().toEpochMilli()
+        val sessionDate = MarketClock.date(start).toString()
+        val previousCloses = wallet.prices.filter { it.date < sessionDate && it.securityId in held }
+            .groupBy { it.securityId }.mapValues { (_, bars) -> bars.maxByOrNull { it.date }!!.close }
         val points = cached.filter { it.securityId in held && it.timestamp in start..now }
         val times = points.map { it.timestamp }.distinct().sorted()
         val bySecurity = points.groupBy { it.securityId }.mapValues { it.value.sortedBy { p -> p.timestamp } }
@@ -114,9 +117,10 @@ internal object WidgetChartData {
                 val original = quotes[id]
                 if (original == null) { complete = false; break }
                 val point = bySecurity[id]?.lastOrNull { it.timestamp <= time }
-                val price = point?.close ?: original.previous
+                val reference = previousCloses[id] ?: original.previous
+                val price = point?.close ?: reference
                 if (price == null) { complete = false; break }
-                quotes[id] = original.copy(price = price, sessionDate = MarketClock.date(start).toString())
+                quotes[id] = original.copy(price = price, previous = reference, sessionDate = sessionDate)
             }
             if (!complete) continue
             val value = Engine.calculate(tx, quotes, fx?.let { quotes[it.id] },
