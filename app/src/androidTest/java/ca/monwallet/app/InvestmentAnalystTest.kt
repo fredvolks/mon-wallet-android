@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class InvestmentAnalystTest {
-    @Test fun datedResearchShowsUnknownCoverageAndCopyExcludesMemberIdentity() = runBlocking {
+    @Test fun datedResearchShowsUnknownCoverageAndCopyExcludesMemberIdentity() = runBlocking<Unit> {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         context.getSharedPreferences("portfolio_analyst", 0).edit().putString("sector_cap", "35").commit()
@@ -104,7 +104,7 @@ class InvestmentAnalystTest {
             services.repo.db.close()
         }
     }
-    @Test fun freeResearchCollectsRealVfvExposureAndDatedSources() = runBlocking {
+    @Test fun freeResearchCollectsRealVfvExposureAndDatedSources() = runBlocking<Unit> {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val services = Services(context)
         val previous = services.repo.owner.value
