@@ -200,11 +200,12 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                                 val health = FinancialHealthProfile.assess(row.security, row.fundamentals)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     AnalystTile("Secteur", PortfolioResearch.sector(row.security.sector) ?: "Non déterminé", Modifier.weight(1f))
-                                    AnalystTile("Marché", row.security.exchange + " · " + row.security.currency, Modifier.weight(1f))
+                                    AnalystTile("Taille de l’entreprise", row.fundamentals?.metrics?.get("Capitalisation (M)")
+                                        ?.let { financialValue("Capitalisation (M)", it, row.security.currency) } ?: "Non disponible", Modifier.weight(1f))
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    AnalystTile("Variation 1 mois", percent(row.monthReturn), Modifier.weight(1f), tint(row.monthReturn))
-                                    AnalystTile("Horizon", p.horizon, Modifier.weight(1f))
+                                    AnalystTile("Ton profil", p.risk, Modifier.weight(1f))
+                                    AnalystTile("Marché", row.security.exchange + " · " + row.security.currency, Modifier.weight(1f))
                                 }
                                 AnalystAccordion("Pourquoi ce titre ?", Icons.Default.Lightbulb, "analyst-reason") {
                                     Text("Ce titre fait partie du catalogue étudié pour ton budget. Sa présence dans la liste ne constitue pas un avis d’achat.", fontSize = 14.sp)
@@ -487,7 +488,7 @@ private fun AnalystFigures(row: ResearchStock) {
         Text("Ratios financiers", fontWeight = FontWeight.Bold)
         val metrics = row.fundamentals?.metrics.orEmpty()
         if (metrics.isEmpty()) Caption("Ratios indisponibles pour ce titre dans le dossier actuel.")
-        metrics.entries.take(12).forEach { Metric(it.key, it.value) }
+        metrics.entries.take(12).forEach { Metric(it.key, financialValue(it.key, it.value, row.security.currency)) }
         row.fundamentals?.let { Caption(it.source + " · " + (it.ratiosAsOf ?: it.asOf ?: "date non fournie")) }
     }
     AnalystAccordion("Résultats financiers", Icons.Default.Assessment, "analyst-earnings") {
