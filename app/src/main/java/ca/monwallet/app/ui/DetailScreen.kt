@@ -46,6 +46,7 @@ fun DetailScreen(
     val context = LocalContext.current
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val q = w.quotes[security.id]
+    var investmentAnalyst by remember { mutableStateOf(false) }
     var tab by remember { mutableIntStateOf(0) }
     var range by remember { mutableIntStateOf(2) }
     var chartKind by remember { mutableIntStateOf(0) }
@@ -204,12 +205,14 @@ fun DetailScreen(
         FinancialMetricRating.CONTEXT -> Muted
     }
     var showHealth by remember(security.id) { mutableStateOf(false) }
+    if (investmentAnalyst) InvestmentAnalystDialog(s, security) { investmentAnalyst = false }
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 12.dp)
             .border(2.dp, healthColor, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp),
         contentPadding = PaddingValues(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        item { OutlinedButton(onClick = { investmentAnalyst = true }, modifier = Modifier.fillMaxWidth()) { Text("Analyser avec l’IA") } }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
