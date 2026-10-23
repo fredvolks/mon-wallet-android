@@ -54,6 +54,7 @@ object PortfolioResearch {
         if (fund == null) return emptyMap()
         val explicit = if (sectorMode) fund.sectorExposure else fund.countryExposure
         val raw = explicit?.weights ?: fund.underlying?.weights(sectorMode)?.toMap() ?: emptyMap()
+        if (raw.values.any { it < ZERO }) return emptyMap()
         val map = raw.entries.mapNotNull { (key, v) ->
             val label = if (sectorMode) sector(key) else country(key)
             if (label == null || v < ZERO) null else label to v

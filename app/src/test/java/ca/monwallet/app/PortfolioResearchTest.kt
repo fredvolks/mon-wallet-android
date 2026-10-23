@@ -48,6 +48,7 @@ class PortfolioResearchTest {
         val e = PortfolioResearch.build(result(listOf(holding("f", "1000"))).copy(value = null), listOf(etf))
         assertNull(e.total)
         assertTrue(PortfolioResearch.fundWeights(fund(mapOf("Technology" to "110")), true).isEmpty())
+        assertTrue(PortfolioResearch.fundWeights(fund(mapOf("Technology" to "-1", "Financials" to "50")), true).isEmpty())
         val noFund = PortfolioResearch.build(result(listOf(holding("f", "1000"))), listOf(etf))
         eq("1000", noFund.unknownSector)
         eq("100", noFund.sectors.single().percent)

@@ -211,15 +211,15 @@ internal fun InvestmentBalanceCard(exposure: PortfolioExposure, threshold: Int) 
         Metric("Secteurs identifiés", exposurePercent(exposure.sectorCoverage))
         Metric("Liquidités · CAD", money(exposure.cash))
         exposure.sectors.forEach { line ->
-            Metric(line.label, exposurePercent(line.percent) + " · " + money(line.value),
+            Metric(line.label, exposurePercent(line.percent.takeIf { exposure.total != null }) + " · " + money(line.value),
                 if (line.percent > BigDecimal(threshold) && line.label !in setOf("Non déterminé", "Liquidités")) Blue else Color.White)
-            LinearProgressIndicator(progress = { (line.percent.toFloat() / 100f).coerceIn(0f, 1f) },
+            if (exposure.total != null) LinearProgressIndicator(progress = { (line.percent.toFloat() / 100f).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(4.dp))
         }
         val concentrated = exposure.sectors.filter { it.percent > BigDecimal(threshold) && it.label !in setOf("Non déterminé", "Liquidités") }
         concentrated.forEach { Caption(it.label + " dépasse ton seuil d’alerte de " + threshold + " %.") }
         if (exposure.unknownSector > ZERO) Caption("La part non déterminée reste dans le total : aucune extrapolation à partir des seuls secteurs connus.")
-        if (exposure.countries.isNotEmpty()) { Text("Pays / domicile", fontWeight = FontWeight.Bold); exposure.countries.take(8).forEach { Metric(it.label, exposurePercent(it.percent)) } }
+        if (exposure.countries.isNotEmpty()) { Text("Pays / domicile", fontWeight = FontWeight.Bold); exposure.countries.take(8).forEach { Metric(it.label, exposurePercent(it.percent.takeIf { exposure.total != null })) } }
         if (exposure.currencies.isNotEmpty()) { Text("Devises de cotation", fontWeight = FontWeight.Bold); exposure.currencies.forEach { Metric(it.label, percent(it.percent)) } }
         exposure.notes.forEach { Caption(it) }
     }
