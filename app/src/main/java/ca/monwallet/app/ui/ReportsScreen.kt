@@ -387,9 +387,9 @@ internal fun ReportAllocation(wallet: Wallet, portfolioId: String?, result: Resu
                 .sortedByDescending { it.value!! }
             val investedInTitles = owned.fold(ZERO) { a, h -> a + h.value!! }
             if (owned.isNotEmpty()) {
-                Metric("Plus grosse position", "${wallet.security(owned.first().securityId)?.ticker ?: "—"} · ${percent(owned.first().value?.pct(investedInTitles))}")
-                Metric("Top 3", percent(owned.take(3).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
-                Metric("Top 5", percent(owned.take(5).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
+                Metric("Plus grosse position", "${wallet.security(owned.first().securityId)?.ticker ?: "—"} · ${allocationPercent(owned.first().value?.pct(investedInTitles))}")
+                Metric("Top 3", allocationPercent(owned.take(3).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
+                Metric("Top 5", allocationPercent(owned.take(5).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
             }
         }
     }

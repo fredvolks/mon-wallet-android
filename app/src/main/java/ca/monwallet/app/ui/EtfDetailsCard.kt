@@ -43,12 +43,6 @@ internal fun EtfDetailsCard(security: Security, walletValue: BigDecimal? = null,
         val fund = state?.details
         if (fund != null) {
             Caption("${fund.issuer}${if (state?.cached == true) " · en cache" else ""}")
-            Caption("Consulté le ${time(fund.fetchedAt)} · les dates de composition sont indiquées ci-dessous.")
-            Metric("Frais de gestion", fund.managementFee ?: "Non disponibles")
-            Metric("Ratio des frais de gestion (RFG)", fund.mer ?: "Non disponible")
-            Caption("RFG et frais de gestion sont deux mesures distinctes; ils ne s’additionnent pas.")
-            fund.distributionFrequency?.let { Metric("Distributions", it) }
-            fund.netAssets?.let { Metric("Actif net du fonds", it) }
             Chips(listOf("Positions", "Sous-jacents", "Secteurs", "Pays"), tab) { tab = it }
             val composition = if (tab == 0) fund.direct else fund.underlying
             if (composition == null) {
@@ -77,6 +71,20 @@ internal fun EtfDetailsCard(security: Security, walletValue: BigDecimal? = null,
                 Caption("${minOf(rows.size, limit)} lignes affichées · ${allocationPercent(shown)} du fonds. Poids publiés, sans renormalisation.")
                 if (rows.size > 100 && expanded) Caption("Les autres positions sont disponibles sur la fiche officielle.")
             }
+            Spacer(Modifier.height(12.dp))
+            Text("Détails du fonds", fontWeight = FontWeight.Bold)
+            Metric("Frais de gestion", fund.managementFee ?: "Non disponibles")
+            Metric("Ratio des frais de gestion (RFG)", fund.mer ?: "Non disponible")
+            Caption("RFG et frais de gestion sont deux mesures distinctes; ils ne s’additionnent pas.")
+            fund.distributionFrequency?.let { frequency ->
+                Metric("Distributions", when (frequency.lowercase()) {
+                    "quarterly" -> "Trimestrielles"; "monthly" -> "Mensuelles"
+                    "annually", "annual" -> "Annuelles"; "semi-annually" -> "Semestrielles"
+                    else -> frequency
+                })
+            }
+            fund.netAssets?.let { Metric("Actif net du fonds", it) }
+            Caption("Consulté le ${time(fund.fetchedAt)}")
         } else if (!loading) Caption("Les pondérations ne sont pas disponibles pour ce FNB pour le moment.")
         Row {
             TextButton(onClick = { retry++ }, enabled = !loading) { Text("Actualiser") }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ActivityScenario
@@ -48,8 +49,10 @@ class EtfDetailsTest {
         val context = instrumentation.targetContext
         ReportsTestActivity.content = {
             WalletTheme {
+                Surface(color = Night) {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
                     ReportAllocation(wallet, p.id, result) { _, _ -> EtfLoad(data) }
+                }
                 }
             }
         }
@@ -90,7 +93,7 @@ class EtfDetailsTest {
                         device.displayWidth / 2, device.displayHeight / 3, 20)
             }
             click("XEQT · Composition et pondérations  ›")
-            assertNotNull(device.wait(Until.findObject(By.text("Frais de gestion")), 15_000))
+            assertNotNull(device.wait(Until.findObject(By.text("XIC")), 15_000))
             capture("reports-etf-detail.png")
             click("Sous-jacents")
             assertNotNull(device.wait(Until.findObject(By.text("NVDA")), 10_000))
