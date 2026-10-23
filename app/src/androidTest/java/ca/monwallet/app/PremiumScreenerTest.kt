@@ -35,7 +35,8 @@ class PremiumScreenerTest {
         val results = coroutineScope { funds.map { ticker -> async {
             semaphore.withPermit {
                 val fund = Security.of("$ticker.TO", ticker, "TSX", "CAD", "ETF")
-                ticker to EtfData.fetch(fund).also { data ->
+                ticker to (try { EtfData.fetch(fund) } catch (e: Exception) { throw IllegalStateException("Fund $ticker: ${e.message}", e) }).also { data ->
+                    android.util.Log.i("FundCoverage", "$ticker ${data.issuer} ${data.direct.asOf} ${data.direct.positions.size}")
                     assertTrue("$ticker positions", data.direct.positions.isNotEmpty())
                     assertTrue("$ticker date", data.direct.asOf.matches(Regex("\\d{4}-\\d{2}-\\d{2}")))
                 }
@@ -60,6 +61,7 @@ class PremiumScreenerTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val services = Services(context)
+        assertTrue("Remote search outside local catalog", services.market.search("NWC.TO").any { it.symbol == "NWC.TO" })
         ReportsTestActivity.content = {
             WalletTheme {
                 Surface(color = Night) {

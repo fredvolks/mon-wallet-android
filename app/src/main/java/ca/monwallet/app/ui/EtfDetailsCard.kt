@@ -45,15 +45,18 @@ internal fun EtfDetailsCard(security: Security, walletValue: BigDecimal? = null,
             Caption("${fund.issuer}${if (state?.cached == true) " · en cache" else ""}")
             Chips(listOf("Positions", "Sous-jacents", "Secteurs", "Pays"), tab) { tab = it }
             val composition = if (tab == 0) fund.direct else fund.underlying
-            if (composition == null) {
+            val exposure = when (tab) { 2 -> fund.sectorExposure; 3 -> fund.countryExposure; else -> null }
+            if (composition == null && exposure == null) {
                 Caption("Détail sous-jacent non fourni par cette source. Les positions directes ne sont pas utilisées comme exposition sectorielle ou géographique.")
             } else {
-                Caption("Composition au ${date(composition.asOf)}")
+                Caption("Composition au ${date(exposure?.asOf ?: composition!!.asOf)}")
                 if (tab == 0) Caption(fund.compositionNote ?: "Positions détenues directement par le fonds, incluant ses FNB et ses liquidités.")
-                else Caption("Exposition sous-jacente publiée par l’émetteur, sans ajouter à nouveau les FNB intermédiaires.")
-                val rows = if (tab <= 1) composition.positions.sortedByDescending { it.weight }
-                    .map { Triple(it.symbol, it.name, it.weight) }
-                    else composition.weights(tab == 2).map { Triple(it.first, "", it.second) }
+                else Caption(if (exposure != null) "Répartition publiée séparément par l’émetteur; couverture selon les catégories fournies."
+                    else "Exposition sous-jacente publiée par l’émetteur, sans ajouter à nouveau les FNB intermédiaires.")
+                val rows = if (exposure != null) exposure.weights.entries.sortedByDescending { it.value }.map { Triple(it.key, "", it.value) }
+                    else if (tab <= 1) composition!!.positions.sortedByDescending { it.weight }
+                        .map { Triple(it.symbol, if (it.name == it.symbol) "" else it.name, it.weight) }
+                    else composition!!.weights(tab == 2).map { Triple(it.first, "", it.second) }
                 val limit = if (expanded) 100 else 10
                 rows.take(limit).forEach { (name, description, weight) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

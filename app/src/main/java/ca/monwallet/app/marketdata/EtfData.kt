@@ -17,10 +17,13 @@ data class FundComposition(val asOf: String, val positions: List<FundPosition>) 
         .map { (name, rows) -> name to rows.fold(ZERO) { total, row -> total + row.weight } }
         .sortedByDescending { it.second }
 }
+data class FundExposure(val asOf: String, val weights: Map<String, BigDecimal>)
+
 data class EtfDetails(val name: String, val issuer: String, val sourceUrl: String,
     val direct: FundComposition, val underlying: FundComposition?,
     val managementFee: String?, val mer: String?, val distributionFrequency: String?,
-    val netAssets: String?, val fetchedAt: Long = System.currentTimeMillis(), val compositionNote: String? = null)
+    val netAssets: String?, val fetchedAt: Long = System.currentTimeMillis(), val compositionNote: String? = null,
+    val sectorExposure: FundExposure? = null, val countryExposure: FundExposure? = null)
 
 data class EtfLoad(val details: EtfDetails?, val cached: Boolean = false, val error: String? = null)
 
@@ -70,6 +73,10 @@ object EtfData {
         if (s.type.uppercase() != "ETF") error("Ce titre n’est pas un FNB.")
         if (s.currency == "CAD" && (s.symbol.uppercase().removeSuffix(".TO").startsWith("V"))) {
             try { return VanguardFunds.fetch(s) }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        }
+        if (s.currency == "CAD" && (s.symbol.startsWith("H", true) || s.symbol.uppercase() in setOf("CASH.TO", "CBIL.TO") || s.name.contains("Global X", true))) {
+            try { return GlobalXFunds.fetch(s) }
             catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
         }
         try { return fetchIshares(s) }

@@ -1,7 +1,7 @@
 ## 0.2.63 — Screener, couverture FNB et recherche
 - Screener avec cartes et tableau, filtres de revenu, rendement de dividende minimum/maximum, fréquence observée, croissance annuelle et ratio de distribution selon couverture.
 - Résultats progressifs, recherche locale des résultats, stratégies rapides et groupes de critères repliables.
-- Vanguard Canada (dont VFV) : positions directes et sous-jacentes datées depuis les données officielles. Couverture élargie via principales positions de Stock Analysis, explicitement partielles, pour les autres fournisseurs canadiens et américains.
+- Vanguard Canada (dont VFV) : positions directes et sous-jacentes datées depuis les données officielles. Global X Canada : principales positions et expositions officielles datées. Couverture élargie via principales positions de Stock Analysis, explicitement partielles, pour les autres fournisseurs canadiens et américains.
 - Recherche générale : tickers exacts prioritaires, noms sans accents, fautes simples, filtres Canada/USA, requêtes de marché et dédoublonnage des places équivalentes. Alias BNC / Banque Nationale → NA.TO et autres noms usuels.
 
 ## 0.2.62 — Allocation FNB / actions
