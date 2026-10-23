@@ -209,8 +209,10 @@ class Repository(val db: Database, val scope: CoroutineScope) {
     suspend fun quote(q: Quote) = mutex.withLock {
         val previous = dao.cache().firstOrNull { it.id == q.securityId && it.kind == "quote" }
             ?.let { runCatching { gson.fromJson(it.payload, Quote::class.java) }.getOrNull() }
-        val retained = ca.monwallet.app.marketdata.NormalizedQuote.retainPreviousAfterHours(
-            q, previous, System.currentTimeMillis())
+        val retained = runCatching {
+            ca.monwallet.app.marketdata.NormalizedQuote.retainPreviousAfterHours(
+                q, previous, System.currentTimeMillis())
+        }.getOrDefault(q)
         dao.cache(Cache(q.securityId, "quote", gson.toJson(retained), q.fetchedAt))
     }
 

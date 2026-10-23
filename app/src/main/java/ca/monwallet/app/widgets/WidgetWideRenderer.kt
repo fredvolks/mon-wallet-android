@@ -203,8 +203,8 @@ internal object WidgetWideRenderer {
         val quoteDetails = titles.mapNotNull { holding ->
             val security = wallet.security(holding.securityId) ?: return@mapNotNull null
             val q = wallet.quotes[security.id]
-            val holiday = MarketHoliday.isHolidayToday(security)
-            val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) && !holiday }
+            val holiday = MarketHoliday.isHolidayToday(security, quoteNow)
+            val extended = q?.takeIf { config.showExtended && supportsUsExtendedHours(security) }
                 ?.let { NormalizedQuote.from(it, quoteNow) }
             val session = extended?.marketSession
             val extraPrice = when (session) {
@@ -221,8 +221,8 @@ internal object WidgetWideRenderer {
             TitleQuote(security.id, if (config.ticker) security.ticker else security.name,
                 if (showPrice) number(q?.price) else "",
                 MarketHoliday.dailyPercent(security, q),
-                session.takeIf { extraPrice != null && !holiday },
-                extraPercent.takeIf { extraPrice != null && !holiday }, holiday)
+                session.takeIf { extraPrice != null },
+                extraPercent.takeIf { extraPrice != null }, holiday)
         }
         // Reserve only as many characters as this widget's selected titles need.
         // Ten fixed price characters made the type needlessly tiny on a real 4x2.
