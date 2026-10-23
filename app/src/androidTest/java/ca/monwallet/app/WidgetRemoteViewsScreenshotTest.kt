@@ -102,7 +102,8 @@ class WidgetRemoteViewsScreenshotTest {
                     assertTrue(after.text.contains((if (preMarket) "☀ " else "☾ ") + "+0,27 %"))
                     assertEquals("Same quote font", text.textSize, after.textSize, 0.1f)
                     assertEquals("Extended return at the right edge", row.width, after.right)
-                    assertEquals("One baseline", text.top + text.baseline, after.top + after.baseline)
+                    assertTrue("Shared baseline within native pixel rounding",
+                        kotlin.math.abs(text.top + text.baseline - after.top - after.baseline) <= 1)
                     assertTrue("Extended return must fit", after.paint.measureText(
                         after.text.toString()) <= after.width)
                 } else assertEquals(View.GONE, after.visibility)
