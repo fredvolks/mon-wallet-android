@@ -1,0 +1,23 @@
+name: Request Mon Wallet v0.2.57 signed release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/request-monwallet-v057.yml'
+permissions:
+  actions: write
+  contents: read
+jobs:
+  request-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Test and publish civil-day P&L and widget fit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/release-apk.yml/dispatches" \
+            -f ref="feat/widget-design-live-five-seconds-20261022" \
+            -f "inputs[release_version]=0.2.57"
