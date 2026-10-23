@@ -14,7 +14,11 @@ object CivilDayPnl {
 
     private fun prints(q: Quote): List<Pair<Long, BigDecimal>> = listOfNotNull(
         q.timestamp.takeIf { it > 0 &&
-            Instant.ofEpochMilli(it).atZone(zone).toLocalDate().toString() == q.sessionDate
+            runCatching {
+                kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(
+                    Instant.ofEpochMilli(it).atZone(zone).toLocalDate(),
+                    java.time.LocalDate.parse(q.sessionDate))) <= 1
+            }.getOrDefault(false)
         }?.let { it to q.price },
         q.preMarketTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.preMarketPrice?.let { time to it } },
         q.afterHoursTimestamp?.takeIf { q.currency == "USD" }?.let { time -> q.afterHoursPrice?.let { time to it } })
