@@ -20,17 +20,22 @@ data class ResearchStock(val security: Security, val quote: Quote?, val fundamen
         (it.last().close - it[it.size - 22].close).pct(it[it.size - 22].close) }
     val average50: BigDecimal? get() = points.takeLast(50).takeIf { it.size == 50 }?.fold(ZERO) { n, p -> n + p.close }?.divide(BigDecimal("50"), MC)
 }
+data class ResearchPosition(val symbol: String, val name: String, val quantity: BigDecimal, val valueCad: BigDecimal?, val currency: String, val sector: String?, val quoteTime: Long?)
 data class ResearchSource(val id: String, val label: String, val url: String, val date: String)
 data class ResearchPack(val createdAt: Long, val mode: String, val exposure: PortfolioExposure,
     val funds: Map<String, EtfDetails>, val stocks: List<ResearchStock>, val benchmarks: List<ResearchStock>, val sources: List<ResearchSource>,
     val budget: BigDecimal, val country: String, val horizon: String, val risk: String,
-    val threshold: Int, val notes: List<String>, val fxRate: BigDecimal? = null, val fromCash: Boolean = false)
+    val threshold: Int, val notes: List<String>, val fxRate: BigDecimal? = null, val fromCash: Boolean = false, val ledgerKey: String = "", val positions: List<ResearchPosition> = emptyList())
 data class InvestmentAnswer(val verdict: String, val summary: String, val reasons: List<String>,
     val risks: List<String>, val nextSteps: List<String>, val sourceIds: List<String>,
     val model: String, val createdAt: Long)
 
 class InvestmentResearch(private val services: Services) {
     private val gson = Gson()
+    fun ledgerKey(wallet: Wallet, memberId: String?, all: Boolean, portfolioId: String?): String {
+        val tx = wallet.transactions.filter { (all || it.memberId == memberId) && (portfolioId == null || it.portfolioId == portfolioId) }
+        return java.security.MessageDigest.getInstance("SHA-256").digest(gson.toJson(FamilyLedger.ordered(tx)).toByteArray()).joinToString("") { "%02x".format(it) }
+    }
     private suspend fun <T> optional(block: suspend () -> T): T? = try { withTimeout(25_000) { block() } }
         catch (cancelled: CancellationException) { if (cancelled is TimeoutCancellationException) null else throw cancelled }
         catch (_: Exception) { null }
@@ -41,7 +46,11 @@ class InvestmentResearch(private val services: Services) {
         val f = async { if (deep && s.type.uppercase() == "STOCK") optional { services.market.fundamentals(s) } else null }
         val n = async { if (deep) optional { services.market.news(s) } else null }
         val e = async { if (deep) optional { services.earningsFor(s) } else null }
-        val quote = q.await(); val finance = f.await()
+        val quote = q.await()?.let { raw ->
+            val current = CivilDayPnl.dailyQuote(raw, s, System.currentTimeMillis())
+            val stamp = if (current.price != raw.price) (if (raw.marketSession.startsWith("PRE")) raw.preMarketTimestamp else raw.afterHoursTimestamp) ?: raw.timestamp else raw.timestamp
+            current.copy(timestamp = stamp)
+        }; val finance = f.await()
         val points = p.await().orEmpty().sortedBy { it.date }
         ResearchStock(PortfolioResearch.classified(s), quote, finance, points, n.await().orEmpty().take(6),
             e.await().orEmpty().take(4), listOfNotNull(if (quote == null) "Cours indisponible" else null,
@@ -62,7 +71,11 @@ class InvestmentResearch(private val services: Services) {
         val funds = (held + listOfNotNull(selected)).filter { it.type.uppercase() == "ETF" }.distinctBy { it.id }.take(12).map { s -> async {
             gate.withPermit { optional { services.etfDetails(s).details }?.let { s.id to it } }
         } }.awaitAll().filterNotNull().toMap()
-        val exposure = PortfolioResearch.build(owned.copy(quotes = quotes).result(), wallet.securities, funds)
+        val valuation = owned.copy(quotes = quotes).result()
+        val exposure = PortfolioResearch.build(valuation, wallet.securities, funds)
+        val positions = valuation.holdings.filter { it.quantity > ZERO }.mapNotNull { h -> owned.security(h.securityId)?.let { security ->
+            ResearchPosition(security.symbol, security.name, h.quantity, h.value, security.currency,
+                PortfolioResearch.classified(security).sector, quotes[security.id]?.timestamp) } }
         status(if (mode == "IDEAS") "Recherche d’idées dans un univers limité…" else "Collecte des données du titre et du marché…")
         val symbols = if (mode == "IDEAS") {
             SectorUniverse.labels.keys.sortedBy { key -> exposure.sectors.find { it.label == PortfolioResearch.sector(key) }?.percent ?: ZERO }
@@ -89,6 +102,8 @@ class InvestmentResearch(private val services: Services) {
         val benchmarks = listOf(Security.of("^GSPTSE", "S&P/TSX", "INDEX", "CAD", "INDEX"),
             Security.of("^GSPC", "S&P 500", "INDEX", "USD", "INDEX")).map { s -> async { gate.withPermit { stock(s, false) } } }.awaitAll()
         val sources = mutableListOf<ResearchSource>()
+        positions.forEachIndexed { i, p -> sources += ResearchSource("holding$i", "Cours du portefeuille · " + p.symbol,
+            "https://finance.yahoo.com/quote/" + p.symbol + "/", p.quoteTime?.let { java.time.Instant.ofEpochMilli(it).toString() } ?: "date non fournie") }
         (stocks + benchmarks).forEachIndexed { index, row ->
             row.quote?.let { sources += ResearchSource("q$index", row.security.symbol + " · " + it.source,
                 "https://finance.yahoo.com/quote/" + row.security.symbol + "/", java.time.Instant.ofEpochMilli(it.timestamp).toString()) }
@@ -108,12 +123,12 @@ class InvestmentResearch(private val services: Services) {
                 if (held.count { it.type.uppercase() == "ETF" } > 12) "Composition chargée pour les 12 premiers FNB." else null,
                 "Pays = domicile de l’émetteur, pas répartition de ses revenus. Devises = devises de cotation, pas risque de change sous-jacent.",
                 "Les seuils P/E ≤ 27, dette/capitaux propres ≤ 2 et capitalisation ≥ 1 G sont des critères de tri, pas des signaux d’achat."),
-            wallet.securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id]?.price })
+            wallet.securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id]?.price }, ledgerKey = ledgerKey(wallet, memberId, all, portfolioId), positions = positions)
     }
     fun evidence(pack: ResearchPack, question: String): String {
         // No member names, email, account identifiers or individual transactions leave the device.
         val data = mapOf("question" to question.take(500), "generatedAt" to pack.createdAt, "mode" to pack.mode,
-            "portfolio" to pack.exposure, "budgetCad" to pack.budget, "budgetFunding" to if (pack.fromCash) "Existing cash" else "New contribution", "country" to pack.country,
+            "portfolio" to pack.exposure, "positions" to pack.positions, "budgetCad" to pack.budget, "budgetFunding" to if (pack.fromCash) "Existing cash" else "New contribution", "country" to pack.country,
             "horizon" to pack.horizon, "risk" to pack.risk, "sectorAlertPercent" to pack.threshold,
             "stocks" to pack.stocks.map { r -> mapOf("symbol" to r.security.symbol, "name" to r.security.name,
                 "sector" to r.security.sector, "currency" to r.security.currency, "price" to r.quote?.price,

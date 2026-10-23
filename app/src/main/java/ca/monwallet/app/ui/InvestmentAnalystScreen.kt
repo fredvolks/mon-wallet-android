@@ -119,9 +119,17 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
             val stockChanged = tab == 1 && p.stocks.firstOrNull()?.security?.id != selected?.id
             val settingsChanged = p.threshold != threshold.toInt() || p.horizon != horizon || p.risk != risk || (tab == 2 && p.country != country)
             val outdated = System.currentTimeMillis() - p.createdAt > 6 * 3600_000L
-            if (budgetChanged || stockChanged || settingsChanged || outdated)
+            val ledgerChanged = p.ledgerKey != research.ledgerKey(wallet, memberId, all, portfolioId)
+            if (budgetChanged || stockChanged || settingsChanged || outdated || ledgerChanged)
                 Caption("Les réglages ont changé : actualise le dossier pour les appliquer à l’IA.")
             InvestmentBalanceCard(p.exposure, p.threshold)
+            if (p.positions.isNotEmpty()) CardBlock {
+                Text("Positions détenues", fontWeight = FontWeight.Bold)
+                p.positions.sortedByDescending { it.valueCad }.take(15).forEach { position ->
+                    Metric(position.symbol, money(position.valueCad) + " · " + percent(position.valueCad?.let { v -> p.exposure.total?.let { v.pct(it) } }))
+                    Caption(number(position.quantity, 6) + " part(s) · " + position.currency)
+                }
+            }
             if (p.benchmarks.isNotEmpty()) CardBlock {
                 Text("Tendance récente du marché", fontWeight = FontWeight.Bold)
                 p.benchmarks.forEach { row ->
@@ -154,7 +162,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
             }
             p.notes.forEach { Caption(it) }
             TextEntry("Ta question à l’IA", question, { question = it.take(500) })
-            Button(enabled = !loading && !asking && !budgetChanged && !stockChanged && !settingsChanged && !outdated, modifier = Modifier.fillMaxWidth(), onClick = {
+            Button(enabled = !loading && !asking && !budgetChanged && !stockChanged && !settingsChanged && !outdated && !ledgerChanged, modifier = Modifier.fillMaxWidth(), onClick = {
                 job = scope.launch {
                     asking = true; error = null
                     try {
@@ -166,7 +174,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                 }
             }) { Text("Demander l’analyse IA") }
             Caption("Envoie à l’IA les montants agrégés, secteurs, titres et données collectées. Aucun nom de membre, courriel ou détail individuel des transactions n’est ajouté automatiquement. Ta question est envoyée telle quelle.")
-            OutlinedButton(onClick = {
+            OutlinedButton(enabled = !ledgerChanged && !budgetChanged && !stockChanged && !settingsChanged && !outdated, onClick = {
                 val text = "Analyse ce portefeuille et ces titres en français à partir du dossier daté suivant. Signale les données manquantes. Compare acheter maintenant, attendre et achats progressifs sans prédire le marché.\n" + research.evidence(p.copy(fromCash = fromCash), question)
                 (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Mon Wallet · dossier de recherche", text))
                 status = "Dossier copié. Tu peux le coller dans ChatGPT."; android.widget.Toast.makeText(context, status, android.widget.Toast.LENGTH_LONG).show()
