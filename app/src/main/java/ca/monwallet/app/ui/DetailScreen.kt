@@ -385,7 +385,7 @@ fun DetailScreen(
                 }
             }
             Chips(
-                listOf("Aperçu", "Finances", "Analystes", "Actualités", "Alertes", "Historique"),
+                listOf("Aperçu", if (security.type.uppercase() == "ETF") "Composition" else "Finances", "Analystes", "Actualités", "Alertes", "Historique"),
                 tab,
             ) {
                 tab = it
@@ -394,6 +394,9 @@ fun DetailScreen(
         }
         when (tab) {
             0 -> {
+                if (security.type.uppercase() == "ETF") item {
+                    EtfDetailsCard(security, holding?.value, load = s::etfDetails)
+                }
                 item {
                     Row {
                         TextButton(onClick = { onWatch(security) }) { Text(stringResource(R.string.ui_watchlist_f9624)) }
@@ -441,6 +444,9 @@ fun DetailScreen(
                 }
             }
             1 -> {
+                if (security.type.uppercase() == "ETF") item {
+                    EtfDetailsCard(security, holding?.value, load = s::etfDetails)
+                }
                 item {
                     Section(
                         if (security.type == "ETF") "Données du fonds" else "Données financières"

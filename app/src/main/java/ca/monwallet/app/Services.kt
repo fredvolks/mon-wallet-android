@@ -251,6 +251,22 @@ class Services(val context: Context) {
         }
     }
 
+    suspend fun etfDetails(security: Security, force: Boolean = false): ca.monwallet.app.marketdata.EtfLoad = withContext(Dispatchers.IO) {
+        val id = "etf-composition:v1:${security.id}"
+        val cache = repo.dao.cache().firstOrNull { it.id == id }
+        val saved = cache?.let { runCatching { repo.gson.fromJson(it.payload,
+            ca.monwallet.app.marketdata.EtfDetails::class.java) }.getOrNull() }
+        if (!force && saved != null && System.currentTimeMillis() - cache.fetchedAt < 24 * 3600_000L)
+            return@withContext ca.monwallet.app.marketdata.EtfLoad(saved, true)
+        try {
+            val fresh = ca.monwallet.app.marketdata.EtfData.fetch(security)
+            repo.dao.cache(ca.monwallet.app.database.Cache(id, "etf", repo.gson.toJson(fresh), fresh.fetchedAt))
+            ca.monwallet.app.marketdata.EtfLoad(fresh, false)
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) { ca.monwallet.app.marketdata.EtfLoad(saved, saved != null,
+            e.message ?: "Composition indisponible.") }
+    }
+
     suspend fun earningsFor(security: Security): List<Earnings> = withContext(Dispatchers.IO) {
         val id = "earnings:v1:${security.id}"
         val cached = repo.dao.cache().firstOrNull { it.id == id }

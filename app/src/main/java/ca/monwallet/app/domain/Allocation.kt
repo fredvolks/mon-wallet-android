@@ -15,6 +15,23 @@ object Allocation {
         return portions(values + cash, complete)
     }
 
+    /** Fund units versus directly held shares; underlying equities stay inside their fund. */
+    fun byAssetType(result: Result, securities: Map<String, Security>, includeCash: Boolean): AllocationResult {
+        var complete = true
+        val values = result.holdings.filter { it.quantity > ZERO }.mapNotNull { h ->
+            val value = h.value
+            if (value == null) { complete = false; return@mapNotNull null }
+            val label = when (securities[h.securityId]?.type?.uppercase()) {
+                "ETF" -> "FNB / ETF"
+                "STOCK", "EQUITY" -> "Actions"
+                else -> "Autres / non classés"
+            }
+            label to value
+        }
+        val cash = if (includeCash && result.cash > ZERO) listOf("Liquidités" to result.cash) else emptyList()
+        return portions(values + cash, complete)
+    }
+
     fun bySector(
         result: Result,
         securities: Map<String, Security>,
