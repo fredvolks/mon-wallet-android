@@ -39,7 +39,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val reportTabs = listOf("Vue d’ensemble", "Performance", "Calendrier", "Allocation", "Flux")
 private val benchmarkNames = linkedMapOf(
     "^GSPC" to "S&P 500", "^IXIC" to "NASDAQ", "^GSPTSE" to "TSX", "XEQT.TO" to "XEQT")
 private val benchmarkColors = listOf(Blue, Color(0xFF9F76FF), Color(0xFFFFA04D), Color(0xFFFF70A6))
@@ -60,6 +59,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
     var loading by remember { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(selected, w.transactions, lifecycle) {
+        loading = true
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (isActive) {
                 try { vm.services.refreshReportHistory(selected) }
@@ -71,6 +71,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
             }
         }
     }
+    val regularHistory = TradeReports.confirmedHistory(snapshots, System.currentTimeMillis())
     ReportsDashboard(w, snapshots, selected, loading, status,
         onPortfolio = { id -> selected = id
             vm.run { vm.services.repo.setting("reports_portfolio", id ?: "all") } },
@@ -85,22 +86,12 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
             var benchmarks by remember { mutableStateOf(benchmarkNames.keys.toSet()) }
             Comparison(w, summary, benchmarks) { symbol ->
                 benchmarks = if (symbol in benchmarks) benchmarks - symbol else benchmarks + symbol }
-            ReportStatistics(summary, snapshots)
+            ReportStatistics(summary, regularHistory)
             ReportContributors(w, summary)
-            ReportMonthYear(snapshots)
+            ReportMonthYear(regularHistory)
             ReportAllocation(w, selected, current)
-            ReportFlows(w, selected, summary, snapshots)
+            ReportFlows(w, selected, summary, regularHistory)
         })
-}
-
-@Composable
-private fun ReportMini(title: String, subtitle: String, onClick: () -> Unit) {
-    CardBlock {
-        Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-            Text("$title  ›", fontWeight = FontWeight.SemiBold)
-            Caption(subtitle)
-        }
-    }
 }
 
 @Composable
@@ -305,143 +296,6 @@ private fun ReportMonthYear(history: List<PortfolioDailySnapshot>) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("$year${if (year == LocalDate.now().year) " YTD" else ""}")
                 Text(if (valid) percent((factor - ONE) * BigDecimal(100)) else "Historique insuffisant")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReportCalendar(wallet: Wallet, history: List<PortfolioDailySnapshot>, transactions: List<Transaction>,
-    month: YearMonth, onMonth: (YearMonth) -> Unit, refreshing: Boolean, onRefresh: () -> Unit) {
-    var day by remember { mutableStateOf<PortfolioDailySnapshot?>(null) }
-    var yearMenu by remember { mutableStateOf(false) }
-    val byDate = history.associateBy { it.date }
-    CardBlock {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = { onMonth(month.minusMonths(1)) }) { Text("‹", fontSize = 24.sp) }
-            Box {
-                TextButton(onClick = { yearMenu = true }) {
-                    Text("${month.month.getDisplayName(TextStyle.FULL, Locale.FRENCH)} ${month.year} ▾",
-                        color = Color.White, fontWeight = FontWeight.SemiBold)
-                }
-                DropdownMenu(yearMenu, { yearMenu = false }) {
-                    val oldest = history.getOrNull(1)?.date?.year ?: LocalDate.now().year
-                    (LocalDate.now().year downTo oldest).forEach { year ->
-                        DropdownMenuItem(text = { Text(year.toString()) }, onClick = {
-                            yearMenu = false
-                            onMonth(YearMonth.of(year, month.month).coerceAtMost(YearMonth.now()))
-                        })
-                    }
-                }
-            }
-            TextButton(onClick = { onMonth(month.plusMonths(1)) },
-                enabled = month < YearMonth.now()) { Text("›", fontSize = 24.sp) }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            listOf("D", "L", "M", "M", "J", "V", "S").forEach { label ->
-                Text(label, Modifier.weight(1f), color = Muted, textAlign = TextAlign.Center, fontSize = 11.sp)
-            }
-        }
-        val offset = month.atDay(1).dayOfWeek.value % 7
-        (0 until ((offset + month.lengthOfMonth() + 6) / 7)).forEach { week ->
-            Row(Modifier.fillMaxWidth()) {
-                repeat(7) { weekday ->
-                    val n = week * 7 + weekday - offset + 1
-                    if (n !in 1..month.lengthOfMonth()) Spacer(Modifier.weight(1f).height(47.dp))
-                    else {
-                        val snapshot = byDate[month.atDay(n)]
-                        val daily = snapshot?.dailyReturn
-                        val shade = if (daily == null) Color.Transparent
-                            else tint(daily).copy(alpha = (.10f + (daily.abs().toFloat() / 8f).coerceIn(0f, .38f)))
-                        Column(Modifier.weight(1f).height(47.dp).padding(2.dp)
-                            .clip(RoundedCornerShape(7.dp)).background(shade)
-                            .clickable(enabled = snapshot != null) { day = snapshot },
-                            horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("$n", fontSize = 11.sp)
-                            if (daily != null) Text(percent(daily), fontSize = 9.sp,
-                                color = tint(daily), maxLines = 1)
-                        }
-                    }
-                }
-            }
-        }
-        val monthSnapshots = history.filter { it.date.year == month.year && it.date.month == month.month }
-        val returnCount = monthSnapshots.count { it.dailyReturn != null }
-        val weeks = weeklyReports(history, month)
-        Spacer(Modifier.height(10.dp))
-        Text("Rendement par semaine", fontWeight = FontWeight.SemiBold)
-        weeks.forEachIndexed { index, week ->
-            val inProgress = week.startDate <= LocalDate.now() && week.endDate >= LocalDate.now()
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(Modifier.weight(1f)) {
-                    Text("Semaine ${index + 1}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Caption("${date(week.startDate.toString())} – ${date(week.endDate.toString())}" +
-                        if (inProgress) " · en cours" else "")
-                }
-                when {
-                    week.complete -> Column(horizontalAlignment = Alignment.End) {
-                        Text(percent(week.performance), color = tint(week.performance),
-                            fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text(signed(week.gain), color = tint(week.gain), fontSize = 11.sp)
-                    }
-                    week.startDate.isAfter(LocalDate.now()) -> Caption("À venir")
-                    week.availableDays > 0 -> Caption("Historique incomplet")
-                    else -> Caption("Aucune clôture")
-                }
-            }
-        }
-        Caption("$returnCount rendement(s) quotidien(s) disponible(s) en $month.")
-        val firstTrade = transactions.filter { it.type in setOf(TxType.BUY, TxType.SELL) }
-            .minOfOrNull { it.date }
-        if (firstTrade != null)
-            Caption("Historique des transactions depuis le ${date(firstTrade)}.")
-        if (returnCount == 0) {
-            Caption(if (history.isEmpty())
-                "Aucune clôture historique chargée pour ce portefeuille."
-            else "Aucune clôture complète n’est disponible pour ce mois.")
-        } else {
-            Caption("Sélectionne une journée pour voir le P&L, la valeur et les transactions.")
-        }
-        TextButton(onClick = onRefresh, enabled = !refreshing) {
-            Text(if (refreshing) "Chargement des clôtures…" else "Recharger les clôtures historiques")
-        }
-        Caption("Les jours sans clôture confirmée n’affichent aucun rendement.")
-    }
-    day?.let { selected ->
-        ModalBottomSheet(onDismissRequest = { day = null }, containerColor = Panel) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 30.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text(date(selected.date.toString()), fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                Metric("P&L du jour", signed(selected.dailyPnl), tint(selected.dailyPnl))
-                Metric("Rendement du jour", percent(selected.dailyReturn), tint(selected.dailyReturn))
-                Metric("Valeur début", money(selected.openingValue))
-                Metric("Valeur fin", money(selected.closingValue))
-                Metric("Capital net investi", money(selected.capitalInvested))
-                val today = transactions.filter { it.date == selected.date.toString() }
-                Metric("Dépôts", money(today.filter { it.type == TxType.DEPOSIT }.fold(ZERO) { a, t -> a + t.cad }))
-                Metric("Retraits", money(today.filter { it.type == TxType.WITHDRAWAL }.fold(ZERO) { a, t -> a + t.price * t.fxRate }))
-                Metric("Dividendes", money(today.filter { it.type == TxType.DIVIDEND }.fold(ZERO) { a, t -> a + t.cad }))
-                Caption("Achats : ${today.count { it.type == TxType.BUY }} · Ventes : ${today.count { it.type == TxType.SELL }}")
-                val previous = history.lastOrNull { it.date < selected.date && it.closingValue != null }
-                if (selected.dailyReturn != null && previous != null) {
-                    val contributions = (selected.positions.keys + previous.positions.keys +
-                        today.mapNotNull { it.securityId }).distinct().map { id ->
-                        val changes = today.filter { it.securityId == id }
-                        val buy = changes.filter { it.type == TxType.BUY }.fold(ZERO) { a, t -> a + t.cad }
-                        val sale = changes.filter { it.type == TxType.SELL }.fold(ZERO) { a, t -> a + t.cad }
-                        val income = changes.filter { it.type == TxType.DIVIDEND }.fold(ZERO) { a, t -> a + t.cad }
-                        id to ((selected.positions[id] ?: ZERO) - (previous.positions[id] ?: ZERO)
-                            - buy + sale + income)
-                    }
-                    contributions.maxByOrNull { it.second }?.let { (id, pnl) ->
-                        Metric("Meilleur titre", "${wallet.security(id)?.ticker ?: "—"} · ${signed(pnl)}", tint(pnl)) }
-                    contributions.minByOrNull { it.second }?.let { (id, pnl) ->
-                        Metric("Pire titre", "${wallet.security(id)?.ticker ?: "—"} · ${signed(pnl)}", tint(pnl)) }
-                }
-                if (selected.dailyReturn == null) Caption("Aucune séance ou historique incomplet ce jour-là.")
             }
         }
     }

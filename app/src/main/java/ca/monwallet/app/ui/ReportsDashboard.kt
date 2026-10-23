@@ -33,10 +33,31 @@ private val ReportAccent = Color(0xFF51E5A1)
 private val ReportPanel = Color(0xFF09212D)
 
 @Composable
+private fun ReportCaption(text: String) {
+    Text(text, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
+}
+
+@Composable
+private fun ReportChips(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        labels.forEachIndexed { i, label ->
+            Surface(onClick = { onSelect(i) }, shape = RoundedCornerShape(9.dp),
+                color = if (selected == i) ReportAccent.copy(alpha = .13f) else Night,
+                border = BorderStroke(1.dp, if (selected == i) ReportAccent else Border)) {
+                Text(label, Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                    fontSize = 11.sp, lineHeight = 16.sp,
+                    color = if (selected == i) ReportAccent else Muted)
+            }
+        }
+    }
+}
+
+@Composable
 private fun ReportCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = ReportPanel,
         border = BorderStroke(1.dp, Color(0xFF1C4350))) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp), content = content)
     }
 }
 
@@ -98,7 +119,7 @@ internal fun ReportsDashboard(
     }
     LazyColumn(Modifier.fillMaxSize().testTag("reports_list"), state = listState,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        verticalArrangement = Arrangement.spacedBy(9.dp)) {
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) {
@@ -133,7 +154,7 @@ internal fun ReportsDashboard(
                 }
             }
             if (tab != 1) {
-                Chips(ReportRange.entries.map { it.label }, if (customPeriod == null) range.ordinal else -1) {
+                ReportChips(ReportRange.entries.map { it.label }, if (customPeriod == null) range.ordinal else -1) {
                     range = ReportRange.entries[it]; customPeriod = null
                     onPreference("reports_range", range.name) }
                 if (tab >= 2) TextButton(onClick = { dates = true }) {
@@ -143,22 +164,22 @@ internal fun ReportsDashboard(
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = ReportAccent)
             // Provider diagnostics belong to an expandable status, not a permanent wall of text.
             if (status.isNotBlank() && (history.size < 2 || status.contains("incomplet", true) ||
-                status.contains("indisponible", true))) Caption(status)
+                status.contains("indisponible", true))) ReportCaption(status)
         }
         when (tab) {
             0 -> {
                 item {
                     val last = confirmed.drop(1).lastOrNull { it.hasMarketClose && it.closingValue != null }
                     ReportCard {
-                        Caption("VALEUR DU WALLET · CAD")
-                        Text(money(last?.closingValue), fontSize = 32.sp, fontWeight = FontWeight.Bold,
+                        ReportCaption("VALEUR DU WALLET · CAD")
+                        Text(money(last?.closingValue), fontSize = 30.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold,
                             modifier = Modifier.testTag("reports_wallet_value"))
-                        Caption(last?.let { "À la clôture du ${date(it.date.toString())}" }
+                        ReportCaption(last?.let { "À la clôture du ${date(it.date.toString())}" }
                             ?: if (loading) "Chargement des clôtures…" else "Clôtures historiques indisponibles")
                         Text("${signed(summary.gain)} · ${percent(summary.performance)}",
                             color = tint(summary.gain), fontWeight = FontWeight.SemiBold)
-                        Caption("Rendement ${range.label}" + if (summary.partialPeriod) " · depuis le premier achat" else "")
-                        Chart(summary.cumulative.map { it.second }, modifier = Modifier.height(115.dp), color = ReportAccent)
+                        ReportCaption("Rendement ${range.label}" + if (summary.partialPeriod) " · depuis le premier achat" else "")
+                        Chart(summary.cumulative.map { it.second }, modifier = Modifier.height(76.dp), color = ReportAccent)
                         HorizontalDivider(color = Border)
                         val base = summary.base
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -175,9 +196,9 @@ internal fun ReportsDashboard(
                         Text("Mon wallet par jour", Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         TextButton(onClick = { expanded += 50 }) { Text("Voir plus ›", color = Blue) }
                     }
-                    Caption("Valeur à la clôture · toucher une date pour le détail")
+                    ReportCaption("Valeur à la clôture · toucher une date pour le détail")
                 }
-                if (daily.isEmpty()) item { ReportCard { Caption("Aucun historique sur cette période.") } }
+                if (daily.isEmpty()) item { ReportCard { ReportCaption("Aucun historique sur cette période.") } }
                 items(daily.take(expanded), key = { "day:${it.date}" }) { day ->
                     ReportDailyRow(day) { selectedDay = day }
                 }
@@ -209,7 +230,7 @@ internal fun ReportsDashboard(
                         }
                         weeklyReports(confirmed, month, today).forEachIndexed { i, week ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Caption("Semaine ${i + 1}")
+                                ReportCaption("Semaine ${i + 1}")
                                 Text("${percent(week.performance)} · ${signed(week.gain)}",
                                     fontSize = 12.sp, color = tint(week.gain))
                             }
@@ -222,31 +243,31 @@ internal fun ReportsDashboard(
                     OutlinedTextField(query, { query = it }, singleLine = true,
                         label = { Text("Rechercher un titre") }, modifier = Modifier.fillMaxWidth())
                     Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ReportCard(Modifier.weight(1f)) { Caption("Profit réalisé · CAD")
+                        ReportCard(Modifier.weight(1f)) { ReportCaption("Profit réalisé · CAD")
                             Text(signed(sales.fold(ZERO) { n, t -> n + t.pnl }),
                                 color = tint(sales.fold(ZERO) { n, t -> n + t.pnl }), fontWeight = FontWeight.Bold) }
-                        ReportCard(Modifier.weight(1f)) { Caption("Ventes / clôtures")
+                        ReportCard(Modifier.weight(1f)) { ReportCaption("Ventes / clôtures")
                             Text("${sales.size} / ${sales.count { it.closed }}", fontWeight = FontWeight.Bold) }
                     }
                 }
-                salesResult.exceptionOrNull()?.let { error -> item { Caption("Calcul indisponible : ${error.message}") } }
+                salesResult.exceptionOrNull()?.let { error -> item { ReportCaption("Calcul indisponible : ${error.message}") } }
                 if (sales.isEmpty() && salesResult.isSuccess) item { Empty("Aucune vente sur cette période",
                     "Les achats sont visibles dans Transactions. Les ventes apparaîtront avec leur profit net.") }
                 items(sales, key = { it.saleId }) { trade -> ReportTradeCard(wallet, trade) }
-                item { Caption("Coût moyen et frais inclus. Profit net en CAD, avec les taux FX enregistrés. La période filtre les ventes; les achats antérieurs restent inclus dans le coût.") }
+                item { ReportCaption("Coût moyen et frais inclus. Profit net en CAD, avec les taux FX enregistrés. La période filtre les ventes; les achats antérieurs restent inclus dans le coût.") }
             }
             3 -> {
                 item {
                     OutlinedTextField(query, { query = it }, singleLine = true,
                         label = { Text("Rechercher un titre ou une note") }, modifier = Modifier.fillMaxWidth())
-                    Chips(listOf("Tout", "Achats", "Ventes", "Dividendes", "Frais", "Dépôts", "Retraits"), type) { type = it }
-                    Caption("${transactions.size} transaction(s) · dates inclusives")
+                    ReportChips(listOf("Tout", "Achats", "Ventes", "Dividendes", "Frais", "Dépôts", "Retraits"), type) { type = it }
+                    ReportCaption("${transactions.size} transaction(s) · dates inclusives")
                 }
                 if (transactions.isEmpty()) item { Empty("Aucune transaction", "Modifie les dates ou les filtres.") }
                 items(transactions, key = { it.id }) { transaction -> ReportTransactionRow(wallet, transaction) }
             }
         }
-        item { Caption("Clôtures régulières uniquement. Le PRE/AFTER informatif n’entre pas dans le calendrier. Les cours ou taux FX absents restent signalés.") }
+        item { ReportCaption("Clôtures régulières uniquement. Le PRE/AFTER informatif n’entre pas dans le calendrier. Les cours ou taux FX absents restent signalés.") }
     }
     if (selectedDay != null) ReportDayDetail(wallet, tx, selectedDay!!) { selectedDay = null }
     if (dates) ReportPeriodDialog(first, today, period, { dates = false }) { customPeriod = it; dates = false }
@@ -256,7 +277,7 @@ internal fun ReportsDashboard(
 
 @Composable
 private fun SmallReportMetric(label: String, value: String, modifier: Modifier) {
-    Column(modifier) { Text(label, color = Muted, fontSize = 10.sp)
+    Column(modifier) { Text(label, color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
         Text(value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
             color = if (value.startsWith("+")) ReportAccent else if (value.startsWith("-")) Red else Color.White,
             maxLines = 2, overflow = TextOverflow.Ellipsis) }
@@ -291,21 +312,26 @@ internal fun ReportTradeCard(wallet: Wallet, trade: ClosedTrade) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (security != null) Logo(security)
             Column(Modifier.weight(1f)) { Text(security?.ticker ?: "Titre supprimé", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Caption(security?.name ?: trade.securityId) }
-            Badge(if (trade.closed) "Clôturée" else "Vente partielle")
+                ReportCaption(security?.name ?: trade.securityId) }
+            Surface(shape = RoundedCornerShape(7.dp), color = Color.Transparent,
+                border = BorderStroke(1.dp, if (trade.closed) ReportAccent else Blue)) {
+                Text(if (trade.closed) "Clôturée" else "Vente partielle",
+                    Modifier.padding(6.dp), fontSize = 10.sp, lineHeight = 14.sp,
+                    color = if (trade.closed) ReportAccent else Blue)
+            }
         }
         Text("${signed(trade.pnl)} · ${percent(trade.percent)} net",
             color = tint(trade.pnl), fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.weight(1f)) { Caption("ACHAT MOYEN")
-                Text(date(trade.firstBuyDate), fontSize = 13.sp)
-                Text(money(trade.averageBuyPrice, trade.currency) + " / action", fontSize = 13.sp)
-                if (trade.lastBuyDate != trade.firstBuyDate) Caption("Dernier achat ${date(trade.lastBuyDate)}")
+            Column(Modifier.weight(1f)) { ReportCaption("ACHAT MOYEN")
+                Text(date(trade.firstBuyDate), fontSize = 13.sp, lineHeight = 18.sp)
+                Text(money(trade.averageBuyPrice, trade.currency) + " / action", fontSize = 13.sp, lineHeight = 18.sp)
+                if (trade.lastBuyDate != trade.firstBuyDate) ReportCaption("Dernier achat ${date(trade.lastBuyDate)}")
             }
             Text("→", color = Muted)
-            Column(Modifier.weight(1f)) { Caption("VENTE")
-                Text(date(trade.saleDate), fontSize = 13.sp)
-                Text(money(trade.salePrice, trade.currency) + " / action", fontSize = 13.sp) }
+            Column(Modifier.weight(1f)) { ReportCaption("VENTE")
+                Text(date(trade.saleDate), fontSize = 13.sp, lineHeight = 18.sp)
+                Text(money(trade.salePrice, trade.currency) + " / action", fontSize = 13.sp, lineHeight = 18.sp) }
         }
         HorizontalDivider(color = Border)
         Text("${number(trade.quantity, 6)} action(s) · ${trade.days} jour(s) · Frais ${money(trade.allocatedFeesCad)}",
@@ -314,8 +340,8 @@ internal fun ReportTradeCard(wallet: Wallet, trade: ClosedTrade) {
             SmallReportMetric("Coût vendu · CAD", money(trade.costCad), Modifier.weight(1f))
             SmallReportMetric("Produit net · CAD", money(trade.proceedsCad), Modifier.weight(1f))
         }
-        if (!trade.closed) Caption("Reste après cette vente : ${number(trade.remaining, 6)} action(s)")
-        Caption(wallet.portfolios.find { it.id == trade.portfolioId }?.name.orEmpty())
+        if (!trade.closed) ReportCaption("Reste après cette vente : ${number(trade.remaining, 6)} action(s)")
+        ReportCaption(wallet.portfolios.find { it.id == trade.portfolioId }?.name.orEmpty())
     }
 }
 
@@ -327,14 +353,14 @@ internal fun ReportTransactionRow(wallet: Wallet, tx: Transaction) {
             Text(date(tx.date), fontSize = 12.sp, color = Muted)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(transactionLabel(tx.type), color = if (tx.type == TxType.SELL) ReportAccent else Blue, fontSize = 13.sp)
+            Text(transactionLabel(tx.type), color = if (tx.type == TxType.SELL) ReportAccent else Blue, fontSize = 13.sp, lineHeight = 18.sp)
             Text(money(tx.cad), fontWeight = FontWeight.SemiBold)
         }
         if (tx.type in setOf(TxType.BUY, TxType.SELL))
-            Caption("${number(tx.quantity, 6)} × ${money(tx.price, tx.currency)} · Frais ${money(tx.fees, tx.currency)}")
-        Caption(wallet.portfolios.find { it.id == tx.portfolioId }?.name.orEmpty() +
+            ReportCaption("${number(tx.quantity, 6)} × ${money(tx.price, tx.currency)} · Frais ${money(tx.fees, tx.currency)}")
+        ReportCaption(wallet.portfolios.find { it.id == tx.portfolioId }?.name.orEmpty() +
             if (tx.currency == "USD") " · FX ${number(tx.fxRate, 6)} CAD/USD" else "")
-        if (tx.note.isNotBlank()) Text(tx.note, fontSize = 12.sp)
+        if (tx.note.isNotBlank()) Text(tx.note, fontSize = 12.sp, lineHeight = 17.sp)
     }
 }
 
@@ -351,9 +377,8 @@ private fun ReportCalendarV2(days: List<TradeReports.WalletDay>, month: YearMont
             TextButton(onClick = { onMonth(month.plusMonths(1)) }, enabled = month < YearMonth.from(today)) { Text("›", fontSize = 23.sp) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            FilterChip(moneyMode, { onMoney(true) }, label = { Text("$") })
-            Spacer(Modifier.width(6.dp))
-            FilterChip(!moneyMode, { onMoney(false) }, label = { Text("%") })
+            ReportChips(listOf("$", "%"), if (moneyMode) 0 else 1) { onMoney(it == 0) }
+
         }
         Row { listOf("D", "L", "M", "M", "J", "V", "S").forEach {
             Text(it, Modifier.weight(1f), color = Muted, fontSize = 11.sp, textAlign = TextAlign.Center) } }
@@ -362,12 +387,12 @@ private fun ReportCalendarV2(days: List<TradeReports.WalletDay>, month: YearMont
             Row(Modifier.fillMaxWidth()) {
                 repeat(7) { weekday ->
                     val n = week * 7 + weekday - offset + 1
-                    if (n !in 1..month.lengthOfMonth()) Spacer(Modifier.weight(1f).height(57.dp))
+                    if (n !in 1..month.lengthOfMonth()) Spacer(Modifier.weight(1f).height(48.dp))
                     else {
                         val day = byDate[month.atDay(n)]
                         val value = if (moneyMode) day?.pnl else day?.percent
                         val color = tint(value)
-                        Surface(Modifier.weight(1f).padding(2.dp).height(57.dp)
+                        Surface(Modifier.weight(1f).padding(2.dp).height(48.dp)
                             .testTag("calendar_day_${month.atDay(n)}")
                             .clickable(enabled = day != null) { day?.let(onDay) },
                             shape = RoundedCornerShape(8.dp),
@@ -383,7 +408,7 @@ private fun ReportCalendarV2(days: List<TradeReports.WalletDay>, month: YearMont
                 }
             }
         }
-        Caption("Touche une journée pour voir ton wallet et les transactions.")
+        ReportCaption("Touche une journée pour voir ton wallet et les transactions.")
     }
 }
 
@@ -392,11 +417,11 @@ private fun ReportDayDetail(wallet: Wallet, transactions: List<Transaction>, day
     onClose: () -> Unit) {
     FullDialog(date(day.date.toString()), onClose) {
         ReportCard {
-            Caption("VALEUR DU WALLET · CAD")
-            Text(money(day.value), fontSize = 30.sp, fontWeight = FontWeight.Bold)
-            Caption(dayStatus(day))
+            ReportCaption("VALEUR DU WALLET · CAD")
+            Text(money(day.value), fontSize = 30.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold)
+            ReportCaption(dayStatus(day))
             if (day.status != TradeReports.DayStatus.CONFIRMED && day.value != null)
-                Caption("Dernière valeur connue au ${day.valueDate?.let { date(it.toString()) } ?: "—"}")
+                ReportCaption("Dernière valeur connue au ${day.valueDate?.let { date(it.toString()) } ?: "—"}")
             Text("${signed(day.pnl)} · ${percent(day.percent)}", color = tint(day.pnl), fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth()) {
                 SmallReportMetric("Début", money(day.snapshot?.openingValue), Modifier.weight(1f))
@@ -406,9 +431,9 @@ private fun ReportDayDetail(wallet: Wallet, transactions: List<Transaction>, day
         }
         Text("Transactions du jour", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         val tx = transactions.filter { it.date == day.date.toString() }.sortedBy { it.createdAt }
-        if (tx.isEmpty()) Caption("Aucune transaction enregistrée.")
+        if (tx.isEmpty()) ReportCaption("Aucune transaction enregistrée.")
         tx.forEach { ReportTransactionRow(wallet, it) }
-        Caption("Le P&L journalier inclut l’effet des ventes et des frais. Une vente conservée en encaisse n’est pas un retrait.")
+        ReportCaption("Le P&L journalier inclut l’effet des ventes et des frais. Une vente conservée en encaisse n’est pas un retrait.")
     }
 }
 
@@ -426,7 +451,7 @@ private fun ReportPeriodFields(first: LocalDate, today: LocalDate, initial: Repo
     var end by remember { mutableStateOf(initial.end) }
     var year by remember { mutableIntStateOf(initial.end.year) }
     var month by remember { mutableIntStateOf(initial.end.monthValue) }
-    Chips(listOf("Dates", "Mois", "Année", "Tout"), mode) { mode = it }
+    ReportChips(listOf("Dates", "Mois", "Année", "Tout"), mode) { mode = it }
     if (mode == 0) {
         ReportDateButton("Du", start) { start = it }
         ReportDateButton("Au", end) { end = it }
@@ -445,7 +470,7 @@ private fun ReportPeriodFields(first: LocalDate, today: LocalDate, initial: Repo
         3 -> ReportPeriod(first, today)
         else -> ReportPeriod(start, end)
     } }.getOrNull()
-    Caption(period?.let { "${date(it.start.toString())} → ${date(it.end.toString())} · dates incluses" }
+    ReportCaption(period?.let { "${date(it.start.toString())} → ${date(it.end.toString())} · dates incluses" }
         ?: "La date de début doit précéder la date de fin.")
     Button(onClick = { period?.let(onApply) }, enabled = period != null,
         modifier = Modifier.fillMaxWidth().testTag("report_period_apply"),
@@ -488,15 +513,15 @@ internal fun ReportExportDialog(wallet: Wallet, history: List<PortfolioDailySnap
         }
     }
     FullDialog("Exporter mes rapports", onClose) {
-        Caption(wallet.portfolios.find { it.id == portfolioId }?.name ?: "Tous les portefeuilles")
+        ReportCaption(wallet.portfolios.find { it.id == portfolioId }?.name ?: "Tous les portefeuilles")
         ReportExportKind.entries.forEach { choice ->
             FilterChip(kind == choice, { kind = choice }, label = { Text(choice.label) },
                 modifier = Modifier.fillMaxWidth().testTag("export_kind_${choice.name}")) }
         OutlinedButton(onClick = { picking = true }, modifier = Modifier.fillMaxWidth()) {
             Text("${date(period.start.toString())} → ${date(period.end.toString())}") }
-        Caption("Choisir des dates, un mois, une année ou tout l’historique.")
-        if (kind == ReportExportKind.CLOSED_TRADES) Caption("Filtré par date de vente. Les achats plus anciens sont conservés dans le calcul du coût et dans le CSV.")
-        if (kind == ReportExportKind.DAILY_WALLET) Caption("Une ligne par jour, avec le statut de la valeur. Le PRE/AFTER n’est pas exporté comme clôture.")
+        ReportCaption("Choisir des dates, un mois, une année ou tout l’historique.")
+        if (kind == ReportExportKind.CLOSED_TRADES) ReportCaption("Filtré par date de vente. Les achats plus anciens sont conservés dans le calcul du coût et dans le CSV.")
+        if (kind == ReportExportKind.DAILY_WALLET) ReportCaption("Une ligne par jour, avec le statut de la valeur. Le PRE/AFTER n’est pas exporté comme clôture.")
         Button(onClick = {
             scope.launch {
                 busy = true
@@ -511,7 +536,7 @@ internal fun ReportExportDialog(wallet: Wallet, history: List<PortfolioDailySnap
         }, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("export_download"),
             colors = ButtonDefaults.buttonColors(containerColor = ReportAccent)) {
             Text(if (busy) "Préparation…" else "Télécharger en CSV") }
-        message?.let { Caption(it) }
+        message?.let { ReportCaption(it) }
     }
     if (picking) ReportPeriodDialog(first, today, period, { picking = false }) { period = it; picking = false }
 }
