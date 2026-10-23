@@ -237,7 +237,8 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                                                 row.security, budget, country, horizon, risk, threshold.toInt()) { status = it }
                                             val updated = current.copy(stocks = current.stocks.map { old ->
                                                 if (old.security.id == row.security.id) detail.stocks.firstOrNull() ?: old else old
-                                            }, sources = (current.sources + detail.sources).distinctBy { it.url + it.date },
+                                            }, sources = current.sources.filterNot { it.id.startsWith("detail:" + row.security.id + ":") } +
+                                                    detail.sources.map { it.copy(id = "detail:" + row.security.id + ":" + it.id) },
                                                 funds = current.funds + detail.funds)
                                             pack = updated; research.save(key, updated, null)
                                         } catch (cancelled: CancellationException) { throw cancelled }
