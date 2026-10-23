@@ -71,7 +71,9 @@ class ReportsScreenshotTest {
                             }
                         }) { padding ->
                         Box(Modifier.fillMaxSize().padding(padding)) {
-                            ReportsDashboard(wallet, history, p.id, now = now)
+                            ReportsDashboard(wallet, history, p.id, now = now, fetchQuote = { security ->
+                                Quote(security.id, "300".dec(), "299".dec(), "CAD", now, "2026-10-22", "Test de calcul")
+                            })
                         }
                     }
                 }
@@ -132,6 +134,11 @@ class ReportsScreenshotTest {
             shown("8 oct. 2026")
             shown("22 oct. 2026")
             capture(context, "reports-closed-trades.png")
+            click(By.text("ⓘ"))
+            shown("Si tu l’avais gardé")
+            shown("000,00")
+            capture(context, "reports-retained-trade.png")
+            click(By.text("ⓘ"))
             click(By.text("Transactions"))
             shown("Vente")
             shown("DOL")

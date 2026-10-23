@@ -67,7 +67,7 @@ internal fun ReportsDashboard(
     loading: Boolean = false, status: String = "",
     onPortfolio: (String?) -> Unit = {}, onPreference: (String, String) -> Unit = { _, _ -> },
     onRefresh: () -> Unit = {}, now: Long = System.currentTimeMillis(),
-    initialTab: Int? = null, advanced: @Composable (ReportSummary) -> Unit = {},
+    initialTab: Int? = null, fetchQuote: (suspend (Security) -> Quote)? = null, advanced: @Composable (ReportSummary) -> Unit = {},
 ) {
     val today = MarketClock.date(now)
     val context = LocalContext.current
@@ -253,7 +253,7 @@ internal fun ReportsDashboard(
                 salesResult.exceptionOrNull()?.let { error -> item { ReportCaption("Calcul indisponible : ${error.message}") } }
                 if (sales.isEmpty() && salesResult.isSuccess) item { Empty("Aucune vente sur cette période",
                     "Les achats sont visibles dans Transactions. Les ventes apparaîtront avec leur profit net.") }
-                items(sales, key = { it.saleId }) { trade -> ReportTradeCard(wallet, trade) }
+                items(sales, key = { it.saleId }) { trade -> ReportTradeCard(wallet, trade, fetchQuote) }
                 item { ReportCaption("Coût moyen et frais inclus. Profit net en CAD, avec les taux FX enregistrés. La période filtre les ventes; les achats antérieurs restent inclus dans le coût.") }
             }
             3 -> {
@@ -306,11 +306,14 @@ private fun ReportDailyRow(day: TradeReports.WalletDay, onClick: () -> Unit) {
 }
 
 @Composable
-internal fun ReportTradeCard(wallet: Wallet, trade: ClosedTrade) {
+internal fun ReportTradeCard(wallet: Wallet, trade: ClosedTrade, fetchQuote: (suspend (Security) -> Quote)? = null) {
+    var retainedOpen by remember(trade.saleId) { mutableStateOf(false) }
     ReportCard(Modifier.testTag("closed_trade_${trade.saleId}")) {
         val security = wallet.security(trade.securityId)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (security != null) Logo(security)
+            TextButton(onClick = { retainedOpen = !retainedOpen }, modifier = Modifier.testTag("retained_info_${trade.saleId}"),
+                contentPadding = PaddingValues(4.dp)) { Text("ⓘ", color = Blue, fontSize = 22.sp) }
             Column(Modifier.weight(1f)) { Text(security?.ticker ?: "Titre supprimé", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 ReportCaption(security?.name ?: trade.securityId) }
             Surface(shape = RoundedCornerShape(7.dp), color = Color.Transparent,
@@ -341,7 +344,60 @@ internal fun ReportTradeCard(wallet: Wallet, trade: ClosedTrade) {
             SmallReportMetric("Produit net · CAD", money(trade.proceedsCad), Modifier.weight(1f))
         }
         if (!trade.closed) ReportCaption("Reste après cette vente : ${number(trade.remaining, 6)} action(s)")
+        if (retainedOpen) RetainedTradeInfo(wallet, trade, fetchQuote)
         ReportCaption(wallet.portfolios.find { it.id == trade.portfolioId }?.name.orEmpty())
+    }
+}
+
+@Composable
+private fun RetainedTradeInfo(wallet: Wallet, trade: ClosedTrade, fetchQuote: (suspend (Security) -> Quote)?) {
+    val security = wallet.security(trade.securityId)
+    var quote by remember(trade.securityId) { mutableStateOf(wallet.quotes[trade.securityId]) }
+    var fx by remember { mutableStateOf(wallet.securities.find { it.symbol == "CAD=X" }?.let { wallet.quotes[it.id] }) }
+    var loading by remember { mutableStateOf(false) }
+    var refresh by remember { mutableIntStateOf(0) }
+    var failed by remember { mutableStateOf(false) }
+    LaunchedEffect(trade.securityId, refresh) {
+        if (security != null && fetchQuote != null) {
+            loading = true; failed = false
+            try {
+                coroutineScope {
+                    val current = async { fetchQuote(security) }
+                    val rate = if (trade.currency == "USD") async { fetchQuote(Security.of("CAD=X", "USD / CAD", "FX", "CAD", "FX")) } else null
+                    quote = current.await()
+                    if (rate != null) fx = rate.await()
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { failed = true }
+            finally { loading = false }
+        }
+    }
+    val current = quote?.let { CivilDayPnl.dailyQuote(it, security, System.currentTimeMillis()) }
+    val value = trade.ifRetained(current?.price, current?.currency, fx?.price)
+    Surface(shape = RoundedCornerShape(12.dp), color = Blue.copy(alpha = .08f), border = BorderStroke(1.dp, Blue.copy(alpha = .4f))) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Si tu l’avais gardé", Modifier.weight(1f), fontWeight = FontWeight.Bold, color = Blue)
+                if (fetchQuote != null) TextButton(onClick = { refresh++ }, enabled = !loading) { Text("Actualiser") }
+            }
+            if (loading) ReportCaption("Actualisation du cours…")
+            if (failed) ReportCaption("Actualisation impossible · dernières données disponibles ci-dessous.")
+            if (value == null) ReportCaption("Cours ou taux USD/CAD indisponible. Aucun montant estimé.")
+            else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SmallReportMetric("Investissement · CAD", money(value.invested), Modifier.weight(1f))
+                    SmallReportMetric("Valeur actuelle · CAD", money(value.value), Modifier.weight(1f))
+                }
+                Text("${signed(value.profit)} · ${percent(value.percent)}", color = tint(value.profit), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                ReportCaption("Écart avec ta vente : ${signed(value.versusSale)} CAD")
+                ReportCaption("${number(trade.quantity, 6)} action(s) vendue(s) · cours ${money(current?.price, trade.currency)}")
+                quote?.let { q -> ReportCaption("${q.source} · cours du " + java.time.Instant.ofEpochMilli(q.timestamp).atZone(MarketClock.zone)
+                    .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm", Locale.CANADA_FRENCH))) }
+                if (trade.currency == "USD") fx?.let { q -> ReportCaption("USD/CAD ${number(q.price, 4)} · taux du " + java.time.Instant.ofEpochMilli(q.timestamp).atZone(MarketClock.zone)
+                    .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm", Locale.CANADA_FRENCH))) }
+                ReportCaption("Simulation depuis le coût d’achat, frais d’achat inclus. Sans dividendes ni nouveaux frais de vente. Ne modifie pas ton rendement réel.")
+            }
+        }
     }
 }
 

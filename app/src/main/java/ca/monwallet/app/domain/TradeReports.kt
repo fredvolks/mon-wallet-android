@@ -29,6 +29,19 @@ data class ClosedTrade(
     val days: Long get() = ChronoUnit.DAYS.between(LocalDate.parse(firstBuyDate), LocalDate.parse(saleDate))
 }
 
+/** Hypothetical mark-to-market for precisely the sold quantity, excluding new sale fees/dividends. */
+data class RetainedTradeValue(val invested: BigDecimal, val value: BigDecimal, val saleProceeds: BigDecimal) {
+    val profit get() = value - invested
+    val percent get() = profit.pct(invested)
+    val versusSale get() = value - saleProceeds
+}
+
+fun ClosedTrade.ifRetained(price: BigDecimal?, quoteCurrency: String?, cadRate: BigDecimal?): RetainedTradeValue? {
+    if (price == null || price <= ZERO || quoteCurrency != currency || quantity <= ZERO || costCad <= ZERO) return null
+    val rate = when (currency) { "CAD" -> ONE; "USD" -> cadRate?.takeIf { it > ZERO }; else -> null } ?: return null
+    return RetainedTradeValue(costCad, quantity * price * rate, proceedsCad)
+}
+
 /** Average cost, isolated by account and security, in the accounting engine's exact ledger order.
  * Each sale is a realized event. An exit followed by a re-entry starts a new holding cycle.
  */

@@ -80,6 +80,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
             vm.run { vm.services.repo.setting("reports_portfolio", id ?: "all") } },
         onPreference = { key, value -> vm.run { vm.services.repo.setting(key, value) } },
         onRefresh = { vm.run { vm.services.refreshReportHistory(selected, true) } },
+        fetchQuote = { security -> vm.services.market.quote(security) },
         advanced = { summary ->
             var mode by remember { mutableIntStateOf(0) }
             val current = remember(w.transactions, w.quotes, selected) {
