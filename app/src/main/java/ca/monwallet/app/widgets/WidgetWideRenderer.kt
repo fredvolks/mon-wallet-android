@@ -262,6 +262,7 @@ internal object WidgetWideRenderer {
         val measure = Paint().apply {
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
             textSize = maxSp * metrics.scaledDensity
+            textScaleX = 0.93f
         }
         val widestPx = summaries.values.maxOfOrNull { measure.measureText(it.toString()) } ?: 0f
         val rowTextSp = (if (widestPx > 0f) (maxSp * roomPx / widestPx)
