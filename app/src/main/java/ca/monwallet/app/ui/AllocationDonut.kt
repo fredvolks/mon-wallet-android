@@ -1,6 +1,7 @@
 package ca.monwallet.app.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.Text
@@ -22,7 +23,7 @@ import kotlin.math.atan2
 private val donutColors = listOf(Green, Blue, Color(0xFF61CCAA), Color(0xFFA48AFF), Color(0xFFFFC857), Red)
 
 @Composable
-fun AllocationDonut(allocation: AllocationResult) {
+fun AllocationDonut(allocation: AllocationResult, onSlice: ((String) -> Unit)? = null) {
     val slices = allocation.slices
     val total = allocation.total ?: return
     var selected by remember(slices) { mutableIntStateOf(-1) }
@@ -52,13 +53,13 @@ fun AllocationDonut(allocation: AllocationResult) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(if (selected in slices.indices) slices[selected].label else stringResource(R.string.allocation_total), color = Muted, fontSize = 12.sp)
                 Text(money(if (selected in slices.indices) slices[selected].value else total), fontWeight = FontWeight.Bold)
-                if (selected in slices.indices) Text(percent(slices[selected].weight), color = Green)
+                if (selected in slices.indices) Text(allocationPercent(slices[selected].weight), color = Green)
             }
         }
         slices.forEachIndexed { index, slice ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(Modifier.fillMaxWidth().then(if (onSlice != null) Modifier.clickable { onSlice(slice.label) } else Modifier).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("● ${slice.label}", color = donutColors[index % donutColors.size])
-                Text("${money(slice.value)} · ${percent(slice.weight)}")
+                Text("${money(slice.value)} · ${allocationPercent(slice.weight)}")
             }
         }
     }

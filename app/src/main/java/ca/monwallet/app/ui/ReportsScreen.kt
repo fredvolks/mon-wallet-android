@@ -92,7 +92,7 @@ fun ReportsScreen(w: Wallet, vm: WalletViewModel, initialPortfolio: String?) {
             ReportStatistics(summary, regularHistory)
             ReportContributors(w, summary)
             ReportMonthYear(regularHistory)
-            ReportAllocation(w, selected, current)
+            ReportAllocation(w, selected, current, vm.services::etfDetails)
             ReportFlows(w, selected, summary, regularHistory)
         })
 }
@@ -305,10 +305,33 @@ private fun ReportMonthYear(history: List<PortfolioDailySnapshot>) {
 }
 
 @Composable
-private fun ReportAllocation(wallet: Wallet, portfolioId: String?, result: Result?) {
-    var grouping by remember { mutableIntStateOf(0) }
+internal fun ReportAllocation(wallet: Wallet, portfolioId: String?, result: Result?,
+    loadEtf: suspend (Security, Boolean) -> ca.monwallet.app.marketdata.EtfLoad = { s, _ ->
+        ca.monwallet.app.marketdata.EtfLoad(ca.monwallet.app.marketdata.EtfData.fetch(s)) }) {
+    var grouping by remember { mutableIntStateOf(1) }
     var cash by remember { mutableStateOf(false) }
-    val names = listOf("Titres", "Secteur", "Géographie", "Devise", "Portefeuille")
+    var selectedEtf by remember { mutableStateOf<Security?>(null) }
+    val names = listOf("Titres", "FNB / Actions", "Secteur", "Géographie", "Devise", "Portefeuille")
+    selectedEtf?.let { fund ->
+        androidx.compose.ui.window.Dialog(onDismissRequest = { selectedEtf = null },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+            Surface(Modifier.fillMaxWidth().fillMaxHeight(.94f).padding(10.dp),
+                shape = RoundedCornerShape(18.dp), color = Night) {
+                Column {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Détail du FNB", Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
+                        TextButton(onClick = { selectedEtf = null }) { Text("Fermer") }
+                    }
+                    val value = result?.holdings?.find { it.securityId == fund.id }?.value
+                    val total = result?.holdings?.filter { it.quantity > ZERO }?.fold(ZERO) { a, h -> a + (h.value ?: ZERO) }
+                        ?.plus(if (cash) result.cash.max(ZERO) else ZERO)
+                    Column(Modifier.verticalScroll(rememberScrollState()).padding(8.dp)) {
+                        EtfDetailsCard(fund, value, total?.let { value?.pct(it) }, loadEtf)
+                    }
+                }
+            }
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         CardBlock {
             Text("Allocation actuelle", fontWeight = FontWeight.SemiBold)
@@ -322,17 +345,22 @@ private fun ReportAllocation(wallet: Wallet, portfolioId: String?, result: Resul
                 return@CardBlock
             }
             val securities = wallet.securities.associateBy { it.id }
-            if (grouping <= 1) {
-                val allocation = if (grouping == 0) Allocation.byTitle(result, securities, cash)
-                    else Allocation.bySector(result, securities, includeCash = cash)
-                if (allocation.complete && allocation.total != null) AllocationDonut(allocation)
+            if (grouping <= 2) {
+                val allocation = when (grouping) {
+                    0 -> Allocation.byTitle(result, securities, cash)
+                    1 -> Allocation.byAssetType(result, securities, cash)
+                    else -> Allocation.bySector(result, securities, includeCash = cash)
+                }
+                if (allocation.complete && allocation.total != null) AllocationDonut(allocation,
+                    onSlice = if (grouping == 0) { label -> selectedEtf = wallet.securities.firstOrNull {
+                        it.ticker == label && it.type.uppercase() == "ETF" } } else null)
                 else Caption("Composition indisponible : données manquantes")
             } else {
                 val positions = result.holdings.filter { it.quantity > ZERO && it.value != null }
                 val grouped = when (grouping) {
-                    2 -> positions.groupBy { h -> securities[h.securityId]?.country ?: "Non déterminé" }
+                    3 -> positions.groupBy { h -> securities[h.securityId]?.country ?: "Non déterminé" }
                         .mapValues { (_, rows) -> rows.fold(ZERO) { a, h -> a + h.value!! } }
-                    3 -> positions.groupBy { h -> securities[h.securityId]?.currency ?: "Inconnue" }
+                    4 -> positions.groupBy { h -> securities[h.securityId]?.currency ?: "Inconnue" }
                         .mapValues { (_, rows) -> rows.fold(ZERO) { a, h -> a + h.value!! } }
                     else -> wallet.portfolios.filter { portfolioId == null || it.id == portfolioId }
                         .associate { p -> p.name to (runCatching { wallet.result(p.id).value }.getOrNull() ?: ZERO) }
@@ -345,13 +373,23 @@ private fun ReportAllocation(wallet: Wallet, portfolioId: String?, result: Resul
                 }
                 if (grouped.isEmpty()) Caption("Aucune position valorisée")
             }
+            if (grouping in 0..1) {
+                Caption("FNB = parts de fonds détenues; Actions = titres détenus directement. Touchez un FNB pour sa composition.")
+                val funds = result.holdings.filter { it.quantity > ZERO && securities[it.securityId]?.type?.uppercase() == "ETF" }
+                funds.forEach { h ->
+                    val fund = securities.getValue(h.securityId)
+                    TextButton(onClick = { selectedEtf = fund }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${fund.ticker} · Composition et pondérations  ›")
+                    }
+                }
+            }
             val owned = result.holdings.filter { it.quantity > ZERO && it.value != null }
                 .sortedByDescending { it.value!! }
             val investedInTitles = owned.fold(ZERO) { a, h -> a + h.value!! }
             if (owned.isNotEmpty()) {
-                Metric("Plus grosse position", "${wallet.security(owned.first().securityId)?.ticker ?: "—"} · ${percent(owned.first().value?.pct(investedInTitles))}")
-                Metric("Top 3", percent(owned.take(3).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
-                Metric("Top 5", percent(owned.take(5).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
+                Metric("Plus grosse position", "${wallet.security(owned.first().securityId)?.ticker ?: "—"} · ${allocationPercent(owned.first().value?.pct(investedInTitles))}")
+                Metric("Top 3", allocationPercent(owned.take(3).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
+                Metric("Top 5", allocationPercent(owned.take(5).fold(ZERO) { a, h -> a + h.value!! }.pct(investedInTitles)))
             }
         }
     }

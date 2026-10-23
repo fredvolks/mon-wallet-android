@@ -1,3 +1,9 @@
+## 0.2.62 — Allocation FNB / actions
+- Répartition en dollars CAD et en pourcentage des FNB, actions directes, autres titres et liquidités optionnelles.
+- FNB cliquables depuis l’allocation et fiche de composition dans le détail du titre.
+- FNB canadiens iShares (dont XEQT) : catalogue et téléchargement officiels iShares, positions directes et sous-jacentes séparées, pondérations, secteurs, pays, frais, dates et cache quotidien.
+- Les fournisseurs non couverts affichent une indisponibilité explicite; VFV propose sa fiche officielle Vanguard.
+
 # Versions
 
 ## Mon Wallet v0.2.61 — 2026-10-23
