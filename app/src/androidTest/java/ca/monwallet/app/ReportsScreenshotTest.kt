@@ -78,13 +78,31 @@ class ReportsScreenshotTest {
         }
         ActivityScenario.launch<ReportsTestActivity>(intent).use { scenario ->
             val device = UiDevice.getInstance(instrumentation)
+            // Android 35's emulator launcher can ANR behind an otherwise responsive app.
+            // Dismiss only Quickstep's system dialog; an app ANR must still fail this test.
+            fun clearLauncherDialog() {
+                if (device.hasObject(By.text("Quickstep isn't responding"))) {
+                    device.findObject(By.res("android:id/aerr_close"))?.click()
+                    device.wait(Until.gone(By.text("Quickstep isn't responding")), 5_000)
+                }
+            }
             fun click(selector: androidx.test.uiautomator.BySelector) {
-                val target = device.wait(Until.findObject(selector), 10_000)
+                clearLauncherDialog()
+                var target = device.wait(Until.findObject(selector), 10_000)
+                if (target == null) {
+                    clearLauncherDialog()
+                    target = device.wait(Until.findObject(selector), 10_000)
+                }
                 assertNotNull("Missing clickable control: $selector", target)
                 target!!.click()
             }
             fun shown(text: String) {
-                val visible = device.wait(Until.hasObject(By.textContains(text)), 15_000)
+                clearLauncherDialog()
+                var visible = device.wait(Until.hasObject(By.textContains(text)), 15_000)
+                if (!visible) {
+                    clearLauncherDialog()
+                    visible = device.wait(Until.hasObject(By.textContains(text)), 15_000)
+                }
                 if (!visible) {
                     capture(context, "reports-diagnostic.png")
                     val hierarchy = java.io.ByteArrayOutputStream()
