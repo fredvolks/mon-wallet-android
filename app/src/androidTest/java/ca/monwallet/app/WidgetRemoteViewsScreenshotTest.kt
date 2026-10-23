@@ -33,6 +33,7 @@ class WidgetRemoteViewsScreenshotTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val portfolio = Portfolio(name = "Disnat")
+        val preMarket = count == 5
         val tickers = listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "SPCX").take(count)
         val amounts = listOf("46.20", "485.80", "2.80", "2.06", "19.55", "184.33")
         val changes = listOf("0.54", "3.01", "-2.96", "-2.83", "0.31", "0.85")
@@ -56,6 +57,10 @@ class WidgetRemoteViewsScreenshotTest {
                     BigDecimal(amounts[index]).divide(BigDecimal.ONE.add(
                         BigDecimal(changes[index]).divide(BigDecimal("100"))), MathContext.DECIMAL128),
                     security.currency, now, LocalDate.now().toString(), "exemple visuel",
+                    preMarketPrice = if (preMarket && index in setOf(1, 5))
+                        BigDecimal(amounts[index]) + BigDecimal("0.50") else null,
+                    preMarketTimestamp = if (preMarket && index in setOf(1, 5)) now else null,
+                    preMarketChangePercent = if (preMarket && index in setOf(1, 5)) BigDecimal("0.27") else null,
                     afterHoursPrice = if (index in setOf(1, 5)) BigDecimal(amounts[index]) + BigDecimal("0.50") else null,
                     afterHoursTimestamp = if (index in setOf(1, 5)) printAt else null,
                     afterHoursChangePercent = if (index in setOf(1, 5)) BigDecimal("0.27") else null,
@@ -94,7 +99,7 @@ class WidgetRemoteViewsScreenshotTest {
                 val after = row.findViewById<TextView>(R.id.widget_row_after)
                 if (index in setOf(1, 5)) {
                     assertEquals(View.VISIBLE, after.visibility)
-                    assertTrue(after.text.contains("☾ +0,27 %"))
+                    assertTrue(after.text.contains((if (preMarket) "☀ " else "☾ ") + "+0,27 %"))
                     assertEquals("Same quote font", text.textSize, after.textSize, 0.1f)
                     assertEquals("Extended return at the right edge", row.width, after.right)
                     assertEquals("One baseline", text.top + text.baseline, after.top + after.baseline)
