@@ -35,7 +35,7 @@ object DividendData {
                 .atZone(ZoneOffset.UTC).toLocalDate().toString(), amount)
         }?.toList().orEmpty()
         val now = MarketClock.date(System.currentTimeMillis())
-        val first = meta.optLong("firstTradeDate", 0).takeIf { it > 0 }?.let {
+        val first = meta.optLong("firstTradeDate", 0).takeIf { it != 0L }?.let {
             Instant.ofEpochSecond(it).atZone(ZoneOffset.UTC).toLocalDate() }
         val snapshot = calculate(payments, meta.number("regularMarketPrice"), s.currency, now, first)
         cache[s.id] = System.currentTimeMillis() to snapshot
@@ -73,6 +73,6 @@ internal fun dividendEligible(filters: Filters, snapshot: DividendSnapshot?, fal
     if (filters.dividendMax != null && (yield == null || yield > filters.dividendMax)) return false
     if (filters.dividendFrequency.isNotBlank() && snapshot?.frequency != filters.dividendFrequency) return false
     if (filters.dividendGrowthMin != null && (snapshot?.growth == null || snapshot.growth < filters.dividendGrowthMin)) return false
-    if (filters.payoutMax != null && (payout == null || payout > filters.payoutMax)) return false
+    if (filters.payoutMax != null && (payout == null || payout < ZERO || payout > filters.payoutMax)) return false
     return true
 }

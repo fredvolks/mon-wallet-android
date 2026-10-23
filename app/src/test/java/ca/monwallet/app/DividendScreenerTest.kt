@@ -30,6 +30,7 @@ class DividendScreenerTest {
         assertFalse(dividendEligible(dividendPreset("0"), null, null, null))
         assertFalse(dividendEligible(dividendPreset().copy(payoutMax = "50".dec()), d, null, null))
         assertTrue(dividendEligible(dividendPreset().copy(payoutMax = "50".dec()), d, null, "40".dec()))
+        assertFalse(dividendEligible(dividendPreset().copy(payoutMax = "50".dec()), d, null, "-40".dec()))
         val recent = DividendData.calculate(payments, "100".dec(), "USD", today, today.minusMonths(3))
         assertNull(recent.yield)
         assertEquals("UNKNOWN", recent.frequency)
