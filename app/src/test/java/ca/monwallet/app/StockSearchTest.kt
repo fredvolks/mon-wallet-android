@@ -10,7 +10,7 @@ class StockSearchTest {
     private val rows = Catalog.all + SectorUniverse.stocks
     @Test fun nationalBankAliasesResolveWithoutNetwork() {
         listOf("NA", "na.to", "BNC", "Banque Nationale", "National Bank", "TSX:NA", "NA TSX").forEach { q ->
-            val first = SecuritySearch.rank(q, rows).first()
+            val first = SecuritySearch.rank(q, rows + Security.of("NA", "Other NA listing", "NASDAQ", "USD")).first()
             assertEquals(q, "NA.TO", first.symbol)
             assertEquals("CAD", first.currency)
         }

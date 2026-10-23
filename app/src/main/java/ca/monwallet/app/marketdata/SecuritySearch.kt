@@ -57,8 +57,8 @@ object SecuritySearch {
             val base = when {
                 symbol == q -> 12000
                 symbol.replace('-', '.') == q.replace('-', '.') -> 11900
-                ticker == q -> 11000
-                ticker.replace('-', '.') == q.replace('-', '.') -> 10900
+                ticker == q -> 12000
+                ticker.replace('-', '.') == q.replace('-', '.') -> 11900
                 aliases[symbol].orEmpty().any { normalized(it) == q } -> 10500
                 names.any { it == q } -> 10000
                 symbol.startsWith(q) -> 8000

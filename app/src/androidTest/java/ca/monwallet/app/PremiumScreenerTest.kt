@@ -63,6 +63,7 @@ class PremiumScreenerTest {
         val context = instrumentation.targetContext
         val services = Services(context)
         assertTrue("Remote search outside local catalog", services.market.search("NWC.TO").any { it.symbol == "NWC.TO" })
+        assertEquals("Canada ticker remains first after remote results merge", "NA.TO", services.market.search("NA").first().symbol)
         ReportsTestActivity.content = {
             WalletTheme {
                 Surface(color = Night) {
