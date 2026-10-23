@@ -116,20 +116,27 @@ internal object WidgetWideRenderer {
 
         val held = result?.holdings?.filter { it.quantity > ZERO }
             ?.map { it.securityId }?.toSet().orEmpty()
+        val regular = WidgetChartData.regularResult(wallet, portfolio, quoteNow)
+        val after = WidgetChartData.afterResult(wallet, portfolio, quoteNow)
+        views.setViewVisibility(R.id.widget_after, if (!hidden && after != null) View.VISIBLE else View.GONE)
+        views.setTextViewText(R.id.widget_after, if (after == null) "" else buildList {
+            add("AFTER")
+            if (!config.hideAmounts && config.dayAmount) add(signed(after.first))
+            if (config.dayPercent) add(percent(after.second))
+        }.joinToString(" · "))
         views.setTextViewText(R.id.widget_day, if (hidden) c.getString(R.string.widget_locked)
-            else if (ca.monwallet.app.domain.MarketClock.offSession(quoteNow))
-                "Depuis clôture 16 h" else c.getString(R.string.widget_today))
+            else c.getString(R.string.widget_today))
         views.setViewVisibility(R.id.widget_day,
             if (config.showDailyLabel) View.VISIBLE else View.GONE)
-        val unavailable = result?.day == null && result?.dayPercent == null && !hidden
-        val showAmount = !hidden && !config.hideAmounts && config.dayAmount && result?.day != null
-        val showPercent = !hidden && config.dayPercent && result?.dayPercent != null
+        val unavailable = regular.day == null && regular.dayPercent == null && !hidden
+        val showAmount = !hidden && !config.hideAmounts && config.dayAmount && regular.day != null
+        val showPercent = !hidden && config.dayPercent && regular.dayPercent != null
         views.setTextViewText(R.id.widget_amount, when {
-            showAmount -> signed(result?.day)
+            showAmount -> signed(regular.day)
             unavailable -> "Jour indisponible"
             else -> ""
         })
-        views.setTextViewText(R.id.widget_percent, if (showPercent) percent(result?.dayPercent) else "")
+        views.setTextViewText(R.id.widget_percent, if (showPercent) percent(regular.dayPercent) else "")
         views.setTextViewTextSize(R.id.widget_amount, android.util.TypedValue.COMPLEX_UNIT_SP,
             if (unavailable) 12f else if (config.dailyHero) 26f else 22f)
         views.setTextViewTextSize(R.id.widget_percent, android.util.TypedValue.COMPLEX_UNIT_SP,
@@ -139,7 +146,7 @@ internal object WidgetWideRenderer {
         views.setViewVisibility(R.id.widget_day_pill,
             if (!hidden) View.VISIBLE else View.GONE)
         if (unavailable) views.setViewVisibility(R.id.widget_amount, View.VISIBLE)
-        val daySign = result?.day?.signum()
+        val daySign = regular.day?.signum()
         val dayColor = tone(daySign)
         views.setTextColor(R.id.widget_amount, dayColor)
         views.setTextColor(R.id.widget_percent, dayColor)
@@ -190,13 +197,15 @@ internal object WidgetWideRenderer {
         val plan = WidgetTitleLayout.plan(config, "4x2", minHeight, ordered.size)
         // Reserve a separate chart area below the figures; never paint over money.
         // It stays inside the Daily panel; the stock rows keep their own clear background.
+        val daySeries = WidgetChartData.daySeries(wallet, portfolio, cached, quoteNow)
         val chartSeries = if (hidden || !config.chart || result == null) emptyList()
-            else WidgetChartData.values(wallet, portfolio, "Jour", cached)
+            else daySeries.values
         val chartVisible = chartSeries.size >= 2
         views.setViewVisibility(R.id.widget_chart, if (chartVisible) View.VISIBLE else View.GONE)
         if (chartVisible) {
             views.setImageViewBitmap(R.id.widget_chart,
-                WidgetChartData.bitmap(chartSeries, width = 320, height = 100))
+                WidgetChartData.bitmap(chartSeries, width = 320, height = 100,
+                    afterStart = daySeries.afterStart))
         }
 
         views.removeAllViews(R.id.widget_rows)
