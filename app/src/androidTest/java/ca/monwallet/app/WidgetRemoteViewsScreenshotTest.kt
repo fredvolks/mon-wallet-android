@@ -46,7 +46,9 @@ class WidgetRemoteViewsScreenshotTest {
             Holding(security.id, ONE, BigDecimal("100"), BigDecimal("100"), ZERO, ZERO,
                 BigDecimal("105"), ZERO, ZERO, BigDecimal(changes[index]), BigDecimal("100"))
         }
-        val now = java.time.ZonedDateTime.of(2026, 10, 22, 17, 30, 0, 0,
+        val printAt = java.time.ZonedDateTime.of(2026, 10, 22, 17, 30, 0, 0,
+            java.time.ZoneId.of("America/New_York")).toInstant().toEpochMilli()
+        val now = java.time.ZonedDateTime.of(2026, 10, 23, 9, 29, 0, 0,
             java.time.ZoneId.of("America/New_York")).toInstant().toEpochMilli()
         val wallet = Wallet(portfolios = listOf(portfolio), securities = securities,
             quotes = securities.mapIndexed { index, security ->
@@ -55,9 +57,9 @@ class WidgetRemoteViewsScreenshotTest {
                         BigDecimal(changes[index]).divide(BigDecimal("100"))), MathContext.DECIMAL128),
                     security.currency, now, LocalDate.now().toString(), "exemple visuel",
                     afterHoursPrice = if (index in setOf(1, 5)) BigDecimal(amounts[index]) + BigDecimal("0.50") else null,
-                    afterHoursTimestamp = if (index in setOf(1, 5)) now else null,
+                    afterHoursTimestamp = if (index in setOf(1, 5)) printAt else null,
                     afterHoursChangePercent = if (index in setOf(1, 5)) BigDecimal("0.27") else null,
-                    marketSession = if (index in setOf(1, 5)) "AFTER_HOURS" else "CLOSED")
+                    marketSession = "CLOSED")
             }.toMap())
         val result = Result(holdings, BigDecimal("9300"), ZERO, BigDecimal("9348.36"),
             ZERO, ZERO, BigDecimal("48.36"), BigDecimal("6535.135"))

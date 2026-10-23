@@ -39,7 +39,7 @@ class LiveQuotesTest {
         val after = NormalizedQuote.from(quote("AFTER_HOURS"), now)
         assertEquals(0, after.afterHoursChange!!.compareTo(BigDecimal("3")))
         assertNull(after.preMarketPrice)
-        assertNull(NormalizedQuote.from(quote("CLOSED"), now).afterHoursPrice)
+        assertNotNull(NormalizedQuote.from(quote("CLOSED"), now).afterHoursPrice)
         val direct = NormalizedQuote.from(quote("AFTER_HOURS").copy(
             afterHoursChange = BigDecimal("2.5"),
             afterHoursChangePercent = BigDecimal("2.08")), now)
@@ -47,6 +47,48 @@ class LiveQuotesTest {
         assertEquals(0, direct.afterHoursChangePercent!!.compareTo(BigDecimal("2.08")))
         assertNull(NormalizedQuote.from(quote("AFTER_HOURS"), now + 24 * 60 * 60_000L)
             .afterHoursPrice)
+    }
+
+    private fun eastern(time: String) = java.time.LocalDateTime.parse(time)
+        .atZone(java.time.ZoneId.of("America/New_York")).toInstant().toEpochMilli()
+
+    @Test fun afterSurvivesClosedNightAndMorningUntil0930() {
+        val print = eastern("2026-10-22T19:59:00")
+        val q = quote("CLOSED").copy(afterHoursTimestamp = print, fetchedAt = print)
+        for (time in listOf("2026-10-22T20:00:00", "2026-10-22T23:59:00",
+            "2026-10-23T00:01:00", "2026-10-23T09:29:59")) {
+            val normalized = NormalizedQuote.from(q, eastern(time))
+            assertEquals(time, MarketSession.AFTER_HOURS, normalized.marketSession)
+            assertNotNull(time, normalized.afterHoursPrice)
+            assertEquals(q.afterHoursTimestamp, normalized.afterHoursTimestamp)
+        }
+        assertNull(NormalizedQuote.from(q, eastern("2026-10-23T09:30:00")).afterHoursPrice)
+        assertFalse(NormalizedQuote.retainsAfterHours(print, print - 1))
+    }
+
+    @Test fun afterSurvivesWeekendHolidayAndDstUntilNextOpening() {
+        val friday = eastern("2026-10-30T19:59:00")
+        assertTrue(NormalizedQuote.retainsAfterHours(friday, eastern("2026-11-02T09:29:59")))
+        assertFalse(NormalizedQuote.retainsAfterHours(friday, eastern("2026-11-02T09:30:00")))
+        val beforeHoliday = eastern("2026-11-25T19:59:00")
+        assertTrue(NormalizedQuote.retainsAfterHours(beforeHoliday, eastern("2026-11-27T09:29:59")))
+        assertFalse(NormalizedQuote.retainsAfterHours(beforeHoliday, eastern("2026-11-27T09:30:00")))
+    }
+
+    @Test fun refreshWithoutAfterRetainsActualPrintAndTimestampButExpiresAtOpen() {
+        val print = eastern("2026-10-22T19:59:00")
+        val previous = quote("AFTER_HOURS").copy(afterHoursTimestamp = print)
+        val refresh = previous.copy(marketSession = "CLOSED", afterHoursPrice = null,
+            afterHoursTimestamp = null, afterHoursChange = null, afterHoursChangePercent = null)
+        val now = eastern("2026-10-23T09:29:59")
+        val retained = NormalizedQuote.retainPreviousAfterHours(refresh, previous, now)
+        assertEquals(previous.afterHoursPrice, retained.afterHoursPrice)
+        assertEquals(print, retained.afterHoursTimestamp)
+        assertEquals(MarketSession.AFTER_HOURS, NormalizedQuote.from(retained, now).marketSession)
+        assertNull(NormalizedQuote.retainPreviousAfterHours(refresh, previous,
+            eastern("2026-10-23T09:30:00")).afterHoursPrice)
+        assertNull(NormalizedQuote.retainPreviousAfterHours(refresh.copy(price = BigDecimal("110")),
+            previous, now).afterHoursPrice)
     }
 
     @Test fun uncertainProviderIsNeverCalledRealtime() {

@@ -206,8 +206,13 @@ class Repository(val db: Database, val scope: CoroutineScope) {
         }
     }
 
-    suspend fun quote(q: Quote) =
-        dao.cache(Cache(q.securityId, "quote", gson.toJson(q), q.fetchedAt))
+    suspend fun quote(q: Quote) = mutex.withLock {
+        val previous = dao.cache().firstOrNull { it.id == q.securityId && it.kind == "quote" }
+            ?.let { runCatching { gson.fromJson(it.payload, Quote::class.java) }.getOrNull() }
+        val retained = ca.monwallet.app.marketdata.NormalizedQuote.retainPreviousAfterHours(
+            q, previous, System.currentTimeMillis())
+        dao.cache(Cache(q.securityId, "quote", gson.toJson(retained), q.fetchedAt))
+    }
 
     suspend fun points(id: String, points: List<Point>, intraday: Boolean = false) {
         if (points.isEmpty()) return // A failed provider response cannot erase real history.

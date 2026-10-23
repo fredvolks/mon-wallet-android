@@ -323,7 +323,7 @@ internal object YahooQuoteMapper {
         val preWindow = periods?.optJSONObject("pre")
         val postWindow = periods?.optJSONObject("post")
         fun marketPrint(kind: String, window: JSONObject?): Print? {
-            if (!extendedEligible || session != kind) return null
+            if (!extendedEligible || (kind != "AFTER_HOURS" && session != kind)) return null
             val prefix = if (kind == "PRE_MARKET") "pre" else "post"
             val metaTime = m.number(prefix + "MarketTime")?.toLong()
             val metaPrice = m.number(prefix + "MarketPrice")
