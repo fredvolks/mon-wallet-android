@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import ca.monwallet.app.domain.Engine
-import ca.monwallet.app.domain.CivilDayPnl
 import ca.monwallet.app.domain.MarketClock
 import ca.monwallet.app.domain.MarketHoliday
 import ca.monwallet.app.domain.Point
@@ -170,7 +169,7 @@ internal object WidgetChartData {
             val y1 = y(start)
             val y2 = y(end)
             segmentPieces(start, end).forEach { piece ->
-                if (piece.sign == 0) return@forEach
+                if (piece.sign == 0 && (afterStart == null || index + 1 < afterStart)) return@forEach
                 val px1 = x1 + (x2 - x1) * piece.startFraction
                 val px2 = x1 + (x2 - x1) * piece.endFraction
                 val py1 = y1 + (y2 - y1) * piece.startFraction

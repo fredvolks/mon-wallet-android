@@ -116,7 +116,22 @@ internal object WidgetWideRenderer {
 
         val held = result?.holdings?.filter { it.quantity > ZERO }
             ?.map { it.securityId }?.toSet().orEmpty()
-        val regular = WidgetChartData.regularResult(wallet, portfolio, quoteNow)
+        var regular = WidgetChartData.regularResult(wallet, portfolio, quoteNow)
+        // Preserve the actual displayed close result across refreshes/process restarts.
+        // The dated key expires naturally at midnight; total P&L remains independently live.
+        if (ca.monwallet.app.domain.MarketClock.offSession(quoteNow) &&
+            ca.monwallet.app.domain.MarketClock.date(quoteNow) ==
+                ca.monwallet.app.domain.MarketClock.date(ca.monwallet.app.domain.MarketClock.lastClose(quoteNow))) {
+            val closePrefs = c.getSharedPreferences("widget_regular_close", 0)
+            val scope = portfolio ?: wallet.portfolios.map { it.id }.sorted().joinToString(",")
+            val key = "$scope:${ca.monwallet.app.domain.MarketClock.date(quoteNow)}"
+            val storedDay = closePrefs.getString("$key:day", null)?.toBigDecimalOrNull()
+            val storedBase = closePrefs.getString("$key:base", null)?.toBigDecimalOrNull()
+            if (storedDay != null) regular = regular.copy(day = storedDay, dayBase = storedBase)
+            else if (regular.day != null) closePrefs.edit()
+                .putString("$key:day", regular.day.toString())
+                .putString("$key:base", regular.dayBase?.toString()).apply()
+        }
         val after = WidgetChartData.afterResult(wallet, portfolio, quoteNow)
         views.setViewVisibility(R.id.widget_after, if (!hidden && after != null) View.VISIBLE else View.GONE)
         views.setTextViewText(R.id.widget_after, if (after == null) "" else buildList {
