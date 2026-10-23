@@ -85,6 +85,11 @@ class ReportsScreenshotTest {
             capture(context, "reports-summary.png")
             device.findObject(By.text("Calendrier")).click()
             shown("octobre 2026")
+            val dayReturn = device.wait(Until.findObject(By.text("0,55%")), 5_000)
+            assertNotNull("Calendar return must be visible", dayReturn)
+            assertTrue("Calendar percentage clipped vertically",
+                dayReturn!!.visibleBounds.height() >=
+                    (10 * context.resources.displayMetrics.scaledDensity).toInt())
             capture(context, "reports-calendar.png")
             device.findObject(By.text("22")).click()
             shown("Transactions du jour")

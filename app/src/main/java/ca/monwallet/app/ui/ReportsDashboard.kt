@@ -398,9 +398,9 @@ private fun ReportCalendarV2(days: List<TradeReports.WalletDay>, month: YearMont
                             shape = RoundedCornerShape(8.dp),
                             color = if (value != null) color.copy(alpha = .14f) else Night) {
                             Column(Modifier.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(n.toString(), fontSize = 12.sp, color = if (month.atDay(n) > today) Muted else Color.White)
+                                Text(n.toString(), fontSize = 12.sp, lineHeight = 17.sp, color = if (month.atDay(n) > today) Muted else Color.White)
                                 if (value != null) Text(if (moneyMode) number(value, 0) + "$" else number(value) + "%",
-                                    fontSize = 9.sp, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    fontSize = 9.sp, lineHeight = 12.sp, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 else if (day?.status == TradeReports.DayStatus.INCOMPLETE) Text("—", color = Muted)
                             }
                         }
