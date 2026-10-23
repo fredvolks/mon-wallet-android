@@ -92,7 +92,8 @@ class WidgetRemoteViewsScreenshotTest {
                     val after = row.findViewById<TextView>(R.id.widget_row_after)
                     assertEquals(View.VISIBLE, after.visibility)
                     assertTrue(after.text.contains("AFTER"))
-                    assertTrue(after.height >= after.lineHeight)
+                    assertTrue("AFTER has no drawing space", after.height > 0)
+                    assertEquals("AFTER must not be ellipsized", 0, after.layout.getEllipsisCount(0))
                 }
                 val text = row.findViewById<TextView>(R.id.widget_row_ticker)
                 assertEquals("All price columns need the same character width",
