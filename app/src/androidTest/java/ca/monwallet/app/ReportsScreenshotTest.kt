@@ -78,6 +78,11 @@ class ReportsScreenshotTest {
         }
         ActivityScenario.launch<ReportsTestActivity>(intent).use { scenario ->
             val device = UiDevice.getInstance(instrumentation)
+            fun click(selector: androidx.test.uiautomator.BySelector) {
+                val target = device.wait(Until.findObject(selector), 10_000)
+                assertNotNull("Missing clickable control: $selector", target)
+                target!!.click()
+            }
             fun shown(text: String) {
                 val visible = device.wait(Until.hasObject(By.textContains(text)), 15_000)
                 if (!visible) {
@@ -91,7 +96,7 @@ class ReportsScreenshotTest {
             shown("Mon wallet par jour")
             shown("348,36") // French-Canada grouping is a non-breaking space.
             capture(context, "reports-summary.png")
-            device.findObject(By.text("Calendrier")).click()
+            click(By.text("Calendrier"))
             shown("octobre 2026")
             val dayReturn = device.wait(Until.findObject(By.text("0,55%")), 5_000)
             assertNotNull("Calendar return must be visible", dayReturn)
@@ -99,32 +104,32 @@ class ReportsScreenshotTest {
                 dayReturn!!.visibleBounds.height() >=
                     (10 * context.resources.displayMetrics.scaledDensity).toInt())
             capture(context, "reports-calendar.png")
-            device.findObject(By.text("22")).click()
+            click(By.text("22"))
             shown("Transactions du jour")
             shown("DOL")
             capture(context, "reports-day-detail.png")
-            device.findObject(By.text("Fermer")).click()
-            device.findObject(By.text("Trades clôturés")).click()
+            click(By.text("Fermer"))
+            click(By.text("Trades clôturés"))
             shown("+13,00 %")
             shown("8 oct. 2026")
             shown("22 oct. 2026")
             capture(context, "reports-closed-trades.png")
-            device.findObject(By.text("Transactions")).click()
+            click(By.text("Transactions"))
             shown("Vente")
             shown("DOL")
             capture(context, "reports-transactions.png")
-            device.findObject(By.text("CSV ↓")).click()
+            click(By.text("CSV ↓"))
             shown("Exporter mes rapports")
             shown("Wallet jour par jour")
             capture(context, "reports-export.png")
-            device.findObject(By.textContains("→")).click()
+            click(By.textContains("→"))
             shown("Choisir la période")
-            device.findObject(By.text("Mois")).click()
+            click(By.text("Mois"))
             shown("Mois : octobre")
             capture(context, "reports-export-month.png")
-            device.findObject(By.text("Année")).click()
+            click(By.text("Année"))
             shown("Année : 2026")
-            device.findObject(By.text("Appliquer la période")).click()
+            click(By.text("Appliquer la période"))
             shown("31 déc. 2026")
         }
     }
