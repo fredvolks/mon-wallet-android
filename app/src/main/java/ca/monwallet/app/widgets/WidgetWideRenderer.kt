@@ -264,8 +264,8 @@ internal object WidgetWideRenderer {
             textSize = maxSp * metrics.scaledDensity
         }
         val widestPx = summaries.values.maxOfOrNull { measure.measureText(it.toString()) } ?: 0f
-        val rowTextSp = if (widestPx > 0f) (maxSp * roomPx / widestPx)
-            .coerceIn(8f, maxSp) else maxSp
+        val rowTextSp = (if (widestPx > 0f) (maxSp * roomPx / widestPx)
+            .coerceIn(8f, maxSp) else maxSp) * 0.98f
         val extendedSessions = mutableSetOf<MarketSession>()
         for (holding in titles) {
             val security = wallet.security(holding.securityId) ?: continue
