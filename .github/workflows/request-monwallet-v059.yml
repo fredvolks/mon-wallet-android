@@ -1,0 +1,37 @@
+name: Request Mon Wallet v0.2.59 signed release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/request-monwallet-v059.yml'
+permissions:
+  actions: write
+  contents: read
+jobs:
+  request-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require the exact widget emulator checks before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=5c5052bc5c34924d083f02b4403106566e41cf09&event=pull_request" --jq '[.workflow_runs[] | select(.workflow_id == 376285571)][0] | [.status, (.conclusion // "pending")] | @tsv')"
+            if [[ "$result" == $'completed\tsuccess' ]]; then
+              current="$(gh api "repos/${GITHUB_REPOSITORY}/branches/feat/widget-design-live-five-seconds-20261022" --jq '.commit.sha')"
+              [[ "$current" == "5c5052bc5c34924d083f02b4403106566e41cf09" ]] || exit 1
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/release-apk.yml/dispatches" \
+                -f ref="feat/widget-design-live-five-seconds-20261022" \
+                -f "inputs[release_version]=0.2.59"
+              exit 0
+            fi
+            if [[ "$result" == completed* ]]; then
+              echo "Widget emulator checks did not pass; release not dispatched."
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "Widget emulator checks timed out; release not dispatched."
+          exit 1
