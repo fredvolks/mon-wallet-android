@@ -62,7 +62,8 @@ class InvestmentAnalystTest {
                 emptyList(), listOf(ResearchSource("fixture", "Source de test", "https://example.com", date)),
                 "500".dec(), "Canada", "3 à 5 ans", "Modéré", 35, emptyList(),
                 ledgerKey = research.ledgerKey(wallet, null, false, null),
-                positions = listOf(ResearchPosition(stock.symbol, stock.name, "3".dec(), "300".dec(), "CAD", stock.sector, now)))
+                positions = listOf(ResearchPosition(stock.symbol, stock.name, "3".dec(), "300".dec(), "CAD", stock.sector, now)),
+                screening = ScreenSummary(5000, 2000, 50, 300, now, true))
             research.save("self:all:IDEAS", pack, null)
             research.save("self:all:BALANCE", pack.copy(mode = "BALANCE", stocks = emptyList()), null)
             ReportsTestActivity.content = { WalletTheme { InvestmentAnalystDialog(services, null, {}) } }
@@ -80,7 +81,7 @@ class InvestmentAnalystTest {
                 }
                 assertTrue(device.wait(Until.hasObject(By.text("Analyste IA")), 10000))
                 assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 10000))
-                assertTrue(device.hasObject(By.textContains("5 actions")))
+                find("5 actions")
                 assertFalse(device.hasObject(By.text("Équilibre du portefeuille")))
                 assertFalse(device.hasObject(By.textContains("Tolérance au risque")))
                 capture(context, "reports-analyst-ideas.png")
@@ -110,28 +111,46 @@ class InvestmentAnalystTest {
                 assertTrue(copied.contains("unknownSector"))
                 assertFalse(copied.contains("Jacob"))
                 assertFalse(copied.contains("memberId"))
-                device.pressBack()
-                assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 5000))
+                // Android may consume system Back to close its clipboard preview first.
+                // Exercise the app's explicit return action and allow the list to restore its scroll.
+                assertTrue(device.wait(Until.hasObject(By.desc("Retour aux idées")), 5000))
+                device.findObject(By.desc("Retour aux idées")).click()
+                find("Idées pour ton budget", true)
                 find("Mon équilibre").click()
-                find("Équilibre du portefeuille")
+                if (!device.wait(Until.hasObject(By.text("Équilibre du portefeuille")), 8000)) {
+                    capture(context, "reports-analyst-balance-failure.png")
+                }
+                find("Équilibre du portefeuille", true)
                 capture(context, "reports-analyst-balance.png")
                 find("Idées", true).click()
                 find("Filtres", true).click()
                 find("Pour qui?").click()
                 assertTrue(device.wait(Until.hasObject(By.text("Jacob")), 3000))
                 device.findObject(By.text("Jacob")).click()
+                assertTrue(device.wait(Until.gone(By.text("Compte complet")), 3000))
+                assertTrue(device.wait(Until.hasObject(By.text("Pour qui? : Jacob")), 3000))
                 capture(context, "reports-analyst-filters.png")
                 // Closing filters cancels their drafts and preserves the current member.
                 find("Fermer", true).click()
+                assertTrue(device.wait(Until.gone(By.text("Filtres des idées")), 5000))
                 assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 5000))
-                assertTrue(device.hasObject(By.textContains("5 actions")))
+                find("5 actions")
                 find("Filtres", true).click()
                 find("Pour qui?").click()
+                assertTrue(device.wait(Until.hasObject(By.text("Jacob")), 3000))
                 device.findObject(By.text("Jacob")).click()
+                assertTrue(device.wait(Until.gone(By.text("Compte complet")), 3000))
+                assertTrue(device.wait(Until.hasObject(By.text("Pour qui? : Jacob")), 3000))
                 find("Afficher les résultats").click()
+                assertTrue(device.wait(Until.gone(By.text("Filtres des idées")), 5000))
                 instrumentation.waitForIdleSync()
-                assertFalse(device.hasObject(By.textContains("DEMO")))
+                assertTrue(device.wait(Until.hasObject(By.textContains("Jacob · Tous les comptes")), 5000))
+                // Android's clipboard preview may still contain DEMO from the copied JSON.
+                // Assert against the app's actual old stock card, not other system windows.
+                val oldCard = By.pkg(context.packageName).text("#1 · DEMO")
+                val cleared = device.wait(Until.gone(oldCard), 5000)
                 capture(context, "reports-analyst-scope.png")
+                assertTrue("Previous member stock card must be removed", cleared)
             }
         } finally {
             ReportsTestActivity.content = {}

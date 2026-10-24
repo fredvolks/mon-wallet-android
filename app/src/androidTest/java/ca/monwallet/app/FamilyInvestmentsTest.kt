@@ -85,13 +85,14 @@ class FamilyInvestmentsTest {
                 assertEquals(1, FamilyLedger.resolve(saved.transactions).pending.size)
                 assertNull(saved.result(p.id).value)
                 assertTrue(TradeReports.sales(saved.transactions).isEmpty())
-                services.repo.transaction(jacob.copy(id = uuid(), quantity = "2".dec(),
-                    date = "2026-09-30", fxDate = "2026-09-30"), security)
+                val earlier = jacob.copy(id = uuid(), quantity = "2".dec(), date = "2026-09-30", fxDate = "2026-09-30")
+                services.repo.transaction(earlier, security)
+                withTimeout(10000) { services.repo.state.first { it.transactions.any { t -> t.id == earlier.id } } }
                 assertTrue(FamilyLedger.resolve(services.repo.current().transactions).pending.isEmpty())
                 assertEquals(0, FamilyLedger.availableAt(services.repo.current().transactions, p.id,
-                    security.id, "jacob", "2026-10-23").compareTo(ZERO))
+                    security.id, "jacob", sale.date).compareTo(ZERO))
                 assertEquals(0, FamilyLedger.availableAt(services.repo.current().transactions, p.id,
-                    security.id, null, "2026-10-23").compareTo("10".dec()))
+                    security.id, null, sale.date).compareTo("10".dec()))
             }
         } finally {
             ReportsTestActivity.content = {}

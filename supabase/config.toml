@@ -416,3 +416,7 @@ enabled = true
 
 [functions.delete-account]
 verify_jwt = false
+
+[functions.analyze-stock-screen]
+# The handler verifies the bearer via /auth/v1/user before any data access or API spend.
+verify_jwt = false

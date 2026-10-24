@@ -1,3 +1,12 @@
+# 0.2.69 — Préfiltre US/Canada de 200 titres et analyse IA reprenable
+
+- Scan des milliers de cotations principales couvertes par TradingView, classement sectoriel et 200 candidats; aucun catalogue de remplacement silencieux.
+- Aucun OTC, cours minimum 1 dans la devise du titre, biotech et développeurs de médicaments exclus; toutes capitalisations. Option Aucun filtre financier sans retirer ces exclusions.
+- Quantités et coûts CAD calculés après le classement, sans exclure les titres trop chers du préfiltre. Navigation par pages de 20.
+- Analyse IA explicite par groupes de 20, progression conservée et reprise; tri par priorité de recherche seulement après couverture complète.
+- Clé API uniquement côté serveur, authentification, quota journalier et cache idempotent par utilisateur/groupe; aucune analyse payante automatique.
+- Analyse IA limitée aux ratios et volumes fournis : aucune recherche de nouvelles ou normalisation des profits dans les dépôts n’est prétendue.
+
 # 0.2.68 — Analyste IA : idées visibles et fiches séparées
 
 - Ouverture sur les idées : cartes avec logo, titre, quantité en actions entières et coût estimé en CAD.
