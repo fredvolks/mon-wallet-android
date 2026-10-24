@@ -1,5 +1,5 @@
 -- Public RPCs are service-only; owner IDs come exclusively from verified Auth users in the function.
-create table private.wallet_screen_batches (
+create table if not exists private.wallet_screen_batches (
  user_id uuid not null references auth.users(id) on delete cascade,
  batch_key text not null check (batch_key ~ '^[0-9a-f]{64}$'),
  state text not null check (state in ('pending','completed','failed')),
@@ -12,7 +12,7 @@ alter table private.wallet_screen_batches enable row level security;
 revoke all on private.wallet_screen_batches from public,anon,authenticated;
 grant select,insert,update,delete on private.wallet_screen_batches to service_role;
 
-create function public.claim_wallet_screen_batch(owner_id uuid,batch_key text)
+create or replace function public.claim_wallet_screen_batch(owner_id uuid,batch_key text)
 returns jsonb language plpgsql security invoker set search_path='' as $$
 declare current_row private.wallet_screen_batches%rowtype; next_token uuid;
 begin
@@ -31,7 +31,7 @@ begin
  return jsonb_build_object('status','claimed','token',next_token);
 end; $$;
 
-create function public.finish_wallet_screen_batch(owner_id uuid,batch_key text,lease_token uuid,batch_result jsonb)
+create or replace function public.finish_wallet_screen_batch(owner_id uuid,batch_key text,lease_token uuid,batch_result jsonb)
 returns boolean language plpgsql security invoker set search_path='' as $$
 declare affected integer;
 begin

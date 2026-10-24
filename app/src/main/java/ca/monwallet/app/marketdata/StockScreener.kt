@@ -66,6 +66,7 @@ object StockScreener {
             if (country == "Canada" && exchange !in setOf("TSX", "TSXV", "CSE", "NEO")) return@mapNotNull null
             if (country == "États-Unis" && exchange !in setOf("NASDAQ", "NYSE", "AMEX")) return@mapNotNull null
             val industry = d.optString(5)
+            if (industry.isBlank() || industry == "null") return@mapNotNull null
             if (industry in biotech) { excludedBio++; return@mapNotNull null }
             // Source 'stock' includes split funds and investment trusts. Do not rank those as operating companies.
             if (industry == "Investment Trusts/Mutual Funds") return@mapNotNull null

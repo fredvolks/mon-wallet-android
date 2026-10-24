@@ -105,7 +105,9 @@ class InvestmentResearch(private val services: Services) {
                 if (held.size > 30) "Cours actualisés pour les 30 premiers titres; les autres restent en cache." else null,
                 if (held.count { it.type.uppercase() == "ETF" } > 12) "Composition chargée pour les 12 premiers FNB." else null,
                 "Pays = domicile de l’émetteur, pas répartition de ses revenus. Devises = devises de cotation, pas risque de change sous-jacent.",
-                "Les seuils P/E ≤ 27, dette/capitaux propres ≤ 2 et capitalisation ≥ 1 G sont des critères de tri, pas des signaux d’achat."),
+                if (mode == "IDEAS") "Score sectoriel : croissance 25 points, rentabilité 20, dette 20, P/E 20, tendance six mois 15. Les secteurs de moins de cinq candidats sont comparés à l’univers admissible. Données incomplètes non notées; aucune limite de capitalisation ni de prix maximum."
+                else "Les seuils P/E ≤ 27, dette/capitaux propres ≤ 2 et capitalisation ≥ 1 G sont des repères, pas des signaux d’achat.",
+                if (mode == "IDEAS") "Le score ne vérifie pas les profits exceptionnels, les dépôts ou les nouvelles. Les véhicules de placement identifiés sont exclus; holdings et sociétés financières demandent un modèle distinct. La classification fournisseur et les cours peuvent être incomplets ou différés." else null),
             quotes[fxSecurity.id]?.price, ledgerKey = ledgerKey(wallet, memberId, all, portfolioId), positions = positions, screening = screenResult?.summary, financialFilters = financialFilters)
     }
     fun evidence(pack: ResearchPack, question: String): String {
