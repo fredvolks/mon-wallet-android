@@ -134,7 +134,7 @@ class InvestmentAnalystTest {
                 device.findObject(By.text("Jacob")).click()
                 find("Afficher les résultats").click()
                 instrumentation.waitForIdleSync()
-                assertFalse(device.hasObject(By.textContains("DEMO")))
+                assertTrue(device.wait(Until.gone(By.textContains("DEMO")), 5000))
                 capture(context, "reports-analyst-scope.png")
             }
         } finally {
