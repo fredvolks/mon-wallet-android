@@ -77,6 +77,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     var fromCash by remember { mutableStateOf(false) }
     var question by remember { mutableStateOf("") }
     var pack by remember { mutableStateOf<ResearchPack?>(null) }
+    var loadedKey by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf<InvestmentAnswer?>(null) }
     var loading by remember { mutableStateOf(false) }
     var asking by remember { mutableStateOf(false) }
@@ -88,43 +89,52 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     var simulate by remember { mutableStateOf(false) }
     var assistantOpen by remember { mutableStateOf(false) }
     val mode = listOf("BALANCE", "TITLE", "IDEAS")[tab]
-    val cacheKey = (if (all) "all" else memberId ?: "self") + ":" + (portfolioId ?: "all") + ":" + mode
+    fun activeKey() = (if (all) "all" else memberId ?: "self") + ":" + (portfolioId ?: "all") + ":" + listOf("BALANCE", "TITLE", "IDEAS")[tab]
+    val cacheKey = activeKey()
     val budget = budgetText.replace(',', '.').toBigDecimalOrNull() ?: ZERO
 
     fun refresh() {
         if (tab != 0 && budget <= ZERO) { error = "Entre un budget positif en CAD."; return }
         if (tab == 1 && selected == null) { search = true; return }
         job?.cancel()
-        val key = cacheKey
+        val key = activeKey()
+        val requestMember = memberId; val requestAll = all; val requestPortfolio = portfolioId
+        val requestOwner = s.repo.owner.value
         val snapshot = wallet
         val target = selected
         job = scope.launch {
             loading = true; error = null; answer = null; page = 0
             try {
-                val fresh = research.collect(snapshot, mode, memberId, all, portfolioId, target,
+                val fresh = research.collect(snapshot, mode, requestMember, requestAll, requestPortfolio, target,
                     budget, country, horizon, risk, threshold.toInt(), { status = it }, financialFilters)
-                pack = fresh; research.save(key, fresh, null)
+                ensureActive()
+                if (key != activeKey() || requestOwner != s.repo.owner.value) throw CancellationException()
+                loadedKey = key; pack = fresh; research.save(key, fresh, null)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (e: Exception) { error = e.message ?: "Collecte indisponible. Réessaie." }
             finally { loading = false }
         }
     }
-    LaunchedEffect(cacheKey, selected?.id, refreshToken, s.repo.owner.value) {
-        job?.cancel(); pack = null; answer = null; error = null; loading = false; asking = false
+    LaunchedEffect(memberId, all, portfolioId, tab, selected?.id, refreshToken, s.repo.owner.value) {
+        val effectKey = activeKey()
+        job?.cancel(); loadedKey = ""; pack = null; answer = null; error = null; loading = false; asking = false
         detailId = if (tab == 1) selected?.id else null
         simulate = false; assistantOpen = false
-        val saved = research.cached(cacheKey)
+        val saved = research.cached(effectKey)
+        if (ca.monwallet.app.BuildConfig.DEBUG) android.util.Log.d("InvestmentScopeTest", "load key=$effectKey rows=${saved?.pack?.stocks?.size}")
+        ensureActive()
+        if (effectKey != activeKey()) throw CancellationException()
         val force = handledRefresh != refreshToken
         handledRefresh = refreshToken
         if (saved != null && !force && (tab != 2 || saved.pack.screening?.version == StockScreener.VERSION) && (tab != 1 || saved.pack.stocks.firstOrNull()?.security?.id == selected?.id)) {
-            pack = saved.pack; answer = saved.answer; fromCash = saved.pack.fromCash
+            loadedKey = effectKey; pack = saved.pack; answer = saved.answer; fromCash = saved.pack.fromCash
             budgetText = saved.pack.budget.toPlainString(); country = saved.pack.country
             horizon = saved.pack.horizon; risk = saved.pack.risk; financialFilters = saved.pack.financialFilters
         } else if (tab != 1 || selected != null) refresh()
     }
     LaunchedEffect(threshold) { prefs.edit().putString("sector_cap", threshold.toInt().toString()).apply() }
     DisposableEffect(Unit) { onDispose { job?.cancel() } }
-    val p = pack
+    val p = pack.takeIf { loadedKey == activeKey() }
     val row = p?.stocks?.find { it.security.id == detailId }
     val stale = p != null && (p.budget.compareTo(budget) != 0 || p.threshold != threshold.toInt() ||
         p.horizon != horizon || p.risk != risk || (tab == 2 && (p.country != country || p.financialFilters != financialFilters)) ||
@@ -420,7 +430,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
             }
             Button(onClick = {
                 // Clear synchronously: an old member's suggestions must not survive until LaunchedEffect runs.
-                job?.cancel(); pack = null; answer = null; loading = false; asking = false; page = 0
+                job?.cancel(); loadedKey = ""; pack = null; answer = null; loading = false; asking = false; page = 0
                 memberId = draftMember; all = draftAll; portfolioId = draftPortfolio
                 budgetText = draftBudget; country = draftCountry; financialFilters = draftFinancialFilters; horizon = draftHorizon; risk = draftRisk; threshold = draftThreshold
                 filters = false; detailId = null; refreshToken++
