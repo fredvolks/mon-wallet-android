@@ -111,8 +111,11 @@ class InvestmentAnalystTest {
                 assertTrue(copied.contains("unknownSector"))
                 assertFalse(copied.contains("Jacob"))
                 assertFalse(copied.contains("memberId"))
-                device.pressBack()
-                assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 5000))
+                // Android may consume system Back to close its clipboard preview first.
+                // Exercise the app's explicit return action and allow the list to restore its scroll.
+                assertTrue(device.wait(Until.hasObject(By.desc("Retour aux idées")), 5000))
+                device.findObject(By.desc("Retour aux idées")).click()
+                find("Idées pour ton budget", true)
                 find("Mon équilibre").click()
                 if (!device.wait(Until.hasObject(By.text("Équilibre du portefeuille")), 8000)) {
                     capture(context, "reports-analyst-balance-failure.png")
