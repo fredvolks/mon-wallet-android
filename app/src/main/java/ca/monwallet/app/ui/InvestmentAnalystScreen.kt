@@ -88,12 +88,12 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     var detailTab by remember { mutableIntStateOf(0) }
     var simulate by remember { mutableStateOf(false) }
     var assistantOpen by remember { mutableStateOf(false) }
-    val mode = listOf("BALANCE", "TITLE", "IDEAS")[tab]
     fun activeKey() = (if (all) "all" else memberId ?: "self") + ":" + (portfolioId ?: "all") + ":" + listOf("BALANCE", "TITLE", "IDEAS")[tab]
-    val cacheKey = activeKey()
-    val budget = budgetText.replace(',', '.').toBigDecimalOrNull() ?: ZERO
+    fun activeBudget() = budgetText.replace(',', '.').toBigDecimalOrNull() ?: ZERO
 
     fun refresh() {
+        val budget = activeBudget()
+        val requestMode = listOf("BALANCE", "TITLE", "IDEAS")[tab]
         if (tab != 0 && budget <= ZERO) { error = "Entre un budget positif en CAD."; return }
         if (tab == 1 && selected == null) { search = true; return }
         job?.cancel()
@@ -105,7 +105,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         job = scope.launch {
             loading = true; error = null; answer = null; page = 0
             try {
-                val fresh = research.collect(snapshot, mode, requestMember, requestAll, requestPortfolio, target,
+                val fresh = research.collect(snapshot, requestMode, requestMember, requestAll, requestPortfolio, target,
                     budget, country, horizon, risk, threshold.toInt(), { status = it }, financialFilters)
                 ensureActive()
                 if (key != activeKey() || requestOwner != s.repo.owner.value) throw CancellationException()
@@ -142,6 +142,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     Dialog(onDismissRequest = ::back, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         // Dialog has its own composition. Read the mutable evidence here so scope changes
         // invalidate this content instead of retaining values captured by the parent lambda.
+        val budget = activeBudget()
         val p = pack.takeIf { loadedKey == activeKey() }
         val row = p?.stocks?.find { it.security.id == detailId }
         val stale = p != null && (p.budget.compareTo(budget) != 0 || p.threshold != threshold.toInt() ||
@@ -248,7 +249,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                                 OutlinedButton(enabled = !loading && !asking, onClick = {
                                     job?.cancel()
                                     val current = p
-                                    val key = cacheKey
+                                    val key = activeKey()
                                     job = scope.launch {
                                         loading = true; error = null; answer = null
                                         try {
@@ -290,7 +291,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                                     Text("IA : $done/${p.stocks.size} titres", color = AnalystPurple)
                                     Button(enabled = !stale && !loading && !asking && p.stocks.isNotEmpty() && done < p.stocks.size, onClick = {
                                         job?.cancel()
-                                        val key = cacheKey; val owner = s.repo.owner.value
+                                        val key = activeKey(); val owner = s.repo.owner.value
                                         job = scope.launch {
                                             asking = true; error = null
                                             try {
