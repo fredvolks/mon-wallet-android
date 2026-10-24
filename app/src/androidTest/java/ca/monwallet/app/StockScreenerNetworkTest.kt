@@ -10,7 +10,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class StockScreenerNetworkTest {
-    @Test fun actualMarketScanReturns200EligibleStocksInsteadOfACuratedSample() = runBlocking {
+    @Test fun actualMarketScanReturns200EligibleStocksInsteadOfACuratedSample() = runBlocking<Unit> {
         val result = withTimeout(60000) { StockScreener.scan("Tous", true, {}) }
         assertTrue("Thousands of exchange listings must actually be received",result.summary.received > 1000)
         assertEquals(200,result.stocks.size)

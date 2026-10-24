@@ -131,7 +131,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         System.currentTimeMillis() - p.createdAt > (if (tab == 2) 31L * 24 * 3600_000 else 6 * 3600_000L) ||
         p.ledgerKey != research.ledgerKey(wallet, memberId, all, portfolioId) ||
         (tab == 1 && p.stocks.firstOrNull()?.security?.id != selected?.id))
-    val scroll = rememberScrollState()
+    val scroll = key(tab, detailId) { rememberScrollState() }
     LaunchedEffect(detailId, detailTab, tab) { scroll.scrollTo(0) }
     LaunchedEffect(error) { if (error != null) scroll.animateScrollTo(0) }
     fun back() { if (row != null) { detailId = null; simulate = false; assistantOpen = false } else onClose() }

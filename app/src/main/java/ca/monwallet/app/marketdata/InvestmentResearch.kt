@@ -67,7 +67,8 @@ class InvestmentResearch(private val services: Services) {
         val gate = Semaphore(3)
         val held = runCatching { owned.result().holdings.filter { it.quantity > ZERO }.mapNotNull { owned.security(it.securityId) } }.getOrDefault(emptyList())
         val quotes = wallet.quotes.toMutableMap()
-        val quoteIds = (held.take(30) + listOfNotNull(wallet.securities.find { it.symbol == "CAD=X" })).distinctBy { it.id }
+        val fxSecurity = wallet.securities.find { it.symbol == "CAD=X" } ?: Security.of("CAD=X", "USD / CAD", "FOREX", "CAD", "FX")
+        val quoteIds = (held.take(30) + fxSecurity).distinctBy { it.id }
         quoteIds.map { s -> async { gate.withPermit { optional { services.market.quote(s) } } } }.awaitAll().filterNotNull().forEach { quotes[it.securityId] = it }
         val funds = (held + listOfNotNull(selected)).filter { it.type.uppercase() == "ETF" }.distinctBy { it.id }.take(12).map { s -> async {
             gate.withPermit { optional { services.etfDetails(s).details }?.let { s.id to it } }
@@ -105,7 +106,7 @@ class InvestmentResearch(private val services: Services) {
                 if (held.count { it.type.uppercase() == "ETF" } > 12) "Composition chargée pour les 12 premiers FNB." else null,
                 "Pays = domicile de l’émetteur, pas répartition de ses revenus. Devises = devises de cotation, pas risque de change sous-jacent.",
                 "Les seuils P/E ≤ 27, dette/capitaux propres ≤ 2 et capitalisation ≥ 1 G sont des critères de tri, pas des signaux d’achat."),
-            wallet.securities.find { it.symbol == "CAD=X" }?.let { quotes[it.id]?.price }, ledgerKey = ledgerKey(wallet, memberId, all, portfolioId), positions = positions, screening = screenResult?.summary, financialFilters = financialFilters)
+            quotes[fxSecurity.id]?.price, ledgerKey = ledgerKey(wallet, memberId, all, portfolioId), positions = positions, screening = screenResult?.summary, financialFilters = financialFilters)
     }
     fun evidence(pack: ResearchPack, question: String): String {
         // No member names, email, account identifiers or individual transactions leave the device.
@@ -155,7 +156,7 @@ class InvestmentResearch(private val services: Services) {
                 "budgetCad" to pack.budget, "horizon" to pack.horizon, "risk" to pack.risk,
                 "stocks" to group.map { row -> val e = requireNotNull(row.screen)
                     mapOf("listing" to e.listing, "name" to row.security.name.take(200), "industry" to e.industry,
-                        "sector" to e.sector, "price" to row.quote?.price, "currency" to row.security.currency,
+                        "sector" to e.sector, "price" to e.values["close"], "currency" to row.security.currency,
                         "values" to e.values, "flags" to e.flags, "sourceUrl" to e.sourceUrl) }))
             val token = services.auth.token()
             val opinions = withContext(Dispatchers.IO) {

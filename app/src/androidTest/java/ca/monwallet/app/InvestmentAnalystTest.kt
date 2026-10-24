@@ -114,7 +114,10 @@ class InvestmentAnalystTest {
                 device.pressBack()
                 assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 5000))
                 find("Mon équilibre").click()
-                find("Équilibre du portefeuille")
+                if (!device.wait(Until.hasObject(By.text("Équilibre du portefeuille")), 8000)) {
+                    capture(context, "reports-analyst-balance-failure.png")
+                }
+                find("Équilibre du portefeuille", true)
                 capture(context, "reports-analyst-balance.png")
                 find("Idées", true).click()
                 find("Filtres", true).click()
