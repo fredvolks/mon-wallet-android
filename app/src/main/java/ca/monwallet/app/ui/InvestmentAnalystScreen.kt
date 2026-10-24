@@ -134,19 +134,21 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     }
     LaunchedEffect(threshold) { prefs.edit().putString("sector_cap", threshold.toInt().toString()).apply() }
     DisposableEffect(Unit) { onDispose { job?.cancel() } }
-    val p = pack.takeIf { loadedKey == activeKey() }
-    val row = p?.stocks?.find { it.security.id == detailId }
-    val stale = p != null && (p.budget.compareTo(budget) != 0 || p.threshold != threshold.toInt() ||
-        p.horizon != horizon || p.risk != risk || (tab == 2 && (p.country != country || p.financialFilters != financialFilters)) ||
-        System.currentTimeMillis() - p.createdAt > (if (tab == 2) 31L * 24 * 3600_000 else 6 * 3600_000L) ||
-        p.ledgerKey != research.ledgerKey(wallet, memberId, all, portfolioId) ||
-        (tab == 1 && p.stocks.firstOrNull()?.security?.id != selected?.id))
     val scroll = key(tab, detailId) { rememberScrollState() }
     LaunchedEffect(detailId, detailTab, tab) { scroll.scrollTo(0) }
     LaunchedEffect(error) { if (error != null) scroll.animateScrollTo(0) }
-    fun back() { if (row != null) { detailId = null; simulate = false; assistantOpen = false } else onClose() }
+    fun back() { if (loadedKey == activeKey() && pack?.stocks?.any { it.security.id == detailId } == true) { detailId = null; simulate = false; assistantOpen = false } else onClose() }
 
     Dialog(onDismissRequest = ::back, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        // Dialog has its own composition. Read the mutable evidence here so scope changes
+        // invalidate this content instead of retaining values captured by the parent lambda.
+        val p = pack.takeIf { loadedKey == activeKey() }
+        val row = p?.stocks?.find { it.security.id == detailId }
+        val stale = p != null && (p.budget.compareTo(budget) != 0 || p.threshold != threshold.toInt() ||
+            p.horizon != horizon || p.risk != risk || (tab == 2 && (p.country != country || p.financialFilters != financialFilters)) ||
+            System.currentTimeMillis() - p.createdAt > (if (tab == 2) 31L * 24 * 3600_000 else 6 * 3600_000L) ||
+            p.ledgerKey != research.ledgerKey(wallet, memberId, all, portfolioId) ||
+            (tab == 1 && p.stocks.firstOrNull()?.security?.id != selected?.id))
         BackHandler { back() }
         Surface(Modifier.fillMaxSize(), color = Night) {
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
