@@ -419,6 +419,8 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                 Caption("Seuil personnel, pas une allocation optimale universelle.")
             }
             Button(onClick = {
+                // Clear synchronously: an old member's suggestions must not survive until LaunchedEffect runs.
+                job?.cancel(); pack = null; answer = null; loading = false; asking = false; page = 0
                 memberId = draftMember; all = draftAll; portfolioId = draftPortfolio
                 budgetText = draftBudget; country = draftCountry; financialFilters = draftFinancialFilters; horizon = draftHorizon; risk = draftRisk; threshold = draftThreshold
                 filters = false; detailId = null; refreshToken++
@@ -447,7 +449,7 @@ private fun AnalystIdeaCard(row: ResearchStock, purchase: Pair<BigDecimal, BigDe
                 Text(row.security.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Surface(shape = RoundedCornerShape(24.dp), color = Green) {
-                Text(shareLabel(purchase?.first), Modifier.padding(horizontal = 10.dp, vertical = 6.dp), color = Night, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(purchase?.first?.let { shareLabel(it) } ?: "— action", Modifier.padding(horizontal = 10.dp, vertical = 6.dp), color = Night, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
