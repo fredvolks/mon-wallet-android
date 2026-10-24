@@ -141,8 +141,13 @@ class InvestmentAnalystTest {
                 find("Afficher les résultats").click()
                 assertTrue(device.wait(Until.gone(By.text("Filtres des idées")), 5000))
                 instrumentation.waitForIdleSync()
-                assertTrue(device.wait(Until.gone(By.textContains("DEMO")), 5000))
+                assertTrue(device.wait(Until.hasObject(By.textContains("Jacob · Tous les comptes")), 5000))
+                // Android's clipboard preview may still contain DEMO from the copied JSON.
+                // Assert against the app's actual old stock card, not other system windows.
+                val oldCard = By.pkg(context.packageName).text("#1 · DEMO")
+                val cleared = device.wait(Until.gone(oldCard), 5000)
                 capture(context, "reports-analyst-scope.png")
+                assertTrue("Previous member stock card must be removed", cleared)
             }
         } finally {
             ReportsTestActivity.content = {}
