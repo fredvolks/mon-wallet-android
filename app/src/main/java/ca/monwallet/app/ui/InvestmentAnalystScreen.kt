@@ -189,7 +189,11 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                             TextButton(onClick = { job?.cancel(); loading = false; asking = false }) { Text("Annuler") }
                         }
                     }
-                    error?.let { AnalystPanel { Text(it, color = Blue); TextButton(onClick = { refresh() }) { Text("Réessayer") } } }
+                    error?.let { AnalystPanel {
+                        Text(it, color = Blue)
+                        if (tab == 2 && p?.screening != null) Caption("Les résultats terminés sont conservés. Utilise le bouton d’analyse IA ci-dessous pour reprendre; la flèche Actualiser lance un nouveau scan.")
+                        else TextButton(onClick = { refresh() }) { Text("Réessayer") }
+                    } }
                     if (stale && !loading) {
                         AnalystPanel {
                             Text("Dossier à actualiser", color = AnalystPurple, fontWeight = FontWeight.Bold)
