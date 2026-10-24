@@ -68,10 +68,12 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     var refreshToken by remember { mutableIntStateOf(0) }
     var handledRefresh by remember { mutableIntStateOf(0) }
     var budgetText by remember { mutableStateOf("500") }
-    var country by remember { mutableStateOf("Canada") }
+    var country by remember { mutableStateOf("Tous") }
     var horizon by remember { mutableStateOf("3 à 5 ans") }
     var risk by remember { mutableStateOf("Modéré") }
     var threshold by remember { mutableFloatStateOf((prefs.getString("sector_cap", "35")?.toFloatOrNull() ?: 35f).coerceIn(10f, 70f)) }
+    var financialFilters by remember { mutableStateOf(true) }
+    var page by remember { mutableIntStateOf(0) }
     var fromCash by remember { mutableStateOf(false) }
     var question by remember { mutableStateOf("") }
     var pack by remember { mutableStateOf<ResearchPack?>(null) }
@@ -97,10 +99,10 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         val snapshot = wallet
         val target = selected
         job = scope.launch {
-            loading = true; error = null; answer = null
+            loading = true; error = null; answer = null; page = 0
             try {
                 val fresh = research.collect(snapshot, mode, memberId, all, portfolioId, target,
-                    budget, country, horizon, risk, threshold.toInt()) { status = it }
+                    budget, country, horizon, risk, threshold.toInt(), { status = it }, financialFilters)
                 pack = fresh; research.save(key, fresh, null)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (e: Exception) { error = e.message ?: "Collecte indisponible. Réessaie." }
@@ -114,10 +116,10 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         val saved = research.cached(cacheKey)
         val force = handledRefresh != refreshToken
         handledRefresh = refreshToken
-        if (saved != null && !force && (tab != 1 || saved.pack.stocks.firstOrNull()?.security?.id == selected?.id)) {
+        if (saved != null && !force && (tab != 2 || saved.pack.screening?.version == StockScreener.VERSION) && (tab != 1 || saved.pack.stocks.firstOrNull()?.security?.id == selected?.id)) {
             pack = saved.pack; answer = saved.answer; fromCash = saved.pack.fromCash
             budgetText = saved.pack.budget.toPlainString(); country = saved.pack.country
-            horizon = saved.pack.horizon; risk = saved.pack.risk
+            horizon = saved.pack.horizon; risk = saved.pack.risk; financialFilters = saved.pack.financialFilters
         } else if (tab != 1 || selected != null) refresh()
     }
     LaunchedEffect(threshold) { prefs.edit().putString("sector_cap", threshold.toInt().toString()).apply() }
@@ -125,8 +127,8 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
     val p = pack
     val row = p?.stocks?.find { it.security.id == detailId }
     val stale = p != null && (p.budget.compareTo(budget) != 0 || p.threshold != threshold.toInt() ||
-        p.horizon != horizon || p.risk != risk || (tab == 2 && p.country != country) ||
-        System.currentTimeMillis() - p.createdAt > 6 * 3600_000L ||
+        p.horizon != horizon || p.risk != risk || (tab == 2 && (p.country != country || p.financialFilters != financialFilters)) ||
+        System.currentTimeMillis() - p.createdAt > (if (tab == 2) 31L * 24 * 3600_000 else 6 * 3600_000L) ||
         p.ledgerKey != research.ledgerKey(wallet, memberId, all, portfolioId) ||
         (tab == 1 && p.stocks.firstOrNull()?.security?.id != selected?.id))
     val scroll = rememberScrollState()
@@ -170,7 +172,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                     if (loading || asking) {
                         LinearProgressIndicator(Modifier.fillMaxWidth())
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (asking) "Analyse IA en cours…" else status, Modifier.weight(1f), fontSize = 12.sp, color = Muted)
+                            Text(if (asking && status.isBlank()) "Analyse IA en cours…" else status, Modifier.weight(1f), fontSize = 12.sp, color = Muted)
                             TextButton(onClick = { job?.cancel(); loading = false; asking = false }) { Text("Annuler") }
                         }
                     }
@@ -208,7 +210,10 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                                     AnalystTile("Marché", row.security.exchange + " · " + row.security.currency, Modifier.weight(1f))
                                 }
                                 AnalystAccordion("Pourquoi ce titre ?", Icons.Default.Lightbulb, "analyst-reason") {
-                                    Text("Ce titre fait partie du catalogue étudié pour ton budget. Sa présence dans la liste ne constitue pas un avis d’achat.", fontSize = 14.sp)
+                                    val opinion = p.opinions.orEmpty()[row.screen?.listing]
+                                    Text(opinion?.reason ?: "Candidat du préfiltre quantitatif. Sa présence ne constitue pas un avis d’achat.", fontSize = 14.sp)
+                                    opinion?.let { Text(it.verdict, color = AnalystPurple); Caption(it.nextCheck) }
+                                    row.screen?.let { Caption("Score du préfiltre : " + (it.score?.let { v -> String.format(Locale.CANADA_FRENCH, "%.1f /100", v) } ?: "Données incomplètes")) }
                                     Caption("Secteur : " + (PortfolioResearch.sector(row.security.sector) ?: "non déterminé"))
                                     if (row.fundamentals != null) Caption(health.title.substringAfter(" · "))
                                     else Caption("Ratios non disponibles pour le moment; consulte Chiffres ou actualise ce titre.")
@@ -217,6 +222,8 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                                     health.details.filterNot { it.startsWith("Seuils") }.forEach { Caption(it) }
                                     row.earnings.firstOrNull()?.let { Caption("Résultats : " + (it.date ?: "date non fournie")) }
                                     row.gaps.forEach { Caption(it) }
+                                    row.screen?.flags?.forEach { Caption(it) }
+                                    p.opinions.orEmpty()[row.screen?.listing]?.let { Caption("IA · " + it.risk); Caption("Analyse des ratios fournis, sans vérification des nouvelles · " + it.model) }
                                 }
                                 AnalystAccordion("Effet sur mon portefeuille", Icons.Default.PieChart, "analyst-impact") {
                                     AnalystImpact(p, row, budget, fromCash)
@@ -234,9 +241,9 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                                         loading = true; error = null; answer = null
                                         try {
                                             val detail = research.collect(wallet, "TITLE", memberId, all, portfolioId,
-                                                row.security, budget, country, horizon, risk, threshold.toInt()) { status = it }
+                                                row.security, budget, country, horizon, risk, threshold.toInt(), { status = it })
                                             val updated = current.copy(stocks = current.stocks.map { old ->
-                                                if (old.security.id == row.security.id) detail.stocks.firstOrNull() ?: old else old
+                                                if (old.security.id == row.security.id) detail.stocks.firstOrNull()?.copy(screen = old.screen) ?: old else old
                                             }, sources = current.sources.filterNot { it.id.startsWith("detail:" + row.security.id + ":") } +
                                                     detail.sources.map { it.copy(id = "detail:" + row.security.id + ":" + it.id) },
                                                 funds = current.funds + detail.funds)
@@ -262,9 +269,46 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
                             IconButton(enabled = !loading, onClick = { refresh() }) { Icon(Icons.Default.Refresh, "Actualiser les idées") }
                         }
                         if (p != null) {
-                            // These are alternative purchases; the budget is not divided among the cards.
-                            p.stocks.forEach { idea ->
-                                AnalystIdeaCard(idea, analystPurchase(idea, budget, p.fxRate)) {
+                            p.screening?.let { scan ->
+                                AnalystPanel {
+                                    Text("${p.stocks.size} candidats · US / Canada", fontWeight = FontWeight.Bold)
+                                    Caption("${scan.received} reçus · ${scan.eligible} admissibles · ${scan.excludedBiotech} biotech/pharma exclues")
+                                    Caption("Aucun OTC · cours ≥ 1 $ · toutes capitalisations")
+                                    val done = p.opinions.orEmpty().size
+                                    Text("IA : $done/${p.stocks.size} titres", color = AnalystPurple)
+                                    Button(enabled = !stale && !loading && !asking && p.stocks.isNotEmpty() && done < p.stocks.size, onClick = {
+                                        job?.cancel()
+                                        val key = cacheKey; val owner = s.repo.owner.value
+                                        job = scope.launch {
+                                            asking = true; error = null
+                                            try {
+                                                research.analyzeScreen(p, { status = it }) { checkpoint ->
+                                                    ensureActive()
+                                                    if (owner != s.repo.owner.value) throw CancellationException()
+                                                    pack = checkpoint; research.save(key, checkpoint, null)
+                                                }
+                                            } catch (cancelled: CancellationException) { throw cancelled }
+                                            catch (e: Exception) { error = e.message ?: "IA indisponible. Progression conservée." }
+                                            finally { asking = false }
+                                        }
+                                    }, modifier = Modifier.fillMaxWidth()) { Text(if (done == 0) "Analyser les candidats avec l’IA" else "Reprendre l’analyse IA") }
+                                    Caption("Utilise les crédits IA du service. Étudie les ratios fournis; ne recherche pas les nouvelles ni les profits exceptionnels dans les dépôts.")
+                                    if (done > 0) Caption(if (done == p.stocks.size) "Tri par priorité de recherche IA. Ce score n’est pas une probabilité de gain." else "Analyse partielle : le tri reste celui du préfiltre jusqu’à la fin.")
+                                }
+                            }
+                            val fullyAnalyzed = p.stocks.isNotEmpty() && p.stocks.all { p.opinions.orEmpty().containsKey(it.screen?.listing) }
+                            val ordered = if (fullyAnalyzed) p.stocks.sortedWith(compareByDescending<ResearchStock> {
+                                p.opinions.orEmpty()[it.screen?.listing]?.priority ?: -1 }.thenByDescending { it.screen?.score ?: -1.0 }) else p.stocks
+                            val lastPage = ((ordered.size - 1).coerceAtLeast(0)) / 20
+                            val currentPage = page.coerceAtMost(lastPage)
+                            if (ordered.size > 20) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(enabled = currentPage > 0, onClick = { page = currentPage - 1; scope.launch { scroll.scrollTo(0) } }) { Text("Précédents") }
+                                Text("${currentPage * 20 + 1}–${minOf((currentPage + 1) * 20, ordered.size)} / ${ordered.size}", Modifier.weight(1f), fontSize = 12.sp)
+                                TextButton(enabled = currentPage < lastPage, onClick = { page = currentPage + 1; scope.launch { scroll.scrollTo(0) } }) { Text("Suivants") }
+                            }
+                            ordered.drop(currentPage * 20).take(20).forEachIndexed { index, idea ->
+                                AnalystIdeaCard(idea, analystPurchase(idea, budget, p.fxRate),
+                                    currentPage * 20 + index + 1, p.opinions.orEmpty()[idea.screen?.listing]) {
                                     detailId = idea.security.id; detailTab = 0; simulate = false; assistantOpen = false; answer = null
                                 }
                             }
@@ -352,6 +396,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
         var draftCountry by remember { mutableStateOf(country) }
         var draftHorizon by remember { mutableStateOf(horizon) }
         var draftRisk by remember { mutableStateOf(risk) }
+        var draftFinancialFilters by remember { mutableStateOf(financialFilters) }
         var draftThreshold by remember { mutableFloatStateOf(threshold) }
         FullDialog("Filtres des idées", { filters = false }) {
             Caption("Choisis le budget et le profil. Les cartes restent sur l’écran principal.")
@@ -364,6 +409,8 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
             }
             TextEntry("Budget disponible · CAD", draftBudget, { draftBudget = it }, true)
             Choice("Marché des idées", draftCountry, listOf("Canada", "États-Unis", "Tous")) { draftCountry = listOf("Canada", "États-Unis", "Tous")[it] }
+            Choice("Préfiltre financier", if (draftFinancialFilters) "Entreprises rentables" else "Aucun filtre financier", listOf("Entreprises rentables", "Aucun filtre financier")) { draftFinancialFilters = it == 0 }
+            Caption("US/Canada, aucun OTC, seuil 1 $ et exclusion biotech restent toujours appliqués. Aucun filtre financier autorise les sociétés déficitaires; données incomplètes non notées.")
             Choice("Horizon", draftHorizon, listOf("Moins d’un an", "1 à 3 ans", "3 à 5 ans", "Plus de 5 ans")) { draftHorizon = listOf("Moins d’un an", "1 à 3 ans", "3 à 5 ans", "Plus de 5 ans")[it] }
             Choice("Tolérance au risque", draftRisk, listOf("Prudent", "Modéré", "Élevé")) { draftRisk = listOf("Prudent", "Modéré", "Élevé")[it] }
             AnalystAccordion("Réglages avancés", Icons.Default.Tune, "analyst-advanced") {
@@ -373,7 +420,7 @@ internal fun InvestmentAnalystDialog(s: Services, initial: Security? = null, onC
             }
             Button(onClick = {
                 memberId = draftMember; all = draftAll; portfolioId = draftPortfolio
-                budgetText = draftBudget; country = draftCountry; horizon = draftHorizon; risk = draftRisk; threshold = draftThreshold
+                budgetText = draftBudget; country = draftCountry; financialFilters = draftFinancialFilters; horizon = draftHorizon; risk = draftRisk; threshold = draftThreshold
                 filters = false; detailId = null; refreshToken++
             }, enabled = !loading && (draftBudget.replace(',', '.').toBigDecimalOrNull() ?: ZERO) > ZERO, modifier = Modifier.fillMaxWidth()) {
                 Text("Afficher les résultats")
@@ -391,12 +438,12 @@ private fun AnalystPanel(modifier: Modifier = Modifier, content: @Composable Col
 }
 
 @Composable
-private fun AnalystIdeaCard(row: ResearchStock, purchase: Pair<BigDecimal, BigDecimal>?, onClick: () -> Unit) {
+private fun AnalystIdeaCard(row: ResearchStock, purchase: Pair<BigDecimal, BigDecimal>?, rank: Int, opinion: ScreenOpinion?, onClick: () -> Unit) {
     AnalystPanel(Modifier.clickable(onClick = onClick).testTag("analyst-idea-${row.security.symbol}")) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Logo(row.security, 42.dp); Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(row.security.ticker, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                Text("#$rank · " + row.security.ticker, fontSize = 21.sp, fontWeight = FontWeight.Bold)
                 Text(row.security.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Surface(shape = RoundedCornerShape(24.dp), color = Green) {
@@ -408,6 +455,12 @@ private fun AnalystIdeaCard(row: ResearchStock, purchase: Pair<BigDecimal, BigDe
                 color = AnalystPurple, fontSize = 12.sp, maxLines = 2)
             Text(money(purchase?.second) + " CAD", fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Muted)
+        }
+        row.screen?.let { e ->
+            Caption(if (opinion != null) "IA · ${opinion.verdict} · priorité ${opinion.priority?.toString() ?: "ND"}/100"
+                else "Préfiltre · " + (e.score?.let { String.format(Locale.CANADA_FRENCH, "%.1f /100", it) } ?: "Non noté · données incomplètes"))
+            opinion?.let { Text(it.reason, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            if (purchase == null) Caption("Budget insuffisant ou taux de change indisponible")
         }
         HorizontalDivider(color = Border)
         Row(verticalAlignment = Alignment.CenterVertically) {

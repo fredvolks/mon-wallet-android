@@ -62,7 +62,8 @@ class InvestmentAnalystTest {
                 emptyList(), listOf(ResearchSource("fixture", "Source de test", "https://example.com", date)),
                 "500".dec(), "Canada", "3 à 5 ans", "Modéré", 35, emptyList(),
                 ledgerKey = research.ledgerKey(wallet, null, false, null),
-                positions = listOf(ResearchPosition(stock.symbol, stock.name, "3".dec(), "300".dec(), "CAD", stock.sector, now)))
+                positions = listOf(ResearchPosition(stock.symbol, stock.name, "3".dec(), "300".dec(), "CAD", stock.sector, now)),
+                screening = ScreenSummary(5000, 2000, 50, 300, now, true))
             research.save("self:all:IDEAS", pack, null)
             research.save("self:all:BALANCE", pack.copy(mode = "BALANCE", stocks = emptyList()), null)
             ReportsTestActivity.content = { WalletTheme { InvestmentAnalystDialog(services, null, {}) } }
@@ -80,7 +81,7 @@ class InvestmentAnalystTest {
                 }
                 assertTrue(device.wait(Until.hasObject(By.text("Analyste IA")), 10000))
                 assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 10000))
-                assertTrue(device.hasObject(By.textContains("5 actions")))
+                find("5 actions")
                 assertFalse(device.hasObject(By.text("Équilibre du portefeuille")))
                 assertFalse(device.hasObject(By.textContains("Tolérance au risque")))
                 capture(context, "reports-analyst-ideas.png")
@@ -124,7 +125,7 @@ class InvestmentAnalystTest {
                 // Closing filters cancels their drafts and preserves the current member.
                 find("Fermer", true).click()
                 assertTrue(device.wait(Until.hasObject(By.text("Idées pour ton budget")), 5000))
-                assertTrue(device.hasObject(By.textContains("5 actions")))
+                find("5 actions")
                 find("Filtres", true).click()
                 find("Pour qui?").click()
                 device.findObject(By.text("Jacob")).click()
