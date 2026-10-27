@@ -32,6 +32,7 @@ jobs:
             watchlist-real.png
             widget-4x2-daily-fixture.png
             widget-4x2-six-titles.png
+            widget-4x2-masked.png
             watchlist-diagnostic.png
             watchlist-provider-log.txt
             app/build/outputs/androidTest-results/**

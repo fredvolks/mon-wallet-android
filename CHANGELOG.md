@@ -1,5 +1,8 @@
+## 0.2.71
+- Bouton œil dans l’en-tête de la colonne P&L : préserve toute la hauteur du graphique du widget.
+
 ## 0.2.70
-- Widget 4×2 : bouton œil à droite du libellé du jour pour masquer/réafficher ensemble les montants du jour et AFTER. Les pourcentages et le graphique restent visibles. Choix conservé par widget, même après redémarrage, sans appel réseau.
+- Widget 4×2 : bouton œil dans l’en-tête de la colonne P&L pour masquer/réafficher ensemble les montants du jour et AFTER. Les pourcentages et le graphique restent visibles. Choix conservé par widget, même après redémarrage, sans appel réseau.
 
 # 0.2.69 — Préfiltre US/Canada de 200 titres et analyse IA reprenable
 
