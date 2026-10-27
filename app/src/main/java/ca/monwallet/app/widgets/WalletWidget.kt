@@ -63,6 +63,15 @@ open class WalletWidget : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        if (intent.action == WidgetPnlPrivacy.ACTION) {
+            val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
+            if (id < 0 || AppWidgetManager.getInstance(context).getAppWidgetInfo(id)
+                    ?.provider != ComponentName(context, Widget4x2::class.java)) return
+            WidgetPnlPrivacy.toggle(context, id)
+            // Re-render cached data immediately; privacy never waits for network.
+            onUpdate(context, AppWidgetManager.getInstance(context), intArrayOf(id))
+            return
+        }
         if (intent.action == "ca.monwallet.REFRESH_WIDGET") {
             val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
             if (id < 0) return

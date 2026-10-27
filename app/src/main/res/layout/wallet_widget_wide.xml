@@ -3,10 +3,15 @@
  android:orientation="vertical" android:paddingStart="9dp" android:paddingEnd="9dp"
  android:paddingTop="3dp" android:paddingBottom="3dp" android:background="@drawable/widget_background_wide">
  <LinearLayout android:layout_width="match_parent" android:layout_height="24dp" android:gravity="center_vertical">
-  <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:singleLine="true" android:ellipsize="end" android:textColor="#F1F7FA" android:textSize="15sp" android:textStyle="bold"/>
-  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CAD" android:textSize="9sp" android:textColor="#8FA8B8" android:layout_marginEnd="8dp"/>
-  <TextView android:id="@+id/widget_refresh" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="↻" android:textSize="23sp" android:textColor="#DFEDF2" android:contentDescription="@string/widget_refresh"/>
-  <TextView android:id="@+id/widget_configure" android:layout_width="25dp" android:layout_height="match_parent" android:gravity="center" android:text="⚙" android:textSize="17sp" android:textColor="#DFEDF2" android:contentDescription="@string/widget_configure"/>
+  <LinearLayout android:layout_width="0dp" android:layout_weight="37" android:layout_height="match_parent" android:gravity="center_vertical">
+   <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:singleLine="true" android:ellipsize="end" android:textColor="#F1F7FA" android:textSize="15sp" android:textStyle="bold"/>
+   <ImageButton android:id="@+id/widget_toggle_pnl" android:layout_width="28dp" android:layout_height="match_parent" android:padding="4dp" android:background="@android:color/transparent" android:src="@drawable/widget_eye" android:contentDescription="Masquer les montants du jour et AFTER"/>
+  </LinearLayout>
+  <LinearLayout android:layout_width="0dp" android:layout_weight="63" android:layout_height="match_parent" android:gravity="end|center_vertical">
+   <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CAD" android:textSize="9sp" android:textColor="#8FA8B8" android:layout_marginEnd="8dp"/>
+   <TextView android:id="@+id/widget_refresh" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="↻" android:textSize="23sp" android:textColor="#DFEDF2" android:contentDescription="@string/widget_refresh"/>
+   <TextView android:id="@+id/widget_configure" android:layout_width="25dp" android:layout_height="match_parent" android:gravity="center" android:text="⚙" android:textSize="17sp" android:textColor="#DFEDF2" android:contentDescription="@string/widget_configure"/>
+  </LinearLayout>
  </LinearLayout>
  <LinearLayout android:id="@+id/widget_body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
   <LinearLayout android:layout_width="0dp" android:layout_weight="37" android:layout_height="match_parent" android:orientation="vertical">
