@@ -105,6 +105,16 @@ internal object WidgetWideRenderer {
         quoteNow: Long = System.currentTimeMillis(),
     ): RemoteViews {
         val views = RemoteViews(c.packageName, R.layout.wallet_widget_wide)
+        val maskPnl = WidgetPnlPrivacy.isHidden(c, id)
+        views.setImageViewResource(R.id.widget_toggle_pnl,
+            if (maskPnl) R.drawable.widget_eye_off else R.drawable.widget_eye)
+        views.setContentDescription(R.id.widget_toggle_pnl,
+            if (maskPnl) "Afficher les montants du jour et AFTER"
+            else "Masquer les montants du jour et AFTER")
+        views.setOnClickPendingIntent(R.id.widget_toggle_pnl, PendingIntent.getBroadcast(c, id,
+            Intent(c, Widget4x2::class.java).setAction(WidgetPnlPrivacy.ACTION)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         val title = if (portfolio == null) c.getString(R.string.all_portfolios)
             else wallet.portfolios.find { it.id == portfolio }?.name ?: "Portefeuille supprimé"
         views.setTextViewText(R.id.widget_title, title)
@@ -136,7 +146,7 @@ internal object WidgetWideRenderer {
         views.setViewVisibility(R.id.widget_after, if (!hidden && after != null) View.VISIBLE else View.GONE)
         views.setTextViewText(R.id.widget_after, if (after == null) "" else buildList {
             add("AFTER")
-            if (!config.hideAmounts && config.dayAmount) add(signed(after.first))
+            if (!config.hideAmounts && config.dayAmount) add(if (maskPnl) "••• $" else signed(after.first))
             if (config.dayPercent) add(percent(after.second))
         }.joinToString(" · "))
         views.setTextViewText(R.id.widget_day, if (hidden) c.getString(R.string.widget_locked)
@@ -147,7 +157,7 @@ internal object WidgetWideRenderer {
         val showAmount = !hidden && !config.hideAmounts && config.dayAmount && regular.day != null
         val showPercent = !hidden && config.dayPercent && regular.dayPercent != null
         views.setTextViewText(R.id.widget_amount, when {
-            showAmount -> signed(regular.day)
+            showAmount -> if (maskPnl) "••• $" else signed(regular.day)
             unavailable -> "Jour indisponible"
             else -> ""
         })
@@ -195,7 +205,7 @@ internal object WidgetWideRenderer {
         val minWidth = size.first
         val minHeight = size.second
         if (showAmount) {
-            val amountText = signed(regular.day)
+            val amountText = if (maskPnl) "••• $" else signed(regular.day)
             val desiredSp = if (config.dailyHero) 26f else 22f
             val paint = Paint().apply {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)

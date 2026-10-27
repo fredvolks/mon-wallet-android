@@ -72,6 +72,7 @@ data class WidgetSettings(
                 .putString("owner:$id", owner).remove("portfolio:$id").apply()
         }
         fun delete(c: Context, id: Int) {
+            WidgetPnlPrivacy.clear(c, id)
             c.getSharedPreferences("widget_config", 0).edit().remove("config:$id")
                 .remove("portfolio:$id").remove("owner:$id").apply()
         }
