@@ -11,6 +11,7 @@ import android.widget.ImageView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import ca.monwallet.app.domain.*
+import ca.monwallet.app.widgets.WidgetPnlPrivacy
 import ca.monwallet.app.widgets.WidgetSettings
 import ca.monwallet.app.widgets.WidgetWideRenderer
 import java.math.BigDecimal
@@ -29,9 +30,13 @@ class WidgetRemoteViewsScreenshotTest {
     @Test fun fiveRowsAndDailyHeroRenderWithoutClipping() = captureTitles(5, 334, 180)
     @Test fun sixRowsFillTheColumnWithoutClipping() = captureTitles(6, 334, 181)
 
-    private fun captureTitles(count: Int, widthDp: Int, heightDp: Int) { runBlocking {
+    @Test fun eyeMasksDayAndAfterAmountsOnDevice() = captureTitles(6, 334, 181, true)
+
+    private fun captureTitles(count: Int, widthDp: Int, heightDp: Int, mask: Boolean = false) { runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
+        WidgetPnlPrivacy.clear(context, 101)
+        if (mask) WidgetPnlPrivacy.toggle(context, 101)
         val portfolio = Portfolio(name = "Disnat")
         val preMarket = count == 5
         val tickers = listOf("XEQT", "TSM", "GURU", "PHOS", "MCD", "SPCX").take(count)
@@ -102,6 +107,15 @@ class WidgetRemoteViewsScreenshotTest {
             val after = view.findViewById<TextView>(R.id.widget_after)
             assertEquals(View.VISIBLE, after.visibility)
             assertTrue(after.text.toString().startsWith("AFTER"))
+            if (mask) {
+                assertEquals("••• $", view.findViewById<TextView>(R.id.widget_amount).text.toString())
+                assertTrue(after.text.toString().startsWith("AFTER · ••• $"))
+                assertTrue(view.findViewById<TextView>(R.id.widget_percent).text.contains("%"))
+                val eye = view.findViewById<ImageView>(R.id.widget_toggle_pnl)
+                assertNotNull(eye.drawable)
+                assertTrue(eye.hasOnClickListeners())
+                assertEquals("Afficher les montants du jour et AFTER", eye.contentDescription)
+            }
             assertTrue(after.paint.measureText(after.text.toString()) <= after.width)
             assertEquals(View.VISIBLE, view.findViewById<ImageView>(R.id.widget_chart).visibility)
             val amount = view.findViewById<TextView>(R.id.widget_amount)
@@ -182,7 +196,7 @@ class WidgetRemoteViewsScreenshotTest {
         }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME,
-                if (count == 5) "widget-4x2-daily-fixture.png"
+                if (mask) "widget-4x2-masked.png" else if (count == 5) "widget-4x2-daily-fixture.png"
                 else "widget-4x2-six-titles.png")
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
             put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MonWallet")
@@ -193,5 +207,6 @@ class WidgetRemoteViewsScreenshotTest {
             assertTrue(requireNotNull(screenshot).compress(Bitmap.CompressFormat.PNG, 100, it))
         }
         screenshot?.recycle()
+        WidgetPnlPrivacy.clear(context, 101)
     } }
 }
