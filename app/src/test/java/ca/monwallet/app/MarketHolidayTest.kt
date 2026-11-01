@@ -21,6 +21,29 @@ class MarketHolidayTest {
         assertFalse(MarketHoliday.isHolidayToday(american, now))
     }
 
+    @Test fun nonEquityUsdInstrumentsDoNotInheritStockExchangeHolidays() {
+        val thanksgiving = LocalDate.parse("2026-11-26")
+        val thanksgivingTime = Instant.parse("2026-11-26T17:00:00Z").toEpochMilli()
+        val crypto = Security.of("BTC-USD", "Bitcoin", "Crypto", "USD", "CRYPTO")
+        val ether = Security.of("ETH-USD", "Ethereum", "Crypto", "USD", "CRYPTO")
+        val fx = Security.of("CADUSD=X", "CAD/USD", "FX", "USD", "FX")
+        val commodity = Security.of("GC=F", "Gold", "COMEX", "USD", "COMMODITY")
+        val future = Security.of("ES=F", "S&P 500 Future", "CME", "USD", "FUTURE")
+        val usStock = Security.of("TSM", "TSMC", "NYSE", "USD", "STOCK")
+
+        // Thanksgiving closes US equities but is not a blanket closure of USD assets.
+        assertTrue(MarketHoliday.isHoliday(usStock, thanksgiving))
+        listOf(crypto, ether, fx, commodity, future).forEach { security ->
+            assertEquals(ExchangeCalendar.NONE, MarketHoliday.calendar(security))
+            assertFalse(MarketHoliday.isHoliday(security, thanksgiving))
+            assertFalse(MarketHoliday.excludesDailyPnl(security, thanksgivingTime))
+        }
+        val quote = Quote(crypto.id, d("110"), d("100"), "USD",
+            thanksgivingTime, thanksgiving.toString(), "test")
+        assertEquals(0, d("10").compareTo(MarketHoliday.dailyChange(crypto, quote, thanksgivingTime)))
+        assertEquals(0, d("10").compareTo(MarketHoliday.dailyPercent(crypto, quote, thanksgivingTime)))
+    }
+
     @Test fun excludesCanadianHolidayFromDailyPortfolioPnl() {
         val canadian = Security.of("XEQT.TO", "XEQT", "TSX", "CAD", "ETF")
         val american = Security.of("TSM", "TSMC", "NYSE", "USD")
