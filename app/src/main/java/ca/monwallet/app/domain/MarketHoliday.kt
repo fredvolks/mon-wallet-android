@@ -17,6 +17,12 @@ object MarketHoliday {
     fun calendar(security: Security): ExchangeCalendar {
         val exchange = security.exchange.uppercase().replace(" ", "")
         val symbol = security.symbol.uppercase()
+        // A USD quote is not necessarily a US stock. Crypto, FX and futures have
+        // their own trading schedules and must not inherit NYSE/TSX holidays.
+        // Until asset-specific calendars are available, keep their status unknown
+        // rather than falsely zeroing their daily P&L on an equity holiday.
+        if (security.type.uppercase() in setOf("CRYPTO", "FX", "COMMODITY", "FUTURE", "FUTURES"))
+            return ExchangeCalendar.NONE
         return when {
             exchange in setOf("TSX", "TSXV", "TOR", "TORONTO", "TSE", "NEO", "NEOE", "CBOECANADA") ||
                 (security.currency == "CAD" && (symbol.endsWith(".TO") || symbol.endsWith(".NE"))) ->
