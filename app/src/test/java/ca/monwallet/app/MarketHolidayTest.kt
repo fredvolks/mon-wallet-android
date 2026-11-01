@@ -44,6 +44,35 @@ class MarketHolidayTest {
         assertEquals(0, d("10").compareTo(MarketHoliday.dailyPercent(crypto, quote, thanksgivingTime)))
     }
 
+    @Test fun wholeWalletPercentCountsClosedUsStocksWhileCryptoKeepsItsDailyMove() {
+        val holidayNow = Instant.parse("2026-11-26T17:00:00Z").toEpochMilli()
+        val crypto = Security.of("BTC-USD", "Bitcoin", "Crypto", "USD", "CRYPTO")
+        val stock = Security.of("AAPL", "Apple", "NYSE", "USD", "STOCK")
+        val fx = Security.of("CAD=X", "USD / CAD", "FX", "CAD", "FX")
+        val transactions = listOf(crypto, stock).map { security ->
+            Transaction(portfolioId = "p", securityId = security.id,
+                quantity = d("10"), price = d("100"), currency = "USD",
+                fxRate = d("1"), date = "2026-11-01")
+        }
+        val wallet = Wallet(securities = listOf(crypto, stock, fx),
+            transactions = transactions,
+            quotes = mapOf(
+                crypto.id to Quote(crypto.id, d("110"), d("100"),
+                    "USD", holidayNow, "2026-11-26", "test"),
+                stock.id to Quote(stock.id, d("120"), d("100"),
+                    "USD", holidayNow, "2026-11-25", "test"),
+                fx.id to Quote(fx.id, d("1"), d("1"),
+                    "CAD", holidayNow, "2026-11-26", "test")
+            ))
+        val result = wallet.result(now = holidayNow)
+        assertEquals(0, d("100").compareTo(result.day))
+        // The holiday stock moves by $0 today but its full $1200 value stays
+        // in the wallet-wide percent denominator.
+        assertEquals(0, d("2200").compareTo(result.dayBase))
+        assertEquals(4.54545, result.dayPercent!!.toDouble(), 0.001)
+        assertEquals(0, d("2300").compareTo(result.value))
+    }
+
     @Test fun excludesCanadianHolidayFromDailyPortfolioPnl() {
         val canadian = Security.of("XEQT.TO", "XEQT", "TSX", "CAD", "ETF")
         val american = Security.of("TSM", "TSMC", "NYSE", "USD")
