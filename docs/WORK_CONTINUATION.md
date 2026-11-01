@@ -16,9 +16,9 @@ Dernière mise à jour : **2026-11-01** · Projet `fredvolks/mon-wallet-android`
 
 ## Travail du présent lot (branche de reprise)
 - **FAIT (code)** : `MarketHoliday.calendar` ne considère plus CRYPTO, FX, COMMODITY/FUTURE comme des actions US du seul fait de leur devise USD, évitant un P&L quotidien artificiellement neutralisé.
-- **FAIT (code)** : test `nonEquityUsdInstrumentsDoNotInheritStockExchangeHolidays` avec Thanksgiving US, crypto, FX, matière première, future et une action NYSE témoin.
+- **FAIT (code)** : tests `nonEquityUsdInstrumentsDoNotInheritStockExchangeHolidays` et `wholeWalletPercentCountsClosedUsStocksWhileCryptoKeepsItsDailyMove` : Thanksgiving US, crypto, FX, matières premières/futures, P&L du jour et dénominateur du portefeuille global.
 - **FAIT (docs)** : création de l'unique `docs/MASTER_PROMPT.md` et de `docs/WORK_START.md`.
-- **À TESTER** : exécuter les tests JUnit/Gradle de cette branche en CI et/ou environnement SDK; aucun test de ce nouveau commit n'a encore été exécuté localement dans la session.
+- **À TESTER** : PR [#155](https://github.com/fredvolks/mon-wallet-android/pull/155) ouverte vers `feat/widget-pnl-privacy-20261027`; exécuter/contrôler les tests JUnit/Gradle sur le SHA final. Aucun test du code modifié n'a été exécuté localement dans cette session (pas d'accès réseau Gradle).
 - **NON PUBLIÉ** : ce lot n'est ni fusionné ni inclus dans un nouvel APK. Aucune installation Samsung effectuée.
 
 ## Prochaines étapes (pas de doublons)
